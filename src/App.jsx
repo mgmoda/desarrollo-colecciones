@@ -39,7 +39,7 @@ export default function App() {
 
   const [orders, setOrders] = useState([])
   const [refs, setRefs] = useState([])
-  const [settings, setSettings] = useState({ telas: normalizeTelas(DEFAULT_TELAS), colors: DEFAULT_COLORS, proveedores: [] })
+  const [settings, setSettings] = useState({ telas: normalizeTelas(DEFAULT_TELAS), colors: DEFAULT_COLORS, proveedores: [], decorados: ['Flor'] })
 
   const [tab, setTab] = useState(() => {
     const saved = localStorage.getItem(TAB_KEY)
@@ -79,6 +79,7 @@ export default function App() {
           telas: normalizeTelas(st.telas && st.telas.length ? st.telas : DEFAULT_TELAS),
           colors: st.colors && st.colors.length ? st.colors : DEFAULT_COLORS,
           proveedores: st.proveedores || [],
+          decorados: st.decorados && st.decorados.length ? st.decorados : ['Flor'],
         })
         setLoaded(true)
       })
@@ -220,6 +221,27 @@ export default function App() {
     dbSaveSettings(next).catch((e) => console.error(e))
   }
 
+  // Catálogo de decorados (Flor, etc.).
+  function addDecorado(name) {
+    const v = (name || '').trim()
+    if (!v || settings.decorados.some((d) => d.toLowerCase() === v.toLowerCase())) return
+    const next = { ...settings, decorados: [...settings.decorados, v] }
+    setSettings(next)
+    dbSaveSettings(next).catch((e) => console.error(e))
+  }
+  function editDecorado(oldName, newName) {
+    const v = (newName || '').trim()
+    if (!v) return
+    const next = { ...settings, decorados: settings.decorados.map((d) => (d === oldName ? v : d)) }
+    setSettings(next)
+    dbSaveSettings(next).catch((e) => console.error(e))
+  }
+  function deleteDecorado(name) {
+    const next = { ...settings, decorados: settings.decorados.filter((d) => d !== name) }
+    setSettings(next)
+    dbSaveSettings(next).catch((e) => console.error(e))
+  }
+
   function addColor(color) {
     if (!color || !color.name) return
     if (settings.colors.some((c) => c.name.toLowerCase() === color.name.toLowerCase())) return
@@ -336,6 +358,10 @@ export default function App() {
         onAddProveedor={addProveedor}
         onEditProveedor={editProveedor}
         onDeleteProveedor={deleteProveedor}
+        decorados={settings.decorados}
+        onAddDecorado={addDecorado}
+        onEditDecorado={editDecorado}
+        onDeleteDecorado={deleteDecorado}
         savedColors={settings.colors}
         onAddColor={addColor}
         onEditColor={editColor}

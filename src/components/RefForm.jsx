@@ -47,6 +47,7 @@ export default function RefForm({
   open, initial, telas = [], telasCatalog = [], refIds = [],
   onAddTela, onEditTela, onDeleteTela, onUpdateTela,
   proveedores = [], onAddProveedor, onEditProveedor, onDeleteProveedor,
+  decorados = [], onAddDecorado, onEditDecorado, onDeleteDecorado,
   savedColors = [], onAddColor, onEditColor, onDeleteColor,
   onSave, onClose, onDelete,
 }) {
@@ -325,9 +326,17 @@ export default function RefForm({
             )}
             {form.decorado === 'si' && (
               <div className="field">
-                <label className="field-label">Detalle del decorado</label>
-                <input className="input" value={form.decoradoDetalle}
-                  onChange={(e) => set('decoradoDetalle', e.target.value)} placeholder="Ej. flores" />
+                <label className="field-label">Tipo de decorado</label>
+                <ComboBox
+                  value={form.decoradoDetalle}
+                  options={decorados}
+                  onChange={(v) => set('decoradoDetalle', v)}
+                  onCreate={onAddDecorado}
+                  onEdit={onEditDecorado}
+                  onDelete={onDeleteDecorado}
+                  placeholder="Elegir o crear (ej. Flor)…"
+                  entityLabel="decorado"
+                />
               </div>
             )}
             <div className="field-row">

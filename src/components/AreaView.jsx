@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { AREAS, formatDate } from '../lib/constants.js'
 import { ordersForArea } from '../lib/domain.js'
 import { diasDesde } from '../lib/dates.js'
+import { generateAreaPDF } from '../lib/areaPdf.js'
 
 const STAGE_LABEL = {
   ordenCorte: 'Orden corte', trazo: 'Trazo', entregaCorte: 'Corte',
@@ -15,7 +16,15 @@ const STAGE_LABEL = {
 export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
   const area = AREAS[areaKey]
   const [q, setQ] = useState('')
+  const [selected, setSelected] = useState(() => new Set())
   const { sortKey, sortDir, toggle } = useSort('orden', 'asc')
+
+  // Limpia la selección al cambiar de área.
+  useEffect(() => { setSelected(new Set()) }, [areaKey])
+
+  function toggleSel(id) {
+    setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }
 
   const baseStage = area.base
   const showTaller = areaKey === 'talleres' || areaKey === 'enviar'
@@ -46,6 +55,31 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
 
   const thProps = { sortKey, sortDir, onSort: toggle }
 
+  const allSelected = rows.length > 0 && rows.every((o) => selected.has(o.id))
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(rows.map((o) => o.id)))
+  }
+
+  function generatePdf() {
+    const chosen = rows.filter((o) => selected.has(o.id))
+    if (!chosen.length) return
+    const items = chosen.map((o) => {
+      const base = o.stages[baseStage] || {}
+      const ref = refMap.get(o.referencia)
+      return {
+        referencia: o.referencia,
+        producto: o.producto,
+        empresa: o.empresa,
+        baseLabel: STAGE_LABEL[baseStage],
+        fecha: formatDate(base.fecha),
+        atraso: showAtraso ? diasDesde(base.fecha) : null,
+        pendienteLabel,
+        image: ref && ref.image ? ref.image : null,
+      }
+    })
+    generateAreaPDF(area.label, items)
+  }
+
   return (
     <div className="view">
       <div className="view-head">
@@ -56,7 +90,14 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
             {rows.length} {rows.length === 1 ? 'orden' : 'órdenes'} en esta etapa
           </p>
         </div>
-        <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia, producto…" />
+        <div className="view-actions">
+          {selected.size > 0 && (
+            <button className="btn btn-primary" onClick={generatePdf}>
+              Generar PDF ({selected.size})
+            </button>
+          )}
+          <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia, producto…" />
+        </div>
       </div>
 
       {rows.length === 0 ? (
@@ -69,6 +110,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
           <table className="data-table">
             <thead>
               <tr>
+                <th className="cell-check">
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll} title="Seleccionar todo" />
+                </th>
                 <th>Foto</th>
                 <SortTh label="# Orden" col="orden" {...thProps} />
                 <SortTh label="Referencia" col="referencia" {...thProps} />
@@ -88,7 +132,10 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
                 const taller = (o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || ''
                 const atraso = diasDesde(base.fecha)
                 return (
-                  <tr key={o.id}>
+                  <tr key={o.id} className={selected.has(o.id) ? 'row-sel' : ''}>
+                    <td className="cell-check">
+                      <input type="checkbox" checked={selected.has(o.id)} onChange={() => toggleSel(o.id)} />
+                    </td>
                     <td className="cell-photo">
                       {ref && ref.image ? (
                         <img src={ref.image} alt={o.referencia} className="thumb"

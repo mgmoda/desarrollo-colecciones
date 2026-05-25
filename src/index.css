@@ -3377,6 +3377,10 @@ img.ship-ref-photo {
 .data-table td.strong { font-weight: 600; }
 .data-table td.muted { color: var(--muted); font-size: 12px; }
 
+.cell-check { width: 30px; text-align: center; }
+.cell-check input { cursor: pointer; width: 15px; height: 15px; }
+.data-table tbody tr.row-sel td { background: #eef4f9; }
+.data-table tbody tr.row-sel:hover td { background: #e6eef6; }
 .cell-photo { width: 44px; }
 .thumb {
   width: 36px;

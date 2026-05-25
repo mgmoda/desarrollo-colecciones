@@ -137,6 +137,8 @@ export function emptyRef(id) {
     estampado: '',        // '' | 'no' | 'sublimacion' | 'reactivos'
     bordado: '',          // '' | 'no' | 'si'
     bordadoDetalle: '',
+    decorado: '',         // '' | 'no' | 'si'  (ej. flores)
+    decoradoDetalle: '',
     conjunto: false,
     conjuntoRef: '',
     colores: [],

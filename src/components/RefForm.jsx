@@ -311,12 +311,23 @@ export default function RefForm({
                 <label className="field-label">Bordado</label>
                 <Toggle on={form.bordado === 'si'} onChange={(v) => set('bordado', v ? 'si' : 'no')} />
               </div>
+              <div className="field switch-field">
+                <label className="field-label">Decorado</label>
+                <Toggle on={form.decorado === 'si'} onChange={(v) => set('decorado', v ? 'si' : 'no')} />
+              </div>
             </div>
             {form.bordado === 'si' && (
               <div className="field">
                 <label className="field-label">Detalle del bordado</label>
                 <input className="input" value={form.bordadoDetalle}
                   onChange={(e) => set('bordadoDetalle', e.target.value)} placeholder="Descripción del bordado" />
+              </div>
+            )}
+            {form.decorado === 'si' && (
+              <div className="field">
+                <label className="field-label">Detalle del decorado</label>
+                <input className="input" value={form.decoradoDetalle}
+                  onChange={(e) => set('decoradoDetalle', e.target.value)} placeholder="Ej. flores" />
               </div>
             )}
             <div className="field-row">

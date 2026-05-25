@@ -83,6 +83,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
   const [soloRepetidas, setSoloRepetidas] = useState(false)
   const [soloPendientes, setSoloPendientes] = useState(false)
   const [soloConjuntos, setSoloConjuntos] = useState(false)
+  const [ocultarDescartadas, setOcultarDescartadas] = useState(false)
   const { sortKey, sortDir, toggle } = useSort('referencia', 'asc')
 
   // Cuando llega la señal desde Inicio, activa el filtro de pendientes.
@@ -109,6 +110,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
     if (soloRepetidas) list = list.filter((r) => veces(r) > 1)
     if (soloPendientes) list = list.filter((r) => r.pendiente)
     if (soloConjuntos) list = list.filter((r) => r.conjunto && r.conjuntoRef)
+    if (ocultarDescartadas) list = list.filter((r) => medicionInfo(r).estado !== 'descartada')
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((r) =>
@@ -132,7 +134,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
     }
     RESUMEN_FLAGS.forEach((f) => { accessors['flag_' + f.key] = (r) => flagRank((r.flags || {})[f.key]) })
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [refs, q, soloRepetidas, soloPendientes, soloConjuntos, sortKey, sortDir, tracksByRef])
+  }, [refs, q, soloRepetidas, soloPendientes, soloConjuntos, ocultarDescartadas, sortKey, sortDir, tracksByRef])
 
   const repetidasCount = useMemo(
     () => refs.filter((r) => veces(r) > 1).length,
@@ -169,6 +171,10 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
           <label className="check">
             <input type="checkbox" checked={soloRepetidas}
               onChange={(e) => setSoloRepetidas(e.target.checked)} /> Solo repetidas
+          </label>
+          <label className="check">
+            <input type="checkbox" checked={ocultarDescartadas}
+              onChange={(e) => setOcultarDescartadas(e.target.checked)} /> Ocultar descartadas
           </label>
           <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia, tela…" />
           <button className="btn btn-primary" onClick={onNew}>+ Referencia</button>

@@ -148,7 +148,7 @@ export function emptyRef(id) {
     cantidad: '',
     // Cada tela: { nombre, disponible, metros, nota }. Una prenda puede llevar varias.
     telas: [],
-    pendiente: false, pendienteNota: '',
+    pendiente: false, pendienteNota: '', pendienteFecha: '',
     image: null,
     updatedAt: Date.now(),
   }

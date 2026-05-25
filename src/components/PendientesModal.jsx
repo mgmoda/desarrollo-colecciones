@@ -1,4 +1,5 @@
 import Modal from './Modal.jsx'
+import { diasDesde } from '../lib/dates.js'
 
 // Lista enfocada de pendientes: foto, referencia y motivo. Clic = resolver.
 export default function PendientesModal({ open, pendientes = [], onClose, onOpenRef, onViewImage }) {
@@ -25,6 +26,12 @@ export default function PendientesModal({ open, pendientes = [], onClose, onOpen
                   <span className="pendm-ref">{r.referencia}</span>
                   <span className="pendm-note">{r.pendienteNota || 'Sin descripción'}</span>
                 </div>
+                {(() => {
+                  const d = diasDesde(r.pendienteFecha)
+                  return d != null
+                    ? <span className={'pendm-dias' + (d >= 7 ? ' alto' : '')}>hace {d} {d === 1 ? 'día' : 'días'}</span>
+                    : null
+                })()}
                 <span className="pend-go">Resolver ›</span>
               </li>
             ))}

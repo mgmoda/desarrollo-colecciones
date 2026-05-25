@@ -102,7 +102,8 @@ export default function RefForm({
     const colores = (form.colores || []).filter((c) => c && c.name)
     const telas = (form.telas || []).filter((t) => t && t.nombre)
       .map((t) => ({ nombre: t.nombre, disponible: !!t.disponible, metros: t.metros || '' }))
-    onSave({ ...form, colores, telas, tela: telas[0] ? telas[0].nombre : '', id: ref, referencia: ref, updatedAt: Date.now() })
+    const pendienteFecha = form.pendiente ? (form.pendienteFecha || todayStr()) : ''
+    onSave({ ...form, colores, telas, tela: telas[0] ? telas[0].nombre : '', pendienteFecha, id: ref, referencia: ref, updatedAt: Date.now() })
   }
 
   const partnerOptions = refIds.filter((id) => id !== (form.referencia || '').toUpperCase())
@@ -167,13 +168,25 @@ export default function RefForm({
 
             <label className={'check check-lg' + (form.pendiente ? ' check-alert' : '')}>
               <input type="checkbox" checked={!!form.pendiente}
-                onChange={(e) => set('pendiente', e.target.checked)} />
+                onChange={(e) => {
+                  const on = e.target.checked
+                  setForm((f) => ({ ...f, pendiente: on, pendienteFecha: on ? (f.pendienteFecha || todayStr()) : '' }))
+                }} />
               ⚠ Tiene un pendiente por resolver
             </label>
             {form.pendiente && (
-              <input className="input" value={form.pendienteNota}
-                onChange={(e) => set('pendienteNota', e.target.value)}
-                placeholder="¿Qué hay que resolver? (ej. tela Rosario agotada, buscar reemplazo)" />
+              <div className="field-row">
+                <div className="field" style={{ flex: 2 }}>
+                  <label className="field-label">¿Qué hay que resolver?</label>
+                  <input className="input" value={form.pendienteNota}
+                    onChange={(e) => set('pendienteNota', e.target.value)}
+                    placeholder="Ej. tela Rosario agotada, buscar reemplazo" />
+                </div>
+                <div className="field">
+                  <label className="field-label">Pendiente desde</label>
+                  <DateField value={form.pendienteFecha} onChange={(v) => set('pendienteFecha', v)} />
+                </div>
+              </div>
             )}
           </section>
 

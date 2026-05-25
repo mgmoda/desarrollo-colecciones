@@ -3422,6 +3422,7 @@ img.ship-ref-photo {
 .flag-no { background: #fbe6e3; color: #b23121; }
 .flag-none { background: #efece5; color: var(--muted); }
 .flag-warn { background: #fbf0db; color: #9a6a1e; }
+.flag-desc { background: #e6e3dc; color: #6b6b6b; }
 
 /* ---------- Flag editor ---------- */
 .flags-grid { display: flex; flex-direction: column; gap: 10px; }
@@ -3732,6 +3733,9 @@ img.ship-ref-photo {
 }
 .med-res.rep.on { background: #b23121; border-color: #b23121; color: #fff; }
 .med-res.ap.on { background: #1f7a44; border-color: #1f7a44; color: #fff; }
+.med-res.des.on { background: #6b6b6b; border-color: #6b6b6b; color: #fff; }
+.data-table tbody tr.row-descartada td { background: #f3f1ec; color: #8a8a8a; }
+.data-table tbody tr.row-descartada td:first-child { box-shadow: inset 3px 0 0 #9a9a9a; }
 .med-summary { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; font-weight: 500; }
 .med-item { display: flex; flex-direction: column; gap: 6px; width: 100%; }
 .med-nota { width: 100%; max-width: 420px; padding: 6px 10px; font-size: 12.5px; }

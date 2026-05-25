@@ -14,8 +14,8 @@ function telaTip(r) {
   return 'Tela lista · ' + disp.map((t) => `${t.nombre || 'tela'}${t.metros ? ' ' + t.metros + ' m' : ''}${t.nota ? ' (' + t.nota + ')' : ''}`).join(' · ')
 }
 
-const MED_LABEL = { pendiente: 'Pendiente', repeticion: 'Repetición', aprobada: 'Aprobada' }
-const MED_CLS = { pendiente: 'flag-none', repeticion: 'flag-no', aprobada: 'flag-yes' }
+const MED_LABEL = { pendiente: 'Pendiente', repeticion: 'Repetición', aprobada: 'Aprobada', descartada: 'Descartada' }
+const MED_CLS = { pendiente: 'flag-none', repeticion: 'flag-no', aprobada: 'flag-yes', descartada: 'flag-desc' }
 
 // Muestras / Producción: combina tu decisión (flag manual) con lo que
 // confirman los archivos importados.
@@ -205,7 +205,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}
-                  className={'row-click' + (medicionInfo(r).estado === 'aprobada' ? ' row-aprobada' : '')}
+                  className={'row-click' + (medicionInfo(r).estado === 'aprobada' ? ' row-aprobada' : medicionInfo(r).estado === 'descartada' ? ' row-descartada' : '')}
                   onClick={() => onEdit(r)}>
                   <td className="cell-photo">
                     {r.image ? (

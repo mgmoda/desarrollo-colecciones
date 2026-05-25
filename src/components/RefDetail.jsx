@@ -107,7 +107,9 @@ export default function RefDetail({ open, refId, refRecord, tracks, onClose, onO
                 <p className="med-summary">
                   {info.estado === 'aprobada'
                     ? `Aprobada${info.dias != null ? ` en ${info.dias} días` : ''}${info.repeticiones ? ` · ${info.repeticiones} repetición(es)` : ''}`
-                    : `En repetición${info.diasRepeticion != null ? ` hace ${info.diasRepeticion} días` : ''}${info.repeticiones ? ` · ${info.repeticiones} repetición(es)` : ''}`}
+                    : info.estado === 'descartada'
+                      ? `Descartada${info.repeticiones ? ` · ${info.repeticiones} repetición(es)` : ''}`
+                      : `En repetición${info.diasRepeticion != null ? ` hace ${info.diasRepeticion} días` : ''}${info.repeticiones ? ` · ${info.repeticiones} repetición(es)` : ''}`}
                 </p>
                 <ol className="med-detail-list">
                   {refRecord.mediciones.map((m, i) => {
@@ -121,8 +123,8 @@ export default function RefDetail({ open, refId, refRecord, tracks, onClose, onO
                       <li className="med-detail-item" key={i}>
                         <span className="color-row-num">{i + 1}</span>
                         <span className="med-detail-fecha">{m.fecha || '—'}</span>
-                        <span className={'flag ' + (m.resultado === 'aprobada' ? 'flag-yes' : 'flag-no')}>
-                          {m.resultado === 'aprobada' ? 'Aprobada' : 'Repetición'}
+                        <span className={'flag ' + (m.resultado === 'aprobada' ? 'flag-yes' : m.resultado === 'descartada' ? 'flag-desc' : 'flag-no')}>
+                          {m.resultado === 'aprobada' ? 'Aprobada' : m.resultado === 'descartada' ? 'Descartada' : 'Repetición'}
                         </span>
                         {durTxt && <span className="med-detail-dur">{durTxt}</span>}
                         {m.nota && <span className="med-detail-nota">{m.nota}</span>}

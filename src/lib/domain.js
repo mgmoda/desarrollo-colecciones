@@ -108,22 +108,24 @@ export function medicionInfo(ref) {
   }
   const repeticiones = rounds.filter((r) => r.resultado === 'repeticion').length
   const last = rounds[rounds.length - 1]
-  const estado = last.resultado === 'aprobada' ? 'aprobada' : 'repeticion'
+  const estado = last.resultado === 'aprobada' ? 'aprobada'
+    : last.resultado === 'descartada' ? 'descartada' : 'repeticion'
+  const terminal = estado === 'aprobada' || estado === 'descartada'
   const primera = rounds[0].fecha || ''
   const aprobacion = estado === 'aprobada' ? (last.fecha || '') : ''
   const d0 = parseDateLoose(primera)
   let dias = null
   if (d0) {
-    const end = estado === 'aprobada' ? parseDateLoose(aprobacion) : new Date()
+    const end = terminal ? parseDateLoose(last.fecha) : new Date()
     if (end) dias = Math.round((end.getTime() - d0.getTime()) / 86400000)
   }
   // Días que lleva en la repetición ACTUAL (desde la fecha de la última
-  // repetición hasta hoy). Solo aplica mientras no esté aprobada.
+  // repetición hasta hoy). Solo aplica mientras siga en repetición.
   const diasRepeticion = estado === 'repeticion' ? diasDesde(last.fecha) : null
   return { estado, repeticiones, primera, aprobacion, ultima: last.fecha || '', dias, diasRepeticion }
 }
 
-export const MEDICION_RANK = { pendiente: 0, repeticion: 1, aprobada: 2 }
+export const MEDICION_RANK = { pendiente: 0, repeticion: 1, descartada: 2, aprobada: 3 }
 
 export function emptyRef(id) {
   return {

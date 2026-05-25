@@ -372,6 +372,8 @@ export default function RefForm({
                         onClick={() => setMedAt(i, 'resultado', 'repeticion')}>Repetición</button>
                       <button type="button" className={'med-res ap' + (m.resultado === 'aprobada' ? ' on' : '')}
                         onClick={() => setMedAt(i, 'resultado', 'aprobada')}>Aprobada</button>
+                      <button type="button" className={'med-res des' + (m.resultado === 'descartada' ? ' on' : '')}
+                        onClick={() => setMedAt(i, 'resultado', 'descartada')}>Descartada</button>
                     </div>
                     <button type="button" className="icon-btn" onClick={() => removeMedAt(i)} title="Quitar medición">✕</button>
                   </div>
@@ -391,7 +393,9 @@ export default function RefForm({
                 if (info.estado === 'pendiente') return null
                 const txt = info.estado === 'aprobada'
                   ? `Aprobada${info.dias != null ? ` en ${info.dias} días` : ''}${info.repeticiones ? ` · ${info.repeticiones} repetición(es)` : ''}`
-                  : `En repetición${info.diasRepeticion != null ? ` hace ${info.diasRepeticion} días` : ''}${info.repeticiones ? ` · ${info.repeticiones} repetición(es)` : ''}`
+                  : info.estado === 'descartada'
+                    ? `Descartada${info.repeticiones ? ` · ${info.repeticiones} repetición(es)` : ''}`
+                    : `En repetición${info.diasRepeticion != null ? ` hace ${info.diasRepeticion} días` : ''}${info.repeticiones ? ` · ${info.repeticiones} repetición(es)` : ''}`
                 return <p className="med-summary">{txt}</p>
               })()}
             </div>

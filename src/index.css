@@ -3624,6 +3624,7 @@ img.ship-ref-photo {
 
 .check-lg { font-size: 14px; color: var(--ink); font-weight: 500; }
 .check-alert { color: #b23121; font-weight: 600; }
+.check-ok { color: #1f7a44; font-weight: 600; }
 
 /* ---------- Pendientes / alertas ---------- */
 .pend-dot { color: #b23121; margin-right: 5px; font-size: 12px; }

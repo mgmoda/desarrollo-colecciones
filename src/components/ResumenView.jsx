@@ -4,6 +4,7 @@ import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { RESUMEN_FLAGS, ORIGEN_ABBR, AREAS, formatPrice } from '../lib/constants.js'
 import { areaIndex, medicionInfo, MEDICION_RANK, refTelas, telaDisponible } from '../lib/domain.js'
+import { generateResumenPDF } from '../lib/resumenPdf.js'
 
 function telasTexto(r) {
   return refTelas(r).map((t) => t.nombre).filter(Boolean).join(' / ')
@@ -85,7 +86,17 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
   const [soloConjuntos, setSoloConjuntos] = useState(false)
   const [ocultarDescartadas, setOcultarDescartadas] = useState(false)
   const [soloAprobadasLimpias, setSoloAprobadasLimpias] = useState(false)
+  const [selected, setSelected] = useState(() => new Set())
   const { sortKey, sortDir, toggle } = useSort('referencia', 'asc')
+
+  function toggleSel(id) {
+    setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }
+  function etapaTexto(r) {
+    const tracks = tracksByRef && tracksByRef.get(r.id)
+    if (!tracks || !tracks.length) return ''
+    return tracks.map((t) => `${ORIGEN_ABBR[t.origen]}: ${t.area ? AREAS[t.area].label : 'Sin iniciar'}`).join(' · ')
+  }
 
   // Cuando llega la señal desde Inicio, activa el filtro de pendientes.
   useEffect(() => {
@@ -148,6 +159,26 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
 
   const thProps = { sortKey, sortDir, onSort: toggle }
 
+  const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id))
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.id)))
+  }
+  function generatePdf() {
+    const chosen = rows.filter((r) => selected.has(r.id))
+    if (!chosen.length) return
+    const items = chosen.map((r) => ({
+      referencia: r.referencia,
+      tipo: r.tipo,
+      tela: refTelas(r).map((t) => t.nombre).filter(Boolean).join(' / '),
+      costo: formatPrice(r.costo),
+      etapa: etapaTexto(r),
+      medicion: MED_LABEL[medicionInfo(r).estado],
+      comentario: r.comentario,
+      image: r.image || null,
+    }))
+    generateResumenPDF(items, 'Referencias seleccionadas')
+  }
+
   return (
     <div className="view">
       <div className="view-head">
@@ -183,6 +214,9 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
             <input type="checkbox" checked={soloAprobadasLimpias}
               onChange={(e) => setSoloAprobadasLimpias(e.target.checked)} /> Aprobadas sin repetición
           </label>
+          {selected.size > 0 && (
+            <button className="btn btn-primary" onClick={generatePdf}>Generar PDF ({selected.size})</button>
+          )}
           <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia, tela…" />
           <button className="btn btn-primary" onClick={onNew}>+ Referencia</button>
         </div>
@@ -198,6 +232,9 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
           <table className="data-table">
             <thead>
               <tr>
+                <th className="cell-check">
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll} title="Seleccionar todo" />
+                </th>
                 <SortTh label="Foto" col="foto" {...thProps} />
                 <SortTh label="Referencia" col="referencia" {...thProps} />
                 <SortTh label="Veces" col="veces" {...thProps} />
@@ -218,8 +255,11 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}
-                  className={'row-click' + (medicionInfo(r).estado === 'aprobada' ? ' row-aprobada' : medicionInfo(r).estado === 'descartada' ? ' row-descartada' : '')}
+                  className={'row-click' + (selected.has(r.id) ? ' row-sel' : '') + (medicionInfo(r).estado === 'aprobada' ? ' row-aprobada' : medicionInfo(r).estado === 'descartada' ? ' row-descartada' : '')}
                   onClick={() => onEdit(r)}>
+                  <td className="cell-check" onClick={(e) => e.stopPropagation()}>
+                    <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSel(r.id)} />
+                  </td>
                   <td className="cell-photo">
                     {r.image ? (
                       <img src={r.image} alt={r.referencia} className="thumb" title="Ampliar foto"

@@ -119,6 +119,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
       )
     }
     const accessors = {
+      foto: (r) => (r.image ? 1 : 0),
       referencia: (r) => r.referencia,
       veces: (r) => veces(r),
       tipo: (r) => r.tipo,
@@ -191,7 +192,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
           <table className="data-table">
             <thead>
               <tr>
-                <th>Foto</th>
+                <SortTh label="Foto" col="foto" {...thProps} />
                 <SortTh label="Referencia" col="referencia" {...thProps} />
                 <SortTh label="Veces" col="veces" {...thProps} />
                 <SortTh label="Etapa actual" col="etapa" {...thProps} />

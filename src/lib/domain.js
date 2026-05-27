@@ -72,6 +72,18 @@ export function areaCounts(orders) {
   return counts
 }
 
+// Conteo por área desglosado por fase (premuestra/muestra/producción).
+export function areaCountsDetailed(orders) {
+  const mk = () => ({ total: 0, premuestra: 0, muestra: 0, produccion: 0 })
+  const counts = { trazos: mk(), corte: mk(), enviar: mk(), talleres: mk(), entrega: mk(), sinIniciar: mk() }
+  orders.forEach((o) => {
+    const a = orderArea(o) || 'sinIniciar'
+    counts[a].total += 1
+    if (counts[a][o.origen] != null) counts[a][o.origen] += 1
+  })
+  return counts
+}
+
 // Cantidad asociada a una orden en una etapa (para pivots/sumas por área).
 export function stageCant(order, key) {
   const s = order.stages && order.stages[key]

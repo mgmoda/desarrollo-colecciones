@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { AREAS, formatDate } from '../lib/constants.js'
+import { AREAS, formatDate, ORIGEN_ABBR } from '../lib/constants.js'
 import { ordersForArea } from '../lib/domain.js'
 import { diasDesde } from '../lib/dates.js'
 import { generateAreaPDF } from '../lib/areaPdf.js'
@@ -16,6 +16,7 @@ const STAGE_LABEL = {
 export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
   const area = AREAS[areaKey]
   const [q, setQ] = useState('')
+  const [origenF, setOrigenF] = useState('') // '' = todas
   const [selected, setSelected] = useState(() => new Set())
   const { sortKey, sortDir, toggle } = useSort('orden', 'asc')
 
@@ -33,6 +34,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
 
   const rows = useMemo(() => {
     let list = ordersForArea(orders, areaKey)
+    if (origenF) list = list.filter((o) => o.origen === origenF)
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((o) =>
@@ -41,6 +43,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
       )
     }
     const accessors = {
+      fase: (o) => o.origen,
       orden: (o) => o.orden,
       referencia: (o) => o.referencia,
       producto: (o) => o.producto,
@@ -51,7 +54,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
       atraso: (o) => diasDesde((o.stages[baseStage] || {}).fecha),
     }
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [orders, areaKey, q, sortKey, sortDir, baseStage])
+  }, [orders, areaKey, q, origenF, sortKey, sortDir, baseStage])
 
   const thProps = { sortKey, sortDir, onSort: toggle }
 
@@ -91,6 +94,15 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
           </p>
         </div>
         <div className="view-actions">
+          <div className="select-wrap">
+            <select className="input select" value={origenF} onChange={(e) => setOrigenF(e.target.value)}>
+              <option value="">Todas las fases</option>
+              <option value="premuestra">Premuestra</option>
+              <option value="muestra">Muestra</option>
+              <option value="produccion">Producción</option>
+            </select>
+            <span className="select-caret" aria-hidden="true">▾</span>
+          </div>
           {selected.size > 0 && (
             <button className="btn btn-primary" onClick={generatePdf}>
               Generar PDF ({selected.size})
@@ -114,6 +126,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} title="Seleccionar todo" />
                 </th>
                 <th>Foto</th>
+                <SortTh label="Fase" col="fase" {...thProps} />
                 <SortTh label="# Orden" col="orden" {...thProps} />
                 <SortTh label="Referencia" col="referencia" {...thProps} />
                 <SortTh label="Producto" col="producto" {...thProps} />
@@ -144,6 +157,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
                         <span className="thumb empty">—</span>
                       )}
                     </td>
+                    <td><span className={'origen-chip o-' + o.origen}>{ORIGEN_ABBR[o.origen] || o.origen}</span></td>
                     <td className="mono">{o.orden}</td>
                     <td className="strong">{o.referencia}</td>
                     <td>{o.producto}</td>

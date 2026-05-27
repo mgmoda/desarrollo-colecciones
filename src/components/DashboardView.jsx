@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { AREAS } from '../lib/constants.js'
-import { areaCounts } from '../lib/domain.js'
+import { areaCountsDetailed } from '../lib/domain.js'
 
 export default function DashboardView({ orders, refs, onGoArea, onGoTab, onImport, onShowPendientes }) {
-  const counts = useMemo(() => areaCounts(orders), [orders])
+  const counts = useMemo(() => areaCountsDetailed(orders), [orders])
   const pendientes = useMemo(() => refs.filter((r) => r.pendiente), [refs])
 
   const totalRefs = refs.length
@@ -50,14 +50,17 @@ export default function DashboardView({ orders, refs, onGoArea, onGoTab, onImpor
       <div className="area-grid">
         {Object.entries(AREAS).map(([key, area]) => (
           <button className="area-card" key={key} onClick={() => onGoArea(key)}>
-            <span className="area-count">{counts[key]}</span>
+            <span className="area-count">{counts[key].total}</span>
             <span className="area-name">{area.label}</span>
             {area.responsable && <span className="area-resp">{area.responsable}</span>}
+            <span className="area-breakdown">
+              Pre {counts[key].premuestra} · Mue {counts[key].muestra} · Pro {counts[key].produccion}
+            </span>
           </button>
         ))}
-        {counts.sinIniciar > 0 && (
+        {counts.sinIniciar.total > 0 && (
           <div className="area-card done">
-            <span className="area-count">{counts.sinIniciar}</span>
+            <span className="area-count">{counts.sinIniciar.total}</span>
             <span className="area-name">Sin orden de corte</span>
           </div>
         )}

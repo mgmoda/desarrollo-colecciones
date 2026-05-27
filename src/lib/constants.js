@@ -94,7 +94,13 @@ export function capitalize(text) {
 }
 
 export function normRef(ref) {
-  return (ref || '').toString().trim().toUpperCase()
+  // El sistema a veces trae la referencia con la palabra "CONJUNTO" pegada
+  // (ej. "MG-B872 CONJUNTO"); la quitamos para que coincida con la
+  // referencia real (MG-B872) y se relacione con foto, resumen, etc.
+  return (ref || '').toString().toUpperCase()
+    .replace(/\bCONJUNTO\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 export function formatPrice(value) {

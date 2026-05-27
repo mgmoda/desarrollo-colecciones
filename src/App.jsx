@@ -4,6 +4,7 @@ import DashboardView from './components/DashboardView.jsx'
 import ResumenView from './components/ResumenView.jsx'
 import AreaView from './components/AreaView.jsx'
 import CostosView from './components/CostosView.jsx'
+import EnsambleView from './components/EnsambleView.jsx'
 import ImportModal from './components/ImportModal.jsx'
 import RefForm from './components/RefForm.jsx'
 import RefSearch from './components/RefSearch.jsx'
@@ -15,6 +16,7 @@ import { supabase } from './lib/supabase.js'
 import {
   dbLoadOrders, dbLoadRefs, dbLoadSettings,
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings,
+  dbLoadEnsamble, dbInsertEnsamble, dbDeleteEnsamble,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas } from './lib/domain.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS } from './lib/constants.js'
@@ -27,6 +29,7 @@ const TABS = [
   { key: 'enviar', label: 'Por enviar' },
   { key: 'talleres', label: 'En talleres' },
   { key: 'entrega', label: 'Entrega ensamble' },
+  { key: 'ensamble', label: 'Ensamble' },
   { key: 'costos', label: 'Costos' },
 ]
 const AREA_KEYS = ['trazos', 'corte', 'enviar', 'talleres', 'entrega']
@@ -39,6 +42,7 @@ export default function App() {
 
   const [orders, setOrders] = useState([])
   const [refs, setRefs] = useState([])
+  const [ensamble, setEnsamble] = useState([])
   const [settings, setSettings] = useState({ telas: normalizeTelas(DEFAULT_TELAS), colors: DEFAULT_COLORS, proveedores: [], decorados: ['Flor'] })
 
   const [tab, setTab] = useState(() => {
@@ -68,11 +72,12 @@ export default function App() {
   useEffect(() => {
     if (!userId) { setLoaded(false); return }
     let cancelled = false
-    Promise.all([dbLoadOrders(), dbLoadRefs(), dbLoadSettings()])
-      .then(([o, r, s]) => {
+    Promise.all([dbLoadOrders(), dbLoadRefs(), dbLoadSettings(), dbLoadEnsamble()])
+      .then(([o, r, s, en]) => {
         if (cancelled) return
         setOrders(o)
         setRefs(r)
+        setEnsamble(en || [])
         const st = s || {}
         setSettings({
           ...st,
@@ -97,6 +102,15 @@ export default function App() {
     refIndex.forEach((r) => m.set(r.id, refTracks(orders, r.id)))
     return m
   }, [refIndex, orders])
+
+  function addEnsamble(rec) {
+    setEnsamble((list) => [rec, ...list])
+    dbInsertEnsamble(rec).catch((e) => console.error(e))
+  }
+  function deleteEnsamble(id) {
+    setEnsamble((list) => list.filter((e) => e.id !== id))
+    dbDeleteEnsamble(id).catch((e) => console.error(e))
+  }
 
   function openDetail(id) { setDetailRefId(id) }
   function openFichaFromDetail(id) {
@@ -331,6 +345,16 @@ export default function App() {
         )}
         {AREA_KEYS.includes(tab) && (
           <AreaView areaKey={tab} orders={orders} refMap={refMap} onViewImage={setLightbox} />
+        )}
+        {tab === 'ensamble' && (
+          <EnsambleView
+            entries={ensamble}
+            refIds={refIndex.map((r) => r.id)}
+            refMap={refMap}
+            onAdd={addEnsamble}
+            onDelete={deleteEnsamble}
+            onViewImage={setLightbox}
+          />
         )}
         {tab === 'costos' && (
           <CostosView refs={refIndex} telasCatalog={settings.telas} onEdit={openEdit} onNew={openNew} onViewImage={setLightbox} />

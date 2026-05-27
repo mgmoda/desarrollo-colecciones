@@ -3639,6 +3639,24 @@ img.ship-ref-photo {
 .check-alert { color: #b23121; font-weight: 600; }
 .check-ok { color: #1f7a44; font-weight: 600; }
 
+/* ---------- Módulo Ensamble ---------- */
+.ens-form {
+  display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.ens-period {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.ens-nav { display: flex; align-items: center; gap: 8px; }
+.ens-period-label { font-weight: 600; min-width: 200px; text-align: center; }
+.ens-total { margin-left: auto; font-family: 'Fraunces', serif; font-size: 26px; font-weight: 600; }
+.ens-total span { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 400; color: var(--muted); }
+
 /* ---------- Pendientes / alertas ---------- */
 .pend-dot { color: #b23121; margin-right: 5px; font-size: 12px; }
 .pend-banner {

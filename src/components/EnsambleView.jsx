@@ -1,13 +1,7 @@
 import { useMemo, useState } from 'react'
-import DateField from './DateField.jsx'
-import { newId } from '../lib/storage.js'
-import { normRef, formatDate } from '../lib/constants.js'
+import { formatDate, ORIGEN_ABBR } from '../lib/constants.js'
 import { parseDateLoose } from '../lib/dates.js'
 import { periodRange, shiftPeriod, periodLabel } from '../lib/periods.js'
-
-function hoyStr() {
-  return new Date().toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
 
 const MODES = [
   { v: 'dia', l: 'Día' },
@@ -15,74 +9,74 @@ const MODES = [
   { v: 'mes', l: 'Mes' },
 ]
 
-export default function EnsambleView({ entries, refIds, refMap, onAdd, onDelete, onViewImage }) {
-  const [fecha, setFecha] = useState(hoyStr())
-  const [ref, setRef] = useState('')
-  const [cant, setCant] = useState('')
-
+// Reporte de ensamble basado en los datos importados:
+//   fecha de recepción = Entrega ensamble (col. T), unidades = su cantidad,
+//   taller = subcampo Taller del Envío a ensamble (col. Q).
+export default function EnsambleView({ orders, refMap, onViewImage }) {
   const [mode, setMode] = useState('semana')
   const [anchor, setAnchor] = useState(() => new Date())
+  const [tallerF, setTallerF] = useState('')
+
+  // Recepciones de ensamble (órdenes con fecha de entrega ensamble).
+  const recepciones = useMemo(() => {
+    return orders
+      .filter((o) => o.stages && o.stages.entregaEnsamble && o.stages.entregaEnsamble.fecha)
+      .map((o) => ({
+        id: o.id,
+        fecha: o.stages.entregaEnsamble.fecha,
+        cantidad: Number(o.stages.entregaEnsamble.cant) || 0,
+        referencia: o.referencia,
+        taller: (o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || '—',
+        origen: o.origen,
+      }))
+  }, [orders])
+
+  const talleres = useMemo(
+    () => [...new Set(recepciones.map((r) => r.taller).filter((t) => t && t !== '—'))].sort(),
+    [recepciones],
+  )
 
   const range = useMemo(() => periodRange(mode, anchor), [mode, anchor])
 
-  // Entradas del período seleccionado.
   const enRango = useMemo(() => {
     const a = range.start.getTime(); const b = range.end.getTime()
-    return entries.filter((e) => {
+    return recepciones.filter((e) => {
+      if (tallerF && e.taller !== tallerF) return false
       const d = parseDateLoose(e.fecha)
       return d && d.getTime() >= a && d.getTime() < b
     })
-  }, [entries, range])
+  }, [recepciones, range, tallerF])
 
-  // Totales por referencia en el período.
+  // Totales por referencia (con sus talleres).
   const porRef = useMemo(() => {
     const map = new Map()
-    enRango.forEach((e) => { map.set(e.referencia, (map.get(e.referencia) || 0) + (Number(e.cantidad) || 0)) })
-    return [...map.entries()].map(([referencia, unidades]) => ({ referencia, unidades }))
-      .sort((x, y) => y.unidades - x.unidades)
+    enRango.forEach((e) => {
+      const cur = map.get(e.referencia) || { referencia: e.referencia, unidades: 0, talleres: new Set() }
+      cur.unidades += e.cantidad
+      if (e.taller && e.taller !== '—') cur.talleres.add(e.taller)
+      map.set(e.referencia, cur)
+    })
+    return [...map.values()].sort((x, y) => y.unidades - x.unidades)
   }, [enRango])
 
   const totalPeriodo = porRef.reduce((s, r) => s + r.unidades, 0)
-
-  function agregar() {
-    const r = normRef(ref)
-    const n = Number(cant)
-    if (!r || !(n > 0) || !fecha) return
-    onAdd({ id: newId(), fecha, referencia: r, cantidad: n, createdAt: Date.now() })
-    setRef(''); setCant('')
-  }
 
   return (
     <div className="view">
       <div className="view-head">
         <div>
           <h1 className="view-title">Ensamble</h1>
-          <p className="view-sub">Unidades ensambladas por referencia</p>
+          <p className="view-sub">Unidades recibidas de ensamble (por fecha de recepción)</p>
+        </div>
+        <div className="select-wrap">
+          <select className="input select" value={tallerF} onChange={(e) => setTallerF(e.target.value)}>
+            <option value="">Todos los talleres</option>
+            {talleres.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <span className="select-caret" aria-hidden="true">▾</span>
         </div>
       </div>
 
-      {/* Registrar */}
-      <div className="ens-form">
-        <div className="field">
-          <label className="field-label">Fecha</label>
-          <DateField value={fecha} onChange={setFecha} />
-        </div>
-        <div className="field" style={{ flex: 1, minWidth: 180 }}>
-          <label className="field-label">Referencia</label>
-          <input className="input" list="ens-refs" value={ref}
-            onChange={(e) => setRef(e.target.value.toUpperCase())} placeholder="MG-B705" />
-          <datalist id="ens-refs">{refIds.map((id) => <option key={id} value={id} />)}</datalist>
-        </div>
-        <div className="field" style={{ width: 110 }}>
-          <label className="field-label">Cantidad</label>
-          <input className="input" type="number" min="1" value={cant}
-            onChange={(e) => setCant(e.target.value)} placeholder="0"
-            onKeyDown={(e) => { if (e.key === 'Enter') agregar() }} />
-        </div>
-        <button className="btn btn-primary" onClick={agregar}>Agregar</button>
-      </div>
-
-      {/* Período */}
       <div className="ens-period">
         <div className="opt-group">
           {MODES.map((m) => (
@@ -99,14 +93,16 @@ export default function EnsambleView({ entries, refIds, refMap, onAdd, onDelete,
         <div className="ens-total">{totalPeriodo} <span>unidades</span></div>
       </div>
 
-      {/* Reporte por referencia */}
       {porRef.length === 0 ? (
-        <div className="empty-state"><p>Sin registros en este período.</p></div>
+        <div className="empty-state">
+          <p>Sin recepciones de ensamble en este período.</p>
+          <p className="muted">Se basa en la fecha de "Entrega ensamble" de los archivos importados.</p>
+        </div>
       ) : (
         <div className="table-wrap">
           <table className="data-table">
             <thead>
-              <tr><th>Foto</th><th>Referencia</th><th>Unidades</th></tr>
+              <tr><th>Foto</th><th>Referencia</th><th>Taller(es)</th><th>Unidades</th></tr>
             </thead>
             <tbody>
               {porRef.map((r) => {
@@ -120,6 +116,7 @@ export default function EnsambleView({ entries, refIds, refMap, onAdd, onDelete,
                       ) : <span className="thumb empty">—</span>}
                     </td>
                     <td className="strong">{r.referencia}</td>
+                    <td>{[...r.talleres].join(', ') || '—'}</td>
                     <td className="num strong">{r.unidades}</td>
                   </tr>
                 )
@@ -129,22 +126,20 @@ export default function EnsambleView({ entries, refIds, refMap, onAdd, onDelete,
         </div>
       )}
 
-      {/* Detalle de movimientos del período */}
       {enRango.length > 0 && (
         <>
-          <h2 className="section-title">Registros del período</h2>
+          <h2 className="section-title">Recepciones del período</h2>
           <div className="table-wrap">
             <table className="data-table">
-              <thead><tr><th>Fecha</th><th>Referencia</th><th>Unidades</th><th></th></tr></thead>
+              <thead><tr><th>Recibido</th><th>Fase</th><th>Referencia</th><th>Taller</th><th>Unidades</th></tr></thead>
               <tbody>
                 {[...enRango].sort((a, b) => (parseDateLoose(b.fecha) || 0) - (parseDateLoose(a.fecha) || 0)).map((e) => (
                   <tr key={e.id}>
                     <td>{formatDate(e.fecha)}</td>
+                    <td><span className={'origen-chip o-' + e.origen}>{ORIGEN_ABBR[e.origen] || e.origen}</span></td>
                     <td className="strong">{e.referencia}</td>
+                    <td>{e.taller}</td>
                     <td className="num">{e.cantidad}</td>
-                    <td className="muted">
-                      <button className="link-btn danger" onClick={() => onDelete(e.id)}>Eliminar</button>
-                    </td>
                   </tr>
                 ))}
               </tbody>

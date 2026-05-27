@@ -20,25 +20,6 @@ export async function dbLoadRefs() {
   return list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
 }
 
-export async function dbLoadEnsamble() {
-  try {
-    return await loadTable('dev_ensamble')
-  } catch (e) {
-    console.warn('dev_ensamble no disponible (¿falta crear la tabla?):', e.message || e)
-    return []
-  }
-}
-
-export async function dbInsertEnsamble(rec) {
-  const { error } = await supabase.from('dev_ensamble').insert({ id: rec.id, data: rec })
-  if (error) throw error
-}
-
-export async function dbDeleteEnsamble(id) {
-  const { error } = await supabase.from('dev_ensamble').delete().eq('id', id)
-  if (error) throw error
-}
-
 export async function dbLoadSettings() {
   const { data, error } = await supabase
     .from('dev_settings')

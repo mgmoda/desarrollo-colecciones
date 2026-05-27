@@ -3657,6 +3657,46 @@ img.ship-ref-photo {
 .ens-total { margin-left: auto; font-family: 'Fraunces', serif; font-size: 26px; font-weight: 600; }
 .ens-total span { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 400; color: var(--muted); }
 
+.ens-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+@media (max-width: 860px) { .ens-cols { grid-template-columns: 1fr; } }
+.ens-card {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.ens-card-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600;
+  margin-bottom: 12px;
+}
+.ens-card-head span { font-family: 'Inter', sans-serif; font-size: 12px; color: var(--muted); font-weight: 500; }
+.ens-card-head .link-btn { font-size: 12px; }
+
+.ens-ranking { display: flex; flex-direction: column; gap: 8px; }
+.ens-rank {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left;
+  background: transparent; border: 1px solid transparent;
+  border-radius: var(--radius-sm); padding: 7px 8px;
+  cursor: pointer;
+}
+.ens-rank:hover { background: #faf8f3; }
+.ens-rank.active { background: #f0f4f8; border-color: #cfe0ee; }
+.ens-rank-pos {
+  width: 20px; height: 20px; flex: none;
+  border-radius: 50%; background: #ece9e1; color: var(--ink-soft);
+  font-size: 11px; font-weight: 700; display: grid; place-items: center;
+}
+.ens-rank.top .ens-rank-pos { background: #1f7a44; color: #fff; }
+.ens-rank-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ens-rank-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ens-rank-bar { height: 8px; background: #ece9e1; border-radius: 999px; overflow: hidden; }
+.ens-rank-fill { display: block; height: 100%; background: #2e6fb0; border-radius: 999px; }
+.ens-rank.top .ens-rank-fill { background: #1f7a44; }
+.ens-rank-num { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; min-width: 40px; text-align: right; }
+
 /* ---------- Pendientes / alertas ---------- */
 .pend-dot { color: #b23121; margin-right: 5px; font-size: 12px; }
 .pend-banner {

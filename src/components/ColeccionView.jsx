@@ -84,13 +84,16 @@ export default function ColeccionView({ refs, marcas, onOpenRef, onViewImage }) 
               <div className="col-thumbs">
                 {f.items.map((r) => (
                   <button key={r.id} className="col-thumb"
-                    title={r.referencia}
+                    title={`${r.referencia} · clic para ver la ficha`}
                     onClick={() => onOpenRef && onOpenRef(r)}>
-                    {r.image ? (
-                      <img src={r.image} alt={r.referencia} onClick={(e) => { e.stopPropagation(); onViewImage(r.image) }} />
-                    ) : (
-                      <span className="col-thumb-ph">{r.referencia.slice(0, 8)}</span>
-                    )}
+                    <span className="col-thumb-img">
+                      {r.image ? (
+                        <img src={r.image} alt={r.referencia} />
+                      ) : (
+                        <span className="col-thumb-ph">Sin foto</span>
+                      )}
+                    </span>
+                    <span className="col-thumb-ref">{r.referencia}</span>
                   </button>
                 ))}
               </div>

@@ -76,16 +76,26 @@ export default function App() {
       .then(([o, r, s]) => {
         if (cancelled) return
         setOrders(o)
-        setRefs(r)
+        // Migración silenciosa: corregir "Maricet" → "Mariset" en refs.
+        const refsFixed = r.map((rr) => (rr.marca === 'Maricet' ? { ...rr, marca: 'Mariset' } : rr))
+        setRefs(refsFixed)
+        r.forEach((rr) => { if (rr.marca === 'Maricet') dbUpsertRef({ ...rr, marca: 'Mariset' }).catch((e) => console.error(e)) })
+
         const st = s || {}
-        setSettings({
+        const rawMarcas = st.marcas && st.marcas.length ? st.marcas : DEFAULT_MARCAS
+        const marcasFixed = rawMarcas.map((m) => (m === 'Maricet' ? 'Mariset' : m))
+        const next = {
           ...st,
           telas: normalizeTelas(st.telas && st.telas.length ? st.telas : DEFAULT_TELAS),
           colors: st.colors && st.colors.length ? st.colors : DEFAULT_COLORS,
           proveedores: st.proveedores || [],
           decorados: st.decorados && st.decorados.length ? st.decorados : ['Flor'],
-          marcas: st.marcas && st.marcas.length ? st.marcas : DEFAULT_MARCAS,
-        })
+          marcas: marcasFixed,
+        }
+        setSettings(next)
+        if (JSON.stringify(rawMarcas) !== JSON.stringify(marcasFixed)) {
+          dbSaveSettings(next).catch((e) => console.error(e))
+        }
         setLoaded(true)
       })
       .catch((e) => { console.error('Cargar datos:', e); if (!cancelled) setLoaded(true) })

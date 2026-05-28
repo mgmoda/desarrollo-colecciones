@@ -49,7 +49,7 @@ export const DEFAULT_TIPOS = [
   'Blusa', 'Vestido', 'Pantalón', 'Conjunto', 'Falda', 'Short', 'Chaqueta', 'Enterizo',
 ]
 
-export const DEFAULT_MARCAS = ['Maricet', 'Casania']
+export const DEFAULT_MARCAS = ['Mariset', 'Casania']
 
 export const DEFAULT_TELAS = [
   'Crochet', 'Lino', 'Algodón', 'Punto', 'Chalís', 'Seda', 'Jean', 'Lycra',

@@ -90,9 +90,14 @@ export default function ColeccionView({ refs, marcas, onOpenRef, onViewImage }) 
                   const label = STATE_LABEL[estado]
                   return (
                     <button key={r.id} className="col-thumb"
-                      title={`${r.referencia} · clic para ver la ficha`}
+                      title={`${r.referencia}${r.marca ? ' · ' + r.marca : ''} · clic para ver la ficha`}
                       onClick={() => onOpenRef && onOpenRef(r)}>
                       <span className={'col-state ' + (label ? 's-' + estado : 's-none')}>{label || ' '}</span>
+                      {r.marca && (
+                        <span className={'col-marca m-' + r.marca.toLowerCase()} title={r.marca}>
+                          {r.marca.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                       <span className="col-thumb-img">
                         {r.image ? (
                           <img src={r.image} alt={r.referencia} />

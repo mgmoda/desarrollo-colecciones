@@ -3737,6 +3737,20 @@ img.ship-ref-photo {
 .col-state.s-repeticion { background: #fbe6e3; color: #b23121; }
 .col-state.s-descartada { background: #ece9e1; color: #5a5a5a; }
 .col-state.s-none { background: transparent; color: transparent; border-bottom-color: transparent; }
+
+.col-marca {
+  position: absolute;
+  top: 22px; right: 4px;
+  width: 17px; height: 17px;
+  border-radius: 50%;
+  font-size: 10px; font-weight: 700;
+  display: grid; place-items: center;
+  z-index: 2;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.col-marca.m-mariset { background: #2c5a8c; color: #fff; }
+.col-marca.m-casania { background: #6b3c86; color: #fff; }
+.col-marca:not(.m-mariset):not(.m-casania) { background: var(--ink); color: #fff; }
 .col-thumb:hover { border-color: var(--ink); box-shadow: var(--shadow-sm); }
 .col-thumb-img {
   display: flex; align-items: center; justify-content: center;

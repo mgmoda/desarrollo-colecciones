@@ -146,7 +146,7 @@ export function emptyRef(id) {
     flags: {},
     mediciones: [],
     comentario: '', comentario2: '', comentario3: '',
-    tipo: '', tela: '',
+    tipo: '', marca: '', tela: '',
     tintoreria: '',       // '' | 'no' | 'si'
     estampado: '',        // '' | 'no' | 'sublimacion' | 'reactivos'
     bordado: '',          // '' | 'no' | 'si'

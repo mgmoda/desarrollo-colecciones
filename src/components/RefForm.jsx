@@ -48,6 +48,7 @@ export default function RefForm({
   onAddTela, onEditTela, onDeleteTela, onUpdateTela,
   proveedores = [], onAddProveedor, onEditProveedor, onDeleteProveedor,
   decorados = [], onAddDecorado, onEditDecorado, onDeleteDecorado,
+  marcas = [], onAddMarca, onEditMarca, onDeleteMarca,
   savedColors = [], onAddColor, onEditColor, onDeleteColor,
   onSave, onClose, onDelete,
 }) {
@@ -135,6 +136,19 @@ export default function RefForm({
                 <input className="input" list="tipos" value={form.tipo}
                   onChange={(e) => set('tipo', e.target.value)} placeholder="Blusa, vestido…" />
                 <datalist id="tipos">{DEFAULT_TIPOS.map((t) => <option key={t} value={t} />)}</datalist>
+              </div>
+              <div className="field">
+                <label className="field-label">Marca</label>
+                <ComboBox
+                  value={form.marca}
+                  options={marcas}
+                  onChange={(v) => set('marca', v)}
+                  onCreate={onAddMarca}
+                  onEdit={onEditMarca}
+                  onDelete={onDeleteMarca}
+                  placeholder="Elegir o crear marca…"
+                  entityLabel="marca"
+                />
               </div>
             </div>
             <div className="field-row">

@@ -5,6 +5,7 @@ import ResumenView from './components/ResumenView.jsx'
 import AreaView from './components/AreaView.jsx'
 import CostosView from './components/CostosView.jsx'
 import EnsambleView from './components/EnsambleView.jsx'
+import ColeccionView from './components/ColeccionView.jsx'
 import ImportModal from './components/ImportModal.jsx'
 import RefForm from './components/RefForm.jsx'
 import RefSearch from './components/RefSearch.jsx'
@@ -18,7 +19,7 @@ import {
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas } from './lib/domain.js'
-import { DEFAULT_TELAS, DEFAULT_COLORS } from './lib/constants.js'
+import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS } from './lib/constants.js'
 
 const TABS = [
   { key: 'inicio', label: 'Inicio' },
@@ -29,6 +30,7 @@ const TABS = [
   { key: 'talleres', label: 'En talleres' },
   { key: 'entrega', label: 'Entrega ensamble' },
   { key: 'ensamble', label: 'Ensamble' },
+  { key: 'coleccion', label: 'Colección' },
   { key: 'costos', label: 'Costos' },
 ]
 const AREA_KEYS = ['trazos', 'corte', 'enviar', 'talleres', 'entrega']
@@ -41,7 +43,7 @@ export default function App() {
 
   const [orders, setOrders] = useState([])
   const [refs, setRefs] = useState([])
-  const [settings, setSettings] = useState({ telas: normalizeTelas(DEFAULT_TELAS), colors: DEFAULT_COLORS, proveedores: [], decorados: ['Flor'] })
+  const [settings, setSettings] = useState({ telas: normalizeTelas(DEFAULT_TELAS), colors: DEFAULT_COLORS, proveedores: [], decorados: ['Flor'], marcas: DEFAULT_MARCAS })
 
   const [tab, setTab] = useState(() => {
     const saved = localStorage.getItem(TAB_KEY)
@@ -82,6 +84,7 @@ export default function App() {
           colors: st.colors && st.colors.length ? st.colors : DEFAULT_COLORS,
           proveedores: st.proveedores || [],
           decorados: st.decorados && st.decorados.length ? st.decorados : ['Flor'],
+          marcas: st.marcas && st.marcas.length ? st.marcas : DEFAULT_MARCAS,
         })
         setLoaded(true)
       })
@@ -244,6 +247,26 @@ export default function App() {
     dbSaveSettings(next).catch((e) => console.error(e))
   }
 
+  // Catálogo de marcas (Maricet, Casania, …)
+  function addMarca(name) {
+    const v = (name || '').trim()
+    if (!v || settings.marcas.some((m) => m.toLowerCase() === v.toLowerCase())) return
+    const next = { ...settings, marcas: [...settings.marcas, v] }
+    setSettings(next); dbSaveSettings(next).catch((e) => console.error(e))
+  }
+  function editMarca(oldName, newName) {
+    const v = (newName || '').trim()
+    if (!v) return
+    const next = { ...settings, marcas: settings.marcas.map((m) => (m === oldName ? v : m)) }
+    setSettings(next); dbSaveSettings(next).catch((e) => console.error(e))
+    const affected = refs.filter((r) => r.marca === oldName)
+    affected.forEach((r) => { const u = { ...r, marca: v }; upsertRefState(u); dbUpsertRef(u).catch((e) => console.error(e)) })
+  }
+  function deleteMarca(name) {
+    const next = { ...settings, marcas: settings.marcas.filter((m) => m !== name) }
+    setSettings(next); dbSaveSettings(next).catch((e) => console.error(e))
+  }
+
   function addColor(color) {
     if (!color || !color.name) return
     if (settings.colors.some((c) => c.name.toLowerCase() === color.name.toLowerCase())) return
@@ -337,6 +360,9 @@ export default function App() {
         {tab === 'ensamble' && (
           <EnsambleView orders={orders} refMap={refMap} onViewImage={setLightbox} />
         )}
+        {tab === 'coleccion' && (
+          <ColeccionView refs={refIndex} marcas={settings.marcas} onOpenRef={openEdit} onViewImage={setLightbox} />
+        )}
         {tab === 'costos' && (
           <CostosView refs={refIndex} telasCatalog={settings.telas} onEdit={openEdit} onNew={openNew} onViewImage={setLightbox} />
         )}
@@ -367,6 +393,10 @@ export default function App() {
         onAddDecorado={addDecorado}
         onEditDecorado={editDecorado}
         onDeleteDecorado={deleteDecorado}
+        marcas={settings.marcas}
+        onAddMarca={addMarca}
+        onEditMarca={editMarca}
+        onDeleteMarca={deleteMarca}
         savedColors={settings.colors}
         onAddColor={addColor}
         onEditColor={editColor}

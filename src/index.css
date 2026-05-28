@@ -3716,27 +3716,29 @@ img.ship-ref-photo {
 .col-count.tone-est { background: #e3f3e8; color: #1f7a44; }
 .col-count.tone-neutral { background: #ece9e1; color: var(--ink-soft); }
 
-.col-thumbs { display: flex; flex-wrap: wrap; gap: 8px; }
+.col-thumbs { display: flex; flex-wrap: wrap; gap: 10px; }
 .col-thumb {
-  width: 62px;
+  width: 84px;
   padding: 0; border: 1px solid var(--hairline);
-  border-radius: 7px; overflow: hidden; background: var(--surface);
+  border-radius: 8px; overflow: hidden; background: var(--surface);
   cursor: pointer; display: flex; flex-direction: column;
 }
 .col-thumb:hover { border-color: var(--ink); box-shadow: var(--shadow-sm); }
 .col-thumb-img {
-  display: grid; place-items: center;
-  width: 100%; height: 82px;
-  background: #f4f1ea;
-  padding: 3px;
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 104px;
+  background: #f6f3ec;
+  padding: 4px;
+  box-sizing: border-box;
 }
-.col-thumb-img img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
-.col-thumb-ph { display: grid; place-items: center; width: 100%; height: 100%; font-size: 9px; color: var(--muted); padding: 2px; text-align: center; }
+.col-thumb-img img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; margin: auto; }
+.col-thumb-ph { display: grid; place-items: center; width: 100%; height: 100%; font-size: 10px; color: var(--muted); padding: 4px; text-align: center; }
 .col-thumb-ref {
-  display: block; padding: 3px 4px;
-  font-size: 9.5px; font-weight: 600; color: var(--ink);
+  display: block; padding: 6px 4px;
+  font-size: 10.5px; font-weight: 600; color: var(--ink);
   text-align: center; line-height: 1.1;
   border-top: 1px solid var(--hairline);
+  background: var(--surface);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 

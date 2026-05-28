@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react'
+import { medicionInfo } from '../lib/domain.js'
+
+const STATE_LABEL = { aprobada: 'Aprobada', repeticion: 'Repetición', descartada: 'Descartada' }
 
 // Normalización para comparar tipo (case + acentos).
 function norm(s) {
@@ -82,20 +85,25 @@ export default function ColeccionView({ refs, marcas, onOpenRef, onViewImage }) 
                 <span className={'col-count tone-' + f.tone}>{f.items.length}</span>
               </div>
               <div className="col-thumbs">
-                {f.items.map((r) => (
-                  <button key={r.id} className="col-thumb"
-                    title={`${r.referencia} · clic para ver la ficha`}
-                    onClick={() => onOpenRef && onOpenRef(r)}>
-                    <span className="col-thumb-img">
-                      {r.image ? (
-                        <img src={r.image} alt={r.referencia} />
-                      ) : (
-                        <span className="col-thumb-ph">Sin foto</span>
-                      )}
-                    </span>
-                    <span className="col-thumb-ref">{r.referencia}</span>
-                  </button>
-                ))}
+                {f.items.map((r) => {
+                  const estado = medicionInfo(r).estado
+                  const label = STATE_LABEL[estado]
+                  return (
+                    <button key={r.id} className="col-thumb"
+                      title={`${r.referencia} · clic para ver la ficha`}
+                      onClick={() => onOpenRef && onOpenRef(r)}>
+                      {label && <span className={'col-state s-' + estado}>{label}</span>}
+                      <span className="col-thumb-img">
+                        {r.image ? (
+                          <img src={r.image} alt={r.referencia} />
+                        ) : (
+                          <span className="col-thumb-ph">Sin foto</span>
+                        )}
+                      </span>
+                      <span className="col-thumb-ref">{r.referencia}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           ))}

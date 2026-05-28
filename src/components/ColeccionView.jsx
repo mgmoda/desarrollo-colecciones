@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { medicionInfo } from '../lib/domain.js'
+import { formatPrice } from '../lib/constants.js'
 
 const STATE_LABEL = { aprobada: 'Aprobada', repeticion: 'Repetición', descartada: 'Descartada' }
 
@@ -34,6 +35,7 @@ const CATS = [
 
 export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, onNew, onViewImage }) {
   const [marca, setMarca] = useState('')
+  const [ocultarPrecios, setOcultarPrecios] = useState(false)
 
   // Filtrar por marca si está activa.
   const visibles = useMemo(() => {
@@ -65,6 +67,10 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
           <p className="view-sub">{totalVisibles} referencias{marca ? ` · ${marca}` : ''}</p>
         </div>
         <div className="view-actions">
+          <label className="check">
+            <input type="checkbox" checked={ocultarPrecios}
+              onChange={(e) => setOcultarPrecios(e.target.checked)} /> Ocultar precios
+          </label>
           <div className="opt-group">
             <button type="button" className={'opt-btn' + (!marca ? ' on' : '')} onClick={() => setMarca('')}>Todas</button>
             {marcas.map((m) => (
@@ -115,6 +121,9 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                         )}
                       </span>
                       <span className="col-thumb-ref">{r.referencia}</span>
+                      {!ocultarPrecios && Number(r.costo) > 0 && (
+                        <span className="col-thumb-price">{formatPrice(r.costo)}</span>
+                      )}
                     </button>
                   )
                 })}

@@ -32,7 +32,7 @@ const CATS = [
   { key: 'chaquetas', label: 'Chaquetas', tone: 'neutral', match: (r) => esTipo(r, 'chaqueta') },
 ]
 
-export default function ColeccionView({ refs, marcas, onOpenRef, onViewImage }) {
+export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, onNew, onViewImage }) {
   const [marca, setMarca] = useState('')
 
   // Filtrar por marca si está activa.
@@ -64,11 +64,16 @@ export default function ColeccionView({ refs, marcas, onOpenRef, onViewImage }) 
           <h1 className="view-title">Colección</h1>
           <p className="view-sub">{totalVisibles} referencias{marca ? ` · ${marca}` : ''}</p>
         </div>
-        <div className="opt-group">
-          <button type="button" className={'opt-btn' + (!marca ? ' on' : '')} onClick={() => setMarca('')}>Todas</button>
-          {marcas.map((m) => (
-            <button key={m} type="button" className={'opt-btn' + (marca === m ? ' on' : '')} onClick={() => setMarca(m)}>{m}</button>
-          ))}
+        <div className="view-actions">
+          <div className="opt-group">
+            <button type="button" className={'opt-btn' + (!marca ? ' on' : '')} onClick={() => setMarca('')}>Todas</button>
+            {marcas.map((m) => (
+              <button key={m} type="button" className={'opt-btn' + (marca === m ? ' on' : '')} onClick={() => setMarca(m)}>{m}</button>
+            ))}
+          </div>
+          {onNew && (
+            <button className="btn btn-primary" onClick={onNew}>+ Nueva referencia</button>
+          )}
         </div>
       </div>
 
@@ -88,11 +93,15 @@ export default function ColeccionView({ refs, marcas, onOpenRef, onViewImage }) 
                 {f.items.map((r) => {
                   const estado = medicionInfo(r).estado
                   const label = STATE_LABEL[estado]
+                  const hasOrders = (tracksByRef && tracksByRef.get(r.id) && tracksByRef.get(r.id).length > 0)
+                  const isDraft = !label && !hasOrders
+                  const stripText = label || (isDraft ? 'Borrador' : ' ')
+                  const stripCls = label ? 's-' + estado : isDraft ? 's-draft' : 's-none'
                   return (
                     <button key={r.id} className="col-thumb"
-                      title={`${r.referencia}${r.marca ? ' · ' + r.marca : ''} · clic para ver la ficha`}
+                      title={`${r.referencia}${r.marca ? ' · ' + r.marca : ''}${isDraft ? ' · borrador (sin orden en Excel)' : ''} · clic para ver la ficha`}
                       onClick={() => onOpenRef && onOpenRef(r)}>
-                      <span className={'col-state ' + (label ? 's-' + estado : 's-none')}>{label || ' '}</span>
+                      <span className={'col-state ' + stripCls}>{stripText}</span>
                       {r.marca && (
                         <span className={'col-marca m-' + r.marca.toLowerCase()} title={r.marca}>
                           {r.marca.charAt(0).toUpperCase()}

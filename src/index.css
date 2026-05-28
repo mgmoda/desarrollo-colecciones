@@ -3736,6 +3736,7 @@ img.ship-ref-photo {
 .col-state.s-aprobada  { background: #e3f3e8; color: #1f7a44; }
 .col-state.s-repeticion { background: #fbe6e3; color: #b23121; }
 .col-state.s-descartada { background: #ece9e1; color: #5a5a5a; }
+.col-state.s-draft { background: #fbf0db; color: #9a6a1e; }
 .col-state.s-none { background: transparent; color: transparent; border-bottom-color: transparent; }
 
 .col-marca {

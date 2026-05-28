@@ -371,7 +371,8 @@ export default function App() {
           <EnsambleView orders={orders} refMap={refMap} onViewImage={setLightbox} />
         )}
         {tab === 'coleccion' && (
-          <ColeccionView refs={refIndex} marcas={settings.marcas} onOpenRef={openEdit} onViewImage={setLightbox} />
+          <ColeccionView refs={refIndex} marcas={settings.marcas} tracksByRef={tracksByRef}
+            onOpenRef={openEdit} onNew={openNew} onViewImage={setLightbox} />
         )}
         {tab === 'costos' && (
           <CostosView refs={refIndex} telasCatalog={settings.telas} onEdit={openEdit} onNew={openNew} onViewImage={setLightbox} />

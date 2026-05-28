@@ -3725,16 +3725,18 @@ img.ship-ref-photo {
   position: relative;
 }
 .col-state {
-  position: absolute; top: 4px; left: 4px;
-  padding: 1px 6px; border-radius: 999px;
-  font-size: 9px; font-weight: 700; line-height: 1.3;
+  display: block;
+  padding: 3px 4px;
+  font-size: 9.5px; font-weight: 700; line-height: 1.2;
+  text-align: center;
   letter-spacing: 0.02em;
-  z-index: 2;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  border-bottom: 1px solid var(--hairline);
+  min-height: 16px;
 }
-.col-state.s-aprobada  { background: #1f7a44; color: #fff; }
-.col-state.s-repeticion { background: #b23121; color: #fff; }
-.col-state.s-descartada { background: #6b6b6b; color: #fff; }
+.col-state.s-aprobada  { background: #e3f3e8; color: #1f7a44; }
+.col-state.s-repeticion { background: #fbe6e3; color: #b23121; }
+.col-state.s-descartada { background: #ece9e1; color: #5a5a5a; }
+.col-state.s-none { background: transparent; color: transparent; border-bottom-color: transparent; }
 .col-thumb:hover { border-color: var(--ink); box-shadow: var(--shadow-sm); }
 .col-thumb-img {
   display: flex; align-items: center; justify-content: center;

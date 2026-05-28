@@ -92,7 +92,7 @@ export default function ColeccionView({ refs, marcas, onOpenRef, onViewImage }) 
                     <button key={r.id} className="col-thumb"
                       title={`${r.referencia} · clic para ver la ficha`}
                       onClick={() => onOpenRef && onOpenRef(r)}>
-                      {label && <span className={'col-state s-' + estado}>{label}</span>}
+                      <span className={'col-state ' + (label ? 's-' + estado : 's-none')}>{label || ' '}</span>
                       <span className="col-thumb-img">
                         {r.image ? (
                           <img src={r.image} alt={r.referencia} />

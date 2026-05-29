@@ -77,11 +77,23 @@ export default function App() {
         if (cancelled) return
         setOrders(o)
         const conFoto = r.filter((x) => x && x.image).length
-        console.log('[load] refs:', r.length, '· con foto:', conFoto)
-        // Migración silenciosa: corregir "Maricet" → "Mariset" en refs.
-        const refsFixed = r.map((rr) => (rr.marca === 'Maricet' ? { ...rr, marca: 'Mariset' } : rr))
+        const conStub = r.filter((x) => x && x._stub).length
+        console.log('[load] refs:', r.length, '· con foto:', conFoto, '· _stub legados:', conStub)
+        // Migración silenciosa: corregir "Maricet" → "Mariset" Y eliminar
+        // cualquier campo "_stub" que se haya persistido por error.
+        const refsFixed = r.map((rr) => {
+          const { _stub: _ignore, ...clean } = rr
+          if (clean.marca === 'Maricet') clean.marca = 'Mariset'
+          return clean
+        })
         setRefs(refsFixed)
-        r.forEach((rr) => { if (rr.marca === 'Maricet') dbUpsertRef({ ...rr, marca: 'Mariset' }).catch((e) => console.error(e)) })
+        r.forEach((rr) => {
+          if (rr._stub || rr.marca === 'Maricet') {
+            const { _stub: _ignore, ...clean } = rr
+            if (clean.marca === 'Maricet') clean.marca = 'Mariset'
+            dbUpsertRef(clean).catch((e) => console.error(e))
+          }
+        })
 
         const st = s || {}
         const rawMarcas = st.marcas && st.marcas.length ? st.marcas : DEFAULT_MARCAS
@@ -163,7 +175,8 @@ export default function App() {
     dbUpsertRef(updated).catch((e) => console.error(e))
   }
 
-  async function handleSave(ref) {
+  async function handleSave(rawRef) {
+    const { _stub: _ignore, ...ref } = rawRef
     const imgKB = ref.image ? Math.round(ref.image.length / 1024) : 0
     console.log('[handleSave] →', ref.referencia, '· imagen', imgKB + ' KB')
     upsertRefState(ref)

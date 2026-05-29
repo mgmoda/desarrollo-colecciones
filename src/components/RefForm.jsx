@@ -104,7 +104,9 @@ export default function RefForm({
     const telas = (form.telas || []).filter((t) => t && t.nombre)
       .map((t) => ({ nombre: t.nombre, disponible: !!t.disponible, metros: t.metros || '' }))
     const pendienteFecha = form.pendiente ? (form.pendienteFecha || todayStr()) : ''
-    onSave({ ...form, colores, telas, tela: telas[0] ? telas[0].nombre : '', pendienteFecha, id: ref, referencia: ref, updatedAt: Date.now() })
+    // Importante: nunca persistir el flag interno _stub.
+    const { _stub: _ignore, ...rest } = form
+    onSave({ ...rest, colores, telas, tela: telas[0] ? telas[0].nombre : '', pendienteFecha, id: ref, referencia: ref, updatedAt: Date.now() })
   }
 
   const partnerOptions = refIds.filter((id) => id !== (form.referencia || '').toUpperCase())

@@ -3778,6 +3778,16 @@ img.ship-ref-photo {
   background: var(--surface);
 }
 
+/* Pareja de conjunto (blusa arriba + pantalón abajo) */
+.col-pair {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 5px;
+  border: 1px dashed #c8b58a;
+  border-radius: 10px;
+  background: #fbf6e9;
+}
+.col-pair .col-thumb { border-radius: 6px; }
+
 /* ---------- Pendientes / alertas ---------- */
 .pend-dot { color: #b23121; margin-right: 5px; font-size: 12px; }
 .pend-banner {

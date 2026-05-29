@@ -16,6 +16,32 @@ function esTipo(ref, key) {
 function esUni(ref) { return ref.estampado === 'no' }
 function esEst(ref) { return ref.estampado === 'sublimacion' || ref.estampado === 'reactivos' }
 
+// Detecta si una referencia es "de arriba" (blusa/camisa/top/chaqueta) o
+// "de abajo" (pantalón/short/falda) para ordenar la pareja en el conjunto.
+function isTop(r) { return ['blusa', 'camisa', 'top', 'chaqueta'].some((k) => esTipo(r, k)) }
+function isBottom(r) { return ['pantalon', 'short', 'falda'].some((k) => esTipo(r, k)) }
+
+// Empareja referencias enlazadas por conjunto/conjuntoRef en {top, bottom}.
+function buildConjuntoPairs(refs) {
+  const byId = new Map(refs.map((r) => [r.id, r]))
+  const used = new Set()
+  const pairs = []
+  refs.forEach((r) => {
+    if (used.has(r.id)) return
+    if (!r.conjunto || !r.conjuntoRef) return
+    const partner = byId.get(r.conjuntoRef)
+    if (!partner || used.has(partner.id)) return
+    let top, bottom
+    if (isTop(r)) { top = r; bottom = partner }
+    else if (isBottom(r)) { top = partner; bottom = r }
+    else if (isTop(partner)) { top = partner; bottom = r }
+    else { top = r; bottom = partner }
+    pairs.push({ top, bottom })
+    used.add(r.id); used.add(partner.id)
+  })
+  return pairs
+}
+
 // Categorías del dashboard, en orden.
 const CATS = [
   { key: 'vestidos-uni', label: 'Vestidos unicolor', tone: 'uni', match: (r) => esTipo(r, 'vestido') && esUni(r) },
@@ -28,7 +54,6 @@ const CATS = [
   { key: 'shorts-est', label: 'Shorts estampados', tone: 'est', match: (r) => esTipo(r, 'short') && esEst(r) },
   { key: 'faldas-uni', label: 'Faldas unicolor', tone: 'uni', match: (r) => esTipo(r, 'falda') && esUni(r) },
   { key: 'faldas-est', label: 'Faldas estampadas', tone: 'est', match: (r) => esTipo(r, 'falda') && esEst(r) },
-  { key: 'conjuntos', label: 'Conjuntos', tone: 'neutral', match: (r) => esTipo(r, 'conjunto') },
   { key: 'enterizos', label: 'Enterizos', tone: 'neutral', match: (r) => esTipo(r, 'enterizo') },
   { key: 'chaquetas', label: 'Chaquetas', tone: 'neutral', match: (r) => esTipo(r, 'chaqueta') },
 ]
@@ -51,6 +76,12 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
       items.forEach((r) => usadas.add(r.id))
       return { ...c, items }
     })
+    // Conjuntos = pares enlazados (blusa arriba + pantalón abajo, etc.).
+    const pairs = buildConjuntoPairs(visibles)
+    pairs.forEach((p) => { usadas.add(p.top.id); usadas.add(p.bottom.id) })
+    if (pairs.length) {
+      out.push({ key: 'conjuntos-pairs', label: 'Conjuntos', tone: 'neutral', items: pairs, pairsMode: true })
+    }
     // Otros: refs visibles que no encajaron en ninguna categoría conocida.
     const otros = visibles.filter((r) => !usadas.has(r.id))
     if (otros.length) out.push({ key: 'otros', label: 'Otros', tone: 'neutral', items: otros })
@@ -58,6 +89,39 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
   }, [visibles])
 
   const totalVisibles = visibles.length
+
+  // Renderiza una miniatura individual (reutilizada en categorías y pares).
+  function renderTile(r) {
+    const estado = medicionInfo(r).estado
+    const label = STATE_LABEL[estado]
+    const hasOrders = (tracksByRef && tracksByRef.get(r.id) && tracksByRef.get(r.id).length > 0)
+    const isDraft = !label && !hasOrders
+    const stripText = label || (isDraft ? 'Borrador' : ' ')
+    const stripCls = label ? 's-' + estado : isDraft ? 's-draft' : 's-none'
+    return (
+      <button key={r.id} className="col-thumb"
+        title={`${r.referencia}${r.marca ? ' · ' + r.marca : ''}${isDraft ? ' · borrador (sin orden en Excel)' : ''} · clic para ver la ficha`}
+        onClick={() => onOpenRef && onOpenRef(r)}>
+        <span className={'col-state ' + stripCls}>{stripText}</span>
+        {r.marca && (
+          <span className={'col-marca m-' + r.marca.toLowerCase()} title={r.marca}>
+            {r.marca.charAt(0).toUpperCase()}
+          </span>
+        )}
+        <span className="col-thumb-img">
+          {r.image ? (
+            <img src={r.image} alt={r.referencia} />
+          ) : (
+            <span className="col-thumb-ph">Sin foto</span>
+          )}
+        </span>
+        <span className="col-thumb-ref">{r.referencia}</span>
+        {!ocultarPrecios && Number(r.costo) > 0 && (
+          <span className="col-thumb-price">{formatPrice(r.costo)}</span>
+        )}
+      </button>
+    )
+  }
 
   return (
     <div className="view">
@@ -96,37 +160,14 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                 <span className={'col-count tone-' + f.tone}>{f.items.length}</span>
               </div>
               <div className="col-thumbs">
-                {f.items.map((r) => {
-                  const estado = medicionInfo(r).estado
-                  const label = STATE_LABEL[estado]
-                  const hasOrders = (tracksByRef && tracksByRef.get(r.id) && tracksByRef.get(r.id).length > 0)
-                  const isDraft = !label && !hasOrders
-                  const stripText = label || (isDraft ? 'Borrador' : ' ')
-                  const stripCls = label ? 's-' + estado : isDraft ? 's-draft' : 's-none'
-                  return (
-                    <button key={r.id} className="col-thumb"
-                      title={`${r.referencia}${r.marca ? ' · ' + r.marca : ''}${isDraft ? ' · borrador (sin orden en Excel)' : ''} · clic para ver la ficha`}
-                      onClick={() => onOpenRef && onOpenRef(r)}>
-                      <span className={'col-state ' + stripCls}>{stripText}</span>
-                      {r.marca && (
-                        <span className={'col-marca m-' + r.marca.toLowerCase()} title={r.marca}>
-                          {r.marca.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                      <span className="col-thumb-img">
-                        {r.image ? (
-                          <img src={r.image} alt={r.referencia} />
-                        ) : (
-                          <span className="col-thumb-ph">Sin foto</span>
-                        )}
-                      </span>
-                      <span className="col-thumb-ref">{r.referencia}</span>
-                      {!ocultarPrecios && Number(r.costo) > 0 && (
-                        <span className="col-thumb-price">{formatPrice(r.costo)}</span>
-                      )}
-                    </button>
-                  )
-                })}
+                {f.pairsMode
+                  ? f.items.map((p) => (
+                    <div className="col-pair" key={p.top.id + '__' + p.bottom.id}>
+                      {renderTile(p.top)}
+                      {renderTile(p.bottom)}
+                    </div>
+                  ))
+                  : f.items.map((r) => renderTile(r))}
               </div>
             </div>
           ))}

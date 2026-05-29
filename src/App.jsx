@@ -76,9 +76,6 @@ export default function App() {
       .then(([o, r, s]) => {
         if (cancelled) return
         setOrders(o)
-        const conFoto = r.filter((x) => x && x.image).length
-        const conStub = r.filter((x) => x && x._stub).length
-        console.log('[load] refs:', r.length, '· con foto:', conFoto, '· _stub legados:', conStub)
         // Migración silenciosa: corregir "Maricet" → "Mariset" Y eliminar
         // cualquier campo "_stub" que se haya persistido por error.
         const refsFixed = r.map((rr) => {
@@ -177,12 +174,9 @@ export default function App() {
 
   async function handleSave(rawRef) {
     const { _stub: _ignore, ...ref } = rawRef
-    const imgKB = ref.image ? Math.round(ref.image.length / 1024) : 0
-    console.log('[handleSave] →', ref.referencia, '· imagen', imgKB + ' KB')
     upsertRefState(ref)
     try {
       await dbUpsertRef(ref)
-      console.log('[handleSave] OK', ref.referencia)
     } catch (e) {
       console.error('Error guardando referencia:', e)
       const msg = (e && (e.message || e.error_description || e.error)) || 'error desconocido'

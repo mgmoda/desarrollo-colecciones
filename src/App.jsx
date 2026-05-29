@@ -161,9 +161,19 @@ export default function App() {
     dbUpsertRef(updated).catch((e) => console.error(e))
   }
 
-  function handleSave(ref) {
+  async function handleSave(ref) {
     upsertRefState(ref)
-    dbUpsertRef(ref).catch((e) => console.error(e))
+    try {
+      await dbUpsertRef(ref)
+    } catch (e) {
+      console.error('Error guardando referencia:', e)
+      const msg = (e && (e.message || e.error_description || e.error)) || 'error desconocido'
+      alert(
+        'No se pudo guardar la referencia.\n\n' + msg +
+        '\n\nSi la foto es muy pesada, prueba con una más pequeña. La ventana queda abierta para reintentar.',
+      )
+      return // no cerrar: dejar reintentar
+    }
 
     // Espejo del conjunto: deja ambas referencias ligadas entre sí.
     const prevPartner = editing && editing.conjuntoRef

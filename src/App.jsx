@@ -172,29 +172,33 @@ export default function App() {
     dbUpsertRef(updated).catch((e) => console.error(e))
   }
 
-  async function handleSave(rawRef) {
+  function handleSave(rawRef) {
     const { _stub: _ignore, ...ref } = rawRef
-    upsertRefState(ref)
-    try {
-      await dbUpsertRef(ref)
-    } catch (e) {
-      console.error('Error guardando referencia:', e)
-      const msg = (e && (e.message || e.error_description || e.error)) || 'error desconocido'
-      alert(
-        'No se pudo guardar la referencia.\n\n' + msg +
-        '\n\nSi la foto es muy pesada, prueba con una más pequeña. La ventana queda abierta para reintentar.',
-      )
-      return // no cerrar: dejar reintentar
-    }
 
-    // Espejo del conjunto: deja ambas referencias ligadas entre sí.
+    // Actualización OPTIMISTA: la UI se actualiza al instante; el guardado
+    // remoto va en segundo plano. Si falla, mostramos alerta y el dato
+    // queda en estado local hasta el próximo intento o recarga.
+    upsertRefState(ref)
+
+    // Espejo del conjunto (también optimista, en paralelo).
     const prevPartner = editing && editing.conjuntoRef
     const newPartner = ref.conjunto && ref.conjuntoRef ? ref.conjuntoRef : ''
     if (prevPartner && prevPartner !== newPartner) linkPartner(prevPartner, '', false)
     if (newPartner) linkPartner(newPartner, ref.id, true)
 
+    // Cerrar la ventana de inmediato.
     setFormOpen(false)
     setEditing(null)
+
+    // Persistir en Supabase sin bloquear la UI.
+    dbUpsertRef(ref).catch((e) => {
+      console.error('Error guardando referencia:', e)
+      const msg = (e && (e.message || e.error_description || e.error)) || 'error desconocido'
+      alert(
+        'No se pudo guardar la referencia "' + (ref.referencia || '') + '" en la nube:\n\n' + msg +
+        '\n\nReintenta abriendo la ficha y guardando de nuevo.',
+      )
+    })
   }
 
   function addTela(name) {

@@ -1,5 +1,5 @@
-const MAX_DIMENSION = 1400
-const JPEG_QUALITY = 0.85
+const MAX_DIMENSION = 1100
+const JPEG_QUALITY = 0.8
 
 function fileToDataURL(file) {
   return new Promise((resolve, reject) => {

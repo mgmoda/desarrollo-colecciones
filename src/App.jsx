@@ -76,6 +76,8 @@ export default function App() {
       .then(([o, r, s]) => {
         if (cancelled) return
         setOrders(o)
+        const conFoto = r.filter((x) => x && x.image).length
+        console.log('[load] refs:', r.length, '· con foto:', conFoto)
         // Migración silenciosa: corregir "Maricet" → "Mariset" en refs.
         const refsFixed = r.map((rr) => (rr.marca === 'Maricet' ? { ...rr, marca: 'Mariset' } : rr))
         setRefs(refsFixed)
@@ -162,9 +164,12 @@ export default function App() {
   }
 
   async function handleSave(ref) {
+    const imgKB = ref.image ? Math.round(ref.image.length / 1024) : 0
+    console.log('[handleSave] →', ref.referencia, '· imagen', imgKB + ' KB')
     upsertRefState(ref)
     try {
       await dbUpsertRef(ref)
+      console.log('[handleSave] OK', ref.referencia)
     } catch (e) {
       console.error('Error guardando referencia:', e)
       const msg = (e && (e.message || e.error_description || e.error)) || 'error desconocido'

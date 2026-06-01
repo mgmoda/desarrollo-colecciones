@@ -90,11 +90,11 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
 
   const totalVisibles = visibles.length
 
-  // KPIs por marca: referencias, valor total, aprobadas, borradores.
+  // KPIs por marca: referencias, aprobadas, repetición, borradores.
   const kpis = useMemo(() => {
     const allMarcas = [...marcas, 'Sin marca', 'Total']
     const k = {}
-    allMarcas.forEach((m) => { k[m] = { refs: 0, valor: 0, aprobadas: 0, repeticion: 0, borradores: 0 } })
+    allMarcas.forEach((m) => { k[m] = { refs: 0, aprobadas: 0, repeticion: 0, borradores: 0 } })
     refs.forEach((r) => {
       const m = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
       const buckets = [m, 'Total']
@@ -102,7 +102,6 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
       const hasOrders = tracksByRef && tracksByRef.get(r.id) && tracksByRef.get(r.id).length > 0
       buckets.forEach((t) => {
         k[t].refs++
-        k[t].valor += Number(r.costo) || 0
         if (estado === 'aprobada') k[t].aprobadas++
         if (estado === 'repeticion') k[t].repeticion++
         if (!hasOrders) k[t].borradores++
@@ -218,7 +217,6 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                 <span className="kpi-marca-num">{x.refs}</span>
                 <span className="kpi-marca-num-sub">referencias</span>
               </div>
-              <div className="kpi-marca-valor">{formatPrice(x.valor) || '$0'}</div>
               <div className="kpi-marca-chips">
                 <span className="kpi-chip ok">{x.aprobadas} aprobadas</span>
                 <span className="kpi-chip rep">{x.repeticion} repetición</span>
@@ -278,13 +276,6 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                   <td key={m} className="num strong">{resumen.totales[m] || 0}</td>
                 ))}
                 <td className="num strong">{resumen.totales.total}</td>
-              </tr>
-              <tr className="col-summary-valor">
-                <td>Valor total ($)</td>
-                {resumen.allMarcas.map((m) => (
-                  <td key={m} className="num strong">{formatPrice(kpis.k[m] ? kpis.k[m].valor : 0) || '—'}</td>
-                ))}
-                <td className="num strong">{formatPrice(kpis.k.Total.valor) || '—'}</td>
               </tr>
             </tbody>
           </table>

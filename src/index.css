@@ -3792,15 +3792,15 @@ img.ship-ref-photo {
 .col-summary { margin-bottom: 18px; }
 .col-summary-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .col-summary-title { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600; }
+.col-summary-table { table-layout: fixed; width: 100%; }
 .col-summary-table thead th { text-transform: none; font-size: 11.5px; letter-spacing: 0; }
+.col-summary-table thead th:first-child { width: 36%; text-align: left; }
+.col-summary-table thead th:not(:first-child) { width: 16%; text-align: right; }
+.col-summary-table tbody td { font-variant-numeric: tabular-nums; }
+.col-summary-table tbody td:not(:first-child) { text-align: right; }
 .col-summary-table tbody tr.col-summary-borr td { background: #fdf0ec; font-weight: 600; color: #9a6a1e; }
 .col-summary-table tbody tr.col-summary-total td { background: #efece5; font-weight: 700; font-family: 'Fraunces', serif; font-size: 14px; }
-.col-summary-table td, .col-summary-table th { padding: 6px 10px; }
-.col-summary-table tbody tr.col-summary-valor td {
-  background: #f4ede0; font-weight: 700;
-  font-family: 'Fraunces', serif; font-size: 13.5px;
-  color: #1f7a44;
-}
+.col-summary-table td, .col-summary-table th { padding: 7px 12px; }
 
 /* KPI por marca */
 .kpi-marcas {
@@ -3820,7 +3820,6 @@ img.ship-ref-photo {
 .kpi-marca.is-total { background: #1c1c22; color: #fff; border-color: #1c1c22; }
 .kpi-marca.is-total .kpi-marca-name { color: rgba(255,255,255,0.72); }
 .kpi-marca.is-total .kpi-marca-num-sub { color: rgba(255,255,255,0.6); }
-.kpi-marca.is-total .kpi-marca-valor { color: #e3f3e8; }
 .kpi-marca-name {
   font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em;
   text-transform: uppercase; color: var(--muted);
@@ -3828,9 +3827,6 @@ img.ship-ref-photo {
 .kpi-marca-main { display: flex; align-items: baseline; gap: 8px; }
 .kpi-marca-num { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 600; line-height: 1; }
 .kpi-marca-num-sub { font-size: 12px; color: var(--muted); }
-.kpi-marca-valor {
-  font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: #1f7a44;
-}
 .kpi-marca-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .kpi-chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
 .kpi-chip.ok { background: #e3f3e8; color: #1f7a44; }

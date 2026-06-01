@@ -3796,6 +3796,47 @@ img.ship-ref-photo {
 .col-summary-table tbody tr.col-summary-borr td { background: #fdf0ec; font-weight: 600; color: #9a6a1e; }
 .col-summary-table tbody tr.col-summary-total td { background: #efece5; font-weight: 700; font-family: 'Fraunces', serif; font-size: 14px; }
 .col-summary-table td, .col-summary-table th { padding: 6px 10px; }
+.col-summary-table tbody tr.col-summary-valor td {
+  background: #f4ede0; font-weight: 700;
+  font-family: 'Fraunces', serif; font-size: 13.5px;
+  color: #1f7a44;
+}
+
+/* KPI por marca */
+.kpi-marcas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.kpi-marca {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  box-shadow: var(--shadow-sm);
+}
+.kpi-marca.is-total { background: #1c1c22; color: #fff; border-color: #1c1c22; }
+.kpi-marca.is-total .kpi-marca-name { color: rgba(255,255,255,0.72); }
+.kpi-marca.is-total .kpi-marca-num-sub { color: rgba(255,255,255,0.6); }
+.kpi-marca.is-total .kpi-marca-valor { color: #e3f3e8; }
+.kpi-marca-name {
+  font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--muted);
+}
+.kpi-marca-main { display: flex; align-items: baseline; gap: 8px; }
+.kpi-marca-num { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 600; line-height: 1; }
+.kpi-marca-num-sub { font-size: 12px; color: var(--muted); }
+.kpi-marca-valor {
+  font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: #1f7a44;
+}
+.kpi-marca-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.kpi-chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.kpi-chip.ok { background: #e3f3e8; color: #1f7a44; }
+.kpi-chip.rep { background: #fbe6e3; color: #b23121; }
+.kpi-chip.warn { background: #fbf0db; color: #9a6a1e; }
+.kpi-marca.is-total .kpi-chip { background: rgba(255,255,255,0.12); color: #fff; }
 
 /* ---------- Pendientes / alertas ---------- */
 .pend-dot { color: #b23121; margin-right: 5px; font-size: 12px; }

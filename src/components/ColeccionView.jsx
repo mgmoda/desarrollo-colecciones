@@ -90,6 +90,27 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
 
   const totalVisibles = visibles.length
 
+  // KPIs por marca: referencias, valor total, aprobadas, borradores.
+  const kpis = useMemo(() => {
+    const allMarcas = [...marcas, 'Sin marca', 'Total']
+    const k = {}
+    allMarcas.forEach((m) => { k[m] = { refs: 0, valor: 0, aprobadas: 0, repeticion: 0, borradores: 0 } })
+    refs.forEach((r) => {
+      const m = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
+      const buckets = [m, 'Total']
+      const estado = medicionInfo(r).estado
+      const hasOrders = tracksByRef && tracksByRef.get(r.id) && tracksByRef.get(r.id).length > 0
+      buckets.forEach((t) => {
+        k[t].refs++
+        k[t].valor += Number(r.costo) || 0
+        if (estado === 'aprobada') k[t].aprobadas++
+        if (estado === 'repeticion') k[t].repeticion++
+        if (!hasOrders) k[t].borradores++
+      })
+    })
+    return { allMarcas, k }
+  }, [refs, marcas, tracksByRef])
+
   // Resumen comparativo: categoría × marca (siempre con TODAS las refs,
   // sin importar el filtro actual, para poder comparar entre marcas).
   const resumen = useMemo(() => {
@@ -185,10 +206,33 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
         </div>
       </div>
 
+      {/* Tarjetas KPI por marca */}
+      <div className="kpi-marcas">
+        {kpis.allMarcas.map((m) => {
+          const x = kpis.k[m]
+          const isTotal = m === 'Total'
+          return (
+            <div className={'kpi-marca' + (isTotal ? ' is-total' : '')} key={m}>
+              <div className="kpi-marca-name">{m}</div>
+              <div className="kpi-marca-main">
+                <span className="kpi-marca-num">{x.refs}</span>
+                <span className="kpi-marca-num-sub">referencias</span>
+              </div>
+              <div className="kpi-marca-valor">{formatPrice(x.valor) || '$0'}</div>
+              <div className="kpi-marca-chips">
+                <span className="kpi-chip ok">{x.aprobadas} aprobadas</span>
+                <span className="kpi-chip rep">{x.repeticion} repetición</span>
+                <span className="kpi-chip warn">{x.borradores} borrador</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
       {/* Resumen general comparativo (no se ve afectado por el filtro) */}
       <div className="col-summary">
         <div className="col-summary-head">
-          <h3 className="col-summary-title">Resumen general</h3>
+          <h3 className="col-summary-title">Resumen por categoría</h3>
           <span className="muted">Todas las marcas · {refs.length} referencias</span>
         </div>
         <div className="table-wrap">
@@ -229,11 +273,18 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                 <td className="num strong">{resumen.borradores.total}</td>
               </tr>
               <tr className="col-summary-total">
-                <td>Total general</td>
+                <td>Total general (referencias)</td>
                 {resumen.allMarcas.map((m) => (
                   <td key={m} className="num strong">{resumen.totales[m] || 0}</td>
                 ))}
                 <td className="num strong">{resumen.totales.total}</td>
+              </tr>
+              <tr className="col-summary-valor">
+                <td>Valor total ($)</td>
+                {resumen.allMarcas.map((m) => (
+                  <td key={m} className="num strong">{formatPrice(kpis.k[m] ? kpis.k[m].valor : 0) || '—'}</td>
+                ))}
+                <td className="num strong">{formatPrice(kpis.k.Total.valor) || '—'}</td>
               </tr>
             </tbody>
           </table>

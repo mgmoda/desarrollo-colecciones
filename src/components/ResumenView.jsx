@@ -230,7 +230,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
         </div>
       ) : (
         <div className="table-wrap">
-          <table className="data-table">
+          <table className="data-table data-table-compact">
             <thead>
               <tr>
                 <th className="cell-check">
@@ -251,7 +251,6 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
                 <SortTh label="Entrega" col="flag_entrega" {...thProps} className="th-flag" />
                 <SortTh label="Cant" col="cantidad" {...thProps} />
                 <SortTh label="Costo" col="costo" {...thProps} />
-                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -334,7 +333,6 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
                   <td className="td-flag"><FlagChip value={(r.flags || {}).entrega} /></td>
                   <td className="num">{r.cantidad}</td>
                   <td className="num">{formatPrice(r.costo)}</td>
-                  <td className="muted">Editar ›</td>
                 </tr>
               ))}
             </tbody>

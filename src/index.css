@@ -3840,6 +3840,28 @@ img.ship-ref-photo {
 .top-chip.top { background: #e9eef6; color: #2c5a8c; }
 .top-chip.forrada { background: #efe6f3; color: #6b3c86; }
 
+/* ===== Tabla compacta para Resumen (cabe sin scroll horizontal) ===== */
+.data-table-compact { font-size: 12px; table-layout: auto; }
+.data-table-compact thead th { padding: 7px 5px; font-size: 10px; }
+.data-table-compact tbody td { padding: 5px 5px; }
+.data-table-compact .cell-check { width: 24px; }
+.data-table-compact .cell-check input { width: 13px; height: 13px; }
+.data-table-compact .cell-photo { width: 36px; padding-left: 6px; padding-right: 4px; }
+.data-table-compact .thumb { width: 30px; height: 38px; border-radius: 4px; }
+.data-table-compact td.muted { font-size: 11px; }
+/* Permitir wrap en columnas de texto largo (tela, etapa, tipo) */
+.data-table-compact tbody td:nth-child(5),
+.data-table-compact tbody td:nth-child(6),
+.data-table-compact tbody td:nth-child(7) { white-space: normal; line-height: 1.25; }
+/* Chips más compactos */
+.data-table-compact .flag { padding: 1px 6px; font-size: 10.5px; }
+.data-table-compact .tela-chip,
+.data-table-compact .top-chip,
+.data-table-compact .conj-chip { font-size: 10px; padding: 1px 5px; margin-left: 4px; }
+.data-table-compact .pend-dot { font-size: 11px; margin-right: 3px; }
+.data-table-compact th.th-flag,
+.data-table-compact td.td-flag { padding-left: 3px; padding-right: 3px; }
+
 /* KPI por marca */
 .kpi-marcas {
   display: grid;

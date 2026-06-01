@@ -20,7 +20,7 @@ import {
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas } from './lib/domain.js'
-import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS } from './lib/constants.js'
+import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, formatPrice } from './lib/constants.js'
 
 const TABS = [
   { key: 'inicio', label: 'Inicio' },
@@ -176,6 +176,50 @@ export default function App() {
 
   function handleSave(rawRef) {
     const { _stub: _ignore, ...ref } = rawRef
+
+    // ── REGLA ANTI-BORRADO ────────────────────────────────────────────
+    // Si un campo importante tenía valor y ahora va a quedar vacío,
+    // pedimos confirmación. Si el usuario cancela, NO se guarda nada y
+    // la ficha queda abierta intacta. Así no se pierde información de
+    // costos / cantidades / fotos por accidente.
+    const existing = refMap.get(ref.id)
+    if (existing && !existing._stub) {
+      const watched = [
+        { k: 'costo',        label: 'Costo',        money: true  },
+        { k: 'cantidad',     label: 'Cantidad'                   },
+        { k: 'tipo',         label: 'Tipo'                       },
+        { k: 'marca',        label: 'Marca'                      },
+        { k: 'colorMuestra', label: 'Color de muestra'           },
+        { k: 'image',        label: 'Foto',         photo: true  },
+        { k: 'comentario',   label: 'Comentario'                 },
+      ]
+      const perdidos = []
+      watched.forEach(({ k, label, money, photo }) => {
+        const antes = existing[k]
+        const ahora = ref[k]
+        const teniaValor = antes != null && String(antes).trim() !== ''
+        const quedaVacio = !ahora || String(ahora).trim() === ''
+        if (teniaValor && quedaVacio) {
+          const v = photo ? '(foto guardada)' : money ? formatPrice(antes) : String(antes)
+          perdidos.push(`• ${label}: ${v}`)
+        }
+      })
+      // Telas (array): si antes había telas y ahora no, marcar pérdida.
+      const telasAntes = (existing.telas || []).filter((t) => t && t.nombre).map((t) => t.nombre)
+      const telasAhora = (ref.telas || []).filter((t) => t && t.nombre).map((t) => t.nombre)
+      const telasPerdidas = telasAntes.filter((n) => !telasAhora.includes(n))
+      if (telasPerdidas.length) perdidos.push(`• Telas: ${telasPerdidas.join(', ')}`)
+
+      if (perdidos.length) {
+        const seguir = window.confirm(
+          'ATENCIÓN: vas a BORRAR los siguientes campos que tenían información guardada:\n\n' +
+          perdidos.join('\n') +
+          '\n\n¿Quieres continuar de todos modos?\n(Cancelar deja la ficha abierta sin perder nada)'
+        )
+        if (!seguir) return  // aborta el guardado, ficha queda abierta
+      }
+    }
+    // ── FIN regla ─────────────────────────────────────────────────────
 
     // Actualización OPTIMISTA: la UI se actualiza al instante; el guardado
     // remoto va en segundo plano. Si falla, mostramos alerta y el dato

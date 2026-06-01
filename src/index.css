@@ -3803,6 +3803,18 @@ img.ship-ref-photo {
 .col-summary-borr-block .col-summary-table thead th { background: #fdf0ec; color: #9a6a1e; }
 .col-summary-table tbody tr.col-summary-total td { background: #efece5; font-weight: 700; font-family: 'Fraunces', serif; font-size: 14px; }
 .col-summary-table td, .col-summary-table th { padding: 7px 12px; }
+.col-summary-table td.clickable {
+  cursor: pointer; color: #2c5a8c;
+  text-decoration: underline; text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s ease, background 0.15s ease;
+}
+.col-summary-table td.clickable:hover {
+  background: #eef4f9;
+  text-decoration-color: currentColor;
+}
+.col-summary-borr-block .col-summary-table td.clickable { color: #9a6a1e; }
+.col-summary-borr-block .col-summary-table td.clickable:hover { background: #fbe6d5; }
 
 /* KPI por marca */
 .kpi-marcas {

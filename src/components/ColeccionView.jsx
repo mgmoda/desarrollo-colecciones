@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import Modal from './Modal.jsx'
 import { medicionInfo } from '../lib/domain.js'
 import { formatPrice } from '../lib/constants.js'
 
@@ -61,6 +62,22 @@ const CATS = [
 export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, onNew, onViewImage }) {
   const [marca, setMarca] = useState('')
   const [ocultarPrecios, setOcultarPrecios] = useState(false)
+  const [drilldown, setDrilldown] = useState(null) // { title, items } o null
+
+  const marcaOf = (r) => (r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca')
+  const isDraft = (r) => !(tracksByRef && tracksByRef.get(r.id) && tracksByRef.get(r.id).length > 0)
+  function showRefs(title, list) {
+    if (!list || list.length === 0) return
+    setDrilldown({ title, items: list })
+  }
+  function pairsRefsByMarca(m) {
+    const out = []
+    buildConjuntoPairs(refs).forEach((p) => {
+      const pm = (p.top.marca && marcas.includes(p.top.marca)) ? p.top.marca : 'Sin marca'
+      if (m === 'Total' || pm === m) { out.push(p.top); out.push(p.bottom) }
+    })
+    return out
+  }
 
   // Filtrar por marca si está activa.
   const visibles = useMemo(() => {
@@ -284,25 +301,45 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                   <tr key={c.key}>
                     <td>{c.label}</td>
                     {resumen.allMarcas.map((m) => (
-                      <td key={m} className="num">{row[m] || 0}</td>
+                      <td key={m} className={'num' + (row[m] > 0 ? ' clickable' : '')}
+                        onClick={() => showRefs(`${c.label} · ${m}`, refs.filter((r) => c.match(r) && marcaOf(r) === m))}>
+                        {row[m] || 0}
+                      </td>
                     ))}
-                    <td className="num strong">{row.total}</td>
+                    <td className={'num strong' + (row.total > 0 ? ' clickable' : '')}
+                      onClick={() => showRefs(c.label, refs.filter(c.match))}>
+                      {row.total}
+                    </td>
                   </tr>
                 )
               })}
               {resumen.conjuntos.total > 0 && (
                 <tr>
                   <td>Conjuntos (pares enlazados)</td>
-                  {resumen.allMarcas.map((m) => <td key={m} className="num">{resumen.conjuntos[m] || 0}</td>)}
-                  <td className="num strong">{resumen.conjuntos.total}</td>
+                  {resumen.allMarcas.map((m) => (
+                    <td key={m} className={'num' + (resumen.conjuntos[m] > 0 ? ' clickable' : '')}
+                      onClick={() => showRefs(`Conjuntos · ${m}`, pairsRefsByMarca(m))}>
+                      {resumen.conjuntos[m] || 0}
+                    </td>
+                  ))}
+                  <td className="num strong clickable"
+                    onClick={() => showRefs('Conjuntos · Todos', pairsRefsByMarca('Total'))}>
+                    {resumen.conjuntos.total}
+                  </td>
                 </tr>
               )}
               <tr className="col-summary-total">
                 <td>Total general (referencias)</td>
                 {resumen.allMarcas.map((m) => (
-                  <td key={m} className="num strong">{resumen.totales[m] || 0}</td>
+                  <td key={m} className={'num strong' + (resumen.totales[m] > 0 ? ' clickable' : '')}
+                    onClick={() => showRefs(`Total · ${m}`, refs.filter((r) => marcaOf(r) === m))}>
+                    {resumen.totales[m] || 0}
+                  </td>
                 ))}
-                <td className="num strong">{resumen.totales.total}</td>
+                <td className="num strong clickable"
+                  onClick={() => showRefs('Todas las referencias', refs)}>
+                  {resumen.totales.total}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -333,9 +370,15 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                     <tr key={c.key}>
                       <td>{c.label}</td>
                       {resumen.allMarcas.map((m) => (
-                        <td key={m} className="num">{row[m] || 0}</td>
+                        <td key={m} className={'num' + (row[m] > 0 ? ' clickable' : '')}
+                          onClick={() => showRefs(`Borrador · ${c.label} · ${m}`, refs.filter((r) => isDraft(r) && c.match(r) && marcaOf(r) === m))}>
+                          {row[m] || 0}
+                        </td>
                       ))}
-                      <td className="num strong">{row.total}</td>
+                      <td className={'num strong' + (row.total > 0 ? ' clickable' : '')}
+                        onClick={() => showRefs(`Borrador · ${c.label}`, refs.filter((r) => isDraft(r) && c.match(r)))}>
+                        {row.total}
+                      </td>
                     </tr>
                   )
                 })}
@@ -343,17 +386,29 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                   <tr>
                     <td className="muted">{resumen.borrPorCat.sinClas.label}</td>
                     {resumen.allMarcas.map((m) => (
-                      <td key={m} className="num">{resumen.borrPorCat.sinClas[m] || 0}</td>
+                      <td key={m} className={'num' + (resumen.borrPorCat.sinClas[m] > 0 ? ' clickable' : '')}
+                        onClick={() => showRefs(`Borrador · Sin clasificar · ${m}`, refs.filter((r) => isDraft(r) && !CATS.some((c) => c.match(r)) && marcaOf(r) === m))}>
+                        {resumen.borrPorCat.sinClas[m] || 0}
+                      </td>
                     ))}
-                    <td className="num strong">{resumen.borrPorCat.sinClas.total}</td>
+                    <td className={'num strong' + (resumen.borrPorCat.sinClas.total > 0 ? ' clickable' : '')}
+                      onClick={() => showRefs('Borrador · Sin clasificar', refs.filter((r) => isDraft(r) && !CATS.some((c) => c.match(r))))}>
+                      {resumen.borrPorCat.sinClas.total}
+                    </td>
                   </tr>
                 )}
                 <tr className="col-summary-total">
                   <td>Total borradores</td>
                   {resumen.allMarcas.map((m) => (
-                    <td key={m} className="num strong">{resumen.borradores[m] || 0}</td>
+                    <td key={m} className={'num strong' + (resumen.borradores[m] > 0 ? ' clickable' : '')}
+                      onClick={() => showRefs(`Borradores · ${m}`, refs.filter((r) => isDraft(r) && marcaOf(r) === m))}>
+                      {resumen.borradores[m] || 0}
+                    </td>
                   ))}
-                  <td className="num strong">{resumen.borradores.total}</td>
+                  <td className="num strong clickable"
+                    onClick={() => showRefs('Todos los borradores', refs.filter(isDraft))}>
+                    {resumen.borradores.total}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -387,6 +442,20 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
           ))}
         </div>
       )}
+      <Modal open={!!drilldown} onClose={() => setDrilldown(null)} size="lg">
+        <div className="modal-head">
+          <h2 className="modal-title">{drilldown && drilldown.title}</h2>
+          <button className="icon-btn" onClick={() => setDrilldown(null)} aria-label="Cerrar">✕</button>
+        </div>
+        <div className="modal-body">
+          <p className="muted" style={{ marginBottom: 10 }}>
+            {drilldown ? `${drilldown.items.length} referencias` : ''}
+          </p>
+          <div className="col-thumbs">
+            {drilldown && drilldown.items.map((r) => renderTile(r))}
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

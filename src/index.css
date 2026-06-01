@@ -3799,6 +3799,8 @@ img.ship-ref-photo {
 .col-summary-table tbody td { font-variant-numeric: tabular-nums; }
 .col-summary-table tbody td:not(:first-child) { text-align: right; }
 .col-summary-table tbody tr.col-summary-borr td { background: #fdf0ec; font-weight: 600; color: #9a6a1e; }
+.col-summary-borr-block .col-summary-title { color: #9a6a1e; }
+.col-summary-borr-block .col-summary-table thead th { background: #fdf0ec; color: #9a6a1e; }
 .col-summary-table tbody tr.col-summary-total td { background: #efece5; font-weight: 700; font-family: 'Fraunces', serif; font-size: 14px; }
 .col-summary-table td, .col-summary-table th { padding: 7px 12px; }
 

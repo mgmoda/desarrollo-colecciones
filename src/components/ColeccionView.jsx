@@ -128,7 +128,15 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
         }
       })
     })
+    // Conjuntos (pares) por marca: se atribuye al marca de la prenda de arriba.
     const pairs = buildConjuntoPairs(refs)
+    const conjuntos = { total: pairs.length }
+    allMarcas.forEach((m) => { conjuntos[m] = 0 })
+    pairs.forEach((p) => {
+      const m = p.top.marca && marcas.includes(p.top.marca) ? p.top.marca : 'Sin marca'
+      conjuntos[m]++
+    })
+    // Borradores: total por marca.
     const borradores = { total: 0 }
     allMarcas.forEach((m) => { borradores[m] = 0 })
     refs.forEach((r) => {
@@ -139,13 +147,39 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
         borradores.total++
       }
     })
+    // Borradores desglosados por categoría × marca.
+    const borrPorCat = {}
+    CATS.forEach((c) => {
+      borrPorCat[c.key] = { label: c.label, total: 0 }
+      allMarcas.forEach((m) => { borrPorCat[c.key][m] = 0 })
+    })
+    borrPorCat.sinClas = { label: 'Sin clasificar (tipo/estampado vacíos)', total: 0 }
+    allMarcas.forEach((m) => { borrPorCat.sinClas[m] = 0 })
+    refs.forEach((r) => {
+      const hasOrders = tracksByRef && tracksByRef.get(r.id) && tracksByRef.get(r.id).length > 0
+      if (hasOrders) return
+      const marca = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
+      let matched = false
+      for (const c of CATS) {
+        if (c.match(r)) {
+          borrPorCat[c.key][marca]++
+          borrPorCat[c.key].total++
+          matched = true
+          break
+        }
+      }
+      if (!matched) {
+        borrPorCat.sinClas[marca]++
+        borrPorCat.sinClas.total++
+      }
+    })
     const totales = { total: refs.length }
     allMarcas.forEach((m) => { totales[m] = 0 })
     refs.forEach((r) => {
       const m = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
       totales[m]++
     })
-    return { allMarcas, matrix, conjuntos: pairs.length, borradores, totales }
+    return { allMarcas, matrix, conjuntos, borradores, borrPorCat, totales }
   }, [refs, marcas, tracksByRef])
 
   // Renderiza una miniatura individual (reutilizada en categorías y pares).
@@ -256,20 +290,13 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                   </tr>
                 )
               })}
-              {resumen.conjuntos > 0 && (
+              {resumen.conjuntos.total > 0 && (
                 <tr>
                   <td>Conjuntos (pares enlazados)</td>
-                  {resumen.allMarcas.map((m) => <td key={m} className="num muted">—</td>)}
-                  <td className="num strong">{resumen.conjuntos}</td>
+                  {resumen.allMarcas.map((m) => <td key={m} className="num">{resumen.conjuntos[m] || 0}</td>)}
+                  <td className="num strong">{resumen.conjuntos.total}</td>
                 </tr>
               )}
-              <tr className="col-summary-borr">
-                <td>⚠ Borradores (sin orden en Excel)</td>
-                {resumen.allMarcas.map((m) => (
-                  <td key={m} className="num">{resumen.borradores[m] || 0}</td>
-                ))}
-                <td className="num strong">{resumen.borradores.total}</td>
-              </tr>
               <tr className="col-summary-total">
                 <td>Total general (referencias)</td>
                 {resumen.allMarcas.map((m) => (
@@ -281,6 +308,58 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
           </table>
         </div>
       </div>
+
+      {/* Borradores por categoría — para saber qué tipo de prendas hay pendientes */}
+      {resumen.borradores.total > 0 && (
+        <div className="col-summary col-summary-borr-block">
+          <div className="col-summary-head">
+            <h3 className="col-summary-title">⚠ Borradores por categoría</h3>
+            <span className="muted">{resumen.borradores.total} borradores sin orden en Excel</span>
+          </div>
+          <div className="table-wrap">
+            <table className="data-table col-summary-table">
+              <thead>
+                <tr>
+                  <th>Categoría</th>
+                  {resumen.allMarcas.map((m) => <th key={m} className="num">{m}</th>)}
+                  <th className="num">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CATS.map((c) => {
+                  const row = resumen.borrPorCat[c.key]
+                  if (!row || row.total === 0) return null
+                  return (
+                    <tr key={c.key}>
+                      <td>{c.label}</td>
+                      {resumen.allMarcas.map((m) => (
+                        <td key={m} className="num">{row[m] || 0}</td>
+                      ))}
+                      <td className="num strong">{row.total}</td>
+                    </tr>
+                  )
+                })}
+                {resumen.borrPorCat.sinClas.total > 0 && (
+                  <tr>
+                    <td className="muted">{resumen.borrPorCat.sinClas.label}</td>
+                    {resumen.allMarcas.map((m) => (
+                      <td key={m} className="num">{resumen.borrPorCat.sinClas[m] || 0}</td>
+                    ))}
+                    <td className="num strong">{resumen.borrPorCat.sinClas.total}</td>
+                  </tr>
+                )}
+                <tr className="col-summary-total">
+                  <td>Total borradores</td>
+                  {resumen.allMarcas.map((m) => (
+                    <td key={m} className="num strong">{resumen.borradores[m] || 0}</td>
+                  ))}
+                  <td className="num strong">{resumen.borradores.total}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {filas.every((f) => f.items.length === 0) ? (
         <div className="empty-state">

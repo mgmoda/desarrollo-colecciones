@@ -90,6 +90,44 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
 
   const totalVisibles = visibles.length
 
+  // Resumen comparativo: categoría × marca (siempre con TODAS las refs,
+  // sin importar el filtro actual, para poder comparar entre marcas).
+  const resumen = useMemo(() => {
+    const allMarcas = [...marcas, 'Sin marca']
+    const matrix = {}
+    CATS.forEach((c) => {
+      matrix[c.key] = { label: c.label, tone: c.tone, total: 0 }
+      allMarcas.forEach((m) => { matrix[c.key][m] = 0 })
+    })
+    refs.forEach((r) => {
+      CATS.forEach((c) => {
+        if (c.match(r)) {
+          const m = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
+          matrix[c.key][m] = (matrix[c.key][m] || 0) + 1
+          matrix[c.key].total++
+        }
+      })
+    })
+    const pairs = buildConjuntoPairs(refs)
+    const borradores = { total: 0 }
+    allMarcas.forEach((m) => { borradores[m] = 0 })
+    refs.forEach((r) => {
+      const hasOrders = tracksByRef && tracksByRef.get(r.id) && tracksByRef.get(r.id).length > 0
+      if (!hasOrders) {
+        const m = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
+        borradores[m]++
+        borradores.total++
+      }
+    })
+    const totales = { total: refs.length }
+    allMarcas.forEach((m) => { totales[m] = 0 })
+    refs.forEach((r) => {
+      const m = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
+      totales[m]++
+    })
+    return { allMarcas, matrix, conjuntos: pairs.length, borradores, totales }
+  }, [refs, marcas, tracksByRef])
+
   // Renderiza una miniatura individual (reutilizada en categorías y pares).
   function renderTile(r) {
     const estado = medicionInfo(r).estado
@@ -144,6 +182,61 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
           {onNew && (
             <button className="btn btn-primary" onClick={onNew}>+ Nueva referencia</button>
           )}
+        </div>
+      </div>
+
+      {/* Resumen general comparativo (no se ve afectado por el filtro) */}
+      <div className="col-summary">
+        <div className="col-summary-head">
+          <h3 className="col-summary-title">Resumen general</h3>
+          <span className="muted">Todas las marcas · {refs.length} referencias</span>
+        </div>
+        <div className="table-wrap">
+          <table className="data-table col-summary-table">
+            <thead>
+              <tr>
+                <th>Categoría</th>
+                {resumen.allMarcas.map((m) => <th key={m} className="num">{m}</th>)}
+                <th className="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {CATS.map((c) => {
+                const row = resumen.matrix[c.key]
+                if (!row || row.total === 0) return null
+                return (
+                  <tr key={c.key}>
+                    <td>{c.label}</td>
+                    {resumen.allMarcas.map((m) => (
+                      <td key={m} className="num">{row[m] || 0}</td>
+                    ))}
+                    <td className="num strong">{row.total}</td>
+                  </tr>
+                )
+              })}
+              {resumen.conjuntos > 0 && (
+                <tr>
+                  <td>Conjuntos (pares enlazados)</td>
+                  {resumen.allMarcas.map((m) => <td key={m} className="num muted">—</td>)}
+                  <td className="num strong">{resumen.conjuntos}</td>
+                </tr>
+              )}
+              <tr className="col-summary-borr">
+                <td>⚠ Borradores (sin orden en Excel)</td>
+                {resumen.allMarcas.map((m) => (
+                  <td key={m} className="num">{resumen.borradores[m] || 0}</td>
+                ))}
+                <td className="num strong">{resumen.borradores.total}</td>
+              </tr>
+              <tr className="col-summary-total">
+                <td>Total general</td>
+                {resumen.allMarcas.map((m) => (
+                  <td key={m} className="num strong">{resumen.totales[m] || 0}</td>
+                ))}
+                <td className="num strong">{resumen.totales.total}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

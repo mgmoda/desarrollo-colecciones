@@ -3829,6 +3829,17 @@ img.ship-ref-photo {
 .aut-block-title.pr { color: #1f7a44; }
 .aut-block-title .muted { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; margin-left: 6px; }
 
+/* Chip top / forrada en Resumen */
+.top-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.top-chip.top { background: #e9eef6; color: #2c5a8c; }
+.top-chip.forrada { background: #efe6f3; color: #6b3c86; }
+
 /* KPI por marca */
 .kpi-marcas {
   display: grid;

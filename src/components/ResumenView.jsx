@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { RESUMEN_FLAGS, ORIGEN_ABBR, AREAS, formatPrice } from '../lib/constants.js'
+import { RESUMEN_FLAGS, ORIGEN_ABBR, AREAS, TOP_LABEL, formatPrice } from '../lib/constants.js'
 import { areaIndex, medicionInfo, MEDICION_RANK, refTelas, telaDisponible } from '../lib/domain.js'
 import { generateResumenPDF } from '../lib/resumenPdf.js'
 
@@ -137,6 +137,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
       veces: (r) => veces(r),
       tipo: (r) => r.tipo,
       tela: (r) => telasTexto(r),
+      topForro: (r) => r.topIncluido || '',
       etapa: (r) => etapaRank(r),
       costos_auto: (r) => (Number(r.costo) > 0 ? 1 : 0),
       muestras_mp: (r) => MP_RANK[estadoMP(tracksByRef && tracksByRef.get(r.id), r.flags, 'muestra', 'muestras')],
@@ -241,6 +242,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
                 <SortTh label="Etapa actual" col="etapa" {...thProps} />
                 <SortTh label="Tipo" col="tipo" {...thProps} />
                 <SortTh label="Tela" col="tela" {...thProps} />
+                <SortTh label="Top/Forro" col="topForro" {...thProps} />
                 <SortTh label="Costos" col="costos_auto" {...thProps} className="th-flag" />
                 <SortTh label="Muestras" col="muestras_mp" {...thProps} className="th-flag" />
                 <SortTh label="Producción" col="produccion_mp" {...thProps} className="th-flag" />
@@ -303,6 +305,10 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
                     {telaDisponible(r) && (
                       <span className="tela-chip" title={telaTip(r)}>✓ Tela</span>
                     )}
+                  </td>
+                  <td>
+                    {r.topIncluido === 'top' && <span className="top-chip top">Top</span>}
+                    {r.topIncluido === 'forrada' && <span className="top-chip forrada">Forrada</span>}
                   </td>
                   <td className="td-flag">
                     {Number(r.costo) > 0

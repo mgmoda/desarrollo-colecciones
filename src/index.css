@@ -3816,6 +3816,19 @@ img.ship-ref-photo {
 .col-summary-borr-block .col-summary-table td.clickable { color: #9a6a1e; }
 .col-summary-borr-block .col-summary-table td.clickable:hover { background: #fbe6d5; }
 
+/* ---------- Pestaña Autorizaciones ---------- */
+.aut-kpis { grid-template-columns: repeat(2, 1fr); }
+.aut-kpi.mu { border-left: 4px solid #6b3c86; }
+.aut-kpi.pr { border-left: 4px solid #1f7a44; }
+.aut-block { margin-top: 22px; }
+.aut-block-title {
+  font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600;
+  margin-bottom: 10px;
+}
+.aut-block-title.mu { color: #6b3c86; }
+.aut-block-title.pr { color: #1f7a44; }
+.aut-block-title .muted { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; margin-left: 6px; }
+
 /* KPI por marca */
 .kpi-marcas {
   display: grid;

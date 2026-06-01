@@ -6,6 +6,7 @@ import AreaView from './components/AreaView.jsx'
 import CostosView from './components/CostosView.jsx'
 import EnsambleView from './components/EnsambleView.jsx'
 import ColeccionView from './components/ColeccionView.jsx'
+import AutorizacionesView from './components/AutorizacionesView.jsx'
 import ImportModal from './components/ImportModal.jsx'
 import RefForm from './components/RefForm.jsx'
 import RefSearch from './components/RefSearch.jsx'
@@ -31,6 +32,7 @@ const TABS = [
   { key: 'entrega', label: 'Entrega ensamble' },
   { key: 'ensamble', label: 'Ensamble' },
   { key: 'coleccion', label: 'Colección' },
+  { key: 'autorizaciones', label: 'Autorizaciones' },
   { key: 'costos', label: 'Costos' },
 ]
 const AREA_KEYS = ['trazos', 'corte', 'enviar', 'talleres', 'entrega']
@@ -399,6 +401,10 @@ export default function App() {
         {tab === 'coleccion' && (
           <ColeccionView refs={refIndex} marcas={settings.marcas} tracksByRef={tracksByRef}
             onOpenRef={openEdit} onNew={openNew} onViewImage={setLightbox} />
+        )}
+        {tab === 'autorizaciones' && (
+          <AutorizacionesView refs={refIndex} tracksByRef={tracksByRef} marcas={settings.marcas}
+            onOpenRef={openEdit} onViewImage={setLightbox} />
         )}
         {tab === 'costos' && (
           <CostosView refs={refIndex} telasCatalog={settings.telas} onEdit={openEdit} onNew={openNew} onViewImage={setLightbox} />

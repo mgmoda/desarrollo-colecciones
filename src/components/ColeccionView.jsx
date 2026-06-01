@@ -66,6 +66,8 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
 
   const marcaOf = (r) => (r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca')
   const isDraft = (r) => !(tracksByRef && tracksByRef.get(r.id) && tracksByRef.get(r.id).length > 0)
+  // Las descartadas NO suman en categorías ni borradores; se aíslan en su propia área.
+  const isDescartada = (r) => medicionInfo(r).estado === 'descartada'
   function showRefs(title, list) {
     if (!list || list.length === 0) return
     setDrilldown({ title, items: list })
@@ -86,38 +88,51 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
   }, [refs, marca])
 
   // Construir las filas de categoría.
+  // Las descartadas se EXCLUYEN de las categorías y aparecen en su propia fila al final.
   const filas = useMemo(() => {
+    const activas = visibles.filter((r) => !isDescartada(r))
+    const descartadas = visibles.filter(isDescartada)
     const usadas = new Set()
     const out = CATS.map((c) => {
-      const items = visibles.filter(c.match)
+      const items = activas.filter(c.match)
       items.forEach((r) => usadas.add(r.id))
       return { ...c, items }
     })
-    // Conjuntos = pares enlazados (blusa arriba + pantalón abajo, etc.).
-    const pairs = buildConjuntoPairs(visibles)
+    // Conjuntos = pares enlazados (solo si ambas prendas están activas).
+    const pairs = buildConjuntoPairs(activas)
     pairs.forEach((p) => { usadas.add(p.top.id); usadas.add(p.bottom.id) })
     if (pairs.length) {
       out.push({ key: 'conjuntos-pairs', label: 'Conjuntos', tone: 'neutral', items: pairs, pairsMode: true })
     }
-    // Otros: refs visibles que no encajaron en ninguna categoría conocida.
-    const otros = visibles.filter((r) => !usadas.has(r.id))
+    // Otros: refs activas que no encajaron en ninguna categoría conocida.
+    const otros = activas.filter((r) => !usadas.has(r.id))
     if (otros.length) out.push({ key: 'otros', label: 'Otros', tone: 'neutral', items: otros })
+    // Área separada para descartadas (al final, no suman a categorías).
+    if (descartadas.length) {
+      out.push({ key: 'descartadas', label: 'Descartadas', tone: 'descartada', items: descartadas })
+    }
     return out
   }, [visibles])
 
-  const totalVisibles = visibles.length
+  const totalActivas = visibles.filter((r) => !isDescartada(r)).length
+  const totalDescartadas = visibles.length - totalActivas
 
-  // KPIs por marca: referencias, aprobadas, repetición, borradores.
+  // KPIs por marca: referencias activas, aprobadas, repetición, borradores y descartadas.
+  // Las descartadas NO suman en refs/borradores; se cuentan aparte.
   const kpis = useMemo(() => {
     const allMarcas = [...marcas, 'Sin marca', 'Total']
     const k = {}
-    allMarcas.forEach((m) => { k[m] = { refs: 0, aprobadas: 0, repeticion: 0, borradores: 0 } })
+    allMarcas.forEach((m) => { k[m] = { refs: 0, aprobadas: 0, repeticion: 0, borradores: 0, descartadas: 0 } })
     refs.forEach((r) => {
       const m = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
       const buckets = [m, 'Total']
       const estado = medicionInfo(r).estado
       const hasOrders = tracksByRef && tracksByRef.get(r.id) && tracksByRef.get(r.id).length > 0
       buckets.forEach((t) => {
+        if (estado === 'descartada') {
+          k[t].descartadas++
+          return
+        }
         k[t].refs++
         if (estado === 'aprobada') k[t].aprobadas++
         if (estado === 'repeticion') k[t].repeticion++
@@ -137,6 +152,7 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
       allMarcas.forEach((m) => { matrix[c.key][m] = 0 })
     })
     refs.forEach((r) => {
+      if (isDescartada(r)) return // las descartadas NO suman en categorías
       CATS.forEach((c) => {
         if (c.match(r)) {
           const m = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
@@ -145,24 +161,35 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
         }
       })
     })
-    // Conjuntos (pares) por marca: se atribuye al marca de la prenda de arriba.
-    const pairs = buildConjuntoPairs(refs)
+    // Conjuntos (pares) por marca: se atribuye a la marca de la prenda de arriba.
+    // Excluir pares donde alguna prenda esté descartada.
+    const pairs = buildConjuntoPairs(refs).filter((p) => !isDescartada(p.top) && !isDescartada(p.bottom))
     const conjuntos = { total: pairs.length }
     allMarcas.forEach((m) => { conjuntos[m] = 0 })
     pairs.forEach((p) => {
       const m = p.top.marca && marcas.includes(p.top.marca) ? p.top.marca : 'Sin marca'
       conjuntos[m]++
     })
-    // Borradores: total por marca.
+    // Borradores: total por marca (excluyendo descartadas).
     const borradores = { total: 0 }
     allMarcas.forEach((m) => { borradores[m] = 0 })
     refs.forEach((r) => {
+      if (isDescartada(r)) return
       const hasOrders = tracksByRef && tracksByRef.get(r.id) && tracksByRef.get(r.id).length > 0
       if (!hasOrders) {
         const m = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
         borradores[m]++
         borradores.total++
       }
+    })
+    // Descartadas: contador separado por marca.
+    const descartadas = { total: 0 }
+    allMarcas.forEach((m) => { descartadas[m] = 0 })
+    refs.forEach((r) => {
+      if (!isDescartada(r)) return
+      const m = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
+      descartadas[m]++
+      descartadas.total++
     })
     // Borradores desglosados por categoría × marca.
     const borrPorCat = {}
@@ -173,6 +200,7 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
     borrPorCat.sinClas = { label: 'Sin clasificar (tipo/estampado vacíos)', total: 0 }
     allMarcas.forEach((m) => { borrPorCat.sinClas[m] = 0 })
     refs.forEach((r) => {
+      if (isDescartada(r)) return
       const hasOrders = tracksByRef && tracksByRef.get(r.id) && tracksByRef.get(r.id).length > 0
       if (hasOrders) return
       const marca = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
@@ -190,13 +218,16 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
         borrPorCat.sinClas.total++
       }
     })
-    const totales = { total: refs.length }
+    // Total general = solo referencias ACTIVAS (descartadas se cuentan aparte).
+    const totales = { total: 0 }
     allMarcas.forEach((m) => { totales[m] = 0 })
     refs.forEach((r) => {
+      if (isDescartada(r)) return
       const m = r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca'
       totales[m]++
+      totales.total++
     })
-    return { allMarcas, matrix, conjuntos, borradores, borrPorCat, totales }
+    return { allMarcas, matrix, conjuntos, borradores, borrPorCat, totales, descartadas }
   }, [refs, marcas, tracksByRef])
 
   // Renderiza una miniatura individual (reutilizada en categorías y pares).
@@ -237,7 +268,11 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
       <div className="view-head">
         <div>
           <h1 className="view-title">Colección</h1>
-          <p className="view-sub">{totalVisibles} referencias{marca ? ` · ${marca}` : ''}</p>
+          <p className="view-sub">
+            {totalActivas} referencias activas
+            {totalDescartadas > 0 && <span className="muted"> · {totalDescartadas} descartadas (no suman)</span>}
+            {marca ? ` · ${marca}` : ''}
+          </p>
         </div>
         <div className="view-actions">
           <label className="check">
@@ -272,6 +307,9 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                 <span className="kpi-chip ok">{x.aprobadas} aprobadas</span>
                 <span className="kpi-chip rep">{x.repeticion} repetición</span>
                 <span className="kpi-chip warn">{x.borradores} borrador</span>
+                {x.descartadas > 0 && (
+                  <span className="kpi-chip desc">{x.descartadas} descartadas</span>
+                )}
               </div>
             </div>
           )
@@ -329,18 +367,33 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                 </tr>
               )}
               <tr className="col-summary-total">
-                <td>Total general (referencias)</td>
+                <td>Total activas</td>
                 {resumen.allMarcas.map((m) => (
                   <td key={m} className={'num strong' + (resumen.totales[m] > 0 ? ' clickable' : '')}
-                    onClick={() => showRefs(`Total · ${m}`, refs.filter((r) => marcaOf(r) === m))}>
+                    onClick={() => showRefs(`Total · ${m}`, refs.filter((r) => marcaOf(r) === m && !isDescartada(r)))}>
                     {resumen.totales[m] || 0}
                   </td>
                 ))}
                 <td className="num strong clickable"
-                  onClick={() => showRefs('Todas las referencias', refs)}>
+                  onClick={() => showRefs('Todas las referencias activas', refs.filter((r) => !isDescartada(r)))}>
                   {resumen.totales.total}
                 </td>
               </tr>
+              {resumen.descartadas.total > 0 && (
+                <tr className="col-summary-desc">
+                  <td>Descartadas <span className="muted">(no suman)</span></td>
+                  {resumen.allMarcas.map((m) => (
+                    <td key={m} className={'num' + (resumen.descartadas[m] > 0 ? ' clickable' : '')}
+                      onClick={() => showRefs(`Descartadas · ${m}`, refs.filter((r) => isDescartada(r) && marcaOf(r) === m))}>
+                      {resumen.descartadas[m] || 0}
+                    </td>
+                  ))}
+                  <td className="num strong clickable"
+                    onClick={() => showRefs('Descartadas', refs.filter(isDescartada))}>
+                    {resumen.descartadas.total}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

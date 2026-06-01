@@ -3892,7 +3892,14 @@ img.ship-ref-photo {
 .kpi-chip.ok { background: #e3f3e8; color: #1f7a44; }
 .kpi-chip.rep { background: #fbe6e3; color: #b23121; }
 .kpi-chip.warn { background: #fbf0db; color: #9a6a1e; }
+.kpi-chip.desc { background: #ece9e1; color: #6e6a5e; text-decoration: line-through; text-decoration-color: #b6b1a5; }
 .kpi-marca.is-total .kpi-chip { background: rgba(255,255,255,0.12); color: #fff; }
+.kpi-marca.is-total .kpi-chip.desc { text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.4); }
+
+/* Tono "descartada" en el contador de la sección y en la fila del resumen. */
+.col-count.tone-descartada { background: #ece9e1; color: #6e6a5e; }
+.col-summary-table tbody tr.col-summary-desc td { background: #f5f2ec; color: #6e6a5e; font-style: italic; }
+.col-summary-table tbody tr.col-summary-desc td.strong { font-style: normal; }
 
 /* ---------- Pendientes / alertas ---------- */
 .pend-dot { color: #b23121; margin-right: 5px; font-size: 12px; }

@@ -12,6 +12,19 @@ const MODES = [
 const DOW_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const MONTHS_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
+// Acorta el nombre del taller para que quepa en una celda del calendario.
+// Ej: "GERALDINE CALVO" → "Geraldine C." ; "ANDREA XIOMARA DIAZ MANOSALVA" → "Andrea D."
+function shortTaller(name) {
+  if (!name) return ''
+  const parts = name.trim().split(/\s+/)
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
+  if (parts.length === 1) return cap(parts[0])
+  const first = cap(parts[0])
+  // Último apellido inicial (preferimos primer apellido si hay 3+ tokens).
+  const apellido = parts.length >= 3 ? parts[1] : parts[parts.length - 1]
+  return `${first} ${apellido.charAt(0).toUpperCase()}.`
+}
+
 function dayKey(d) {
   // YYYY-MM-DD local — no toISOString para evitar el corrimiento de zona.
   const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0')
@@ -24,7 +37,7 @@ function fmtDayLong(d) { return `${DOW_SHORT[dowMonFirst(d)]} ${d.getDate()} de 
 // Reporte de ensamble: calendario por día con detalle de unidades, referencias
 // y talleres. Clic en un día abre un modal con el desglose completo.
 export default function EnsambleView({ orders, refMap, onViewImage, onOpenRef }) {
-  const [mode, setMode] = useState('semana')
+  const [mode, setMode] = useState('mes')
   const [anchor, setAnchor] = useState(() => new Date())
   const [tallerSel, setTallerSel] = useState('')
   const [dayDrill, setDayDrill] = useState(null) // Date | null
@@ -216,16 +229,20 @@ export default function EnsambleView({ orders, refMap, onViewImage, onOpenRef })
                         <span>·</span>
                         <span>{data.talleres.size} taller{data.talleres.size === 1 ? '' : 'es'}</span>
                       </div>
-                      <div className="ens-cal-cell-talleres">
-                        {[...data.talleres.entries()].slice(0, 3).map(([t, u]) => (
-                          <span key={t} className="ens-cal-taller-chip" title={`${t}: ${u}`}>
-                            {t.split(' ').slice(0, 2).map((s) => s.charAt(0)).join('')} {u}
-                          </span>
-                        ))}
-                        {data.talleres.size > 3 && (
-                          <span className="ens-cal-taller-chip more">+{data.talleres.size - 3}</span>
+                      <ul className="ens-cal-cell-talleres-list">
+                        {[...data.talleres.entries()]
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 4)
+                          .map(([t, u]) => (
+                            <li key={t} title={`${t}: ${u} unidad${u === 1 ? '' : 'es'}`}>
+                              <span className="ens-cal-taller-name">{shortTaller(t)}</span>
+                              <span className="ens-cal-taller-units">{u}</span>
+                            </li>
+                          ))}
+                        {data.talleres.size > 4 && (
+                          <li className="more">+{data.talleres.size - 4} más</li>
                         )}
-                      </div>
+                      </ul>
                     </>
                   )}
                 </button>

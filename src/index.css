@@ -3698,6 +3698,133 @@ img.ship-ref-photo {
 .ens-rank.top .ens-rank-fill { background: #1f7a44; }
 .ens-rank-num { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; min-width: 40px; text-align: right; }
 
+/* ---------- Ensamble: KPIs y calendario ---------- */
+.ens-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+@media (max-width: 720px) { .ens-kpis { grid-template-columns: repeat(2, 1fr); } }
+.ens-kpi {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-sm);
+  display: flex; align-items: baseline; gap: 8px;
+}
+.ens-kpi-num { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 600; line-height: 1; }
+.ens-kpi-lbl { font-size: 12px; color: var(--muted); }
+
+.ens-cal {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 18px;
+}
+.ens-cal-head {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.ens-cal-head-cell {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--muted); text-align: center; padding: 4px 0;
+}
+.ens-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.ens-cal-cell {
+  position: relative;
+  min-height: 92px;
+  background: #faf8f3;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 7px 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.06s, box-shadow 0.06s, border-color 0.06s;
+  display: flex; flex-direction: column; gap: 4px;
+  overflow: hidden;
+}
+.ens-cal-cell.off { background: transparent; border-color: transparent; }
+.ens-cal-cell:disabled { cursor: default; }
+.ens-cal-cell.has { background: #ffffff; border-color: #d8e3d5; }
+.ens-cal-cell.has:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(31, 122, 68, 0.15);
+  border-color: #1f7a44;
+}
+.ens-cal-cell.today { border-color: #b23121; box-shadow: inset 0 0 0 1px #b23121; }
+.ens-cal-cell-date {
+  font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600; color: var(--ink);
+}
+.ens-cal-cell.off .ens-cal-cell-date { color: #c5c0b5; font-weight: 500; }
+.ens-cal-cell-units {
+  font-family: 'Fraunces', serif; font-size: 22px; font-weight: 700; color: #1f7a44; line-height: 1;
+}
+.ens-cal-cell-units span { font-family: 'Inter', sans-serif; font-size: 11px; color: var(--muted); font-weight: 500; }
+.ens-cal-cell-meta {
+  font-size: 10.5px; color: var(--muted); display: flex; gap: 4px; flex-wrap: wrap;
+}
+.ens-cal-cell-talleres {
+  margin-top: auto;
+  display: flex; flex-wrap: wrap; gap: 3px;
+}
+.ens-cal-taller-chip {
+  font-size: 10px; font-weight: 600; padding: 1px 5px; border-radius: 999px;
+  background: #e9eef6; color: #2c5a8c;
+}
+.ens-cal-taller-chip.more { background: #ece9e1; color: var(--ink-soft); }
+
+/* Modo semana: celdas más altas porque hay espacio */
+.ens-cal-semana .ens-cal-cell { min-height: 130px; }
+
+/* Tarjeta de modo "Día" */
+.ens-day-card {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 18px;
+}
+.ens-day-card.today { border-color: #b23121; }
+.ens-day-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 12px;
+}
+.ens-day-card-head h3 {
+  margin: 0; font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600;
+  display: inline-block;
+}
+.ens-today-tag {
+  margin-left: 10px; font-size: 10px; font-weight: 700;
+  background: #b23121; color: #fff; padding: 2px 8px; border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+.ens-day-card-body {
+  display: flex; gap: 26px; flex-wrap: wrap;
+}
+.ens-day-card.empty .ens-day-card-head h3 { color: var(--muted); }
+.ens-day-stat {
+  display: flex; flex-direction: column;
+}
+.ens-day-stat .num { font-family: 'Fraunces', serif; font-size: 30px; font-weight: 700; line-height: 1; }
+.ens-day-stat .lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* Grid en el modal del día (talleres + refs) */
+.ens-day-grid {
+  display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; align-items: start;
+}
+@media (max-width: 860px) { .ens-day-grid { grid-template-columns: 1fr; } }
+
 /* ---------- Pestaña Colección ---------- */
 .col-list { display: flex; flex-direction: column; gap: 16px; }
 .col-row {

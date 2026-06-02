@@ -440,7 +440,7 @@ export default function App() {
           <AreaView areaKey={tab} orders={orders} refMap={refMap} onViewImage={setLightbox} />
         )}
         {tab === 'ensamble' && (
-          <EnsambleView orders={orders} refMap={refMap} onViewImage={setLightbox} />
+          <EnsambleView orders={orders} refMap={refMap} onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
         {tab === 'coleccion' && (
           <ColeccionView refs={refIndex} marcas={settings.marcas} tracksByRef={tracksByRef}

@@ -22,6 +22,40 @@ function esEst(ref) { return ref.estampado === 'sublimacion' || ref.estampado ==
 function isTop(r) { return ['blusa', 'camisa', 'top', 'chaqueta'].some((k) => esTipo(r, k)) }
 function isBottom(r) { return ['pantalon', 'short', 'falda'].some((k) => esTipo(r, k)) }
 
+// Divide los ítems de una categoría en sub-bloques por marca.
+// Si solo hay una marca presente (o si el usuario ya filtró por marca),
+// devuelve la lista plana sin sub-encabezados (no aporta dividir).
+function renderItemsSplitByMarca(items, marcaFiltro, marcas, marcaOf, renderTile) {
+  if (marcaFiltro) {
+    return <div className="col-thumbs">{items.map((r) => renderTile(r))}</div>
+  }
+  const groups = new Map()
+  items.forEach((r) => {
+    const m = marcaOf(r)
+    if (!groups.has(m)) groups.set(m, [])
+    groups.get(m).push(r)
+  })
+  const ordered = [...marcas, 'Sin marca'].filter((m) => groups.has(m))
+  if (ordered.length <= 1) {
+    return <div className="col-thumbs">{items.map((r) => renderTile(r))}</div>
+  }
+  return (
+    <div className="col-marca-groups">
+      {ordered.map((m) => (
+        <div className="col-marca-group" key={m}>
+          <div className="col-marca-group-head">
+            <span className={'col-marca-tag m-' + m.toLowerCase().replace(/\s+/g, '')}>{m}</span>
+            <span className="col-marca-group-count">{groups.get(m).length}</span>
+          </div>
+          <div className="col-thumbs">
+            {groups.get(m).map((r) => renderTile(r))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // Empareja referencias enlazadas por conjunto/conjuntoRef en {top, bottom}.
 function buildConjuntoPairs(refs) {
   const byId = new Map(refs.map((r) => [r.id, r]))
@@ -481,16 +515,18 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                 <span className="col-row-title">{f.label}</span>
                 <span className={'col-count tone-' + f.tone}>{f.items.length}</span>
               </div>
-              <div className="col-thumbs">
-                {f.pairsMode
-                  ? f.items.map((p) => (
+              {f.pairsMode ? (
+                <div className="col-thumbs">
+                  {f.items.map((p) => (
                     <div className="col-pair" key={p.top.id + '__' + p.bottom.id}>
                       {renderTile(p.top)}
                       {renderTile(p.bottom)}
                     </div>
-                  ))
-                  : f.items.map((r) => renderTile(r))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                renderItemsSplitByMarca(f.items, marca, marcas, marcaOf, renderTile)
+              )}
             </div>
           ))}
         </div>

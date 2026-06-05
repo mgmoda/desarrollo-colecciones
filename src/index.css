@@ -3952,6 +3952,32 @@ img.ship-ref-photo {
 .col-marca.m-mariset { background: #2c5a8c; color: #fff; }
 .col-marca.m-casania { background: #6b3c86; color: #fff; }
 .col-marca:not(.m-mariset):not(.m-casania) { background: var(--ink); color: #fff; }
+
+/* Sub-bloques por marca dentro de cada categoría */
+.col-marca-groups { display: flex; flex-direction: column; gap: 14px; }
+.col-marca-group { }
+.col-marca-group-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 0 8px 2px;
+}
+.col-marca-group + .col-marca-group .col-marca-group-head {
+  border-top: 1px dashed var(--hairline);
+  padding-top: 12px;
+  margin-top: 2px;
+}
+.col-marca-tag {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 10px; border-radius: 999px;
+}
+.col-marca-tag.m-mariset { background: #2c5a8c; color: #fff; }
+.col-marca-tag.m-casania { background: #6b3c86; color: #fff; }
+.col-marca-tag:not(.m-mariset):not(.m-casania) { background: #ece9e1; color: var(--ink-soft); }
+.col-marca-group-count {
+  font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600;
+  color: var(--ink);
+}
 .col-thumb:hover { border-color: var(--ink); box-shadow: var(--shadow-sm); }
 .col-thumb-img {
   display: flex; align-items: center; justify-content: center;

@@ -20,7 +20,7 @@ import {
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas } from './lib/domain.js'
-import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, formatPrice } from './lib/constants.js'
+import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, EXTERNAL_ORIGENES, formatPrice } from './lib/constants.js'
 
 const TABS = [
   { key: 'inicio', label: 'Inicio' },
@@ -124,6 +124,19 @@ export default function App() {
     const m = new Map()
     refIndex.forEach((r) => m.set(r.id, refTracks(orders, r.id)))
     return m
+  }, [refIndex, orders])
+
+  // Índice "MG" — excluye refs que SOLO existen por órdenes de orígenes
+  // externos (ej. Geodésica) y no tienen información manual guardada.
+  // Se usa en Resumen, Colección, Autorizaciones y Costos.
+  const refIndexMG = useMemo(() => {
+    return refIndex.filter((r) => {
+      if (!r._stub) return true // tiene datos guardados manualmente, mantener
+      const mine = orders.filter((o) => o.referencia === r.id)
+      if (mine.length === 0) return true
+      const allExternal = mine.every((o) => EXTERNAL_ORIGENES.has(o.origen))
+      return !allExternal
+    })
   }, [refIndex, orders])
 
   function openDetail(id) { setDetailRefId(id) }
@@ -419,7 +432,7 @@ export default function App() {
         {tab === 'inicio' && (
           <DashboardView
             orders={orders}
-            refs={refIndex}
+            refs={refIndexMG}
             onGoArea={(k) => setTab(k)}
             onGoTab={(t) => setTab(t)}
             onImport={() => setImportOpen(true)}
@@ -428,7 +441,7 @@ export default function App() {
         )}
         {tab === 'resumen' && (
           <ResumenView
-            refs={refIndex}
+            refs={refIndexMG}
             tracksByRef={tracksByRef}
             onEdit={openEdit}
             onNew={openNew}
@@ -443,15 +456,15 @@ export default function App() {
           <SeguimientoView orders={orders} refMap={refMap} onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
         {tab === 'coleccion' && (
-          <ColeccionView refs={refIndex} marcas={settings.marcas} tracksByRef={tracksByRef}
+          <ColeccionView refs={refIndexMG} marcas={settings.marcas} tracksByRef={tracksByRef}
             onOpenRef={openEdit} onNew={openNew} onViewImage={setLightbox} />
         )}
         {tab === 'autorizaciones' && (
-          <AutorizacionesView refs={refIndex} tracksByRef={tracksByRef} marcas={settings.marcas}
+          <AutorizacionesView refs={refIndexMG} tracksByRef={tracksByRef} marcas={settings.marcas}
             onOpenRef={openEdit} onViewImage={setLightbox} />
         )}
         {tab === 'costos' && (
-          <CostosView refs={refIndex} telasCatalog={settings.telas} onEdit={openEdit} onNew={openNew} onViewImage={setLightbox} />
+          <CostosView refs={refIndexMG} telasCatalog={settings.telas} onEdit={openEdit} onNew={openNew} onViewImage={setLightbox} />
         )}
       </main>
 

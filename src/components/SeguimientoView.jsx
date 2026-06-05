@@ -16,7 +16,7 @@ const REPORTS = [
   { v: 'ensamble', l: 'Ensamble' },
 ]
 
-const ORIGEN_ORDER = ['premuestra', 'muestra', 'produccion']
+const ORIGEN_ORDER = ['premuestra', 'muestra', 'produccion', 'geodesica']
 
 const DOW_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const MONTHS_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
@@ -99,7 +99,7 @@ export default function SeguimientoView({ orders, refMap, onViewImage, onOpenRef
       if (!map.has(key)) {
         map.set(key, {
           date: e._d, total: 0,
-          origenes: { premuestra: 0, muestra: 0, produccion: 0 },
+          origenes: { premuestra: 0, muestra: 0, produccion: 0, geodesica: 0 },
           talleres: new Map(),
           refs: new Map(),
         })
@@ -192,7 +192,7 @@ export default function SeguimientoView({ orders, refMap, onViewImage, onOpenRef
 
   // Totales globales para KPIs.
   const kpiOrigenes = useMemo(() => {
-    const o = { premuestra: 0, muestra: 0, produccion: 0 }
+    const o = { premuestra: 0, muestra: 0, produccion: 0, geodesica: 0 }
     enRango.forEach((e) => { if (e.origen && o[e.origen] != null) o[e.origen] += e.cantidad })
     return o
   }, [enRango])
@@ -208,7 +208,7 @@ export default function SeguimientoView({ orders, refMap, onViewImage, onOpenRef
     if (!dayDrill) return null
     const key = dayKey(dayDrill)
     const data = porDia.get(key)
-    if (!data) return { date: dayDrill, total: 0, talleres: [], refs: [], origenes: { premuestra: 0, muestra: 0, produccion: 0 } }
+    if (!data) return { date: dayDrill, total: 0, talleres: [], refs: [], origenes: { premuestra: 0, muestra: 0, produccion: 0, geodesica: 0 } }
     const talleres = [...data.talleres.entries()].map(([taller, unidades]) => ({ taller, unidades }))
       .sort((x, y) => y.unidades - x.unidades)
     const refMap2 = new Map()

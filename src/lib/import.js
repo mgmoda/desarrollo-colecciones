@@ -97,9 +97,11 @@ export async function parseProductionFile(file, origen) {
   }
   const groupRow = rows[h] || []
   const subRow = rows[h + 1] || []
-  // Si la fila siguiente parece de datos (trae una referencia tipo MG-...),
-  // entonces el encabezado es de una sola fila.
-  const subLooksData = /\bMG[- ]?\w/i.test((subRow.map(txt).join(' ')))
+  // Si la fila siguiente parece de datos (referencia tipo MG-XXX, GEO-XXX,
+  // o cualquier código alfanumérico con guion) entonces el encabezado es
+  // de una sola fila.
+  const subJoined = subRow.map(txt).join(' ')
+  const subLooksData = /\b[A-Z]{2,4}[- ]?\d/i.test(subJoined) || /^\s*\d{3,}/.test(subJoined)
   const colMap = buildColumnMap(groupRow, subLooksData ? [] : subRow)
   const firstDataRow = subLooksData ? h + 1 : h + 2
 

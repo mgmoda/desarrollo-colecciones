@@ -27,13 +27,19 @@ export const ORIGENES = {
   premuestra: 'Premuestra',
   muestra: 'Muestra',
   produccion: 'Producción',
+  geodesica: 'Geodésica',
 }
 
 export const ORIGEN_ABBR = {
   premuestra: 'Pre',
   muestra: 'Mue',
   produccion: 'Pro',
+  geodesica: 'Geo',
 }
+
+// Orígenes "externos": no son de MG, solo se ensamblan para terceros.
+// Se excluyen de Resumen, Colección, Autorizaciones y Costos.
+export const EXTERNAL_ORIGENES = new Set(['geodesica'])
 
 // Acabado del top: prenda con top aparte incluido, o prenda forrada
 // (p. ej. delanteros forrados, sin pieza suelta).

@@ -3345,6 +3345,7 @@ img.ship-ref-photo {
 .origen-chip.o-premuestra { background: #e9eef6; color: #2c5a8c; }
 .origen-chip.o-muestra { background: #efe6f3; color: #6b3c86; }
 .origen-chip.o-produccion { background: #e3f3e8; color: #1f7a44; }
+.origen-chip.o-geodesica { background: #fce6d4; color: #b35f15; }
 .dash-links { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
 
 /* ---------- Data table ---------- */
@@ -3820,6 +3821,7 @@ img.ship-ref-photo {
 .ens-orig-chip.o-premuestra { background: #efe6f3; color: #6b3c86; }
 .ens-orig-chip.o-muestra    { background: #e9eef6; color: #2c5a8c; }
 .ens-orig-chip.o-produccion { background: #e3f3e8; color: #1f7a44; }
+.ens-orig-chip.o-geodesica  { background: #fce6d4; color: #b35f15; }
 
 /* Chips grandes de origen (cabecera/modal) */
 .seg-origenes {
@@ -3839,6 +3841,8 @@ img.ship-ref-photo {
 .seg-orig-chip.o-muestra strong { color: #2c5a8c; }
 .seg-orig-chip.o-produccion { border-color: #c8e2cf; color: #1f7a44; background: #f4faf6; }
 .seg-orig-chip.o-produccion strong { color: #1f7a44; }
+.seg-orig-chip.o-geodesica  { border-color: #e9c7a2; color: #b35f15; background: #fff5ec; }
+.seg-orig-chip.o-geodesica strong { color: #b35f15; }
 
 /* Ranking en modo Corte: colores según origen */
 .ens-rank.rank-orig.o-premuestra .ens-rank-fill { background: #6b3c86; }
@@ -3848,6 +3852,8 @@ img.ship-ref-photo {
 .ens-rank.rank-orig.o-premuestra .ens-rank-pos { background: #6b3c86; color: #fff; }
 .ens-rank.rank-orig.o-muestra    .ens-rank-pos { background: #2c5a8c; color: #fff; }
 .ens-rank.rank-orig.o-produccion .ens-rank-pos { background: #1f7a44; color: #fff; }
+.ens-rank.rank-orig.o-geodesica  .ens-rank-fill { background: #b35f15; }
+.ens-rank.rank-orig.o-geodesica  .ens-rank-pos { background: #b35f15; color: #fff; }
 
 /* En modal del día: cuando solo hay una columna (modo Corte) */
 .ens-day-grid.single { grid-template-columns: 1fr; }

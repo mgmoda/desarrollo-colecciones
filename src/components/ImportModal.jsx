@@ -71,8 +71,14 @@ export default function ImportModal({ open, onClose, onImported, refIds, onAssig
           <Slot origen="premuestra" label={ORIGENES.premuestra} onImported={onImported} />
           <Slot origen="muestra" label={ORIGENES.muestra} onImported={onImported} />
           <Slot origen="produccion" label={ORIGENES.produccion} onImported={onImported} />
+          <Slot origen="geodesica" label={ORIGENES.geodesica + ' (ensamble externo)'} onImported={onImported} />
           <PhotoImport refIds={refIds || []} onAssignPhoto={onAssignPhoto} />
         </div>
+        <p className="muted" style={{ fontSize: 12, marginTop: 10 }}>
+          <strong>Geodésica</strong>: marca cliente para la que solo se hace ensamble.
+          Aparece en las áreas de producción (Trazos, Corte, Por enviar, En talleres,
+          Entrega ensamble) y en Seguimiento, pero NO en Resumen, Colección ni Autorizaciones.
+        </p>
       </div>
       <div className="modal-foot">
         <button className="btn btn-primary" onClick={onClose}>Listo</button>

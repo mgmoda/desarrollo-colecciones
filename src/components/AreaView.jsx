@@ -13,7 +13,7 @@ const STAGE_LABEL = {
   entregaEnsamble: 'Entrega ensamble', revisado: 'Revisado', entradaBodega: 'Entrada bodega',
 }
 
-export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
+export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef }) {
   const area = AREAS[areaKey]
   const [q, setQ] = useState('')
   const [origenF, setOrigenF] = useState('') // '' = todas
@@ -144,17 +144,22 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage }) {
                 const base = o.stages[baseStage] || {}
                 const taller = (o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || ''
                 const atraso = diasDesde(base.fecha)
+                const canOpen = !!(onOpenRef && ref)
                 return (
-                  <tr key={o.id} className={selected.has(o.id) ? 'row-sel' : ''}>
-                    <td className="cell-check">
+                  <tr key={o.id}
+                    className={(selected.has(o.id) ? 'row-sel' : '') + (canOpen ? ' row-click' : '')}
+                    onClick={() => canOpen && onOpenRef(ref)}
+                    title={canOpen ? 'Abrir ficha de la referencia (foto, costo, telas, etc.)' : undefined}>
+                    <td className="cell-check" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" checked={selected.has(o.id)} onChange={() => toggleSel(o.id)} />
                     </td>
                     <td className="cell-photo">
                       {ref && ref.image ? (
                         <img src={ref.image} alt={o.referencia} className="thumb"
-                          title="Ampliar foto" onClick={() => onViewImage(ref.image)} />
+                          title="Ampliar foto"
+                          onClick={(e) => { e.stopPropagation(); onViewImage(ref.image) }} />
                       ) : (
-                        <span className="thumb empty">—</span>
+                        <span className="thumb empty" title={canOpen ? 'Sin foto — clic en la fila para agregar' : ''}>＋</span>
                       )}
                     </td>
                     <td><span className={'origen-chip o-' + o.origen}>{ORIGEN_ABBR[o.origen] || o.origen}</span></td>

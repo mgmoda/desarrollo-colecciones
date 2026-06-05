@@ -126,14 +126,15 @@ export default function App() {
     return m
   }, [refIndex, orders])
 
-  // Índice "MG" — excluye refs que SOLO existen por órdenes de orígenes
-  // externos (ej. Geodésica) y no tienen información manual guardada.
-  // Se usa en Resumen, Colección, Autorizaciones y Costos.
+  // Índice "MG" — excluye refs cuyas órdenes vienen TODAS de orígenes
+  // externos (ej. Geodésica). Aunque la ref tenga foto / costo / etc.
+  // guardados, sigue excluida mientras solo exista en órdenes de Geodésica.
+  // Esto permite agregarle foto desde la ficha sin que reaparezca en
+  // Resumen, Colección, Autorizaciones ni Costos.
   const refIndexMG = useMemo(() => {
     return refIndex.filter((r) => {
-      if (!r._stub) return true // tiene datos guardados manualmente, mantener
       const mine = orders.filter((o) => o.referencia === r.id)
-      if (mine.length === 0) return true
+      if (mine.length === 0) return true // ref manual sin órdenes → es MG
       const allExternal = mine.every((o) => EXTERNAL_ORIGENES.has(o.origen))
       return !allExternal
     })
@@ -450,7 +451,8 @@ export default function App() {
           />
         )}
         {AREA_KEYS.includes(tab) && (
-          <AreaView areaKey={tab} orders={orders} refMap={refMap} onViewImage={setLightbox} />
+          <AreaView areaKey={tab} orders={orders} refMap={refMap}
+            onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
         {tab === 'ensamble' && (
           <SeguimientoView orders={orders} refMap={refMap} onViewImage={setLightbox} onOpenRef={openEdit} />

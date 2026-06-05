@@ -3802,10 +3802,55 @@ img.ship-ref-photo {
 }
 
 /* Modo semana: celdas más altas porque hay espacio */
-.ens-cal-semana .ens-cal-cell { min-height: 150px; }
-/* Modo mes: celdas un poco más altas para acomodar la lista de talleres */
-.ens-cal-mes .ens-cal-cell { min-height: 120px; }
+.ens-cal-semana .ens-cal-cell { min-height: 170px; }
+/* Modo mes: celdas un poco más altas para acomodar talleres + chips de origen */
+.ens-cal-mes .ens-cal-cell { min-height: 130px; }
 .ens-cal-mes .ens-cal-cell-units { font-size: 19px; }
+
+/* Chips de origen (Pre/Mue/Pro) — usados en celdas, modal y header de Seguimiento */
+.ens-cal-origenes {
+  display: flex; flex-wrap: wrap; gap: 3px;
+  margin-top: 3px;
+}
+.ens-orig-chip {
+  font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+.ens-orig-chip + .ens-orig-chip { margin-left: 3px; }
+.ens-orig-chip.o-premuestra { background: #efe6f3; color: #6b3c86; }
+.ens-orig-chip.o-muestra    { background: #e9eef6; color: #2c5a8c; }
+.ens-orig-chip.o-produccion { background: #e3f3e8; color: #1f7a44; }
+
+/* Chips grandes de origen (cabecera/modal) */
+.seg-origenes {
+  display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.seg-orig-chip {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  background: var(--surface); border: 1px solid var(--hairline);
+  padding: 6px 12px; border-radius: 999px;
+  font-size: 13px; font-family: 'Inter', sans-serif;
+  box-shadow: var(--shadow-sm);
+}
+.seg-orig-chip strong { font-weight: 700; letter-spacing: 0.02em; }
+.seg-orig-chip.o-premuestra { border-color: #d8c9e1; color: #6b3c86; background: #fbf6ff; }
+.seg-orig-chip.o-premuestra strong { color: #6b3c86; }
+.seg-orig-chip.o-muestra    { border-color: #cfe0ee; color: #2c5a8c; background: #f4f9fd; }
+.seg-orig-chip.o-muestra strong { color: #2c5a8c; }
+.seg-orig-chip.o-produccion { border-color: #c8e2cf; color: #1f7a44; background: #f4faf6; }
+.seg-orig-chip.o-produccion strong { color: #1f7a44; }
+
+/* Ranking en modo Corte: colores según origen */
+.ens-rank.rank-orig.o-premuestra .ens-rank-fill { background: #6b3c86; }
+.ens-rank.rank-orig.o-muestra    .ens-rank-fill { background: #2c5a8c; }
+.ens-rank.rank-orig.o-produccion .ens-rank-fill { background: #1f7a44; }
+.ens-rank.rank-orig .ens-rank-pos { background: #ece9e1; color: var(--ink-soft); }
+.ens-rank.rank-orig.o-premuestra .ens-rank-pos { background: #6b3c86; color: #fff; }
+.ens-rank.rank-orig.o-muestra    .ens-rank-pos { background: #2c5a8c; color: #fff; }
+.ens-rank.rank-orig.o-produccion .ens-rank-pos { background: #1f7a44; color: #fff; }
+
+/* En modal del día: cuando solo hay una columna (modo Corte) */
+.ens-day-grid.single { grid-template-columns: 1fr; }
 
 /* Tarjeta de modo "Día" */
 .ens-day-card {

@@ -4,7 +4,7 @@ import DashboardView from './components/DashboardView.jsx'
 import ResumenView from './components/ResumenView.jsx'
 import AreaView from './components/AreaView.jsx'
 import CostosView from './components/CostosView.jsx'
-import EnsambleView from './components/EnsambleView.jsx'
+import SeguimientoView from './components/SeguimientoView.jsx'
 import ColeccionView from './components/ColeccionView.jsx'
 import AutorizacionesView from './components/AutorizacionesView.jsx'
 import ImportModal from './components/ImportModal.jsx'
@@ -30,7 +30,7 @@ const TABS = [
   { key: 'enviar', label: 'Por enviar' },
   { key: 'talleres', label: 'En talleres' },
   { key: 'entrega', label: 'Entrega ensamble' },
-  { key: 'ensamble', label: 'Ensamble' },
+  { key: 'ensamble', label: 'Seguimiento' },
   { key: 'coleccion', label: 'Colección' },
   { key: 'autorizaciones', label: 'Autorizaciones' },
   { key: 'costos', label: 'Costos' },
@@ -440,7 +440,7 @@ export default function App() {
           <AreaView areaKey={tab} orders={orders} refMap={refMap} onViewImage={setLightbox} />
         )}
         {tab === 'ensamble' && (
-          <EnsambleView orders={orders} refMap={refMap} onViewImage={setLightbox} onOpenRef={openEdit} />
+          <SeguimientoView orders={orders} refMap={refMap} onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
         {tab === 'coleccion' && (
           <ColeccionView refs={refIndex} marcas={settings.marcas} tracksByRef={tracksByRef}

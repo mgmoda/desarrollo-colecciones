@@ -5,6 +5,7 @@ import ResumenView from './components/ResumenView.jsx'
 import AreaView from './components/AreaView.jsx'
 import CostosView from './components/CostosView.jsx'
 import SeguimientoView from './components/SeguimientoView.jsx'
+import GeodesicaView from './components/GeodesicaView.jsx'
 import ColeccionView from './components/ColeccionView.jsx'
 import AutorizacionesView from './components/AutorizacionesView.jsx'
 import ImportModal from './components/ImportModal.jsx'
@@ -34,6 +35,7 @@ const TABS = [
   { key: 'coleccion', label: 'Colección' },
   { key: 'autorizaciones', label: 'Autorizaciones' },
   { key: 'costos', label: 'Costos' },
+  { key: 'geodesica', label: 'Geodésica' },
 ]
 const AREA_KEYS = ['trazos', 'corte', 'enviar', 'talleres', 'entrega']
 const TAB_KEY = 'desarrollo-colecciones:tab'
@@ -149,6 +151,15 @@ export default function App() {
   async function handleImported(origen, newOrders) {
     await dbReplaceOrders(origen, newOrders)
     setOrders((prev) => [...prev.filter((o) => o.origen !== origen), ...newOrders])
+  }
+
+  // Edita inline un campo simple de la referencia (ej. costo desde Geodésica).
+  function handleSetField(refId, field, value) {
+    const current = refMap.get(refId)
+    const base = current && !current._stub ? current : emptyRef(refId)
+    const updated = { ...base, id: refId, referencia: refId, [field]: value, updatedAt: Date.now() }
+    upsertRefState(updated)
+    dbUpsertRef(updated).catch((e) => console.error(e))
   }
 
   // Asigna una foto a una referencia (creando el registro si no existía).
@@ -467,6 +478,10 @@ export default function App() {
         )}
         {tab === 'costos' && (
           <CostosView refs={refIndexMG} telasCatalog={settings.telas} onEdit={openEdit} onNew={openNew} onViewImage={setLightbox} />
+        )}
+        {tab === 'geodesica' && (
+          <GeodesicaView orders={orders} refMap={refMap}
+            onViewImage={setLightbox} onOpenRef={openEdit} onSetField={handleSetField} />
         )}
       </main>
 

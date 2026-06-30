@@ -6,6 +6,7 @@ import AreaView from './components/AreaView.jsx'
 import CostosView from './components/CostosView.jsx'
 import SeguimientoView from './components/SeguimientoView.jsx'
 import GeodesicaView from './components/GeodesicaView.jsx'
+import SyncIndicator from './components/SyncIndicator.jsx'
 import ColeccionView from './components/ColeccionView.jsx'
 import AutorizacionesView from './components/AutorizacionesView.jsx'
 import ImportModal from './components/ImportModal.jsx'
@@ -73,6 +74,9 @@ export default function App() {
   }, [])
 
   const userId = session && session.user ? session.user.id : null
+  const [lastSync, setLastSync] = useState(null)
+  const [syncing, setSyncing] = useState(false)
+
   useEffect(() => {
     if (!userId) { setLoaded(false); return }
     let cancelled = false
@@ -112,10 +116,54 @@ export default function App() {
           dbSaveSettings(next).catch((e) => console.error(e))
         }
         setLoaded(true)
+        setLastSync(Date.now())
       })
       .catch((e) => { console.error('Cargar datos:', e); if (!cancelled) setLoaded(true) })
     return () => { cancelled = true }
   }, [userId])
+
+  // Sincronización silenciosa cada 25 segundos: trae cambios hechos en otros
+  // computadores. Se PAUSA mientras tengas la ficha o el importador abierto
+  // para no pisar lo que estás editando. Las refs guardadas localmente
+  // (optimistic) más recientes que la versión remota se conservan.
+  async function syncFromServer() {
+    if (!userId) return
+    if (formOpen || importOpen) return
+    setSyncing(true)
+    try {
+      const [o, r] = await Promise.all([dbLoadOrders(), dbLoadRefs()])
+      setOrders(o)
+      // Merge: conservamos la versión local si su updatedAt es más reciente
+      // (significa que tenemos un guardado optimistic aún en vuelo).
+      setRefs((local) => {
+        const localMap = new Map(local.map((rr) => [rr.id, rr]))
+        const remoteFixed = r.map((rr) => {
+          const { _stub: _ignore, ...clean } = rr
+          if (clean.marca === 'Maricet') clean.marca = 'Mariset'
+          const localRef = localMap.get(clean.id)
+          if (localRef && (localRef.updatedAt || 0) > (clean.updatedAt || 0)) return localRef
+          return clean
+        })
+        // Mantén refs locales que aún no estén en remoto (recién creadas).
+        const remoteIds = new Set(remoteFixed.map((rr) => rr.id))
+        local.forEach((rr) => { if (!remoteIds.has(rr.id)) remoteFixed.push(rr) })
+        return remoteFixed
+      })
+      setLastSync(Date.now())
+    } catch (e) {
+      console.error('Sincronizar:', e)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  // Timer del polling cada 25s.
+  useEffect(() => {
+    if (!userId || !loaded) return
+    const id = setInterval(() => { syncFromServer() }, 25000)
+    return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, loaded, formOpen, importOpen])
 
   useEffect(() => { localStorage.setItem(TAB_KEY, tab) }, [tab])
 
@@ -445,6 +493,7 @@ export default function App() {
             ))}
           </nav>
           <RefSearch refIds={refIndex.map((r) => r.id)} onSelect={openDetail} />
+          <SyncIndicator lastSync={lastSync} syncing={syncing} paused={formOpen || importOpen} onRefresh={syncFromServer} />
           <button className="btn btn-ghost" onClick={() => setImportOpen(true)}>Importar</button>
           <button className="logout-btn" onClick={() => supabase.auth.signOut()} title="Cerrar sesión">Salir</button>
         </div>

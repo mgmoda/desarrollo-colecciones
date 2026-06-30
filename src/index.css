@@ -3359,6 +3359,9 @@ img.ship-ref-photo {
   width: 110px; padding: 4px 8px;
   text-align: right; font-variant-numeric: tabular-nums;
 }
+/* Fila despachada: queda atenuada para distinguirla en la vista "Todas" */
+.data-table tbody tr.geo-despachada td { background: #f6fbf7; color: #6e6a5e; }
+.data-table tbody tr.geo-despachada:hover td { background: #ecf6ef; }
 
 /* Barra de acción de Autorizaciones (azul corporativo) */
 .aut-actionbar {
@@ -3549,6 +3552,7 @@ img.ship-ref-photo {
 .sort-ind { margin-left: 5px; font-size: 10px; opacity: 0.4; }
 .sort-th.active .sort-ind { opacity: 1; }
 .tag-warn { background: #fbe6e3; color: #b23121; }
+.tag-ok { background: #e3f3e8; color: #1f7a44; font-weight: 600; }
 
 /* ---------- Buscador global de referencia ---------- */
 .ref-search { position: relative; }

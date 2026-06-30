@@ -162,6 +162,16 @@ export default function App() {
     dbUpsertRef(updated).catch((e) => console.error(e))
   }
 
+  // Edita varios campos a la vez con un solo upsert (mejor para batch ops
+  // como "marcar como despachada" desde Geodésica).
+  function handleSetFields(refId, fields) {
+    const current = refMap.get(refId)
+    const base = current && !current._stub ? current : emptyRef(refId)
+    const updated = { ...base, id: refId, referencia: refId, ...fields, updatedAt: Date.now() }
+    upsertRefState(updated)
+    dbUpsertRef(updated).catch((e) => console.error(e))
+  }
+
   // Asigna una foto a una referencia (creando el registro si no existía).
   async function handleAssignPhoto(refId, dataUrl) {
     const current = refMap.get(refId)
@@ -481,7 +491,8 @@ export default function App() {
         )}
         {tab === 'geodesica' && (
           <GeodesicaView orders={orders} refMap={refMap}
-            onViewImage={setLightbox} onOpenRef={openEdit} onSetField={handleSetField} />
+            onViewImage={setLightbox} onOpenRef={openEdit}
+            onSetField={handleSetField} onSetFields={handleSetFields} />
         )}
       </main>
 

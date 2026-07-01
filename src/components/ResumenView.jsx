@@ -87,6 +87,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
   const [ocultarDescartadas, setOcultarDescartadas] = useState(false)
   const [soloAprobadasLimpias, setSoloAprobadasLimpias] = useState(false)
   const [soloCostosPorRevisar, setSoloCostosPorRevisar] = useState(false)
+  const [soloCostosRevisados, setSoloCostosRevisados] = useState(false)
   const [selected, setSelected] = useState(() => new Set())
   const { sortKey, sortDir, toggle } = useSort('referencia', 'asc')
 
@@ -126,6 +127,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
     if (ocultarDescartadas) list = list.filter((r) => medicionInfo(r).estado !== 'descartada')
     if (soloAprobadasLimpias) list = list.filter((r) => { const m = medicionInfo(r); return m.estado === 'aprobada' && m.repeticiones === 0 })
     if (soloCostosPorRevisar) list = list.filter((r) => Number(r.costo) > 0 && !r.costoRevisado)
+    if (soloCostosRevisados) list = list.filter((r) => Number(r.costo) > 0 && r.costoRevisado)
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((r) =>
@@ -151,7 +153,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
     }
     RESUMEN_FLAGS.forEach((f) => { accessors['flag_' + f.key] = (r) => flagRank((r.flags || {})[f.key]) })
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [refs, q, soloRepetidas, soloPendientes, soloConjuntos, ocultarDescartadas, soloAprobadasLimpias, soloCostosPorRevisar, sortKey, sortDir, tracksByRef])
+  }, [refs, q, soloRepetidas, soloPendientes, soloConjuntos, ocultarDescartadas, soloAprobadasLimpias, soloCostosPorRevisar, soloCostosRevisados, sortKey, sortDir, tracksByRef])
 
   const repetidasCount = useMemo(
     () => refs.filter((r) => veces(r) > 1).length,
@@ -159,6 +161,8 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
   )
   const pendientesCount = useMemo(() => refs.filter((r) => r.pendiente).length, [refs])
   const conjuntosCount = useMemo(() => refs.filter((r) => r.conjunto && r.conjuntoRef).length, [refs])
+  const costosRevisadosCount = useMemo(() => refs.filter((r) => Number(r.costo) > 0 && r.costoRevisado).length, [refs])
+  const costosPorRevisarCount = useMemo(() => refs.filter((r) => Number(r.costo) > 0 && !r.costoRevisado).length, [refs])
 
   const thProps = { sortKey, sortDir, onSort: toggle }
 
@@ -190,6 +194,16 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
           <p className="view-sub">
             {rows.length} referencias{repetidasCount > 0 ? ` · ${repetidasCount} repetidas` : ''}
             {pendientesCount > 0 ? ` · ${pendientesCount} con pendiente` : ''}
+            {(costosRevisadosCount + costosPorRevisarCount) > 0 && (
+              <>
+                {' '}·{' '}
+                <span title="Costos revisados / por revisar" style={{ color: '#1f7a44' }}>
+                  {costosRevisadosCount} ✓
+                </span>
+                {' / '}
+                <span style={{ color: '#b23121' }}>{costosPorRevisarCount} por revisar</span>
+              </>
+            )}
           </p>
         </div>
         <div className="view-actions">
@@ -219,7 +233,17 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
           </label>
           <label className="check check-alert">
             <input type="checkbox" checked={soloCostosPorRevisar}
-              onChange={(e) => setSoloCostosPorRevisar(e.target.checked)} /> Costos por revisar
+              onChange={(e) => {
+                setSoloCostosPorRevisar(e.target.checked)
+                if (e.target.checked) setSoloCostosRevisados(false)
+              }} /> Costos por revisar ({costosPorRevisarCount})
+          </label>
+          <label className="check check-ok">
+            <input type="checkbox" checked={soloCostosRevisados}
+              onChange={(e) => {
+                setSoloCostosRevisados(e.target.checked)
+                if (e.target.checked) setSoloCostosPorRevisar(false)
+              }} /> Costos revisados ({costosRevisadosCount})
           </label>
           {selected.size > 0 && (
             <button className="btn btn-primary" onClick={generatePdf}>Generar PDF ({selected.size})</button>

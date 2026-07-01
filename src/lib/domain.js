@@ -156,7 +156,7 @@ export function emptyRef(id) {
     conjunto: false,
     conjuntoRef: '',
     colores: [],
-    colorMuestra: '', precioTela: '', costo: '', topIncluido: '',
+    colorMuestra: '', precioTela: '', costo: '', costoRevisado: false, topIncluido: '',
     cantidad: '',
     // Cada tela: { nombre, disponible, metros, nota }. Una prenda puede llevar varias.
     telas: [],

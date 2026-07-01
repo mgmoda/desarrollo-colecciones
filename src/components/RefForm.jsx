@@ -156,8 +156,13 @@ export default function RefForm({
             <div className="field-row">
               <div className="field">
                 <label className="field-label">Costo</label>
-                <input className="input" value={form.costo}
+                <input className={'input' + (form.costoRevisado ? ' input-checked' : '')} value={form.costo}
                   onChange={(e) => set('costo', e.target.value)} placeholder="109900" />
+                <label className="check check-inline" style={{ marginTop: 6 }}>
+                  <input type="checkbox" checked={!!form.costoRevisado}
+                    onChange={(e) => set('costoRevisado', e.target.checked)} />
+                  <span>Costo revisado (final)</span>
+                </label>
               </div>
               <div className="field">
                 <label className="field-label">Cantidad</label>

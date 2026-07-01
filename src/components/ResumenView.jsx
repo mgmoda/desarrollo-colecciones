@@ -86,6 +86,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
   const [soloConjuntos, setSoloConjuntos] = useState(false)
   const [ocultarDescartadas, setOcultarDescartadas] = useState(false)
   const [soloAprobadasLimpias, setSoloAprobadasLimpias] = useState(false)
+  const [soloCostosPorRevisar, setSoloCostosPorRevisar] = useState(false)
   const [selected, setSelected] = useState(() => new Set())
   const { sortKey, sortDir, toggle } = useSort('referencia', 'asc')
 
@@ -124,6 +125,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
     if (soloConjuntos) list = list.filter((r) => r.conjunto && r.conjuntoRef)
     if (ocultarDescartadas) list = list.filter((r) => medicionInfo(r).estado !== 'descartada')
     if (soloAprobadasLimpias) list = list.filter((r) => { const m = medicionInfo(r); return m.estado === 'aprobada' && m.repeticiones === 0 })
+    if (soloCostosPorRevisar) list = list.filter((r) => Number(r.costo) > 0 && !r.costoRevisado)
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((r) =>
@@ -149,7 +151,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
     }
     RESUMEN_FLAGS.forEach((f) => { accessors['flag_' + f.key] = (r) => flagRank((r.flags || {})[f.key]) })
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [refs, q, soloRepetidas, soloPendientes, soloConjuntos, ocultarDescartadas, soloAprobadasLimpias, sortKey, sortDir, tracksByRef])
+  }, [refs, q, soloRepetidas, soloPendientes, soloConjuntos, ocultarDescartadas, soloAprobadasLimpias, soloCostosPorRevisar, sortKey, sortDir, tracksByRef])
 
   const repetidasCount = useMemo(
     () => refs.filter((r) => veces(r) > 1).length,
@@ -214,6 +216,10 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
           <label className="check check-ok">
             <input type="checkbox" checked={soloAprobadasLimpias}
               onChange={(e) => setSoloAprobadasLimpias(e.target.checked)} /> Aprobadas sin repetición
+          </label>
+          <label className="check check-alert">
+            <input type="checkbox" checked={soloCostosPorRevisar}
+              onChange={(e) => setSoloCostosPorRevisar(e.target.checked)} /> Costos por revisar
           </label>
           {selected.size > 0 && (
             <button className="btn btn-primary" onClick={generatePdf}>Generar PDF ({selected.size})</button>
@@ -332,7 +338,18 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
                   </td>
                   <td className="td-flag"><FlagChip value={(r.flags || {}).entrega} /></td>
                   <td className="num">{r.cantidad}</td>
-                  <td className="num">{formatPrice(r.costo)}</td>
+                  <td className="num">
+                    {Number(r.costo) > 0 && (
+                      <>
+                        <span className={r.costoRevisado ? 'costo-final' : 'costo-tentativo'}>
+                          {formatPrice(r.costo)}
+                        </span>
+                        {r.costoRevisado
+                          ? <span className="costo-check" title="Costo revisado (final)">✓</span>
+                          : <span className="costo-tent-tag" title="Costo tentativo (no revisado)">·</span>}
+                      </>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -309,7 +309,11 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
         </span>
         <span className="col-thumb-ref">{r.referencia}</span>
         {!ocultarPrecios && Number(r.costo) > 0 && (
-          <span className="col-thumb-price">{formatPrice(r.costo)}</span>
+          <span className={'col-thumb-price' + (r.costoRevisado ? ' is-final' : '')}
+            title={r.costoRevisado ? 'Costo revisado (final)' : 'Costo tentativo'}>
+            {formatPrice(r.costo)}
+            {r.costoRevisado && <span className="col-thumb-check">✓</span>}
+          </span>
         )}
       </button>
     )

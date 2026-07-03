@@ -4073,6 +4073,15 @@ img.ship-ref-photo {
   text-align: center; line-height: 1.1;
   background: var(--surface);
 }
+.col-thumb-price.is-final {
+  color: #1f7a44; font-weight: 700;
+}
+.col-thumb-check {
+  display: inline-block; margin-left: 4px;
+  width: 11px; height: 11px; line-height: 11px; text-align: center;
+  background: #1f7a44; color: #fff; border-radius: 50%;
+  font-size: 8px; font-weight: 700; vertical-align: 1px;
+}
 
 /* Pareja de conjunto (blusa arriba + pantalón abajo) */
 .col-pair {

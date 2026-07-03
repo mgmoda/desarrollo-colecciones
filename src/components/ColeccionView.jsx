@@ -22,22 +22,32 @@ function esEst(ref) { return ref.estampado === 'sublimacion' || ref.estampado ==
 function isTop(r) { return ['blusa', 'camisa', 'top', 'chaqueta'].some((k) => esTipo(r, k)) }
 function isBottom(r) { return ['pantalon', 'short', 'falda'].some((k) => esTipo(r, k)) }
 
+// Orden por precio de mayor a menor. Refs sin costo van al final.
+// Empate por precio → orden alfabético de referencia como tie-breaker estable.
+const byPriceDesc = (a, b) => {
+  const ca = Number(a.costo) || 0
+  const cb = Number(b.costo) || 0
+  if (cb !== ca) return cb - ca
+  return (a.referencia || '').localeCompare(b.referencia || '')
+}
+
 // Divide los ítems de una categoría en sub-bloques por marca.
 // Si solo hay una marca presente (o si el usuario ya filtró por marca),
 // devuelve la lista plana sin sub-encabezados (no aporta dividir).
 function renderItemsSplitByMarca(items, marcaFiltro, marcas, marcaOf, renderTile) {
+  const sorted = [...items].sort(byPriceDesc)
   if (marcaFiltro) {
-    return <div className="col-thumbs">{items.map((r) => renderTile(r))}</div>
+    return <div className="col-thumbs">{sorted.map((r) => renderTile(r))}</div>
   }
   const groups = new Map()
-  items.forEach((r) => {
+  sorted.forEach((r) => {
     const m = marcaOf(r)
     if (!groups.has(m)) groups.set(m, [])
     groups.get(m).push(r)
   })
   const ordered = [...marcas, 'Sin marca'].filter((m) => groups.has(m))
   if (ordered.length <= 1) {
-    return <div className="col-thumbs">{items.map((r) => renderTile(r))}</div>
+    return <div className="col-thumbs">{sorted.map((r) => renderTile(r))}</div>
   }
   return (
     <div className="col-marca-groups">
@@ -133,8 +143,16 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
       return { ...c, items }
     })
     // Conjuntos = pares enlazados (solo si ambas prendas están activas).
+    // Ordenamos los pares por precio del top (mayor a menor) para que quede
+    // consistente con las demás categorías.
     const pairs = buildConjuntoPairs(activas)
     pairs.forEach((p) => { usadas.add(p.top.id); usadas.add(p.bottom.id) })
+    pairs.sort((a, b) => {
+      const ca = Math.max(Number(a.top.costo) || 0, Number(a.bottom.costo) || 0)
+      const cb = Math.max(Number(b.top.costo) || 0, Number(b.bottom.costo) || 0)
+      if (cb !== ca) return cb - ca
+      return (a.top.referencia || '').localeCompare(b.top.referencia || '')
+    })
     if (pairs.length) {
       out.push({ key: 'conjuntos-pairs', label: 'Conjuntos', tone: 'neutral', items: pairs, pairsMode: true })
     }

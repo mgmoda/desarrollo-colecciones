@@ -50,13 +50,13 @@ const UMBRAL_EXTRA_ROJO = 7
 // - state 'none' + con extra → muestra chip "Extra" + días esperando
 // - state 'programada'/'autorizada'/'no' → muestra ese estado
 //   y si hay extra, un chip pequeño "Extra" al lado como identificador
-function ProduccionCell({ ref, state, onToggleExtra }) {
-  const isExtra = !!ref.produccionExtra
-  const dias = isExtra && ref.produccionExtraFecha
-    ? Math.floor((Date.now() - Number(ref.produccionExtraFecha)) / 86400000)
+function ProduccionCell({ item, state, onToggleExtra }) {
+  const isExtra = !!item.produccionExtra
+  const dias = isExtra && item.produccionExtraFecha
+    ? Math.floor((Date.now() - Number(item.produccionExtraFecha)) / 86400000)
     : null
 
-  function toggle(e) { e.stopPropagation(); onToggleExtra && onToggleExtra(ref) }
+  function toggle(e) { e.stopPropagation(); onToggleExtra && onToggleExtra(item) }
 
   // Programada / autorizada / no → estado normal + chip Extra pequeño si aplica
   if (state !== 'none') {
@@ -401,7 +401,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
                   <td className="td-flag"><EstadoMP state={estadoMP(tracksByRef && tracksByRef.get(r.id), r.flags, 'muestra', 'muestras')} /></td>
                   <td className="td-flag" onClick={(e) => e.stopPropagation()}>
                     <ProduccionCell
-                      ref={r}
+                      item={r}
                       state={estadoMP(tracksByRef && tracksByRef.get(r.id), r.flags, 'produccion', 'produccion')}
                       onToggleExtra={onToggleExtra} />
                   </td>

@@ -15,10 +15,11 @@ const ACCENT = [44, 90, 140]
 const PHOTO_BG = [238, 236, 232]
 const HAIRLINE = [216, 214, 207]
 
-const TIPO_LABEL = { muestras: 'MUESTRAS', produccion: 'PRODUCCIÓN' }
+const TIPO_LABEL = { muestras: 'MUESTRAS', produccion: 'PRODUCCIÓN', extra: 'PROD. EXTRA' }
 const TIPO_COLOR = {
   muestras: [107, 60, 134],
   produccion: [31, 122, 68],
+  extra: [179, 95, 21],
 }
 
 function loadImageSize(src) {

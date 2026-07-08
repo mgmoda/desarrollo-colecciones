@@ -158,6 +158,12 @@ export function emptyRef(id) {
     colores: [],
     colorMuestra: '', precioTela: '', costo: '', costoRevisado: false, topIncluido: '',
     cantidad: '',
+    // "Producción extra": autorización rápida hecha desde el Resumen sobre
+    // una ref que originalmente solo iba a Muestras. Es solo un marcador;
+    // el estado de producción real sigue derivado de los tracks e importes.
+    // El chip "Extra" se queda para siempre como identificador histórico.
+    produccionExtra: false,
+    produccionExtraFecha: '',
     // Cada tela: { nombre, disponible, metros, nota }. Una prenda puede llevar varias.
     telas: [],
     pendiente: false, pendienteNota: '', pendienteFecha: '',

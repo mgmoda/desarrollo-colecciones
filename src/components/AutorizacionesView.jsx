@@ -31,9 +31,10 @@ export default function AutorizacionesView({ refs, tracksByRef, marcas, onOpenRe
   const [selected, setSelected] = useState(() => new Set())
   const [busyPdf, setBusyPdf] = useState(false)
 
-  const { muestrasList, produccionList } = useMemo(() => {
+  const { muestrasList, produccionList, extrasList } = useMemo(() => {
     const muestras = []
     const produccion = []
+    const extras = []
     refs.forEach((r) => {
       const tracks = tracksByRef && tracksByRef.get(r.id)
       const eM = estadoMP(tracks, r.flags, 'muestra', 'muestras')
@@ -46,11 +47,19 @@ export default function AutorizacionesView({ refs, tracksByRef, marcas, onOpenRe
         const fecha = (r.flags && r.flags.produccion && r.flags.produccion.fecha) || ''
         produccion.push({ ref: r, tracks, fecha, dias: diasDesde(fecha) })
       }
+      // Producción extra pendiente: flag marcado + aún no importada la producción.
+      if (r.produccionExtra && eP !== 'programada') {
+        const ts = Number(r.produccionExtraFecha) || 0
+        const fecha = ts ? new Date(ts).toISOString().slice(0, 10) : ''
+        const dias = ts ? Math.floor((Date.now() - ts) / 86400000) : null
+        extras.push({ ref: r, tracks, fecha, dias })
+      }
     })
     const sortByDias = (a, b) => (b.dias != null ? b.dias : -1) - (a.dias != null ? a.dias : -1)
     muestras.sort(sortByDias)
     produccion.sort(sortByDias)
-    return { muestrasList: muestras, produccionList: produccion }
+    extras.sort(sortByDias)
+    return { muestrasList: muestras, produccionList: produccion, extrasList: extras }
   }, [refs, tracksByRef])
 
   function aplicarFiltro(list) {
@@ -63,9 +72,11 @@ export default function AutorizacionesView({ refs, tracksByRef, marcas, onOpenRe
   }
   const muestrasFiltradas = aplicarFiltro(muestrasList)
   const produccionFiltradas = aplicarFiltro(produccionList)
+  const extrasFiltradas = aplicarFiltro(extrasList)
 
   const maxDiasMuestras = muestrasList.reduce((m, x) => Math.max(m, x.dias || 0), 0)
   const maxDiasProduccion = produccionList.reduce((m, x) => Math.max(m, x.dias || 0), 0)
+  const maxDiasExtras = extrasList.reduce((m, x) => Math.max(m, x.dias || 0), 0)
 
   // --- Selección ---
   function toggleSel(tipo, refId) {
@@ -85,13 +96,14 @@ export default function AutorizacionesView({ refs, tracksByRef, marcas, onOpenRe
   }
   function isSel(tipo, refId) { return selected.has(selKey(tipo, refId)) }
 
-  // Items seleccionados (incluyendo ambos tipos), filtrados por la vista actual.
+  // Items seleccionados (incluyendo los tres tipos), filtrados por la vista actual.
   const itemsSel = useMemo(() => {
     const out = []
     muestrasFiltradas.forEach((x) => { if (isSel('muestras', x.ref.id)) out.push({ tipo: 'muestras', ...x }) })
     produccionFiltradas.forEach((x) => { if (isSel('produccion', x.ref.id)) out.push({ tipo: 'produccion', ...x }) })
+    extrasFiltradas.forEach((x) => { if (isSel('extra', x.ref.id)) out.push({ tipo: 'extra', ...x }) })
     return out
-  }, [muestrasFiltradas, produccionFiltradas, selected])
+  }, [muestrasFiltradas, produccionFiltradas, extrasFiltradas, selected])
 
   async function generarPdf() {
     if (itemsSel.length === 0) return
@@ -220,6 +232,18 @@ export default function AutorizacionesView({ refs, tracksByRef, marcas, onOpenRe
             </span>
           </div>
         </div>
+        <div className={'kpi-marca aut-kpi ex'}>
+          <div className="kpi-marca-name">Producción extra pendiente</div>
+          <div className="kpi-marca-main">
+            <span className="kpi-marca-num">{extrasList.length}</span>
+            <span className="kpi-marca-num-sub">referencias</span>
+          </div>
+          <div className="kpi-marca-chips">
+            <span className={'kpi-chip' + (maxDiasExtras >= UMBRAL_ROJO ? ' rep' : ' warn')}>
+              {maxDiasExtras > 0 ? `La más antigua hace ${maxDiasExtras} días` : 'Sin demoras'}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Barra de acción: seleccionados + PDF */}
@@ -228,7 +252,7 @@ export default function AutorizacionesView({ refs, tracksByRef, marcas, onOpenRe
           <strong>{itemsSel.length}</strong> seleccionadas
           {itemsSel.length > 0 && (
             <span className="muted">
-              {' '}· {itemsSel.filter((x) => x.tipo === 'muestras').length} muestras · {itemsSel.filter((x) => x.tipo === 'produccion').length} producción
+              {' '}· {itemsSel.filter((x) => x.tipo === 'muestras').length} muestras · {itemsSel.filter((x) => x.tipo === 'produccion').length} producción · {itemsSel.filter((x) => x.tipo === 'extra').length} extra
             </span>
           )}
         </div>
@@ -245,6 +269,7 @@ export default function AutorizacionesView({ refs, tracksByRef, marcas, onOpenRe
 
       {renderTabla('Autorizadas para Muestras', muestrasFiltradas, 'mu', 'muestras')}
       {renderTabla('Autorizadas para Producción', produccionFiltradas, 'pr', 'produccion')}
+      {renderTabla('Autorizadas para Producción extra', extrasFiltradas, 'ex', 'extra')}
     </div>
   )
 }

@@ -43,6 +43,60 @@ function EstadoMP({ state }) {
   return <span className={'flag ' + MP_CLS[state]} title={tip}>{MP_LABEL[state]}</span>
 }
 
+const UMBRAL_EXTRA_ROJO = 7
+
+// Celda de Producción con soporte para "Producción extra".
+// - state 'none' + sin extra → muestra botón "+ Extra"
+// - state 'none' + con extra → muestra chip "Extra" + días esperando
+// - state 'programada'/'autorizada'/'no' → muestra ese estado
+//   y si hay extra, un chip pequeño "Extra" al lado como identificador
+function ProduccionCell({ ref, state, onToggleExtra }) {
+  const isExtra = !!ref.produccionExtra
+  const dias = isExtra && ref.produccionExtraFecha
+    ? Math.floor((Date.now() - Number(ref.produccionExtraFecha)) / 86400000)
+    : null
+
+  function toggle(e) { e.stopPropagation(); onToggleExtra && onToggleExtra(ref) }
+
+  // Programada / autorizada / no → estado normal + chip Extra pequeño si aplica
+  if (state !== 'none') {
+    return (
+      <span className="prod-cell">
+        <EstadoMP state={state} />
+        {isExtra && (
+          <span className="flag-extra flag-extra-sm" title="Autorizada como producción extra" onClick={toggle}>
+            Extra
+          </span>
+        )}
+      </span>
+    )
+  }
+  // Sin decidir + con marca extra → chip Extra + días esperando
+  if (isExtra) {
+    return (
+      <span className="prod-cell">
+        <span className="flag-extra" onClick={toggle}
+          title="Autorizada como producción extra · clic para quitar">
+          Extra
+        </span>
+        {dias != null && (
+          <span className={'flag flag-small ' + (dias >= UMBRAL_EXTRA_ROJO ? 'flag-no' : 'flag-warn')}
+            title={`Esperando programación hace ${dias} día(s)`}>
+            {dias}d
+          </span>
+        )}
+      </span>
+    )
+  }
+  // Sin decidir y sin marca → botón para autorizar en 1 clic
+  return (
+    <button className="btn-extra-add" onClick={toggle}
+      title="Autorizar como producción extra (un solo clic)">
+      + Extra
+    </button>
+  )
+}
+
 // Celda derivada del proceso de medición (estado + fecha + días en tooltip).
 function MedicionChip({ ref }) {
   const m = medicionInfo(ref)
@@ -79,7 +133,7 @@ function FlagChip({ value }) {
   return <span className="flag flag-none">—</span>
 }
 
-export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdit, onNew, onViewImage, onOpenDetail }) {
+export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdit, onNew, onViewImage, onOpenDetail, onToggleExtra }) {
   const [q, setQ] = useState('')
   const [soloRepetidas, setSoloRepetidas] = useState(false)
   const [soloPendientes, setSoloPendientes] = useState(false)
@@ -345,7 +399,12 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
                       : <span className="flag flag-no">No</span>}
                   </td>
                   <td className="td-flag"><EstadoMP state={estadoMP(tracksByRef && tracksByRef.get(r.id), r.flags, 'muestra', 'muestras')} /></td>
-                  <td className="td-flag"><EstadoMP state={estadoMP(tracksByRef && tracksByRef.get(r.id), r.flags, 'produccion', 'produccion')} /></td>
+                  <td className="td-flag" onClick={(e) => e.stopPropagation()}>
+                    <ProduccionCell
+                      ref={r}
+                      state={estadoMP(tracksByRef && tracksByRef.get(r.id), r.flags, 'produccion', 'produccion')}
+                      onToggleExtra={onToggleExtra} />
+                  </td>
                   <td className="td-flag"><MedicionChip ref={r} /></td>
                   <td className="td-flag">
                     {(() => {

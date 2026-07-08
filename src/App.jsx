@@ -220,6 +220,18 @@ export default function App() {
     dbUpsertRef(updated).catch((e) => console.error(e))
   }
 
+  // Alterna el flag "Producción extra" desde el Resumen (un solo clic).
+  // Si estaba desmarcada, la marca con la fecha de hoy. Si estaba marcada,
+  // la desmarca (deshace la decisión).
+  function handleToggleProduccionExtra(ref) {
+    if (!ref) return
+    const now = ref.produccionExtra ? '' : Date.now()
+    handleSetFields(ref.id, {
+      produccionExtra: !ref.produccionExtra,
+      produccionExtraFecha: now,
+    })
+  }
+
   // Asigna una foto a una referencia (creando el registro si no existía).
   async function handleAssignPhoto(refId, dataUrl) {
     const current = refMap.get(refId)
@@ -518,6 +530,7 @@ export default function App() {
             onNew={openNew}
             onViewImage={setLightbox}
             onOpenDetail={openDetail}
+            onToggleExtra={handleToggleProduccionExtra}
           />
         )}
         {AREA_KEYS.includes(tab) && (

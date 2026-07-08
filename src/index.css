@@ -3376,6 +3376,32 @@ img.ship-ref-photo {
   display: inline-block; margin-left: 5px;
   color: #c5c0b5; font-weight: 700;
 }
+/* Producción extra: botón, chip pequeño y chip completo */
+.prod-cell {
+  display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  justify-content: center;
+}
+.btn-extra-add {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 999px;
+  border: 1px dashed #e9c7a2;
+  background: transparent; color: #b35f15;
+  font-size: 10.5px; font-weight: 700; cursor: pointer;
+  font-family: inherit; letter-spacing: 0.02em;
+  transition: background 0.12s;
+}
+.btn-extra-add:hover { background: #fff5ec; border-style: solid; }
+.flag-extra {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 999px;
+  background: #fce6d4; color: #b35f15;
+  border: 1px solid #e9c7a2;
+  font-size: 10.5px; font-weight: 700;
+  cursor: pointer; letter-spacing: 0.02em;
+}
+.flag-extra-sm { font-size: 9.5px; padding: 1px 6px; }
+.flag-small { font-size: 10px; padding: 1px 6px; border-radius: 999px; }
+
 /* Input y checkbox de "costo revisado" en la ficha */
 .input.input-checked { border-color: #1f7a44; background: #f4faf6; }
 .check.check-inline {
@@ -4125,6 +4151,7 @@ img.ship-ref-photo {
 .aut-kpis { grid-template-columns: repeat(2, 1fr); }
 .aut-kpi.mu { border-left: 4px solid #6b3c86; }
 .aut-kpi.pr { border-left: 4px solid #1f7a44; }
+.aut-kpi.ex { border-left: 4px solid #b35f15; }
 .aut-block { margin-top: 22px; }
 .aut-block-title {
   font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600;
@@ -4132,6 +4159,7 @@ img.ship-ref-photo {
 }
 .aut-block-title.mu { color: #6b3c86; }
 .aut-block-title.pr { color: #1f7a44; }
+.aut-block-title.ex { color: #b35f15; }
 .aut-block-title .muted { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; margin-left: 6px; }
 
 /* Chip top / forrada en Resumen */

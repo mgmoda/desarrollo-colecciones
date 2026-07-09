@@ -4340,6 +4340,37 @@ img.ship-ref-photo {
   background: var(--surface);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* Colores de la referencia — arriba de la foto, círculo + nombre */
+.col-thumb-colors {
+  display: flex; flex-wrap: wrap; gap: 3px 5px;
+  padding: 4px 5px 3px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--hairline);
+  justify-content: center; align-items: center;
+  min-height: 20px;
+}
+.col-thumb-color {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 600;
+  color: var(--ink-soft);
+  line-height: 1.2;
+}
+.col-thumb-color-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+.col-thumb-color-name {
+  max-width: 42px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.col-thumb-color-more {
+  font-size: 9px; color: var(--muted); font-weight: 700;
+  padding: 0 3px; border-radius: 999px;
+  background: var(--surface-2, #f8f5ed);
+}
+
 .col-thumb-price {
   display: block; padding: 0 4px 5px;
   font-size: 9.5px; color: var(--muted); font-weight: 500;

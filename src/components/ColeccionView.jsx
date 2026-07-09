@@ -300,6 +300,19 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
             {r.marca.charAt(0).toUpperCase()}
           </span>
         )}
+        {r.colores && r.colores.length > 0 && (
+          <span className="col-thumb-colors" title={r.colores.filter(Boolean).map((c) => c.name).join(' · ')}>
+            {r.colores.filter(Boolean).slice(0, 3).map((c, i) => (
+              <span key={i} className="col-thumb-color">
+                <span className="col-thumb-color-dot" style={{ background: c.hex || '#ccc' }} />
+                <span className="col-thumb-color-name">{c.name}</span>
+              </span>
+            ))}
+            {r.colores.filter(Boolean).length > 3 && (
+              <span className="col-thumb-color-more">+{r.colores.filter(Boolean).length - 3}</span>
+            )}
+          </span>
+        )}
         <span className="col-thumb-img">
           {r.image ? (
             <img src={r.image} alt={r.referencia} />

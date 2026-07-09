@@ -3414,6 +3414,87 @@ img.ship-ref-photo {
 }
 .check.check-fotos.on span { font-weight: 700; }
 
+/* KPIs por marca — cuántas listas del total de la colección */
+.fotos-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.fotos-kpi {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid #a67c52;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.fotos-kpi-total {
+  background: #23201c;
+  border-color: #4a453d;
+  border-left-color: #a67c52;
+  color: #f4f1ea;
+}
+.fotos-kpi-name {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); font-weight: 700;
+}
+.fotos-kpi-total .fotos-kpi-name { color: #d9c3a1; }
+.fotos-kpi-main {
+  display: flex; align-items: baseline; gap: 4px;
+  font-family: 'Fraunces', serif;
+  line-height: 1;
+}
+.fotos-kpi-num {
+  font-size: 32px; font-weight: 600;
+  color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.fotos-kpi-total .fotos-kpi-num { color: #f4f1ea; }
+.fotos-kpi-slash {
+  font-size: 24px; color: var(--muted); font-weight: 400;
+  padding: 0 2px;
+}
+.fotos-kpi-total .fotos-kpi-slash { color: #928c7d; }
+.fotos-kpi-den {
+  font-size: 22px; color: var(--ink-soft); font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.fotos-kpi-total .fotos-kpi-den { color: #cdc9be; }
+.fotos-kpi-sub {
+  font-size: 11.5px; color: var(--muted); margin-top: -2px;
+}
+.fotos-kpi-total .fotos-kpi-sub { color: #928c7d; }
+.fotos-kpi-bar {
+  height: 6px; background: #f2e7d5; border-radius: 999px; overflow: hidden;
+  margin-top: 4px;
+}
+.fotos-kpi-total .fotos-kpi-bar { background: #3a3630; }
+.fotos-kpi-bar-fill {
+  display: block; height: 100%;
+  background: #a67c52; border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.fotos-kpi-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 6px; margin-top: 2px;
+}
+.fotos-kpi-pct {
+  font-family: 'Fraunces', serif; font-size: 14px; font-weight: 600;
+  color: #7d5a3a; font-variant-numeric: tabular-nums;
+}
+.fotos-kpi-total .fotos-kpi-pct { color: #d9c3a1; }
+.fotos-kpi-chip {
+  font-size: 10.5px; font-weight: 700;
+  background: #e3f3e8; color: #1f7a44;
+  padding: 2px 8px; border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+.fotos-kpi-total .fotos-kpi-chip {
+  background: rgba(255, 255, 255, 0.1);
+  color: #a4d9b3;
+}
+
 /* Barra de progreso arriba */
 .fotos-progress {
   display: flex; align-items: center; gap: 14px;

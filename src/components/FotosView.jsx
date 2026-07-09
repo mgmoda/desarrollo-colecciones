@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import SearchInput from './SearchInput.jsx'
+import { medicionInfo } from '../lib/domain.js'
 
 // Pool único de referencias listas para la sesión de fotos.
 // Dos zonas apiladas: "Por fotografiar" arriba y "Ya fotografiadas" abajo.
@@ -9,6 +10,33 @@ export default function FotosView({ refs, marcas, onOpenRef, onViewImage, onSetF
   const [marcaF, setMarcaF] = useState('')
 
   const marcaOf = (r) => (r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca')
+  const isDescartada = (r) => medicionInfo(r).estado === 'descartada'
+
+  // KPIs por marca: cuántas están listas para foto sobre el total de la
+  // colección (excluyendo descartadas, igual que Colección).
+  const kpis = useMemo(() => {
+    const orden = [...marcas]
+    // Solo agregamos "Sin marca" si hay refs sin marca en el total
+    const includeSinMarca = refs.some((r) => !isDescartada(r) && marcaOf(r) === 'Sin marca')
+    if (includeSinMarca) orden.push('Sin marca')
+    const allMarcas = [...orden, 'Total']
+    const k = {}
+    allMarcas.forEach((m) => { k[m] = { total: 0, listas: 0, fotografiadas: 0 } })
+    refs.forEach((r) => {
+      if (isDescartada(r)) return
+      const m = marcaOf(r)
+      const buckets = [m, 'Total']
+      buckets.forEach((t) => {
+        if (!k[t]) return
+        k[t].total++
+        if (r.enFotos) {
+          k[t].listas++
+          if (r.fotografiada) k[t].fotografiadas++
+        }
+      })
+    })
+    return { allMarcas, k }
+  }, [refs, marcas])
 
   // Solo las refs en el pool.
   const enPool = useMemo(() => refs.filter((r) => r.enFotos), [refs])
@@ -111,6 +139,37 @@ export default function FotosView({ refs, marcas, onOpenRef, onViewImage, onSetF
           </div>
           <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia…" />
         </div>
+      </div>
+
+      {/* KPIs por marca — cuántas listas del total de la colección */}
+      <div className="fotos-kpis">
+        {kpis.allMarcas.map((m) => {
+          const x = kpis.k[m]
+          const isTotal = m === 'Total'
+          const pctListas = x.total ? Math.round((x.listas / x.total) * 100) : 0
+          return (
+            <div key={m} className={'fotos-kpi' + (isTotal ? ' fotos-kpi-total' : '')}>
+              <div className="fotos-kpi-name">{m}</div>
+              <div className="fotos-kpi-main">
+                <span className="fotos-kpi-num">{x.listas}</span>
+                <span className="fotos-kpi-slash">/</span>
+                <span className="fotos-kpi-den">{x.total}</span>
+              </div>
+              <div className="fotos-kpi-sub">
+                listas de la colección
+              </div>
+              <div className="fotos-kpi-bar">
+                <span className="fotos-kpi-bar-fill" style={{ width: pctListas + '%' }} />
+              </div>
+              <div className="fotos-kpi-foot">
+                <span className="fotos-kpi-pct">{pctListas}%</span>
+                {x.fotografiadas > 0 && (
+                  <span className="fotos-kpi-chip">✓ {x.fotografiadas} fotografiadas</span>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {enPool.length === 0 ? (

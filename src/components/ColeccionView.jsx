@@ -372,7 +372,10 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
         })}
       </div>
 
-      {/* Resumen general comparativo (no se ve afectado por el filtro) */}
+      {/* Ocultados temporalmente: Resumen por categoría + Borradores por categoría.
+          Para reactivar, cambia `false && (` por `true && (` en los dos bloques
+          que envuelven cada sección. */}
+      {false && (
       <div className="col-summary">
         <div className="col-summary-head">
           <h3 className="col-summary-title">Resumen por categoría</h3>
@@ -455,8 +458,10 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
         </div>
       </div>
 
+      )}
+
       {/* Borradores por categoría — para saber qué tipo de prendas hay pendientes */}
-      {resumen.borradores.total > 0 && (
+      {false && resumen.borradores.total > 0 && (
         <div className="col-summary col-summary-borr-block">
           <div className="col-summary-head">
             <h3 className="col-summary-title">⚠ Borradores por categoría</h3>

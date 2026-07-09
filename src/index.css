@@ -3466,93 +3466,110 @@ img.ship-ref-photo {
   text-align: center;
 }
 
-/* Tiles */
-.fotos-tiles { display: flex; flex-wrap: wrap; gap: 12px; }
+/* Tiles — mismo tratamiento visual que Colección para consistencia */
+.fotos-tiles { display: flex; flex-wrap: wrap; gap: 10px; }
 .ftile {
   position: relative;
   width: 108px;
+  padding: 0;
   background: var(--surface);
   border: 1px solid var(--hairline);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.12s, box-shadow 0.12s, opacity 0.2s;
+  display: flex; flex-direction: column;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s, opacity 0.2s;
 }
-.ftile:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(31, 122, 68, 0.15); }
+.ftile:hover {
+  border-color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
 .ftile-done { opacity: 0.55; }
 .ftile-done:hover { opacity: 0.85; }
+
 .ftile-inner {
-  display: flex; flex-direction: column; align-items: center;
-  width: 100%; background: transparent; border: none;
-  cursor: pointer; padding: 0;
+  display: flex; flex-direction: column;
+  width: 100%;
+  background: transparent; border: none; padding: 0;
+  cursor: pointer;
+  color: inherit; font: inherit;
 }
 .ftile-img {
-  width: 92px; height: 116px; margin: 8px 0 4px;
-  border-radius: 5px; overflow: hidden;
-  background: #f0ede6;
-  display: grid; place-items: center;
-  border: 1px solid var(--hairline);
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 138px;
+  background: #f6f3ec;
+  padding: 4px; box-sizing: border-box;
 }
 .ftile-img img {
-  width: 100%; height: 100%; object-fit: contain; display: block;
+  max-width: 100%; max-height: 100%;
+  object-fit: contain; display: block; margin: auto;
   cursor: zoom-in;
 }
-.ftile-ph {
-  color: var(--muted); font-size: 10.5px;
-}
 .ftile-done .ftile-img img { filter: grayscale(0.5); }
+.ftile-ph {
+  display: grid; place-items: center;
+  width: 100%; height: 100%;
+  font-size: 10px; color: var(--muted); text-align: center;
+}
 .ftile-ref {
-  font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 700;
-  padding: 4px 0 8px; color: var(--ink); letter-spacing: 0.02em;
+  display: block;
+  padding: 6px 4px 8px;
+  font-size: 11px; font-weight: 700;
+  color: var(--ink); text-align: center; line-height: 1.1;
+  letter-spacing: 0.02em;
 }
 .ftile-done .ftile-ref { text-decoration: line-through; color: var(--muted); }
 
-/* Corner marca */
+/* Marca corner — arriba a la derecha, mismo estilo que Colección */
 .ftile-brand {
   position: absolute; top: 6px; right: 6px;
   width: 20px; height: 20px; border-radius: 50%;
   display: grid; place-items: center;
   font-size: 10px; font-weight: 700; color: #fff;
-  box-shadow: 0 0 0 2px var(--surface);
+  z-index: 2;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 .ftile-brand.m-mariset { background: #2c5a8c; }
 .ftile-brand.m-casania { background: #6b3c86; }
-.ftile-brand:not(.m-mariset):not(.m-casania) { background: var(--ink-soft); }
+.ftile-brand:not(.m-mariset):not(.m-casania) { background: var(--ink); }
 
-/* Tick button (marcar fotografiada) */
+/* Tick — arriba a la IZQUIERDA para no chocar con marca */
 .ftile-tick {
-  position: absolute; bottom: 6px; right: 6px;
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--surface);
+  position: absolute; top: 6px; left: 6px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
   border: 1.5px solid var(--hairline-strong);
   color: transparent;
   cursor: pointer;
   display: grid; place-items: center;
-  font-size: 14px; font-weight: 700;
+  font-size: 13px; font-weight: 700; line-height: 1;
+  z-index: 2;
+  backdrop-filter: blur(3px);
   transition: all 0.15s;
 }
-.ftile-tick:hover { border-color: #1f7a44; background: #f4faf6; }
-.ftile-tick.on {
-  background: #1f7a44; border-color: #1f7a44; color: #fff;
-}
+.ftile-tick:hover { border-color: #1f7a44; background: #f4faf6; color: #1f7a44; }
+.ftile-tick.on { background: #1f7a44; border-color: #1f7a44; color: #fff; }
 
-/* Remove button (sacar del pool) */
+/* Remove × — abajo derecha SOBRE la imagen (no sobre el texto), visible en hover */
 .ftile-remove {
-  position: absolute; bottom: 6px; left: 6px;
+  position: absolute;
+  bottom: 32px; /* justo arriba del texto de referencia */
+  right: 6px;
   width: 22px; height: 22px; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--hairline-strong);
   color: var(--muted);
   cursor: pointer;
   display: grid; place-items: center;
   font-size: 14px; font-weight: 700; line-height: 1;
   opacity: 0;
+  z-index: 2;
+  backdrop-filter: blur(3px);
   transition: all 0.15s;
 }
 .ftile:hover .ftile-remove { opacity: 1; }
-.ftile-remove:hover {
-  background: #b23121; color: #fff; border-color: #b23121;
-}
+.ftile-remove:hover { background: #b23121; color: #fff; border-color: #b23121; }
 .check.check-inline {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 12px; color: #1f7a44; font-weight: 600;

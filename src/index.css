@@ -3404,6 +3404,155 @@ img.ship-ref-photo {
 
 /* Input y checkbox de "costo revisado" en la ficha */
 .input.input-checked { border-color: #1f7a44; background: #f4faf6; }
+
+/* ─────── Pestaña Fotos ─────── */
+/* Checkbox "Lista para foto" en la ficha */
+.check.check-fotos.on {
+  background: #faf3e6; border: 1px solid #d9c3a1;
+  padding: 8px 12px; border-radius: 8px;
+  color: #7d5a3a;
+}
+.check.check-fotos.on span { font-weight: 700; }
+
+/* Barra de progreso arriba */
+.fotos-progress {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface, #fefdf8);
+  border: 1px solid var(--hairline, #d8d6cf);
+  border-radius: 999px;
+  padding: 8px 18px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow-sm);
+}
+.fotos-progress-lbl {
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--muted); font-weight: 700;
+}
+.fotos-progress-bar {
+  flex: 1; height: 10px;
+  background: #f2e7d5; border-radius: 999px; overflow: hidden;
+  min-width: 100px;
+}
+.fotos-progress-fill {
+  display: block; height: 100%;
+  background: #1f7a44; border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.fotos-progress-num {
+  font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px;
+  color: #7d5a3a;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Zonas */
+.fotos-zone { margin-bottom: 32px; }
+.fotos-zone-head {
+  display: flex; align-items: baseline; gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 16px;
+}
+.fotos-zone-head h3 {
+  margin: 0; font-family: 'Fraunces', serif; font-size: 22px; font-weight: 500;
+}
+.fotos-zone-wait h3 { color: #7d5a3a; }
+.fotos-zone-done h3 { color: #1f7a44; }
+.fotos-zone-head .muted { font-family: 'Inter', sans-serif; font-size: 13px; }
+.fotos-empty-zone {
+  padding: 18px 22px;
+  background: #f4faf6; border: 1px dashed #c8e2cf;
+  border-radius: 10px; color: #1f7a44; font-weight: 600;
+  text-align: center;
+}
+
+/* Tiles */
+.fotos-tiles { display: flex; flex-wrap: wrap; gap: 12px; }
+.ftile {
+  position: relative;
+  width: 108px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s, box-shadow 0.12s, opacity 0.2s;
+}
+.ftile:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(31, 122, 68, 0.15); }
+.ftile-done { opacity: 0.55; }
+.ftile-done:hover { opacity: 0.85; }
+.ftile-inner {
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; background: transparent; border: none;
+  cursor: pointer; padding: 0;
+}
+.ftile-img {
+  width: 92px; height: 116px; margin: 8px 0 4px;
+  border-radius: 5px; overflow: hidden;
+  background: #f0ede6;
+  display: grid; place-items: center;
+  border: 1px solid var(--hairline);
+}
+.ftile-img img {
+  width: 100%; height: 100%; object-fit: contain; display: block;
+  cursor: zoom-in;
+}
+.ftile-ph {
+  color: var(--muted); font-size: 10.5px;
+}
+.ftile-done .ftile-img img { filter: grayscale(0.5); }
+.ftile-ref {
+  font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 700;
+  padding: 4px 0 8px; color: var(--ink); letter-spacing: 0.02em;
+}
+.ftile-done .ftile-ref { text-decoration: line-through; color: var(--muted); }
+
+/* Corner marca */
+.ftile-brand {
+  position: absolute; top: 6px; right: 6px;
+  width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 10px; font-weight: 700; color: #fff;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.ftile-brand.m-mariset { background: #2c5a8c; }
+.ftile-brand.m-casania { background: #6b3c86; }
+.ftile-brand:not(.m-mariset):not(.m-casania) { background: var(--ink-soft); }
+
+/* Tick button (marcar fotografiada) */
+.ftile-tick {
+  position: absolute; bottom: 6px; right: 6px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--surface);
+  border: 1.5px solid var(--hairline-strong);
+  color: transparent;
+  cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 14px; font-weight: 700;
+  transition: all 0.15s;
+}
+.ftile-tick:hover { border-color: #1f7a44; background: #f4faf6; }
+.ftile-tick.on {
+  background: #1f7a44; border-color: #1f7a44; color: #fff;
+}
+
+/* Remove button (sacar del pool) */
+.ftile-remove {
+  position: absolute; bottom: 6px; left: 6px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 14px; font-weight: 700; line-height: 1;
+  opacity: 0;
+  transition: all 0.15s;
+}
+.ftile:hover .ftile-remove { opacity: 1; }
+.ftile-remove:hover {
+  background: #b23121; color: #fff; border-color: #b23121;
+}
 .check.check-inline {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 12px; color: #1f7a44; font-weight: 600;

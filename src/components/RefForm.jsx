@@ -170,6 +170,21 @@ export default function RefForm({
                   onChange={(e) => set('cantidad', e.target.value)} />
               </div>
             </div>
+            <label className={'check check-lg check-fotos' + (form.enFotos ? ' on' : '')}>
+              <input type="checkbox" checked={!!form.enFotos}
+                onChange={(e) => {
+                  const now = e.target.checked
+                  setForm((f) => ({
+                    ...f,
+                    enFotos: now,
+                    enFotosAt: now ? (f.enFotosAt || Date.now()) : '',
+                    // Si sale del pool, también se limpia fotografiada.
+                    fotografiada: now ? f.fotografiada : false,
+                    fotografiadaAt: now ? f.fotografiadaAt : '',
+                  }))
+                }} />
+              <span>📸 Lista para foto</span>
+            </label>
             <label className="check check-lg">
               <input type="checkbox" checked={!!form.conjunto}
                 onChange={(e) => set('conjunto', e.target.checked)} />

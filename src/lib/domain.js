@@ -164,6 +164,13 @@ export function emptyRef(id) {
     // El chip "Extra" se queda para siempre como identificador histórico.
     produccionExtra: false,
     produccionExtraFecha: '',
+    // Pool de "Fotos": una ref está en el pool cuando enFotos=true.
+    // Cuando se fotografía queda con fotografiada=true (se muestra en la
+    // zona "Ya fotografiadas"). El histórico se conserva para siempre.
+    enFotos: false,
+    enFotosAt: '',
+    fotografiada: false,
+    fotografiadaAt: '',
     // Cada tela: { nombre, disponible, metros, nota }. Una prenda puede llevar varias.
     telas: [],
     pendiente: false, pendienteNota: '', pendienteFecha: '',

@@ -6,6 +6,7 @@ import AreaView from './components/AreaView.jsx'
 import CostosView from './components/CostosView.jsx'
 import SeguimientoView from './components/SeguimientoView.jsx'
 import GeodesicaView from './components/GeodesicaView.jsx'
+import FotosView from './components/FotosView.jsx'
 import SyncIndicator from './components/SyncIndicator.jsx'
 import ColeccionView from './components/ColeccionView.jsx'
 import AutorizacionesView from './components/AutorizacionesView.jsx'
@@ -34,6 +35,7 @@ const TABS = [
   { key: 'entrega', label: 'Entrega ensamble' },
   { key: 'ensamble', label: 'Seguimiento' },
   { key: 'coleccion', label: 'Colección' },
+  { key: 'fotos', label: 'Fotos' },
   { key: 'autorizaciones', label: 'Autorizaciones' },
   { key: 'costos', label: 'Costos' },
   { key: 'geodesica', label: 'Geodésica' },
@@ -543,6 +545,10 @@ export default function App() {
         {tab === 'coleccion' && (
           <ColeccionView refs={refIndexMG} marcas={settings.marcas} tracksByRef={tracksByRef}
             onOpenRef={openEdit} onNew={openNew} onViewImage={setLightbox} />
+        )}
+        {tab === 'fotos' && (
+          <FotosView refs={refIndexMG} marcas={settings.marcas}
+            onOpenRef={openEdit} onViewImage={setLightbox} onSetFields={handleSetFields} />
         )}
         {tab === 'autorizaciones' && (
           <AutorizacionesView refs={refIndexMG} tracksByRef={tracksByRef} marcas={settings.marcas}

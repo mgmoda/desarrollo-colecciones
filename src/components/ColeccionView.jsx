@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import Modal from './Modal.jsx'
 import { medicionInfo } from '../lib/domain.js'
 import { formatPrice } from '../lib/constants.js'
+import { generateColoresReportPDF } from '../lib/coloresReportPdf.js'
 
 const STATE_LABEL = { aprobada: 'Aprobada', repeticion: 'Repetición', descartada: 'Descartada' }
 
@@ -106,6 +107,18 @@ const CATS = [
 export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, onNew, onViewImage }) {
   const [marca, setMarca] = useState('')
   const [ocultarPrecios, setOcultarPrecios] = useState(false)
+  const [busyPdf, setBusyPdf] = useState(false)
+
+  async function exportColoresPdf() {
+    setBusyPdf(true)
+    try {
+      // Solo refs activas (no descartadas), sin importar el filtro de marca actual.
+      const activas = refs.filter((r) => !isDescartada(r))
+      await generateColoresReportPDF(activas, CATS)
+    } finally {
+      setBusyPdf(false)
+    }
+  }
   const [drilldown, setDrilldown] = useState(null) // { title, items } o null
 
   const marcaOf = (r) => (r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca')
@@ -354,6 +367,10 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
               <button key={m} type="button" className={'opt-btn' + (marca === m ? ' on' : '')} onClick={() => setMarca(m)}>{m}</button>
             ))}
           </div>
+          <button className="btn btn-ghost" onClick={exportColoresPdf} disabled={busyPdf}
+            title="Reporte PDF de colores por categoría (todas las activas)">
+            {busyPdf ? 'Generando…' : '📄 PDF colores'}
+          </button>
           {onNew && (
             <button className="btn btn-primary" onClick={onNew}>+ Nueva referencia</button>
           )}

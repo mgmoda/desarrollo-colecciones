@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import SearchInput from './SearchInput.jsx'
+import Modal from './Modal.jsx'
+import PhotoDropzone from './PhotoDropzone.jsx'
 import { AREAS, formatPrice } from '../lib/constants.js'
 import { orderArea } from '../lib/domain.js'
 import { generateGeodesicaPDF } from '../lib/geodesicaPdf.js'
@@ -9,12 +11,28 @@ const AREA_LABEL = { trazos: 'Trazos', corte: 'Corte', enviar: 'Por enviar', tal
 // Vista dedicada a Geodésica: agrupa las órdenes por referencia, muestra
 // la etapa actual, permite editar precio, marcar como despachada y
 // exportar a PDF las seleccionadas.
-export default function GeodesicaView({ orders, refMap, onViewImage, onOpenRef, onSetField, onSetFields }) {
+export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpenRef, onSetField, onSetFields }) {
   const [q, setQ] = useState('')
   const [areaF, setAreaF] = useState('')
-  const [estado, setEstado] = useState('pendientes') // 'pendientes' | 'despachadas' | 'todas'
+  // 'porProgramar' | 'pendientes' | 'despachadas' | 'todas'
+  const [estado, setEstado] = useState('porProgramar')
   const [selected, setSelected] = useState(() => new Set())
   const [busyPdf, setBusyPdf] = useState(false)
+  const [preOrderOpen, setPreOrderOpen] = useState(false)
+  const [editingPre, setEditingPre] = useState(null) // ref existente o null si es nueva
+
+  // Set de refIds que YA tienen órdenes Geodésica importadas (para excluir del "Por programar").
+  const importedRefIds = useMemo(() => {
+    const s = new Set()
+    orders.forEach((o) => { if (o.origen === 'geodesica') s.add(o.referencia) })
+    return s
+  }, [orders])
+
+  // Preórdenes: refs con geodesicaPreOrder=true y aún NO importadas.
+  const preOrders = useMemo(() => {
+    return (refs || []).filter((r) => r.geodesicaPreOrder && !importedRefIds.has(r.id))
+      .sort((a, b) => (Number(b.geodesicaPreOrderAt) || 0) - (Number(a.geodesicaPreOrderAt) || 0))
+  }, [refs, importedRefIds])
 
   const items = useMemo(() => {
     const AREA_RANK = { trazos: 0, corte: 1, enviar: 2, talleres: 3, entrega: 4 }
@@ -57,10 +75,11 @@ export default function GeodesicaView({ orders, refMap, onViewImage, onOpenRef, 
 
   // Conteos generales por estado.
   const conteo = useMemo(() => ({
+    porProgramar: preOrders.length,
     pendientes: items.filter((x) => !x.despachada).length,
     despachadas: items.filter((x) => x.despachada).length,
     todas: items.length,
-  }), [items])
+  }), [items, preOrders])
 
   const filtrados = useMemo(() => {
     const term = q.trim().toLowerCase()
@@ -156,8 +175,13 @@ export default function GeodesicaView({ orders, refMap, onViewImage, onOpenRef, 
         </div>
       </div>
 
-      {/* Toggle de estado: pendientes / despachadas / todas */}
-      <div className="opt-group" style={{ marginBottom: 10 }}>
+      {/* Toggle de estado: por programar / pendientes / despachadas / todas */}
+      <div className="opt-group" style={{ marginBottom: 10, flexWrap: 'wrap' }}>
+        <button type="button" className={'opt-btn' + (estado === 'porProgramar' ? ' on' : '')}
+          onClick={() => { setEstado('porProgramar'); clearSel() }}
+          title="Preórdenes ingresadas manualmente que aún no llegan en el Excel">
+          🗒 Por programar <span className="muted">({conteo.porProgramar})</span>
+        </button>
         <button type="button" className={'opt-btn' + (estado === 'pendientes' ? ' on' : '')}
           onClick={() => { setEstado('pendientes'); clearSel() }}>
           Pendientes <span className="muted">({conteo.pendientes})</span>
@@ -185,6 +209,23 @@ export default function GeodesicaView({ orders, refMap, onViewImage, onOpenRef, 
         ))}
       </div>
 
+      {estado === 'porProgramar' ? (
+        <PorProgramarView
+          preOrders={preOrders}
+          q={q}
+          onNueva={() => { setEditingPre(null); setPreOrderOpen(true) }}
+          onEditar={(r) => { setEditingPre(r); setPreOrderOpen(true) }}
+          onEliminar={(r) => {
+            if (!window.confirm(`¿Eliminar la preorden ${r.referencia}?`)) return
+            onSetFields && onSetFields(r.id, {
+              geodesicaPreOrder: false,
+              geodesicaPreOrderAt: '',
+              geodesicaProducto: '',
+            })
+          }}
+          onViewImage={onViewImage} />
+      ) : (
+      <>
       {/* Barra de acción: seleccionados + acciones */}
       <div className="geo-actionbar">
         <div>
@@ -298,7 +339,210 @@ export default function GeodesicaView({ orders, refMap, onViewImage, onOpenRef, 
           </table>
         </div>
       )}
+      </>
+      )}
+
+      {/* Modal para crear/editar preorden */}
+      <PreOrderModal
+        open={preOrderOpen}
+        onClose={() => { setPreOrderOpen(false); setEditingPre(null) }}
+        editing={editingPre}
+        existing={preOrders}
+        onSave={(payload) => {
+          const { id, ...rest } = payload
+          onSetFields && onSetFields(id, {
+            geodesicaPreOrder: true,
+            geodesicaPreOrderAt: Date.now(),
+            ...rest,
+          })
+          setPreOrderOpen(false); setEditingPre(null)
+        }} />
     </div>
+  )
+}
+
+// Sub-vista: preórdenes de Geodésica aún no importadas.
+function PorProgramarView({ preOrders, q, onNueva, onEditar, onEliminar, onViewImage }) {
+  const term = q.trim().toLowerCase()
+  const filtradas = term
+    ? preOrders.filter((r) => (r.referencia + ' ' + (r.geodesicaProducto || '')).toLowerCase().includes(term))
+    : preOrders
+  const totalUnits = filtradas.reduce((s, r) => s + (Number(r.cantidad) || 0), 0)
+  const totalValor = filtradas.reduce((s, r) => s + ((Number(r.cantidad) || 0) * (Number(r.costo) || 0)), 0)
+
+  return (
+    <>
+      <div className="geo-actionbar">
+        <div>
+          <strong>{filtradas.length}</strong> preórdenes
+          {totalUnits > 0 && (
+            <span className="muted">
+              {' '}· {totalUnits} unidades estimadas · {formatPrice(totalValor)} total estimado
+            </span>
+          )}
+        </div>
+        <div>
+          <button className="btn btn-primary" onClick={onNueva}>+ Nueva preorden</button>
+        </div>
+      </div>
+
+      {filtradas.length === 0 ? (
+        <div className="empty-state">
+          <p>No hay preórdenes registradas.</p>
+          <p className="muted">
+            Cuando Geodésica te envíe un pedido, entra sus datos aquí. Al importar el Excel con esa referencia, la preorden se "gradúa" y aparece automáticamente en Pendientes.
+          </p>
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Foto</th>
+                <th>Referencia</th>
+                <th>Producto</th>
+                <th className="num">Cant. estimada</th>
+                <th className="num">Precio unit.</th>
+                <th className="num">Subtotal</th>
+                <th>Ingresada</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtradas.map((r) => {
+                const cant = Number(r.cantidad) || 0
+                const precio = Number(r.costo) || 0
+                const sub = cant * precio
+                const fecha = r.geodesicaPreOrderAt
+                  ? new Date(Number(r.geodesicaPreOrderAt)).toLocaleDateString('es-CO')
+                  : '—'
+                return (
+                  <tr key={r.id}>
+                    <td className="cell-photo">
+                      {r.image ? (
+                        <img src={r.image} alt={r.referencia} className="thumb" title="Ampliar foto"
+                          onClick={() => onViewImage && onViewImage(r.image)} />
+                      ) : (
+                        <span className="thumb empty">—</span>
+                      )}
+                    </td>
+                    <td className="strong">{r.referencia}</td>
+                    <td className="muted">{r.geodesicaProducto || '—'}</td>
+                    <td className="num strong">{cant || '—'}</td>
+                    <td className="num">{precio > 0 ? formatPrice(precio) : '—'}</td>
+                    <td className="num strong">{sub > 0 ? formatPrice(sub) : '—'}</td>
+                    <td className="muted">{fecha}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-ghost" onClick={() => onEditar(r)}>Editar</button>
+                        <button className="btn btn-ghost" onClick={() => onEliminar(r)}
+                          style={{ color: '#b23121' }}>Eliminar</button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  )
+}
+
+// Modal para crear/editar preorden Geodésica.
+function PreOrderModal({ open, onClose, editing, existing, onSave }) {
+  const [refCode, setRefCode] = useState('')
+  const [producto, setProducto] = useState('')
+  const [precio, setPrecio] = useState('')
+  const [cantidad, setCantidad] = useState('')
+  const [image, setImage] = useState(null)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    if (!open) return
+    if (editing) {
+      setRefCode(editing.referencia || editing.id || '')
+      setProducto(editing.geodesicaProducto || '')
+      setPrecio(editing.costo ? String(editing.costo) : '')
+      setCantidad(editing.cantidad ? String(editing.cantidad) : '')
+      setImage(editing.image || null)
+    } else {
+      setRefCode(''); setProducto(''); setPrecio(''); setCantidad(''); setImage(null)
+    }
+    setErr('')
+  }, [open, editing])
+
+  if (!open) return null
+
+  function save() {
+    const id = refCode.trim().toUpperCase()
+    if (!id) { setErr('La referencia es obligatoria'); return }
+    if (!editing && existing.some((r) => r.id === id)) {
+      setErr(`Ya existe una preorden con referencia ${id}`); return
+    }
+    const precioNum = Number(precio.replace(/\D/g, '')) || 0
+    const cantidadNum = Number(cantidad.replace(/\D/g, '')) || 0
+    onSave({
+      id,
+      referencia: id,
+      image: image || '',
+      costo: precioNum || '',
+      cantidad: cantidadNum || '',
+      geodesicaProducto: producto.trim(),
+    })
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} size="md">
+      <div className="modal-head">
+        <h2 className="modal-title">{editing ? 'Editar preorden' : 'Nueva preorden Geodésica'}</h2>
+        <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
+      </div>
+      <div className="modal-body">
+        <div className="field-row">
+          <div className="field" style={{ flex: '0 0 auto' }}>
+            <label className="field-label">Foto</label>
+            <PhotoDropzone value={image} onChange={setImage} />
+          </div>
+          <div className="field" style={{ flex: 1 }}>
+            <div className="field">
+              <label className="field-label">Referencia *</label>
+              <input className="input" value={refCode} disabled={!!editing}
+                onChange={(e) => setRefCode(e.target.value.toUpperCase())}
+                placeholder="Ej: S06301" />
+            </div>
+            <div className="field" style={{ marginTop: 10 }}>
+              <label className="field-label">Producto (opcional)</label>
+              <input className="input" value={producto}
+                onChange={(e) => setProducto(e.target.value)}
+                placeholder="Ej: CAMISETA MODELIA" />
+            </div>
+            <div className="field-row" style={{ marginTop: 10 }}>
+              <div className="field">
+                <label className="field-label">Precio unitario *</label>
+                <input className="input" value={precio}
+                  onChange={(e) => setPrecio(e.target.value.replace(/[^\d]/g, ''))}
+                  placeholder="22500" />
+              </div>
+              <div className="field">
+                <label className="field-label">Cant. estimada (opcional)</label>
+                <input className="input" value={cantidad}
+                  onChange={(e) => setCantidad(e.target.value.replace(/[^\d]/g, ''))}
+                  placeholder="60" />
+              </div>
+            </div>
+          </div>
+        </div>
+        {err && <p style={{ color: '#b23121', fontSize: 13, marginTop: 10 }}>{err}</p>}
+      </div>
+      <div className="modal-foot">
+        <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+        <button className="btn btn-primary" onClick={save}>
+          {editing ? 'Guardar cambios' : 'Crear preorden'}
+        </button>
+      </div>
+    </Modal>
   )
 }
 

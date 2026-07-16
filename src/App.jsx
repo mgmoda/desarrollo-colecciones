@@ -558,7 +558,7 @@ export default function App() {
           <CostosView refs={refIndexMG} telasCatalog={settings.telas} onEdit={openEdit} onNew={openNew} onViewImage={setLightbox} />
         )}
         {tab === 'geodesica' && (
-          <GeodesicaView orders={orders} refMap={refMap}
+          <GeodesicaView refs={refIndex} orders={orders} refMap={refMap}
             onViewImage={setLightbox} onOpenRef={openEdit}
             onSetField={handleSetField} onSetFields={handleSetFields} />
         )}

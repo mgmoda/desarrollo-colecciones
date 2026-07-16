@@ -178,6 +178,7 @@ export function emptyRef(id) {
     geodesicaPreOrder: false,
     geodesicaPreOrderAt: '',
     geodesicaProducto: '',
+    geodesicaFechaEntrega: '',
     // Cada tela: { nombre, disponible, metros, nota }. Una prenda puede llevar varias.
     telas: [],
     pendiente: false, pendienteNota: '', pendienteFecha: '',

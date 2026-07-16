@@ -2,11 +2,26 @@ import { useEffect, useMemo, useState } from 'react'
 import SearchInput from './SearchInput.jsx'
 import Modal from './Modal.jsx'
 import PhotoDropzone from './PhotoDropzone.jsx'
-import { AREAS, formatPrice } from '../lib/constants.js'
+import DateField from './DateField.jsx'
+import { AREAS, formatDate, formatPrice } from '../lib/constants.js'
 import { orderArea } from '../lib/domain.js'
 import { generateGeodesicaPDF } from '../lib/geodesicaPdf.js'
 
 const AREA_LABEL = { trazos: 'Trazos', corte: 'Corte', enviar: 'Por enviar', talleres: 'En talleres', entrega: 'Entrega ensamble' }
+
+// Días desde hoy hasta la fecha dada (positivo = futuro, negativo = pasado).
+// Devuelve null si la fecha no es parseable.
+function diasHasta(fechaStr) {
+  if (!fechaStr) return null
+  const parts = String(fechaStr).split('-')
+  if (parts.length !== 3) return null
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+  if (isNaN(d.getTime())) return null
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  d.setHours(0, 0, 0, 0)
+  return Math.round((d.getTime() - hoy.getTime()) / 86400000)
+}
 
 // Vista dedicada a Geodésica: agrupa las órdenes por referencia, muestra
 // la etapa actual, permite editar precio, marcar como despachada y
@@ -221,6 +236,7 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
               geodesicaPreOrder: false,
               geodesicaPreOrderAt: '',
               geodesicaProducto: '',
+              geodesicaFechaEntrega: '',
             })
           }}
           onViewImage={onViewImage} />
@@ -404,6 +420,7 @@ function PorProgramarView({ preOrders, q, onNueva, onEditar, onEliminar, onViewI
                 <th className="num">Cant. estimada</th>
                 <th className="num">Precio unit.</th>
                 <th className="num">Subtotal</th>
+                <th>Entrega</th>
                 <th>Ingresada</th>
                 <th></th>
               </tr>
@@ -431,6 +448,20 @@ function PorProgramarView({ preOrders, q, onNueva, onEditar, onEliminar, onViewI
                     <td className="num strong">{cant || '—'}</td>
                     <td className="num">{precio > 0 ? formatPrice(precio) : '—'}</td>
                     <td className="num strong">{sub > 0 ? formatPrice(sub) : '—'}</td>
+                    <td>
+                      {r.geodesicaFechaEntrega ? (
+                        <span title={'Compromiso: ' + formatDate(r.geodesicaFechaEntrega)}>
+                          {formatDate(r.geodesicaFechaEntrega)}
+                          {(() => {
+                            const dias = diasHasta(r.geodesicaFechaEntrega)
+                            if (dias == null) return null
+                            const cls = dias < 0 ? 'tag tag-warn' : (dias <= 3 ? 'tag tag-warn' : 'tag')
+                            const txt = dias < 0 ? `${Math.abs(dias)}d vencida` : (dias === 0 ? 'hoy' : `en ${dias}d`)
+                            return <span className={cls} style={{ marginLeft: 6 }}>{txt}</span>
+                          })()}
+                        </span>
+                      ) : <span className="muted">—</span>}
+                    </td>
                     <td className="muted">{fecha}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -456,6 +487,7 @@ function PreOrderModal({ open, onClose, editing, existing, onSave }) {
   const [producto, setProducto] = useState('')
   const [precio, setPrecio] = useState('')
   const [cantidad, setCantidad] = useState('')
+  const [fechaEntrega, setFechaEntrega] = useState('')
   const [image, setImage] = useState(null)
   const [err, setErr] = useState('')
 
@@ -466,9 +498,10 @@ function PreOrderModal({ open, onClose, editing, existing, onSave }) {
       setProducto(editing.geodesicaProducto || '')
       setPrecio(editing.costo ? String(editing.costo) : '')
       setCantidad(editing.cantidad ? String(editing.cantidad) : '')
+      setFechaEntrega(editing.geodesicaFechaEntrega || '')
       setImage(editing.image || null)
     } else {
-      setRefCode(''); setProducto(''); setPrecio(''); setCantidad(''); setImage(null)
+      setRefCode(''); setProducto(''); setPrecio(''); setCantidad(''); setFechaEntrega(''); setImage(null)
     }
     setErr('')
   }, [open, editing])
@@ -490,6 +523,7 @@ function PreOrderModal({ open, onClose, editing, existing, onSave }) {
       costo: precioNum || '',
       cantidad: cantidadNum || '',
       geodesicaProducto: producto.trim(),
+      geodesicaFechaEntrega: fechaEntrega || '',
     })
   }
 
@@ -531,6 +565,10 @@ function PreOrderModal({ open, onClose, editing, existing, onSave }) {
                   onChange={(e) => setCantidad(e.target.value.replace(/[^\d]/g, ''))}
                   placeholder="60" />
               </div>
+            </div>
+            <div className="field" style={{ marginTop: 10 }}>
+              <label className="field-label">Fecha de entrega (compromiso a Geodésica)</label>
+              <DateField value={fechaEntrega} onChange={setFechaEntrega} />
             </div>
           </div>
         </div>

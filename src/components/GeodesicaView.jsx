@@ -237,6 +237,7 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
               geodesicaPreOrderAt: '',
               geodesicaProducto: '',
               geodesicaFechaEntrega: '',
+              geodesicaMaquila: false,
             })
           }}
           onViewImage={onViewImage} />
@@ -383,8 +384,101 @@ function PorProgramarView({ preOrders, q, onNueva, onEditar, onEliminar, onViewI
   const filtradas = term
     ? preOrders.filter((r) => (r.referencia + ' ' + (r.geodesicaProducto || '')).toLowerCase().includes(term))
     : preOrders
-  const totalUnits = filtradas.reduce((s, r) => s + (Number(r.cantidad) || 0), 0)
-  const totalValor = filtradas.reduce((s, r) => s + ((Number(r.cantidad) || 0) * (Number(r.costo) || 0)), 0)
+  const normales = filtradas.filter((r) => !r.geodesicaMaquila)
+  const maquilas = filtradas.filter((r) => r.geodesicaMaquila)
+  const sumUnits = (list) => list.reduce((s, r) => s + (Number(r.cantidad) || 0), 0)
+  const sumValor = (list) => list.reduce((s, r) => s + ((Number(r.cantidad) || 0) * (Number(r.costo) || 0)), 0)
+
+  const totalUnits = sumUnits(filtradas)
+  const totalValor = sumValor(filtradas)
+
+  function renderRow(r) {
+    const cant = Number(r.cantidad) || 0
+    const precio = Number(r.costo) || 0
+    const sub = cant * precio
+    const fecha = r.geodesicaPreOrderAt
+      ? new Date(Number(r.geodesicaPreOrderAt)).toLocaleDateString('es-CO')
+      : '—'
+    return (
+      <tr key={r.id}>
+        <td className="cell-photo">
+          {r.image ? (
+            <img src={r.image} alt={r.referencia} className="thumb" title="Ampliar foto"
+              onClick={() => onViewImage && onViewImage(r.image)} />
+          ) : (
+            <span className="thumb empty">—</span>
+          )}
+        </td>
+        <td className="strong">{r.referencia}</td>
+        <td className="muted">{r.geodesicaProducto || '—'}</td>
+        <td className="num strong">{cant || '—'}</td>
+        <td className="num">{precio > 0 ? formatPrice(precio) : '—'}</td>
+        <td className="num strong">{sub > 0 ? formatPrice(sub) : '—'}</td>
+        <td>
+          {r.geodesicaFechaEntrega ? (
+            <span title={'Compromiso: ' + formatDate(r.geodesicaFechaEntrega)}>
+              {formatDate(r.geodesicaFechaEntrega)}
+              {(() => {
+                const dias = diasHasta(r.geodesicaFechaEntrega)
+                if (dias == null) return null
+                const cls = dias < 0 ? 'tag tag-warn' : (dias <= 3 ? 'tag tag-warn' : 'tag')
+                const txt = dias < 0 ? `${Math.abs(dias)}d vencida` : (dias === 0 ? 'hoy' : `en ${dias}d`)
+                return <span className={cls} style={{ marginLeft: 6 }}>{txt}</span>
+              })()}
+            </span>
+          ) : <span className="muted">—</span>}
+        </td>
+        <td className="muted">{fecha}</td>
+        <td>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button className="btn btn-ghost" onClick={() => onEditar(r)}>Editar</button>
+            <button className="btn btn-ghost" onClick={() => onEliminar(r)}
+              style={{ color: '#b23121' }}>Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    )
+  }
+
+  function renderTable(list, titulo, subtitulo, emptyMsg) {
+    const uN = sumUnits(list); const uV = sumValor(list)
+    return (
+      <div className="aut-block">
+        <h3 className={'aut-block-title ex'}>
+          {titulo}
+          <span className="muted">
+            · {list.length} preórden{list.length === 1 ? '' : 'es'}
+            {uN > 0 ? ` · ${uN} unidades · ${formatPrice(uV)} total` : ''}
+          </span>
+        </h3>
+        {subtitulo && <p className="muted" style={{ margin: '0 0 10px', fontSize: 12 }}>{subtitulo}</p>}
+        {list.length === 0 ? (
+          <div className="empty-state">
+            <p className="muted">{emptyMsg}</p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Foto</th>
+                  <th>Referencia</th>
+                  <th>Producto</th>
+                  <th className="num">Cant. estimada</th>
+                  <th className="num">Precio unit.</th>
+                  <th className="num">Subtotal</th>
+                  <th>Entrega</th>
+                  <th>Ingresada</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>{list.map(renderRow)}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <>
@@ -394,6 +488,11 @@ function PorProgramarView({ preOrders, q, onNueva, onEditar, onEliminar, onViewI
           {totalUnits > 0 && (
             <span className="muted">
               {' '}· {totalUnits} unidades estimadas · {formatPrice(totalValor)} total estimado
+            </span>
+          )}
+          {(normales.length > 0 || maquilas.length > 0) && (
+            <span className="muted">
+              {' '}· {normales.length} preórden · {maquilas.length} maquila
             </span>
           )}
         </div>
@@ -410,72 +509,20 @@ function PorProgramarView({ preOrders, q, onNueva, onEditar, onEliminar, onViewI
           </p>
         </div>
       ) : (
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Foto</th>
-                <th>Referencia</th>
-                <th>Producto</th>
-                <th className="num">Cant. estimada</th>
-                <th className="num">Precio unit.</th>
-                <th className="num">Subtotal</th>
-                <th>Entrega</th>
-                <th>Ingresada</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtradas.map((r) => {
-                const cant = Number(r.cantidad) || 0
-                const precio = Number(r.costo) || 0
-                const sub = cant * precio
-                const fecha = r.geodesicaPreOrderAt
-                  ? new Date(Number(r.geodesicaPreOrderAt)).toLocaleDateString('es-CO')
-                  : '—'
-                return (
-                  <tr key={r.id}>
-                    <td className="cell-photo">
-                      {r.image ? (
-                        <img src={r.image} alt={r.referencia} className="thumb" title="Ampliar foto"
-                          onClick={() => onViewImage && onViewImage(r.image)} />
-                      ) : (
-                        <span className="thumb empty">—</span>
-                      )}
-                    </td>
-                    <td className="strong">{r.referencia}</td>
-                    <td className="muted">{r.geodesicaProducto || '—'}</td>
-                    <td className="num strong">{cant || '—'}</td>
-                    <td className="num">{precio > 0 ? formatPrice(precio) : '—'}</td>
-                    <td className="num strong">{sub > 0 ? formatPrice(sub) : '—'}</td>
-                    <td>
-                      {r.geodesicaFechaEntrega ? (
-                        <span title={'Compromiso: ' + formatDate(r.geodesicaFechaEntrega)}>
-                          {formatDate(r.geodesicaFechaEntrega)}
-                          {(() => {
-                            const dias = diasHasta(r.geodesicaFechaEntrega)
-                            if (dias == null) return null
-                            const cls = dias < 0 ? 'tag tag-warn' : (dias <= 3 ? 'tag tag-warn' : 'tag')
-                            const txt = dias < 0 ? `${Math.abs(dias)}d vencida` : (dias === 0 ? 'hoy' : `en ${dias}d`)
-                            return <span className={cls} style={{ marginLeft: 6 }}>{txt}</span>
-                          })()}
-                        </span>
-                      ) : <span className="muted">—</span>}
-                    </td>
-                    <td className="muted">{fecha}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button className="btn btn-ghost" onClick={() => onEditar(r)}>Editar</button>
-                        <button className="btn btn-ghost" onClick={() => onEliminar(r)}
-                          style={{ color: '#b23121' }}>Eliminar</button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {renderTable(
+            normales,
+            'Preórdenes',
+            'Refs que Geodésica pidió y aún no llegan en el Excel.',
+            'No hay preórdenes normales con este filtro.'
+          )}
+          {renderTable(
+            maquilas,
+            '🧵 Maquila',
+            'Preórdenes marcadas como maquila.',
+            'No hay preórdenes de maquila con este filtro.'
+          )}
+        </>
       )}
     </>
   )
@@ -489,6 +536,7 @@ function PreOrderModal({ open, onClose, editing, existing, onSave }) {
   const [cantidad, setCantidad] = useState('')
   const [fechaEntrega, setFechaEntrega] = useState('')
   const [image, setImage] = useState(null)
+  const [maquila, setMaquila] = useState(false)
   const [err, setErr] = useState('')
 
   useEffect(() => {
@@ -500,8 +548,10 @@ function PreOrderModal({ open, onClose, editing, existing, onSave }) {
       setCantidad(editing.cantidad ? String(editing.cantidad) : '')
       setFechaEntrega(editing.geodesicaFechaEntrega || '')
       setImage(editing.image || null)
+      setMaquila(!!editing.geodesicaMaquila)
     } else {
-      setRefCode(''); setProducto(''); setPrecio(''); setCantidad(''); setFechaEntrega(''); setImage(null)
+      setRefCode(''); setProducto(''); setPrecio(''); setCantidad('')
+      setFechaEntrega(''); setImage(null); setMaquila(false)
     }
     setErr('')
   }, [open, editing])
@@ -524,6 +574,7 @@ function PreOrderModal({ open, onClose, editing, existing, onSave }) {
       cantidad: cantidadNum || '',
       geodesicaProducto: producto.trim(),
       geodesicaFechaEntrega: fechaEntrega || '',
+      geodesicaMaquila: !!maquila,
     })
   }
 
@@ -570,6 +621,11 @@ function PreOrderModal({ open, onClose, editing, existing, onSave }) {
               <label className="field-label">Fecha de entrega (compromiso a Geodésica)</label>
               <DateField value={fechaEntrega} onChange={setFechaEntrega} />
             </div>
+            <label className={'check check-lg' + (maquila ? ' on' : '')} style={{ marginTop: 12 }}>
+              <input type="checkbox" checked={maquila}
+                onChange={(e) => setMaquila(e.target.checked)} />
+              <span>🧵 Maquila (aparece en la tabla de maquila)</span>
+            </label>
           </div>
         </div>
         {err && <p style={{ color: '#b23121', fontSize: 13, marginTop: 10 }}>{err}</p>}

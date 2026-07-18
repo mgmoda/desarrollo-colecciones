@@ -86,23 +86,27 @@ input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 14px 32px;
+  /* Escalado fluido: se comprime solo en pantallas angostas */
+  gap: clamp(10px, 1.4vw, 24px);
+  padding: 14px clamp(14px, 2vw, 32px);
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: clamp(8px, 0.9vw, 13px);
+  flex: none;
+  min-width: 0;
 }
 .brand-mark {
-  width: 44px;
-  height: 44px;
+  width: clamp(34px, 2.8vw, 44px);
+  height: clamp(34px, 2.8vw, 44px);
+  flex: none;
   border-radius: 12px;
   background: var(--ink);
   color: #fff;
   font-family: 'Fraunces', serif;
-  font-size: 18px;
+  font-size: clamp(14px, 1.1vw, 18px);
   font-weight: 500;
   display: grid;
   place-items: center;
@@ -111,34 +115,46 @@ input {
 .brand-text {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 .brand-name {
   font-family: 'Fraunces', serif;
-  font-size: 18px;
+  font-size: clamp(14px, 1.1vw, 18px);
   font-weight: 600;
   letter-spacing: -0.2px;
+  /* Nunca partir el nombre en varias líneas */
+  white-space: nowrap;
 }
 .brand-tag {
   font-size: 11.5px;
   color: var(--muted);
+  white-space: nowrap;
 }
 
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   background: #ece9e1;
   padding: 4px;
   border-radius: 11px;
+  /* Si no caben, el nav hace scroll horizontal en vez de crecer en alto */
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
 }
+.tabs::-webkit-scrollbar { display: none; }
 .tab {
   border: none;
   background: transparent;
-  padding: 8px 18px;
+  padding: 8px clamp(8px, 0.9vw, 18px);
   border-radius: 8px;
-  font-size: 13px;
+  font-size: clamp(11.5px, 0.85vw, 13px);
   font-weight: 500;
   color: var(--ink-soft);
   transition: all 0.18s ease;
+  /* Clave: el texto de una pestaña NUNCA se parte en dos líneas */
+  white-space: nowrap;
+  flex: none;
 }
 .tab:hover {
   color: var(--ink);
@@ -154,7 +170,8 @@ input {
   width: 100%;
   max-width: 1640px;
   margin: 0 auto;
-  padding: 36px 32px 80px;
+  /* Padding fluido: 16px en pantallas angostas, 32px en las grandes */
+  padding: clamp(20px, 2.2vw, 36px) clamp(16px, 2vw, 32px) 80px;
 }
 
 /* ---------- View headers ---------- */
@@ -167,7 +184,7 @@ input {
 }
 .view-title {
   font-family: 'Fraunces', serif;
-  font-size: 30px;
+  font-size: clamp(22px, 2vw, 30px);
   font-weight: 600;
   letter-spacing: -0.5px;
 }
@@ -2365,7 +2382,8 @@ input {
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: clamp(6px, 0.8vw, 14px);
+  flex: none;
 }
 .logout-btn {
   border: 1px solid var(--hairline-strong);
@@ -3105,6 +3123,30 @@ img.ship-ref-photo {
 }
 
 /* ---------- Responsive ---------- */
+
+/* Portátiles (13"–16"): las 13 pestañas necesitan ~1170px. Para que
+   quepan sin scroll se libera espacio ocultando el texto de la marca
+   (queda el logo MG) y compactando el buscador del topbar. */
+@media (max-width: 1600px) {
+  .brand-tag { display: none; }
+  .topbar { gap: 10px; }
+}
+
+@media (max-width: 1560px) {
+  .brand-text { display: none; }
+  .topbar-search .input,
+  .topbar-right .input { width: 150px; }
+  .tab { padding-left: 9px; padding-right: 9px; }
+}
+
+/* Portátiles de 13"–14": se aprieta un poco más antes de dar scroll. */
+@media (max-width: 1320px) {
+  .topbar-search .input,
+  .topbar-right .input { width: 118px; }
+  .tabs { gap: 1px; padding: 3px; }
+  .tab { padding-left: 7px; padding-right: 7px; font-size: 11.5px; }
+}
+
 @media (max-width: 820px) {
   .topbar {
     flex-direction: column;

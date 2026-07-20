@@ -3804,24 +3804,22 @@ img.ship-ref-photo {
   padding: 4px; box-sizing: border-box;
   overflow: hidden;
 }
-.cb-photo-main { flex: 1.7; min-width: 0; }
-.cb-photo-det { flex: 1; min-width: 0; cursor: pointer; }
+/* Casillas: todas iguales; cada foto lleva su número (cuadra con el chip 📎) */
+.cb-photo-main { flex: 1; min-width: 0; }
+.cb-photo-foto { flex: 1; min-width: 0; }
+.cb-photo-add { flex: 1; min-width: 0; cursor: pointer; }
 .cb-photo img {
   max-width: 100%; max-height: 100%;
   object-fit: contain; display: block; margin: auto; cursor: zoom-in;
 }
-/* Casilla activa para pegar (Cmd+V) */
-.cb-photo.slot-active {
-  outline: 2px solid #a67c52;
-  outline-offset: -2px;
-}
-.cb-slot-label {
-  position: absolute; top: 6px; left: 6px;
-  font-size: 8px; font-weight: 700; letter-spacing: 0.12em;
-  color: #a67c52; background: rgba(255, 255, 255, 0.85);
-  padding: 2px 6px; border-radius: 999px;
-  border: 1px solid #d9c3a1;
+.cb-foto-num {
+  position: absolute; bottom: 6px; left: 6px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #7d5a3a; color: #fff;
+  font-size: 10px; font-weight: 700;
+  display: grid; place-items: center;
   z-index: 2; pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
 }
 .cb-det-empty {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -3859,8 +3857,6 @@ img.ship-ref-photo {
   font-variant-numeric: tabular-nums;
 }
 .cb-pos-plain { background: var(--ink-soft); }
-/* Chip del nombre de archivo de la foto de detalle */
-.cb-filename-det { color: #6b3c86; background: #f7f0fa; border-color: #d8c9e1; }
 .cb-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .cb-ref {
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
@@ -3937,22 +3933,6 @@ img.ship-ref-photo {
   backdrop-filter: blur(1px);
 }
 .cb-paste-hint span { font-size: 11px; font-weight: 500; color: #a67c52; }
-.cb-real-tag {
-  position: absolute; bottom: 6px; left: 6px;
-  display: inline-flex; align-items: center; gap: 4px;
-  background: #1f7a44; color: #fff;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
-  padding: 2px 4px 2px 8px; border-radius: 999px;
-  z-index: 2;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
-}
-.cb-real-x {
-  border: none; background: rgba(255,255,255,0.25); color: #fff;
-  width: 14px; height: 14px; border-radius: 50%;
-  font-size: 10px; line-height: 1; cursor: pointer;
-  display: grid; place-items: center;
-}
-.cb-real-x:hover { background: #b23121; }
 .cb-real-count { color: #9a6a1e; font-weight: 600; }
 .cb-real-count.done { color: #1f7a44; }
 
@@ -3985,7 +3965,8 @@ img.ship-ref-photo {
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 
-/* Nombre del archivo de la foto real (para la diseñadora) */
+/* Nombre del archivo de cada foto — COMPLETO (se parte en varias líneas
+   si es largo) para que la diseñadora lo copie/busque en la carpeta. */
 .cb-filename {
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 10.5px; font-weight: 600;
@@ -3994,7 +3975,10 @@ img.ship-ref-photo {
   border-radius: 6px; padding: 3px 8px;
   align-self: flex-start;
   max-width: 100%;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.45;
+  user-select: all; /* un clic selecciona el nombre completo para copiarlo */
 }
 
 .cb-page-empty { display: grid; place-items: center; }

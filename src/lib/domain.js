@@ -184,15 +184,14 @@ export function emptyRef(id) {
     telas: [],
     pendiente: false, pendienteNota: '', pendienteFecha: '',
     image: null,
-    // Foto de detalle (segunda foto de la misma ref) — usada en el catálogo
-    // para avisarle a la diseñadora que la página lleva detalle.
-    // imageDetalleName guarda el nombre del archivo original.
+    // Fotos de la sesión para el catálogo: hasta 3 por página, cada una con
+    // su nombre de archivo original (completo) para que la diseñadora las
+    // ubique en la carpeta. [{ src, name }].
+    // imageReal/imageDetalle son campos legados que se consolidan en
+    // fotosCatalogo al editar desde el armador.
+    fotosCatalogo: [],
     imageDetalle: null,
     imageDetalleName: '',
-    // Foto REAL de la prenda (de la sesión de fotos). En el catálogo se pega
-    // con Cmd/Ctrl+V o se arrastra sobre la página y reemplaza al boceto.
-    // imageRealName guarda el nombre del archivo original para que la
-    // diseñadora lo encuentre en la carpeta de fotos.
     imageReal: null,
     imageRealName: '',
     updatedAt: Date.now(),

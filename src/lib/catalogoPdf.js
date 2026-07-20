@@ -79,9 +79,9 @@ function drawIndex(doc, marca, entries, fechaStr) {
     { label: 'PÁG', x: MARGIN + 70, align: 'left' },
     { label: 'REF ACTUAL', x: MARGIN + 110, align: 'left' },
     { label: 'TIPO', x: MARGIN + 255, align: 'left' },
-    { label: 'ARCHIVO FOTO', x: MARGIN + 330, align: 'left' },
+    { label: 'ARCHIVO FOTO 1', x: MARGIN + 330, align: 'left' },
     { label: 'COLORES', x: MARGIN + 520, align: 'left' },
-    { label: 'DETALLE', x: PAGE_W - MARGIN, align: 'right' },
+    { label: 'FOTOS', x: PAGE_W - MARGIN, align: 'right' },
   ]
   let y = drawHeader(doc, `Catálogo ${marca} · Índice de maquetación`, fechaStr)
 
@@ -118,11 +118,12 @@ function drawIndex(doc, marca, entries, fechaStr) {
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(...GRAY)
     doc.text(trunc(e.tipo, 12), MARGIN + 255, y)
-    // Archivo de la foto real (para ubicarla en la carpeta)
+    // Archivo de la foto 1 (los nombres completos van en cada pliego)
+    const arch1 = (e.fotos && e.fotos[0] && e.fotos[0].name) || ''
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8.5)
-    doc.setTextColor(...(e.archivo ? INK : GRAY))
-    doc.text(e.archivo ? trunc(e.archivo, 32) : '—', MARGIN + 330, y)
+    doc.setTextColor(...(arch1 ? INK : GRAY))
+    doc.text(arch1 ? trunc(arch1, 32) : '—', MARGIN + 330, y)
     // Colores: puntos + nombres
     doc.setFontSize(9)
     doc.setTextColor(...GRAY)
@@ -144,8 +145,9 @@ function drawIndex(doc, marca, entries, fechaStr) {
     }
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(9)
-    doc.setTextColor(...(e.imageDetalle ? ACCENT_DEEP : GRAY))
-    doc.text(e.imageDetalle ? 'SÍ' : '—', PAGE_W - MARGIN, y, { align: 'right' })
+    const nFotos = (e.fotos || []).length
+    doc.setTextColor(...(nFotos ? ACCENT_DEEP : GRAY))
+    doc.text(nFotos ? String(nFotos) : '—', PAGE_W - MARGIN, y, { align: 'right' })
     y += 16
   })
 }
@@ -197,18 +199,28 @@ async function drawHalf(doc, e, x0, halfW, yTop) {
   doc.text((e.tipo + (e.marca ? ' · ' + e.marca : '')).toUpperCase(), tx, ty)
   ty += 18
 
-  // Archivo de la foto real: la diseñadora lo busca por este nombre.
-  if (e.archivo) {
+  // Archivos de las fotos: nombre COMPLETO de cada una (envuelto en varias
+  // líneas si es largo) para que la diseñadora los ubique en la carpeta.
+  const fotos = e.fotos || []
+  if (fotos.length) {
+    const nameW = halfW - (tx - x0) - 8
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(7.5)
     doc.setTextColor(...GRAY)
-    doc.text('ARCHIVO FOTO', tx, ty)
+    doc.text(fotos.length === 1 ? 'ARCHIVO FOTO' : 'ARCHIVOS FOTOS', tx, ty)
     ty += 12
-    doc.setFont('courier', 'bold')
-    doc.setFontSize(9.5)
-    doc.setTextColor(...INK)
-    doc.text(trunc(e.archivo, 34), tx, ty, { maxWidth: halfW - (tx - x0) - 8 })
-    ty += 16
+    fotos.forEach((f, fi) => {
+      const name = f.name || '(sin nombre)'
+      doc.setFont('courier', 'bold')
+      doc.setFontSize(8.5)
+      doc.setTextColor(...ACCENT_DEEP)
+      doc.text(String(fi + 1), tx, ty)
+      doc.setTextColor(...INK)
+      const lines = doc.splitTextToSize(name, nameW - 12)
+      doc.text(lines, tx + 12, ty)
+      ty += lines.length * 10 + 4
+    })
+    ty += 4
   }
 
   doc.setFont('helvetica', 'normal')
@@ -236,28 +248,29 @@ async function drawHalf(doc, e, x0, halfW, yTop) {
     })
   }
 
-  // Detalle (si existe): miniatura + etiqueta + nombre del archivo
-  if (e.imageDetalle) {
-    ty += 6
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(7.5)
-    doc.setTextColor(...ACCENT_DEEP)
-    doc.text('LLEVA DETALLE', tx, ty)
-    ty += 6
-    await drawContained(doc, e.imageDetalle, tx, ty, 62, 82)
-    doc.setDrawColor(...ACCENT)
-    doc.setLineWidth(0.6)
-    doc.rect(tx, ty, 62, 82, 'S')
-    if (e.archivoDetalle) {
-      doc.setFont('courier', 'bold')
+  // Miniaturas de las fotos 2 y 3 (la 1 es la imagen principal de la página).
+  const extras = fotos.slice(1)
+  if (extras.length) {
+    ty += 4
+    let ex = tx
+    for (let i = 0; i < extras.length; i++) {
+      await drawContained(doc, extras[i].src, ex, ty, 54, 72)
+      doc.setDrawColor(...ACCENT)
+      doc.setLineWidth(0.6)
+      doc.rect(ex, ty, 54, 72, 'S')
+      doc.setFillColor(...ACCENT_DEEP)
+      doc.circle(ex + 8, ty + 8, 6, 'F')
+      doc.setFont('helvetica', 'bold')
       doc.setFontSize(7)
-      doc.setTextColor(...INK)
-      doc.text(trunc(e.archivoDetalle, 30), tx + 70, ty + 10, { maxWidth: halfW - (tx - x0) - 78 })
+      doc.setTextColor(255, 255, 255)
+      doc.text(String(i + 2), ex + 8, ty + 10.5, { align: 'center' })
+      ex += 62
     }
   }
 }
 
-// entries: [{ codigo, pagina, refActual, tipo, marca, colores:[{name,hex}], image, imageDetalle }]
+// entries: [{ codigo, pagina, refActual, tipo, marca, colores:[{name,hex}],
+//             image, fotos: [{src, name}] }]
 export async function generateCatalogoPDF({ marca, entries }) {
   const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
   const fechaStr = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })

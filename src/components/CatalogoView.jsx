@@ -106,14 +106,28 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
   }
 
   // Pegar la FOTO REAL: clic en una página para seleccionarla y Cmd/Ctrl+V.
-  // (Arrastrar y soltar sobre la página también funciona, sin seleccionar.)
+  // Funciona tanto con la imagen copiada como con el ARCHIVO copiado desde
+  // la carpeta (Cmd/Ctrl+C sobre el archivo). Tras pegar, la selección salta
+  // sola a la siguiente página sin foto real, para pegar en cadena.
   useEffect(() => {
     function onPaste(e) {
-      if (selectedIdx == null || selectedIdx >= items.length) return
       const file = getImageFromClipboard(e)
       if (!file) return
+      if (selectedIdx == null || selectedIdx >= items.length) {
+        e.preventDefault()
+        alert('Haz clic primero en la página del catálogo donde va la foto y vuelve a pegar (Cmd+V / Ctrl+V).')
+        return
+      }
       e.preventDefault()
-      onRealFile(items[selectedIdx].refId, file)
+      const idx = selectedIdx
+      onRealFile(items[idx].refId, file)
+      // Auto-avanzar a la siguiente página que aún no tenga foto real.
+      let next = null
+      for (let k = idx + 1; k < items.length; k++) {
+        const rr = refById.get(items[k].refId)
+        if (!rr || !rr.imageReal) { next = k; break }
+      }
+      setSelectedIdx(next)
     }
     function onKey(e) { if (e.key === 'Escape') setSelectedIdx(null) }
     window.addEventListener('paste', onPaste)
@@ -123,7 +137,7 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
       window.removeEventListener('keydown', onKey)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedIdx, items, marcaSel])
+  }, [selectedIdx, items, marcaSel, refById])
 
   function clearReal(refId) { onSetFields && onSetFields(refId, { imageReal: null, imageRealName: '' }) }
 

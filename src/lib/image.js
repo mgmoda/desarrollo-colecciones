@@ -51,12 +51,22 @@ export async function processImage(file) {
 }
 
 // Pulls the first image found in a paste event's clipboard.
+// Cubre tanto imágenes copiadas (captura, "copiar imagen") como ARCHIVOS
+// de imagen copiados desde el Finder/Explorador con Cmd/Ctrl+C.
 export function getImageFromClipboard(event) {
-  const items = event.clipboardData && event.clipboardData.items
-  if (!items) return null
-  for (const item of items) {
-    if (item.kind === 'file' && item.type.startsWith('image/')) {
-      return item.getAsFile()
+  const cd = event.clipboardData
+  if (!cd) return null
+  if (cd.items) {
+    for (const item of cd.items) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        return item.getAsFile()
+      }
+    }
+  }
+  // Fallback: algunos navegadores exponen el archivo copiado solo en .files
+  if (cd.files && cd.files.length) {
+    for (const f of cd.files) {
+      if (f.type && f.type.startsWith('image/')) return f
     }
   }
   return null

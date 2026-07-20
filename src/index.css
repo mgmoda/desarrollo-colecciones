@@ -3893,6 +3893,43 @@ img.ship-ref-photo {
   background: var(--surface);
   font-variant-numeric: tabular-nums;
 }
+/* Selección de página + pegado de foto real */
+.cb-page { cursor: pointer; }
+.cb-page.cb-selected {
+  outline: 2px solid #a67c52;
+  outline-offset: -2px;
+  border-radius: 6px;
+  background: #fdfaf3;
+}
+.cb-paste-hint {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background: rgba(250, 243, 230, 0.82);
+  color: #7d5a3a; font-weight: 700; font-size: 13px;
+  text-align: center; line-height: 1.5;
+  z-index: 2; pointer-events: none;
+  backdrop-filter: blur(1px);
+}
+.cb-paste-hint span { font-size: 11px; font-weight: 500; color: #a67c52; }
+.cb-real-tag {
+  position: absolute; bottom: 6px; left: 6px;
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #1f7a44; color: #fff;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  padding: 2px 4px 2px 8px; border-radius: 999px;
+  z-index: 2;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+.cb-real-x {
+  border: none; background: rgba(255,255,255,0.25); color: #fff;
+  width: 14px; height: 14px; border-radius: 50%;
+  font-size: 10px; line-height: 1; cursor: pointer;
+  display: grid; place-items: center;
+}
+.cb-real-x:hover { background: #b23121; }
+.cb-real-count { color: #9a6a1e; font-weight: 600; }
+.cb-real-count.done { color: #1f7a44; }
+
 .cb-page-empty { display: grid; place-items: center; }
 .cb-empty-hint {
   border: 1.5px dashed #d9c3a1; border-radius: 8px;

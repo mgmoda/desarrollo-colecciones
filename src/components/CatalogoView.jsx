@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import SearchInput from './SearchInput.jsx'
-import { processImage } from '../lib/image.js'
+import { processImage, getImageFromClipboard } from '../lib/image.js'
 import { generateCatalogoPDF } from '../lib/catalogoPdf.js'
 
 // Armador de catálogo por pliegos (dentro de Fotos).
@@ -13,6 +13,8 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
   const [marcaSel, setMarcaSel] = useState(marcas[0] || '')
   const [q, setQ] = useState('')
   const [busyPdf, setBusyPdf] = useState(false)
+  // Página seleccionada para pegar la foto real con Cmd/Ctrl+V.
+  const [selectedIdx, setSelectedIdx] = useState(null)
 
   const refById = useMemo(() => new Map(refs.map((r) => [r.id, r])), [refs])
   const marcaOf = (r) => (r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca')
@@ -69,6 +71,31 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
     saveItems(items.map((it, k) => (k === i ? { ...it, colores: (r.colores || []).filter(Boolean) } : it)))
   }
 
+  // Pegar la FOTO REAL: clic en una página para seleccionarla y Cmd/Ctrl+V.
+  // La imagen del portapapeles reemplaza al boceto como imagen principal.
+  useEffect(() => {
+    function onPaste(e) {
+      if (selectedIdx == null || selectedIdx >= items.length) return
+      const file = getImageFromClipboard(e)
+      if (!file) return
+      e.preventDefault()
+      const refId = items[selectedIdx].refId
+      processImage(file)
+        .then(({ dataUrl }) => { onSetFields && onSetFields(refId, { imageReal: dataUrl }) })
+        .catch(() => alert('No se pudo procesar la imagen pegada'))
+    }
+    function onKey(e) { if (e.key === 'Escape') setSelectedIdx(null) }
+    window.addEventListener('paste', onPaste)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('paste', onPaste)
+      window.removeEventListener('keydown', onKey)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIdx, items, marcaSel])
+
+  function clearReal(refId) { onSetFields && onSetFields(refId, { imageReal: null }) }
+
   async function onDetailFile(refId, file) {
     if (!file) return
     try {
@@ -94,7 +121,8 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
           tipo: esConj ? 'Conjunto' : (r.tipo || '—'),
           marca: r.marca || '',
           colores: (it.colores || []).filter(Boolean),
-          image: r.image || '',
+          // Si ya se pegó la foto real, es la que va al PDF (si no, el boceto).
+          image: r.imageReal || r.image || '',
           imageDetalle: r.imageDetalle || '',
         }
       })
@@ -115,16 +143,30 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
     const r = refById.get(it.refId) || { referencia: it.refId }
     const esConj = !!(r.conjunto && r.conjuntoRef)
     const cod = codigo(idx)
+    const mainImg = r.imageReal || r.image
+    const isSel = selectedIdx === idx
     return (
-      <div className={'cb-page ' + side}>
+      <div className={'cb-page ' + side + (isSel ? ' cb-selected' : '')}
+        onClick={() => setSelectedIdx(idx)}
+        title={isSel ? 'Página seleccionada — pega la foto real con Cmd+V / Ctrl+V' : 'Clic para seleccionar y pegar la foto real'}>
         <div className="cb-photo">
           {cod != null && <span className="cb-pos" title={`Nuevo código: ${cod}`}>{cod}</span>}
           {cod == null && <span className="cb-pos cb-pos-plain">{idx + 1}</span>}
-          {r.image ? (
-            <img src={r.image} alt={r.referencia}
-              onClick={() => onViewImage && onViewImage(r.image)} />
+          {mainImg ? (
+            <img src={mainImg} alt={r.referencia}
+              onClick={(e) => { e.stopPropagation(); onViewImage && onViewImage(mainImg) }} />
           ) : (
             <span className="cb-noimg">Sin foto</span>
+          )}
+          {r.imageReal ? (
+            <span className="cb-real-tag" title="Foto real pegada — la ✕ vuelve al boceto">
+              REAL
+              <button className="cb-real-x" onClick={(e) => { e.stopPropagation(); clearReal(it.refId) }}>×</button>
+            </span>
+          ) : (
+            isSel && (
+              <span className="cb-paste-hint">📋 Pega la foto real<br /><span>Cmd+V / Ctrl+V</span></span>
+            )
           )}
           {r.imageDetalle && (
             <span className="cb-detail-thumb" title="Foto de detalle — clic para ampliar">
@@ -200,6 +242,14 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
           {base != null && items.length > 0 && (
             <span className="muted"> · códigos {base}–{base + items.length - 1}</span>
           )}
+          {items.length > 0 && (() => {
+            const conReal = items.filter((it) => { const r = refById.get(it.refId); return r && r.imageReal }).length
+            return (
+              <span className={conReal === items.length ? 'cb-real-count done' : 'cb-real-count'}>
+                {' '}· {conReal}/{items.length} con foto real
+              </span>
+            )
+          })()}
         </span>
         <span className="cb-spacer" />
         <button className="btn btn-primary" disabled={items.length === 0 || busyPdf} onClick={generarPdf}>

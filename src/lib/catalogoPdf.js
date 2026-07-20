@@ -218,9 +218,27 @@ async function drawHalf(doc, e, x0, halfW, yTop) {
       doc.setTextColor(...INK)
       const lines = doc.splitTextToSize(name, nameW - 12)
       doc.text(lines, tx + 12, ty)
-      ty += lines.length * 10 + 4
+      ty += lines.length * 10 + 2
+      // Rol de la foto: detalle, u otra referencia con sus colores.
+      if (f.rol === 'detalle') {
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(7.5)
+        doc.setTextColor(...ACCENT_DEEP)
+        doc.text('→ DETALLE (sin referencia)', tx + 12, ty)
+        ty += 11
+      } else if (f.refCode) {
+        const colNames = (f.refColores || []).map((c) => c.name).filter(Boolean).join(', ')
+        const info = `→ REF ${f.refCode}${f.refTipo ? ' · ' + f.refTipo : ''}${colNames ? ' · ' + colNames : ''}`
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(7.5)
+        doc.setTextColor(...ACCENT_DEEP)
+        const ilines = doc.splitTextToSize(info, nameW - 12)
+        doc.text(ilines, tx + 12, ty)
+        ty += ilines.length * 9.5 + 2
+      }
+      ty += 3
     })
-    ty += 4
+    ty += 3
   }
 
   doc.setFont('helvetica', 'normal')

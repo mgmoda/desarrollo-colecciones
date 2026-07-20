@@ -21,6 +21,8 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
   const [selectedIdx, setSelectedIdx] = useState(null)
   // Página sobre la que se está arrastrando un ARCHIVO de foto.
   const [dragIdx, setDragIdx] = useState(null)
+  // Buscador inline para asociar una foto a otra referencia: {idx, fi, q}.
+  const [refPick, setRefPick] = useState(null)
   // Reordenamiento: página que se está arrastrando y página destino.
   const [dragPageIdx, setDragPageIdx] = useState(null)
   const [reorderOverIdx, setReorderOverIdx] = useState(null)
@@ -134,6 +136,19 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
     const fotos = getFotos(refById.get(refId))
     setFotos(refId, fotos.filter((_, k) => k !== i))
   }
+  // Edita una foto puntual de la página (rol / referencia asociada).
+  function updateFoto(pageRefId, fi, patch) {
+    const fotos = getFotos(refById.get(pageRefId))
+    setFotos(pageRefId, fotos.map((f, k) => (k === fi ? { ...f, ...patch } : f)))
+  }
+  // Marca/desmarca una foto como DETALLE (sin referencia).
+  function marcarFotoDetalle(pageRefId, fi, on) {
+    updateFoto(pageRefId, fi, { rol: on ? 'detalle' : '', refId: null })
+  }
+  // Asocia la foto a OTRA referencia de la base (o la desasocia con null).
+  function asignarFotoRef(pageRefId, fi, otherRefId) {
+    updateFoto(pageRefId, fi, { refId: otherRefId || null, rol: '' })
+  }
 
   // Pegar con Cmd/Ctrl+V: agrega la foto a la página seleccionada (se queda
   // ahí, para poder pegar la 2ª y 3ª foto de la misma prenda). Funciona con
@@ -177,8 +192,18 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
           colores: (it.colores || []).filter(Boolean),
           // La foto 1 de la sesión es la principal del PDF; sin fotos, el boceto.
           image: (fotos[0] && fotos[0].src) || r.image || '',
-          // Todas las fotos con su nombre de archivo COMPLETO.
-          fotos,
+          // Todas las fotos con su nombre COMPLETO y su rol/referencia asociada.
+          fotos: fotos.map((f) => {
+            const fr = f.refId ? refById.get(f.refId) : null
+            return {
+              src: f.src,
+              name: f.name || '',
+              rol: f.rol || (f.refId ? 'ref' : ''),
+              refCode: fr ? fr.referencia : (f.refId || ''),
+              refTipo: fr ? (fr.tipo || '') : '',
+              refColores: fr ? (fr.colores || []).filter(Boolean) : [],
+            }
+          }),
         }
       })
       await generateCatalogoPDF({ marca: marcaSel, entries })
@@ -266,17 +291,28 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
               )}
             </div>
           ) : (
-            fotos.map((f, fi) => (
-              <div key={fi} className="cb-photo cb-photo-foto">
-                {fi === 0 && cod != null && <span className="cb-pos" title={`Nuevo código: ${cod}`}>{cod}</span>}
-                {fi === 0 && cod == null && <span className="cb-pos cb-pos-plain">{idx + 1}</span>}
-                <span className="cb-foto-num" title={`Foto ${fi + 1}`}>{fi + 1}</span>
-                <img src={f.src} alt={`foto ${fi + 1}`} draggable={false}
-                  onClick={(e) => { e.stopPropagation(); onViewImage && onViewImage(f.src) }} />
-                <button className="cb-det-x" title={`Quitar la foto ${fi + 1}`}
-                  onClick={(e) => { e.stopPropagation(); removeFoto(it.refId, fi) }}>×</button>
-              </div>
-            ))
+            fotos.map((f, fi) => {
+              const fr = f.refId ? refById.get(f.refId) : null
+              return (
+                <div key={fi} className="cb-photo cb-photo-foto">
+                  {fi === 0 && cod != null && <span className="cb-pos" title={`Nuevo código: ${cod}`}>{cod}</span>}
+                  {fi === 0 && cod == null && <span className="cb-pos cb-pos-plain">{idx + 1}</span>}
+                  <span className="cb-foto-num" title={`Foto ${fi + 1}`}>{fi + 1}</span>
+                  {f.rol === 'detalle' && (
+                    <span className="cb-foto-tag det" title="Foto de detalle (sin referencia)">DETALLE</span>
+                  )}
+                  {f.refId && (
+                    <span className="cb-foto-tag" title={`Foto de ${(fr && fr.referencia) || f.refId}`}>
+                      {(fr && fr.referencia) || f.refId}
+                    </span>
+                  )}
+                  <img src={f.src} alt={`foto ${fi + 1}`} draggable={false}
+                    onClick={(e) => { e.stopPropagation(); onViewImage && onViewImage(f.src) }} />
+                  <button className="cb-det-x" title={`Quitar la foto ${fi + 1}`}
+                    onClick={(e) => { e.stopPropagation(); removeFoto(it.refId, fi) }}>×</button>
+                </div>
+              )
+            })
           )}
           {/* Casilla para agregar la siguiente foto */}
           {fotos.length > 0 && fotos.length < MAX_FOTOS && (
@@ -305,12 +341,84 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
             <span className={'cb-tipo' + (esConj ? ' conj' : '')}>{esConj ? '⇄ Conjunto' : (r.tipo || 'Sin tipo')}</span>
             {r.marca && <span className="cb-marca">{r.marca}</span>}
           </div>
-          {fotos.map((f, fi) => (
-            <div key={fi} className="cb-filename"
-              title="Nombre del archivo original — así lo encuentra la diseñadora en la carpeta de fotos">
-              📎 {fi + 1} · {f.name || '(sin nombre — pégala arrastrando el archivo)'}
-            </div>
-          ))}
+          {fotos.map((f, fi) => {
+            const fr = f.refId ? refById.get(f.refId) : null
+            const picking = refPick && refPick.idx === idx && refPick.fi === fi
+            return (
+              <div key={fi} className="cb-fotorow">
+                <div className="cb-filename"
+                  title="Nombre del archivo original — un clic lo selecciona completo para copiarlo">
+                  📎 {fi + 1} · {f.name || '(sin nombre — pégala arrastrando el archivo)'}
+                </div>
+                <div className="cb-fotorow-meta">
+                  {f.refId ? (
+                    <span className="cb-fotoref"
+                      title={fr ? `Foto de ${fr.referencia} · ${fr.tipo || ''}` : `Foto de ${f.refId}`}>
+                      {(fr && fr.referencia) || f.refId}
+                      {fr && fr.tipo ? <span className="cb-fotoref-tipo"> · {fr.tipo}</span> : null}
+                      {(fr ? (fr.colores || []).filter(Boolean) : []).slice(0, 4).map((c, ci) => (
+                        <span key={ci} className="cb-dot" style={{ background: c.hex || '#ccc' }} title={c.name} />
+                      ))}
+                      <button className="cb-color-x" title="Quitar la referencia de esta foto"
+                        onClick={(e) => { e.stopPropagation(); asignarFotoRef(it.refId, fi, null) }}>×</button>
+                    </span>
+                  ) : f.rol === 'detalle' ? (
+                    <span className="cb-fotodet" title="Foto de detalle — sin referencia">
+                      DETALLE
+                      <button className="cb-color-x" title="Quitar la marca de detalle"
+                        onClick={(e) => { e.stopPropagation(); marcarFotoDetalle(it.refId, fi, false) }}>×</button>
+                    </span>
+                  ) : (
+                    <>
+                      <button className="cb-mini" title="Esta foto es de OTRA referencia (ej. el pantalón que acompaña): búscala en la base"
+                        onClick={(e) => { e.stopPropagation(); setRefPick({ idx, fi, q: '' }) }}>
+                        + referencia
+                      </button>
+                      <button className="cb-mini" title="Marcar como foto de DETALLE (sin referencia)"
+                        onClick={(e) => { e.stopPropagation(); marcarFotoDetalle(it.refId, fi, true) }}>
+                        detalle
+                      </button>
+                    </>
+                  )}
+                </div>
+                {picking && (
+                  <div className="cb-refpick" onClick={(e) => e.stopPropagation()}>
+                    <input className="input" autoFocus
+                      placeholder="Buscar referencia… (ej. MG-P861)"
+                      value={refPick.q}
+                      onChange={(e) => setRefPick({ idx, fi, q: e.target.value })}
+                      onKeyDown={(e) => { if (e.key === 'Escape') setRefPick(null) }} />
+                    {refPick.q.trim() && (
+                      <div className="cb-refpick-list">
+                        {refs
+                          .filter((x) => x.id !== it.refId)
+                          .filter((x) => (x.referencia + ' ' + (x.tipo || '')).toLowerCase().includes(refPick.q.trim().toLowerCase()))
+                          .sort((a, b) => ((marcaOf(b) === marcaSel ? 1 : 0) - (marcaOf(a) === marcaSel ? 1 : 0)) || a.referencia.localeCompare(b.referencia))
+                          .slice(0, 6)
+                          .map((x) => (
+                            <button key={x.id} className="cb-refpick-row"
+                              onClick={() => { asignarFotoRef(it.refId, fi, x.id); setRefPick(null) }}>
+                              <span className="cb-sg-img">{x.image ? <img src={x.image} alt="" /> : null}</span>
+                              <span>
+                                <span className="cb-sg-ref">{x.referencia}</span>
+                                <span className="cb-sg-colors">
+                                  {x.tipo || 'Sin tipo'}
+                                  {(x.colores || []).filter(Boolean).slice(0, 4).map((c, ci) => (
+                                    <span key={ci} className="cb-dot" style={{ background: c.hex || '#ccc' }} title={c.name} />
+                                  ))}
+                                </span>
+                              </span>
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                    <button className="cb-mini" style={{ marginTop: 6 }}
+                      onClick={() => setRefPick(null)}>cancelar</button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
           <div className="cb-colors">
             {(it.colores || []).length === 0 && <span className="muted" style={{ fontSize: 11 }}>Sin colores</span>}
             {(it.colores || []).map((c, ci) => (

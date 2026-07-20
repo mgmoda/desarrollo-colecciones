@@ -184,9 +184,11 @@ export function emptyRef(id) {
     telas: [],
     pendiente: false, pendienteNota: '', pendienteFecha: '',
     image: null,
-    // Fotos de la sesión para el catálogo: hasta 3 por página, cada una con
-    // su nombre de archivo original (completo) para que la diseñadora las
-    // ubique en la carpeta. [{ src, name }].
+    // Fotos de la sesión para el catálogo: hasta 3 por página.
+    // [{ src, name, rol?, refId? }]
+    //   rol: '' (prenda de la página) | 'detalle' (detalle, sin referencia)
+    //   refId: si la foto es de OTRA referencia (ej. el pantalón que acompaña
+    //          la blusa sin ser conjunto) — trae código y colores de esa ficha.
     // imageReal/imageDetalle son campos legados que se consolidan en
     // fotosCatalogo al editar desde el armador.
     fotosCatalogo: [],

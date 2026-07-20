@@ -15,8 +15,13 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
   const [busyPdf, setBusyPdf] = useState(false)
   // Página seleccionada para pegar la foto real con Cmd/Ctrl+V.
   const [selectedIdx, setSelectedIdx] = useState(null)
-  // Página sobre la que se está arrastrando un archivo.
+  // Página sobre la que se está arrastrando un ARCHIVO de foto.
   const [dragIdx, setDragIdx] = useState(null)
+  // Reordenamiento: página que se está arrastrando y página destino.
+  const [dragPageIdx, setDragPageIdx] = useState(null)
+  const [reorderOverIdx, setReorderOverIdx] = useState(null)
+  // Caja del buscador (para enfocarla desde las páginas vacías).
+  const addBoxRef = useRef(null)
 
   const refById = useMemo(() => new Map(refs.map((r) => [r.id, r])), [refs])
   const marcaOf = (r) => (r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca')
@@ -63,6 +68,22 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
     const j = Math.max(0, Math.min(items.length - 1, pos - 1))
     if (isNaN(j) || j === i) return
     const n = [...items]; const [x] = n.splice(i, 1); n.splice(j, 0, x); saveItems(n)
+  }
+  // Arrastrar una página y soltarla sobre otra: la arrastrada toma esa
+  // posición y las demás se recorren. dst = items.length → al final.
+  function moveIdxTo(src, dst) {
+    if (src == null || src === dst) return
+    const n = [...items]; const [x] = n.splice(src, 1)
+    n.splice(Math.max(0, Math.min(n.length, dst)), 0, x)
+    saveItems(n)
+  }
+  // Enfoca el buscador para agregar (desde las páginas vacías).
+  function focusAdd() {
+    const box = addBoxRef.current
+    if (!box) return
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const input = box.querySelector('input')
+    if (input) setTimeout(() => input.focus(), 250)
   }
   function removeColor(i, ci) {
     saveItems(items.map((it, k) => (k === i ? { ...it, colores: (it.colores || []).filter((_, c) => c !== ci) } : it)))
@@ -158,22 +179,56 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
     const mainImg = r.imageReal || r.image
     const isSel = selectedIdx === idx
     const isDrag = dragIdx === idx
+    const isReorderTarget = dragPageIdx != null && reorderOverIdx === idx && dragPageIdx !== idx
+    const isDragging = dragPageIdx === idx
     return (
-      <div className={'cb-page ' + side + (isSel ? ' cb-selected' : '') + (isDrag ? ' cb-dragover' : '')}
+      <div className={'cb-page ' + side
+        + (isSel ? ' cb-selected' : '')
+        + (isDrag ? ' cb-dragover' : '')
+        + (isReorderTarget ? ' cb-reorder-over' : '')
+        + (isDragging ? ' cb-dragging' : '')}
+        draggable
         onClick={() => setSelectedIdx(idx)}
-        onDragOver={(e) => { e.preventDefault(); if (dragIdx !== idx) setDragIdx(idx) }}
-        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDragIdx(null) }}
+        onDragStart={(e) => {
+          e.dataTransfer.setData('text/x-catalogo-page', String(idx))
+          e.dataTransfer.effectAllowed = 'move'
+          setDragPageIdx(idx); setSelectedIdx(null)
+        }}
+        onDragEnd={() => { setDragPageIdx(null); setReorderOverIdx(null); setDragIdx(null) }}
+        onDragOver={(e) => {
+          e.preventDefault()
+          if (dragPageIdx != null) {
+            // Reordenamiento interno
+            if (reorderOverIdx !== idx) setReorderOverIdx(idx)
+          } else if (dragIdx !== idx) {
+            // Archivo de foto desde el sistema
+            setDragIdx(idx)
+          }
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) {
+            setDragIdx(null)
+            if (reorderOverIdx === idx) setReorderOverIdx(null)
+          }
+        }}
         onDrop={(e) => {
-          e.preventDefault(); setDragIdx(null)
+          e.preventDefault(); setDragIdx(null); setReorderOverIdx(null)
+          if (dragPageIdx != null) {
+            moveIdxTo(dragPageIdx, idx)
+            setDragPageIdx(null)
+            return
+          }
           const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]
           if (f) onRealFile(it.refId, f)
         }}
-        title={isSel ? 'Página seleccionada — pega (Cmd+V) o arrastra la foto real' : 'Clic para seleccionar, o arrastra la foto real aquí'}>
+        title={isSel
+          ? 'Página seleccionada — pega (Cmd+V) o arrastra la foto real'
+          : 'Clic: seleccionar · Arrastra la página para cambiarla de posición · Suelta aquí una foto para pegarla'}>
         <div className="cb-photo">
           {cod != null && <span className="cb-pos" title={`Nuevo código: ${cod}`}>{cod}</span>}
           {cod == null && <span className="cb-pos cb-pos-plain">{idx + 1}</span>}
           {mainImg ? (
-            <img src={mainImg} alt={r.referencia}
+            <img src={mainImg} alt={r.referencia} draggable={false}
               onClick={(e) => { e.stopPropagation(); onViewImage && onViewImage(mainImg) }} />
           ) : (
             <span className="cb-noimg">Sin foto</span>
@@ -193,7 +248,7 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
           )}
           {r.imageDetalle && (
             <span className="cb-detail-thumb" title="Foto de detalle — clic para ampliar">
-              <img src={r.imageDetalle} alt="detalle"
+              <img src={r.imageDetalle} alt="detalle" draggable={false}
                 onClick={() => onViewImage && onViewImage(r.imageDetalle)} />
               <button className="cb-detail-x" title="Quitar detalle"
                 onClick={() => clearDetail(it.refId)}>×</button>
@@ -248,6 +303,31 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
     )
   }
 
+  // Página vacía: clic → enfoca el buscador; también recibe una página
+  // arrastrada para enviarla al final.
+  function renderEmptyPage(pageNum, side) {
+    const isOver = dragPageIdx != null && reorderOverIdx === -pageNum
+    return (
+      <div className={'cb-page ' + side + ' cb-page-empty' + (isOver ? ' cb-reorder-over' : '')}
+        onClick={focusAdd}
+        onDragOver={(e) => { if (dragPageIdx != null) { e.preventDefault(); setReorderOverIdx(-pageNum) } }}
+        onDragLeave={() => { if (reorderOverIdx === -pageNum) setReorderOverIdx(null) }}
+        onDrop={(e) => {
+          if (dragPageIdx == null) return
+          e.preventDefault()
+          moveIdxTo(dragPageIdx, items.length)
+          setDragPageIdx(null); setReorderOverIdx(null)
+        }}
+        title="Clic para agregar una referencia · o suelta aquí una página para enviarla al final">
+        <div className="cb-empty-hint">
+          + Agregar referencia<br />
+          <span>{dragPageIdx != null ? 'suelta aquí para enviarla al final' : 'clic para buscar · la nueva cae en esta página'}</span>
+        </div>
+        <span className="cb-pagenum">pág. {pageNum}</span>
+      </div>
+    )
+  }
+
   return (
     <div className="catalogo-view">
       {/* Barra: marca + serial + acciones */}
@@ -286,7 +366,7 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
       </div>
 
       {/* Buscador para agregar */}
-      <div className="cb-add">
+      <div className="cb-add" ref={addBoxRef}>
         <SearchInput value={q} onChange={setQ} placeholder={`Agregar referencia de ${marcaSel}…`} />
         {q.trim() && (
           <div className="cb-suggest">
@@ -318,37 +398,41 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
         )}
       </div>
 
-      {items.length === 0 ? (
-        <div className="empty-state">
+      {items.length === 0 && (
+        <div className="empty-state" style={{ marginBottom: 16 }}>
           <p>El catálogo de {marcaSel} está vacío.</p>
           <p className="muted">
-            Define el serial inicial (ej. 6521) y agrega referencias con el buscador —
-            cada una trae sus colores automáticamente y recibe su código en orden.
+            Define el serial inicial (ej. 6521) y agrega referencias con el buscador o
+            haciendo clic en la página vacía de abajo — cada una trae sus colores
+            automáticamente y recibe su código en orden.
           </p>
         </div>
-      ) : (
-        <div className="cb-book">
-          {pliegos.map(([izq, der], pi) => (
-            <div key={pi} className="cb-pliego">
-              <div className="cb-pliego-label">
-                Pliego {pi + 1} · págs. {izq + 1}{der != null ? `–${der + 1}` : ''}
-              </div>
-              <div className="cb-spread">
-                {renderPage(izq, 'left')}
-                {der != null ? renderPage(der, 'right') : (
-                  <div className="cb-page right cb-page-empty">
-                    <div className="cb-empty-hint">
-                      página libre<br />
-                      <span>busca arriba y la nueva referencia cae aquí</span>
-                    </div>
-                    <span className="cb-pagenum">pág. {izq + 2}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
       )}
+      <div className="cb-book">
+        {pliegos.map(([izq, der], pi) => (
+          <div key={pi} className="cb-pliego">
+            <div className="cb-pliego-label">
+              Pliego {pi + 1} · págs. {izq + 1}–{der != null ? der + 1 : izq + 2}
+            </div>
+            <div className="cb-spread">
+              {renderPage(izq, 'left')}
+              {der != null ? renderPage(der, 'right') : renderEmptyPage(izq + 2, 'right')}
+            </div>
+          </div>
+        ))}
+        {/* Siempre hay un pliego abierto al final para seguir agregando */}
+        {items.length % 2 === 0 && (
+          <div className="cb-pliego">
+            <div className="cb-pliego-label">
+              Pliego {pliegos.length + 1} · págs. {items.length + 1}–{items.length + 2}
+            </div>
+            <div className="cb-spread">
+              {renderEmptyPage(items.length + 1, 'left')}
+              {renderEmptyPage(items.length + 2, 'right')}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

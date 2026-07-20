@@ -3941,6 +3941,27 @@ img.ship-ref-photo {
   background: #f4faf6;
 }
 
+/* Reordenar páginas arrastrándolas */
+.cb-page { cursor: grab; }
+.cb-page:active { cursor: grabbing; }
+.cb-page.cb-dragging { opacity: 0.35; }
+.cb-page.cb-reorder-over {
+  outline: 3px solid #a67c52;
+  outline-offset: -3px;
+  border-radius: 6px;
+  background: #faf3e6;
+}
+.cb-page.cb-reorder-over::after {
+  content: "soltar aquí";
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #a67c52; color: #fff;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 4px 12px; border-radius: 999px;
+  pointer-events: none; z-index: 3;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
 /* Nombre del archivo de la foto real (para la diseñadora) */
 .cb-filename {
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;

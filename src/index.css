@@ -3756,7 +3756,9 @@ img.ship-ref-photo {
   color: var(--muted); font-weight: 700; margin-bottom: 8px;
 }
 .cb-spread {
-  display: grid; grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr): mitades EXACTAS aunque el contenido (p. ej. un nombre
+     de archivo largo) pida más ancho — se trunca en vez de deformar el libro */
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   background: #fdfcf7;
   border: 1px solid #e8e4d8;
   border-radius: 6px 10px 10px 6px;
@@ -3774,6 +3776,7 @@ img.ship-ref-photo {
   padding: 16px 16px 30px;
   display: flex; flex-direction: column; gap: 10px;
   min-height: 340px;
+  min-width: 0; /* permite truncar contenido ancho sin deformar la página */
   position: relative;
 }
 .cb-page.left { border-right: 1px solid #e8e4d8; }
@@ -3858,7 +3861,7 @@ img.ship-ref-photo {
 .cb-pos-plain { background: var(--ink-soft); }
 /* Chip del nombre de archivo de la foto de detalle */
 .cb-filename-det { color: #6b3c86; background: #f7f0fa; border-color: #d8c9e1; }
-.cb-info { display: flex; flex-direction: column; gap: 6px; }
+.cb-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .cb-ref {
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 13px; font-weight: 700; cursor: pointer;

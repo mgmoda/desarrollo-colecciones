@@ -236,7 +236,7 @@ async function drawHalf(doc, e, x0, halfW, yTop) {
     })
   }
 
-  // Detalle (si existe): miniatura + etiqueta
+  // Detalle (si existe): miniatura + etiqueta + nombre del archivo
   if (e.imageDetalle) {
     ty += 6
     doc.setFont('helvetica', 'bold')
@@ -248,6 +248,12 @@ async function drawHalf(doc, e, x0, halfW, yTop) {
     doc.setDrawColor(...ACCENT)
     doc.setLineWidth(0.6)
     doc.rect(tx, ty, 62, 82, 'S')
+    if (e.archivoDetalle) {
+      doc.setFont('courier', 'bold')
+      doc.setFontSize(7)
+      doc.setTextColor(...INK)
+      doc.text(trunc(e.archivoDetalle, 30), tx + 70, ty + 10, { maxWidth: halfW - (tx - x0) - 78 })
+    }
   }
 }
 

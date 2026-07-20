@@ -186,7 +186,9 @@ export function emptyRef(id) {
     image: null,
     // Foto de detalle (segunda foto de la misma ref) — usada en el catálogo
     // para avisarle a la diseñadora que la página lleva detalle.
+    // imageDetalleName guarda el nombre del archivo original.
     imageDetalle: null,
+    imageDetalleName: '',
     // Foto REAL de la prenda (de la sesión de fotos). En el catálogo se pega
     // con Cmd/Ctrl+V o se arrastra sobre la página y reemplaza al boceto.
     // imageRealName guarda el nombre del archivo original para que la

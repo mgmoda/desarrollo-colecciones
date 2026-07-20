@@ -13,10 +13,14 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
   const [marcaSel, setMarcaSel] = useState(marcas[0] || '')
   const [q, setQ] = useState('')
   const [busyPdf, setBusyPdf] = useState(false)
-  // Página seleccionada para pegar la foto real con Cmd/Ctrl+V.
+  // Página seleccionada para pegar con Cmd/Ctrl+V y casilla destino
+  // ('real' = foto principal · 'detalle' = foto de detalle).
   const [selectedIdx, setSelectedIdx] = useState(null)
+  const [selectedSlot, setSelectedSlot] = useState('real')
   // Página sobre la que se está arrastrando un ARCHIVO de foto.
   const [dragIdx, setDragIdx] = useState(null)
+  // Casilla de DETALLE sobre la que se arrastra un archivo.
+  const [dragDetIdx, setDragDetIdx] = useState(null)
   // Reordenamiento: página que se está arrastrando y página destino.
   const [dragPageIdx, setDragPageIdx] = useState(null)
   const [reorderOverIdx, setReorderOverIdx] = useState(null)
@@ -105,21 +109,27 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
       .catch(() => alert('No se pudo procesar la imagen'))
   }
 
-  // Pegar la FOTO REAL: clic en una página para seleccionarla y Cmd/Ctrl+V.
+  // Pegar con Cmd/Ctrl+V sobre la casilla seleccionada (PRINCIPAL o DETALLE).
   // Funciona tanto con la imagen copiada como con el ARCHIVO copiado desde
-  // la carpeta (Cmd/Ctrl+C sobre el archivo). Tras pegar, la selección salta
-  // sola a la siguiente página sin foto real, para pegar en cadena.
+  // la carpeta (Cmd/Ctrl+C sobre el archivo). Tras pegar la foto real, la
+  // selección salta sola a la siguiente página sin foto real (cadena).
   useEffect(() => {
     function onPaste(e) {
       const file = getImageFromClipboard(e)
       if (!file) return
       if (selectedIdx == null || selectedIdx >= items.length) {
         e.preventDefault()
-        alert('Haz clic primero en la página del catálogo donde va la foto y vuelve a pegar (Cmd+V / Ctrl+V).')
+        alert('Haz clic primero en la casilla del catálogo donde va la foto y vuelve a pegar (Cmd+V / Ctrl+V).')
         return
       }
       e.preventDefault()
       const idx = selectedIdx
+      if (selectedSlot === 'detalle') {
+        onDetailFile(items[idx].refId, file)
+        // Se queda en la misma página, listo para seguir con la principal.
+        setSelectedSlot('real')
+        return
+      }
       onRealFile(items[idx].refId, file)
       // Auto-avanzar a la siguiente página que aún no tenga foto real.
       let next = null
@@ -128,8 +138,9 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
         if (!rr || !rr.imageReal) { next = k; break }
       }
       setSelectedIdx(next)
+      setSelectedSlot('real')
     }
-    function onKey(e) { if (e.key === 'Escape') setSelectedIdx(null) }
+    function onKey(e) { if (e.key === 'Escape') { setSelectedIdx(null); setSelectedSlot('real') } }
     window.addEventListener('paste', onPaste)
     window.addEventListener('keydown', onKey)
     return () => {
@@ -137,7 +148,7 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
       window.removeEventListener('keydown', onKey)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedIdx, items, marcaSel, refById])
+  }, [selectedIdx, selectedSlot, items, marcaSel, refById])
 
   function clearReal(refId) { onSetFields && onSetFields(refId, { imageReal: null, imageRealName: '' }) }
 
@@ -145,12 +156,12 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
     if (!file) return
     try {
       const { dataUrl } = await processImage(file)
-      onSetFields && onSetFields(refId, { imageDetalle: dataUrl })
+      onSetFields && onSetFields(refId, { imageDetalle: dataUrl, imageDetalleName: file.name || '' })
     } catch (e) {
       alert('No se pudo procesar la imagen de detalle')
     }
   }
-  function clearDetail(refId) { onSetFields && onSetFields(refId, { imageDetalle: null }) }
+  function clearDetail(refId) { onSetFields && onSetFields(refId, { imageDetalle: null, imageDetalleName: '' }) }
 
   async function generarPdf() {
     if (items.length === 0) return
@@ -169,8 +180,9 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
           // Si ya se pegó la foto real, es la que va al PDF (si no, el boceto).
           image: r.imageReal || r.image || '',
           imageDetalle: r.imageDetalle || '',
-          // Nombre del archivo original de la foto real, para la diseñadora.
+          // Nombres de archivo originales, para la diseñadora.
           archivo: r.imageReal ? (r.imageRealName || '') : '',
+          archivoDetalle: r.imageDetalle ? (r.imageDetalleName || '') : '',
         }
       })
       await generateCatalogoPDF({ marca: marcaSel, entries })
@@ -202,13 +214,13 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
         + (isReorderTarget ? ' cb-reorder-over' : '')
         + (isDragging ? ' cb-dragging' : '')}
         draggable
-        onClick={() => setSelectedIdx(idx)}
+        onClick={() => { setSelectedIdx(idx); setSelectedSlot('real') }}
         onDragStart={(e) => {
           e.dataTransfer.setData('text/x-catalogo-page', String(idx))
           e.dataTransfer.effectAllowed = 'move'
           setDragPageIdx(idx); setSelectedIdx(null)
         }}
-        onDragEnd={() => { setDragPageIdx(null); setReorderOverIdx(null); setDragIdx(null) }}
+        onDragEnd={() => { setDragPageIdx(null); setReorderOverIdx(null); setDragIdx(null); setDragDetIdx(null) }}
         onDragOver={(e) => {
           e.preventDefault()
           if (dragPageIdx != null) {
@@ -238,36 +250,74 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
         title={isSel
           ? 'Página seleccionada — pega (Cmd+V) o arrastra la foto real'
           : 'Clic: seleccionar · Arrastra la página para cambiarla de posición · Suelta aquí una foto para pegarla'}>
-        <div className="cb-photo">
-          {cod != null && <span className="cb-pos" title={`Nuevo código: ${cod}`}>{cod}</span>}
-          {cod == null && <span className="cb-pos cb-pos-plain">{idx + 1}</span>}
-          {mainImg ? (
-            <img src={mainImg} alt={r.referencia} draggable={false}
-              onClick={(e) => { e.stopPropagation(); onViewImage && onViewImage(mainImg) }} />
-          ) : (
-            <span className="cb-noimg">Sin foto</span>
-          )}
-          {r.imageReal ? (
-            <span className="cb-real-tag" title="Foto real pegada — la ✕ vuelve al boceto">
-              REAL
-              <button className="cb-real-x" onClick={(e) => { e.stopPropagation(); clearReal(it.refId) }}>×</button>
-            </span>
-          ) : (
-            (isSel || isDrag) && (
-              <span className="cb-paste-hint">
-                {isDrag ? '⬇ Suelta la foto aquí' : '📋 Pega o arrastra la foto real'}
-                <br /><span>{isDrag ? 'se guarda con el nombre del archivo' : 'Cmd+V / Ctrl+V · o arrástrala desde la carpeta'}</span>
+        <div className="cb-photos">
+          {/* Casilla PRINCIPAL (foto real o boceto) */}
+          <div className={'cb-photo cb-photo-main' + (isSel && selectedSlot === 'real' ? ' slot-active' : '')}>
+            {cod != null && <span className="cb-pos" title={`Nuevo código: ${cod}`}>{cod}</span>}
+            {cod == null && <span className="cb-pos cb-pos-plain">{idx + 1}</span>}
+            {mainImg ? (
+              <img src={mainImg} alt={r.referencia} draggable={false}
+                onClick={(e) => { e.stopPropagation(); onViewImage && onViewImage(mainImg) }} />
+            ) : (
+              <span className="cb-noimg">Sin foto</span>
+            )}
+            {r.imageReal ? (
+              <span className="cb-real-tag" title="Foto real pegada — la ✕ vuelve al boceto">
+                REAL
+                <button className="cb-real-x" onClick={(e) => { e.stopPropagation(); clearReal(it.refId) }}>×</button>
               </span>
-            )
-          )}
-          {r.imageDetalle && (
-            <span className="cb-detail-thumb" title="Foto de detalle — clic para ampliar">
-              <img src={r.imageDetalle} alt="detalle" draggable={false}
-                onClick={() => onViewImage && onViewImage(r.imageDetalle)} />
-              <button className="cb-detail-x" title="Quitar detalle"
-                onClick={() => clearDetail(it.refId)}>×</button>
-            </span>
-          )}
+            ) : (
+              ((isSel && selectedSlot === 'real') || isDrag) && (
+                <span className="cb-paste-hint">
+                  {isDrag ? '⬇ Suelta la foto aquí' : '📋 Pega o arrastra la foto real'}
+                  <br /><span>{isDrag ? 'se guarda con el nombre del archivo' : 'Cmd+V / Ctrl+V · o arrástrala desde la carpeta'}</span>
+                </span>
+              )
+            )}
+          </div>
+
+          {/* Casilla DETALLE — misma dinámica: clic + Cmd+V, o arrastrar */}
+          <div className={'cb-photo cb-photo-det'
+            + (isSel && selectedSlot === 'detalle' ? ' slot-active' : '')
+            + (dragDetIdx === idx ? ' cb-dragover' : '')}
+            onClick={(e) => { e.stopPropagation(); setSelectedIdx(idx); setSelectedSlot('detalle') }}
+            onDragOver={(e) => {
+              if (dragPageIdx != null) return
+              e.preventDefault(); e.stopPropagation()
+              if (dragDetIdx !== idx) setDragDetIdx(idx)
+            }}
+            onDragLeave={(e) => {
+              if (dragDetIdx === idx && !e.currentTarget.contains(e.relatedTarget)) setDragDetIdx(null)
+            }}
+            onDrop={(e) => {
+              if (dragPageIdx != null) return
+              e.preventDefault(); e.stopPropagation()
+              setDragDetIdx(null); setDragIdx(null)
+              const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]
+              if (f) onDetailFile(it.refId, f)
+            }}
+            title="Foto de detalle — clic y pega (Cmd+V), o arrastra el archivo aquí">
+            <span className="cb-slot-label">DETALLE</span>
+            {r.imageDetalle ? (
+              <>
+                <img src={r.imageDetalle} alt="detalle" draggable={false}
+                  onClick={(e) => { e.stopPropagation(); onViewImage && onViewImage(r.imageDetalle) }} />
+                <button className="cb-det-x" title="Quitar la foto de detalle"
+                  onClick={(e) => { e.stopPropagation(); clearDetail(it.refId) }}>×</button>
+              </>
+            ) : (
+              <span className="cb-det-empty">
+                {dragDetIdx === idx ? (
+                  <>⬇ Suelta aquí<br /><span>foto de detalle</span></>
+                ) : isSel && selectedSlot === 'detalle' ? (
+                  <>📋 Pega aquí<br /><span>Cmd+V / Ctrl+V</span></>
+                ) : (
+                  <>+ Detalle<br /><span>clic y pega · o arrastra</span></>
+                )}
+                <DetailUpload onFile={(f) => onDetailFile(it.refId, f)} />
+              </span>
+            )}
+          </div>
         </div>
         <div className="cb-info">
           <div className="cb-ref" title="Abrir ficha"
@@ -283,6 +333,11 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
               📎 {r.imageRealName}
             </div>
           )}
+          {r.imageDetalle && r.imageDetalleName && (
+            <div className="cb-filename cb-filename-det" title="Nombre del archivo de la foto de detalle">
+              📎 detalle · {r.imageDetalleName}
+            </div>
+          )}
           <div className="cb-colors">
             {(it.colores || []).length === 0 && <span className="muted" style={{ fontSize: 11 }}>Sin colores</span>}
             {(it.colores || []).map((c, ci) => (
@@ -296,9 +351,6 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
             <button className="cb-resync" title="Volver a traer los colores de la ficha"
               onClick={() => resyncColors(idx)}>↺</button>
           </div>
-          {!r.imageDetalle && (
-            <DetailUpload onFile={(f) => onDetailFile(it.refId, f)} />
-          )}
         </div>
         <div className="cb-controls">
           <span className="cb-move">
@@ -451,14 +503,14 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
   )
 }
 
-// Botón compacto para subir la foto de detalle (se guarda en la ref).
+// Enlace compacto para buscar el archivo de la foto de detalle en disco.
 function DetailUpload({ onFile }) {
   const inputRef = useRef(null)
   return (
     <>
-      <button className="cb-detail-add" title="Agregar foto de detalle (la diseñadora sabrá que la página lleva detalle)"
-        onClick={() => inputRef.current && inputRef.current.click()}>
-        + Foto de detalle
+      <button className="cb-det-browse" title="Buscar el archivo de la foto de detalle"
+        onClick={(e) => { e.stopPropagation(); inputRef.current && inputRef.current.click() }}>
+        buscar archivo
       </button>
       <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }}
         onChange={(e) => { onFile(e.target.files && e.target.files[0]); e.target.value = '' }} />

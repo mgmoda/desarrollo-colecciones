@@ -3790,12 +3790,15 @@ img.ship-ref-photo {
   border-radius: 6px;
   background: #f6f3ec;
   border: 1px solid #ece8dd;
-  display: grid; place-items: center;
+  /* Mismo patrón que col-thumb-img: flex + max-* para centrar la foto
+     completa sin cortes (el grid con tracks auto rompía el max-height). */
+  display: flex; align-items: center; justify-content: center;
+  padding: 4px; box-sizing: border-box;
   overflow: hidden;
 }
 .cb-photo img {
   max-width: 100%; max-height: 100%;
-  object-fit: contain; display: block; cursor: zoom-in;
+  object-fit: contain; display: block; margin: auto; cursor: zoom-in;
 }
 .cb-noimg { font-size: 11px; color: var(--muted); }
 .cb-pos {
@@ -3929,6 +3932,26 @@ img.ship-ref-photo {
 .cb-real-x:hover { background: #b23121; }
 .cb-real-count { color: #9a6a1e; font-weight: 600; }
 .cb-real-count.done { color: #1f7a44; }
+
+/* Arrastrar archivo sobre la página */
+.cb-page.cb-dragover {
+  outline: 2px dashed #1f7a44;
+  outline-offset: -2px;
+  border-radius: 6px;
+  background: #f4faf6;
+}
+
+/* Nombre del archivo de la foto real (para la diseñadora) */
+.cb-filename {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10.5px; font-weight: 600;
+  color: #7d5a3a;
+  background: #faf3e6; border: 1px solid #d9c3a1;
+  border-radius: 6px; padding: 3px 8px;
+  align-self: flex-start;
+  max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 .cb-page-empty { display: grid; place-items: center; }
 .cb-empty-hint {

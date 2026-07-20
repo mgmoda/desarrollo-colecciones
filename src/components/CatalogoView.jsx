@@ -15,6 +15,8 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
   const [busyPdf, setBusyPdf] = useState(false)
   // Página seleccionada para pegar la foto real con Cmd/Ctrl+V.
   const [selectedIdx, setSelectedIdx] = useState(null)
+  // Página sobre la que se está arrastrando un archivo.
+  const [dragIdx, setDragIdx] = useState(null)
 
   const refById = useMemo(() => new Map(refs.map((r) => [r.id, r])), [refs])
   const marcaOf = (r) => (r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca')
@@ -71,18 +73,26 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
     saveItems(items.map((it, k) => (k === i ? { ...it, colores: (r.colores || []).filter(Boolean) } : it)))
   }
 
+  // Guarda la FOTO REAL en la ref, conservando el nombre del archivo
+  // original para que la diseñadora lo ubique en la carpeta de fotos.
+  function onRealFile(refId, file) {
+    if (!file) return
+    processImage(file)
+      .then(({ dataUrl }) => {
+        onSetFields && onSetFields(refId, { imageReal: dataUrl, imageRealName: file.name || '' })
+      })
+      .catch(() => alert('No se pudo procesar la imagen'))
+  }
+
   // Pegar la FOTO REAL: clic en una página para seleccionarla y Cmd/Ctrl+V.
-  // La imagen del portapapeles reemplaza al boceto como imagen principal.
+  // (Arrastrar y soltar sobre la página también funciona, sin seleccionar.)
   useEffect(() => {
     function onPaste(e) {
       if (selectedIdx == null || selectedIdx >= items.length) return
       const file = getImageFromClipboard(e)
       if (!file) return
       e.preventDefault()
-      const refId = items[selectedIdx].refId
-      processImage(file)
-        .then(({ dataUrl }) => { onSetFields && onSetFields(refId, { imageReal: dataUrl }) })
-        .catch(() => alert('No se pudo procesar la imagen pegada'))
+      onRealFile(items[selectedIdx].refId, file)
     }
     function onKey(e) { if (e.key === 'Escape') setSelectedIdx(null) }
     window.addEventListener('paste', onPaste)
@@ -94,7 +104,7 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIdx, items, marcaSel])
 
-  function clearReal(refId) { onSetFields && onSetFields(refId, { imageReal: null }) }
+  function clearReal(refId) { onSetFields && onSetFields(refId, { imageReal: null, imageRealName: '' }) }
 
   async function onDetailFile(refId, file) {
     if (!file) return
@@ -124,6 +134,8 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
           // Si ya se pegó la foto real, es la que va al PDF (si no, el boceto).
           image: r.imageReal || r.image || '',
           imageDetalle: r.imageDetalle || '',
+          // Nombre del archivo original de la foto real, para la diseñadora.
+          archivo: r.imageReal ? (r.imageRealName || '') : '',
         }
       })
       await generateCatalogoPDF({ marca: marcaSel, entries })
@@ -145,10 +157,18 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
     const cod = codigo(idx)
     const mainImg = r.imageReal || r.image
     const isSel = selectedIdx === idx
+    const isDrag = dragIdx === idx
     return (
-      <div className={'cb-page ' + side + (isSel ? ' cb-selected' : '')}
+      <div className={'cb-page ' + side + (isSel ? ' cb-selected' : '') + (isDrag ? ' cb-dragover' : '')}
         onClick={() => setSelectedIdx(idx)}
-        title={isSel ? 'Página seleccionada — pega la foto real con Cmd+V / Ctrl+V' : 'Clic para seleccionar y pegar la foto real'}>
+        onDragOver={(e) => { e.preventDefault(); if (dragIdx !== idx) setDragIdx(idx) }}
+        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDragIdx(null) }}
+        onDrop={(e) => {
+          e.preventDefault(); setDragIdx(null)
+          const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]
+          if (f) onRealFile(it.refId, f)
+        }}
+        title={isSel ? 'Página seleccionada — pega (Cmd+V) o arrastra la foto real' : 'Clic para seleccionar, o arrastra la foto real aquí'}>
         <div className="cb-photo">
           {cod != null && <span className="cb-pos" title={`Nuevo código: ${cod}`}>{cod}</span>}
           {cod == null && <span className="cb-pos cb-pos-plain">{idx + 1}</span>}
@@ -164,8 +184,11 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
               <button className="cb-real-x" onClick={(e) => { e.stopPropagation(); clearReal(it.refId) }}>×</button>
             </span>
           ) : (
-            isSel && (
-              <span className="cb-paste-hint">📋 Pega la foto real<br /><span>Cmd+V / Ctrl+V</span></span>
+            (isSel || isDrag) && (
+              <span className="cb-paste-hint">
+                {isDrag ? '⬇ Suelta la foto aquí' : '📋 Pega o arrastra la foto real'}
+                <br /><span>{isDrag ? 'se guarda con el nombre del archivo' : 'Cmd+V / Ctrl+V · o arrástrala desde la carpeta'}</span>
+              </span>
             )
           )}
           {r.imageDetalle && (
@@ -186,6 +209,11 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
             <span className={'cb-tipo' + (esConj ? ' conj' : '')}>{esConj ? '⇄ Conjunto' : (r.tipo || 'Sin tipo')}</span>
             {r.marca && <span className="cb-marca">{r.marca}</span>}
           </div>
+          {r.imageReal && r.imageRealName && (
+            <div className="cb-filename" title="Nombre del archivo original — así lo encuentra la diseñadora en la carpeta de fotos">
+              📎 {r.imageRealName}
+            </div>
+          )}
           <div className="cb-colors">
             {(it.colores || []).length === 0 && <span className="muted" style={{ fontSize: 11 }}>Sin colores</span>}
             {(it.colores || []).map((c, ci) => (

@@ -188,8 +188,11 @@ export function emptyRef(id) {
     // para avisarle a la diseñadora que la página lleva detalle.
     imageDetalle: null,
     // Foto REAL de la prenda (de la sesión de fotos). En el catálogo se pega
-    // con Cmd/Ctrl+V sobre la página y reemplaza al boceto como imagen principal.
+    // con Cmd/Ctrl+V o se arrastra sobre la página y reemplaza al boceto.
+    // imageRealName guarda el nombre del archivo original para que la
+    // diseñadora lo encuentre en la carpeta de fotos.
     imageReal: null,
+    imageRealName: '',
     updatedAt: Date.now(),
   }
 }

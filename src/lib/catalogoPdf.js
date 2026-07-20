@@ -67,14 +67,20 @@ function drawHeader(doc, left, right) {
   return MARGIN + 30
 }
 
+function trunc(s, n) {
+  s = String(s || '')
+  return s.length > n ? s.slice(0, n - 1) + '…' : s
+}
+
 // ── Índice ──
 function drawIndex(doc, marca, entries, fechaStr) {
   const cols = [
     { label: 'Nº NUEVO', x: MARGIN, align: 'left' },
-    { label: 'PÁG', x: MARGIN + 80, align: 'left' },
-    { label: 'REF ACTUAL', x: MARGIN + 130, align: 'left' },
-    { label: 'TIPO', x: MARGIN + 300, align: 'left' },
-    { label: 'COLORES', x: MARGIN + 400, align: 'left' },
+    { label: 'PÁG', x: MARGIN + 70, align: 'left' },
+    { label: 'REF ACTUAL', x: MARGIN + 110, align: 'left' },
+    { label: 'TIPO', x: MARGIN + 255, align: 'left' },
+    { label: 'ARCHIVO FOTO', x: MARGIN + 330, align: 'left' },
+    { label: 'COLORES', x: MARGIN + 520, align: 'left' },
     { label: 'DETALLE', x: PAGE_W - MARGIN, align: 'right' },
   ]
   let y = drawHeader(doc, `Catálogo ${marca} · Índice de maquetación`, fechaStr)
@@ -105,19 +111,26 @@ function drawIndex(doc, marca, entries, fechaStr) {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(9)
     doc.setTextColor(...GRAY)
-    doc.text(String(e.pagina), MARGIN + 80, y)
+    doc.text(String(e.pagina), MARGIN + 70, y)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(...INK)
-    doc.text(e.refActual, MARGIN + 130, y)
+    doc.text(trunc(e.refActual, 24), MARGIN + 110, y)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(...GRAY)
-    doc.text(e.tipo, MARGIN + 300, y)
+    doc.text(trunc(e.tipo, 12), MARGIN + 255, y)
+    // Archivo de la foto real (para ubicarla en la carpeta)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8.5)
+    doc.setTextColor(...(e.archivo ? INK : GRAY))
+    doc.text(e.archivo ? trunc(e.archivo, 32) : '—', MARGIN + 330, y)
     // Colores: puntos + nombres
-    let cx = MARGIN + 400
+    doc.setFontSize(9)
+    doc.setTextColor(...GRAY)
+    let cx = MARGIN + 520
     if (e.colores.length === 0) {
       doc.text('—', cx, y)
     } else {
-      e.colores.slice(0, 5).forEach((c) => {
+      e.colores.slice(0, 3).forEach((c) => {
         doc.setFillColor(...hexToRgb(c.hex))
         doc.circle(cx + 3, y - 2.6, 3, 'F')
         doc.setDrawColor(150, 150, 150)
@@ -183,6 +196,20 @@ async function drawHalf(doc, e, x0, halfW, yTop) {
   doc.setTextColor(...GRAY)
   doc.text((e.tipo + (e.marca ? ' · ' + e.marca : '')).toUpperCase(), tx, ty)
   ty += 18
+
+  // Archivo de la foto real: la diseñadora lo busca por este nombre.
+  if (e.archivo) {
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.5)
+    doc.setTextColor(...GRAY)
+    doc.text('ARCHIVO FOTO', tx, ty)
+    ty += 12
+    doc.setFont('courier', 'bold')
+    doc.setFontSize(9.5)
+    doc.setTextColor(...INK)
+    doc.text(trunc(e.archivo, 34), tx, ty, { maxWidth: halfW - (tx - x0) - 8 })
+    ty += 16
+  }
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7.5)

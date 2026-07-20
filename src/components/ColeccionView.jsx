@@ -67,6 +67,45 @@ function renderItemsSplitByMarca(items, marcaFiltro, marcas, marcaOf, renderTile
   )
 }
 
+// Divide los PARES de conjunto en sub-bloques por marca (la marca del
+// conjunto es la de la prenda de arriba, igual que en el resumen).
+function renderPairsSplitByMarca(pairs, marcaFiltro, marcas, marcaOf, renderTile) {
+  const renderPair = (p) => (
+    <div className="col-pair" key={p.top.id + '__' + p.bottom.id}>
+      {renderTile(p.top)}
+      {renderTile(p.bottom)}
+    </div>
+  )
+  if (marcaFiltro) {
+    return <div className="col-thumbs">{pairs.map(renderPair)}</div>
+  }
+  const groups = new Map()
+  pairs.forEach((p) => {
+    const m = marcaOf(p.top)
+    if (!groups.has(m)) groups.set(m, [])
+    groups.get(m).push(p)
+  })
+  const ordered = [...marcas, 'Sin marca'].filter((m) => groups.has(m))
+  if (ordered.length <= 1) {
+    return <div className="col-thumbs">{pairs.map(renderPair)}</div>
+  }
+  return (
+    <div className="col-marca-groups">
+      {ordered.map((m) => (
+        <div className="col-marca-group" key={m}>
+          <div className="col-marca-group-head">
+            <span className={'col-marca-tag m-' + m.toLowerCase().replace(/\s+/g, '')}>{m}</span>
+            <span className="col-marca-group-count">{groups.get(m).length}</span>
+          </div>
+          <div className="col-thumbs">
+            {groups.get(m).map(renderPair)}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // Empareja referencias enlazadas por conjunto/conjuntoRef en {top, bottom}.
 function buildConjuntoPairs(refs) {
   const byId = new Map(refs.map((r) => [r.id, r]))
@@ -573,14 +612,7 @@ export default function ColeccionView({ refs, marcas, tracksByRef, onOpenRef, on
                 <span className={'col-count tone-' + f.tone}>{f.items.length}</span>
               </div>
               {f.pairsMode ? (
-                <div className="col-thumbs">
-                  {f.items.map((p) => (
-                    <div className="col-pair" key={p.top.id + '__' + p.bottom.id}>
-                      {renderTile(p.top)}
-                      {renderTile(p.bottom)}
-                    </div>
-                  ))}
-                </div>
+                renderPairsSplitByMarca(f.items, marca, marcas, marcaOf, renderTile)
               ) : (
                 renderItemsSplitByMarca(f.items, marca, marcas, marcaOf, renderTile)
               )}

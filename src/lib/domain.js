@@ -184,6 +184,9 @@ export function emptyRef(id) {
     telas: [],
     pendiente: false, pendienteNota: '', pendienteFecha: '',
     image: null,
+    // Foto de detalle (segunda foto de la misma ref) — usada en el catálogo
+    // para avisarle a la diseñadora que la página lleva detalle.
+    imageDetalle: null,
     updatedAt: Date.now(),
   }
 }

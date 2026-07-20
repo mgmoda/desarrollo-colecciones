@@ -222,6 +222,14 @@ export default function App() {
     dbUpsertRef(updated).catch((e) => console.error(e))
   }
 
+  // Guarda el catálogo de una marca (armador dentro de Fotos).
+  // Estructura: settings.catalogos = { [marca]: { startSerial, items: [{refId, colores}] } }
+  function handleSaveCatalogo(marca, cat) {
+    const next = { ...settings, catalogos: { ...(settings.catalogos || {}), [marca]: cat } }
+    setSettings(next)
+    dbSaveSettings(next).catch((e) => console.error(e))
+  }
+
   // Alterna el flag "Producción extra" desde el Resumen (un solo clic).
   // Si estaba desmarcada, la marca con la fecha de hoy. Si estaba marcada,
   // la desmarca (deshace la decisión).
@@ -548,7 +556,8 @@ export default function App() {
         )}
         {tab === 'fotos' && (
           <FotosView refs={refIndexMG} marcas={settings.marcas}
-            onOpenRef={openEdit} onViewImage={setLightbox} onSetFields={handleSetFields} />
+            onOpenRef={openEdit} onViewImage={setLightbox} onSetFields={handleSetFields}
+            catalogos={settings.catalogos || {}} onSaveCatalogo={handleSaveCatalogo} />
         )}
         {tab === 'autorizaciones' && (
           <AutorizacionesView refs={refIndexMG} tracksByRef={tracksByRef} marcas={settings.marcas}

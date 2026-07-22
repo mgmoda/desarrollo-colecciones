@@ -3754,6 +3754,23 @@ img.ship-ref-photo {
 .data-table td.strong { font-weight: 600; }
 .data-table td.muted { color: var(--muted); font-size: 12px; }
 
+/* Celdas editables en línea (Costos) */
+.data-table td.cell-action { color: var(--muted); font-size: 12px; cursor: pointer; white-space: nowrap; }
+.data-table td.cell-action:hover { color: var(--ink); }
+.cell-input {
+  width: 100%; min-width: 90px; box-sizing: border-box;
+  border: 1px solid transparent; background: transparent;
+  border-radius: 6px; padding: 5px 7px;
+  font: inherit; color: var(--ink); transition: border-color 0.12s, background 0.12s;
+}
+.cell-input::placeholder { color: var(--muted); font-style: italic; }
+.cell-input:hover { border-color: var(--hairline); }
+.cell-input:focus { outline: none; border-color: #a67c52; background: #fffdf8; }
+.cell-input-wide { min-width: 180px; }
+.cell-input-accent { font-weight: 600; color: #1f5fa5; min-width: 96px; }
+.cell-input-accent::placeholder { color: #9db4cf; font-weight: 400; }
+.cell-input-price { text-align: right; font-variant-numeric: tabular-nums; min-width: 96px; }
+
 .cell-check { width: 30px; text-align: center; }
 .cell-check input { cursor: pointer; width: 15px; height: 15px; }
 .data-table tbody tr.row-sel td { background: #eef4f9; }

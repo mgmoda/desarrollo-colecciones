@@ -31,7 +31,7 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
       nuevaRef: (r) => r.nuevaRef || '',
       tipo: (r) => r.tipo,
       descripcion: (r) => r.descripcion || '',
-      precioTalla618: (r) => Number(r.precioTalla618) || 0,
+      precioTalla618: (r) => Number(r.precioTalla618) || Number(r.costo) || 0,
       precioTalla20: (r) => Number(r.precioTalla20) || 0,
     }
     return sortRows(list, accessors[sortKey], sortDir)
@@ -100,7 +100,7 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
                       onCommit={(v) => guardar(r, 'descripcion', v)} />
                   </td>
                   <td className="num">
-                    <InlinePrice key={r.id} value={r.precioTalla618}
+                    <InlinePrice key={r.id} value={(r.precioTalla618 != null && r.precioTalla618 !== '') ? r.precioTalla618 : r.costo}
                       onCommit={(v) => guardar(r, 'precioTalla618', v)} />
                   </td>
                   <td className="num">

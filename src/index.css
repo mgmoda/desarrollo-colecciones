@@ -3769,7 +3769,8 @@ img.ship-ref-photo {
 .cell-input-wide { min-width: 180px; }
 .cell-input-accent { font-weight: 600; color: #1f5fa5; min-width: 96px; }
 .cell-input-accent::placeholder { color: #9db4cf; font-weight: 400; }
-.cell-input-price { text-align: right; font-variant-numeric: tabular-nums; min-width: 96px; }
+.cell-input-price { width: 120px; min-width: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.data-table td.num .cell-input-price { display: inline-block; }
 
 .cell-check { width: 30px; text-align: center; }
 .cell-check input { cursor: pointer; width: 15px; height: 15px; }

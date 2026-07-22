@@ -3952,6 +3952,89 @@ img.ship-ref-photo {
   width: 22px; height: 22px; font-size: 12px; cursor: pointer;
 }
 .cb-resync:hover { color: #1f7a44; border-color: #1f7a44; }
+
+/* Rótulo estilo catálogo impreso: una línea centrada con las prendas
+   ("BLUSA MG-B796 - PANTALÓN MG-P828") y debajo sus colores en fila.
+   Se ve igual con 1, 2 o 3 fotos. */
+.cb-cap { text-align: center; padding: 2px 0 1px; }
+.cb-cap-refs {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  align-items: baseline; gap: 0 2px;
+}
+.cb-cap-item { display: inline-flex; align-items: baseline; gap: 8px; }
+.cb-cap-sep { color: var(--muted); font-size: 13px; padding: 0 3px; }
+.cb-cap-ref {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  cursor: pointer; border-radius: 4px; padding: 1px 3px;
+}
+.cb-cap-ref:hover { background: #f6f3ec; }
+.cb-cap-ref-plain { cursor: default; }
+.cb-cap-ref-plain:hover { background: transparent; }
+.cb-cap-tipo {
+  font-size: 11.5px; font-weight: 400; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--ink);
+}
+.cb-cap-code {
+  font-size: 12.5px; font-weight: 700; letter-spacing: 0.05em;
+  color: var(--ink);
+}
+.cb-cap-colors {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  align-items: center; gap: 4px 20px;   /* el hueco grande separa prendas */
+  margin-top: 5px;
+}
+.cb-cap-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px 10px; }
+.cb-cap-color { display: inline-flex; align-items: center; gap: 4px; }
+.cb-cap-cname {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-soft); white-space: nowrap;
+}
+.cb-cap-nocolor { font-size: 9px; color: var(--muted); font-style: italic; }
+/* Los controles de edición solo aparecen al pasar el mouse: el pie se lee
+   limpio, como en el catálogo impreso. */
+.cb-cap-x, .cb-cap-resync {
+  border: none; background: transparent; color: var(--muted);
+  font-size: 11px; line-height: 1; cursor: pointer; padding: 0;
+  width: 0; opacity: 0; overflow: hidden;
+  transition: opacity 0.12s ease, width 0.12s ease;
+}
+.cb-page:hover .cb-cap-x, .cb-page:hover .cb-cap-resync { width: 12px; opacity: 0.55; }
+.cb-cap-x:hover { opacity: 1 !important; color: #b23121; }
+.cb-cap-resync { font-size: 12px; }
+.cb-cap-resync:hover { opacity: 1 !important; color: #1f7a44; }
+.cb-cap-marca {
+  margin-top: 4px;
+  font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Archivos de las fotos: plegados, para no ensuciar el rótulo */
+.cb-archivos { display: flex; flex-direction: column; gap: 6px; }
+.cb-arch-toggle {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  align-self: center;
+  border: 1px solid transparent; background: transparent;
+  color: var(--muted); font-size: 10px; font-weight: 600;
+  padding: 2px 8px; border-radius: 999px; cursor: pointer;
+}
+.cb-arch-toggle:hover { background: #faf3e6; border-color: #e6d7bd; color: #7d5a3a; }
+.cb-arch-caret { font-size: 8px; }
+.cb-archivos.abierto .cb-arch-toggle { background: #faf3e6; border-color: #e6d7bd; color: #7d5a3a; }
+.cb-arch-badges { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.cb-arch-b {
+  font-size: 8.5px; font-weight: 700; letter-spacing: 0.03em;
+  padding: 1px 6px; border-radius: 999px;
+}
+.cb-arch-b.ref { background: #e9eef6; color: #2c5a8c; }
+.cb-arch-b.det { background: #fbf0db; color: #9a6a1e; }
+.cb-fotorow-line { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cb-fototag-mini {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 700;
+  color: #2c5a8c; background: #e9eef6; border: 1px solid #cfe0ee;
+  padding: 1px 4px 1px 8px; border-radius: 999px;
+}
+
 .cb-controls {
   margin-top: auto;
   display: flex; justify-content: space-between; align-items: center;

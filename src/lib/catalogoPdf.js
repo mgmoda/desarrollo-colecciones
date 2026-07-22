@@ -72,6 +72,12 @@ function trunc(s, n) {
   return s.length > n ? s.slice(0, n - 1) + '…' : s
 }
 
+// Ancho de un texto contando el espaciado entre letras (jsPDF no lo suma).
+function textW(doc, s, cs) {
+  s = String(s || '')
+  return doc.getTextWidth(s) + (cs || 0) * Math.max(0, s.length - 1)
+}
+
 // ── Índice ──
 function drawIndex(doc, marca, entries, fechaStr) {
   const cols = [
@@ -152,138 +158,167 @@ function drawIndex(doc, marca, entries, fechaStr) {
   })
 }
 
-// ── Media página de un pliego ──
-async function drawHalf(doc, e, x0, halfW, yTop) {
-  const PHOTO_W = 175
-  const PHOTO_H = 250
+// ── Rótulo estilo catálogo impreso ──
+// Línea centrada "BLUSA M5087 - PANTALÓN M5088" y, debajo, los colores de
+// cada prenda en fila (NOMBRE ●), separados por grupos. Devuelve el y final.
+function drawRotulo(doc, prendas, cx, W, y) {
+  const parts = (prendas || [])
+    .filter((p) => p && (p.tipo || p.code))
+    .map((p) => ({ tipo: String(p.tipo || '').toUpperCase(), code: String(p.code || ''), colores: p.colores || [] }))
+  if (!parts.length) return y
+  const SEP = '  -  '
 
-  await drawContained(doc, e.image, x0 + 8, yTop, PHOTO_W, PHOTO_H)
-
-  // Badge de posición sobre la foto
-  doc.setFillColor(...INK)
-  doc.circle(x0 + 22, yTop + 14, 11, 'F')
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.setTextColor(255, 255, 255)
-  doc.text(String(e.pagina), x0 + 22, yTop + 17, { align: 'center' })
-
-  // Columna de texto
-  const tx = x0 + 8 + PHOTO_W + 16
-  let ty = yTop + 14
-
+  // 1) Línea de referencias — se achica sola si no cabe a lo ancho.
+  const CS = 0.9
+  // Una sola cadena centrada, como en el catálogo impreso. Va en un solo
+  // doc.text para que los espacios queden exactos (midiendo tramo por tramo
+  // jsPDF descuadra las palabras con tilde).
+  const linea = parts.map((p) => `${p.tipo} ${p.code}`).join(SEP)
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7.5)
-  doc.setTextColor(...GRAY)
-  doc.text('Nº NUEVO', tx, ty)
-  ty += 20
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(26)
-  doc.setTextColor(...ACCENT_DEEP)
-  doc.text(String(e.codigo), tx, ty)
-  ty += 22
-
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7.5)
-  doc.setTextColor(...GRAY)
-  doc.text('REF ACTUAL', tx, ty)
-  ty += 13
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
+  let size = 12.5
+  doc.setFontSize(size)
+  while (textW(doc, linea, CS) > W && size > 6.5) { size -= 0.5; doc.setFontSize(size) }
   doc.setTextColor(...INK)
-  doc.text(e.refActual, tx, ty, { maxWidth: halfW - (tx - x0) - 8 })
-  ty += 16
+  doc.text(linea, cx, y, { align: 'center', charSpace: CS })
+  y += 15
 
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8)
-  doc.setTextColor(...GRAY)
-  doc.text((e.tipo + (e.marca ? ' · ' + e.marca : '')).toUpperCase(), tx, ty)
-  ty += 18
-
-  // Archivos de las fotos: nombre COMPLETO de cada una (envuelto en varias
-  // líneas si es largo) para que la diseñadora los ubique en la carpeta.
-  const fotos = e.fotos || []
-  if (fotos.length) {
-    const nameW = halfW - (tx - x0) - 8
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.5)
-    doc.setTextColor(...GRAY)
-    doc.text(fotos.length === 1 ? 'ARCHIVO FOTO' : 'ARCHIVOS FOTOS', tx, ty)
-    ty += 12
-    fotos.forEach((f, fi) => {
-      const name = f.name || '(sin nombre)'
-      doc.setFont('courier', 'bold')
-      doc.setFontSize(8.5)
-      doc.setTextColor(...ACCENT_DEEP)
-      doc.text(String(fi + 1), tx, ty)
-      doc.setTextColor(...INK)
-      const lines = doc.splitTextToSize(name, nameW - 12)
-      doc.text(lines, tx + 12, ty)
-      ty += lines.length * 10 + 2
-      // Rol de la foto: detalle, u otra referencia con sus colores.
-      if (f.rol === 'detalle') {
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(7.5)
-        doc.setTextColor(...ACCENT_DEEP)
-        doc.text('→ DETALLE (sin referencia)', tx + 12, ty)
-        ty += 11
-      } else if (f.refCode) {
-        const colNames = (f.refColores || []).map((c) => c.name).filter(Boolean).join(', ')
-        const info = `→ REF ${f.refCode}${f.refTipo ? ' · ' + f.refTipo : ''}${colNames ? ' · ' + colNames : ''}`
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(7.5)
-        doc.setTextColor(...ACCENT_DEEP)
-        const ilines = doc.splitTextToSize(info, nameW - 12)
-        doc.text(ilines, tx + 12, ty)
-        ty += ilines.length * 9.5 + 2
-      }
-      ty += 3
+  // 2) Fila de colores: NOMBRE ● por color, con más aire entre prendas.
+  const grupos = parts.filter((p) => p.colores.length)
+  if (!grupos.length) return y
+  const CCS = 0.6
+  const GAP_COLOR = 11   // entre colores de la misma prenda
+  const GAP_GRUPO = 24   // entre prendas
+  const medirCols = (s) => {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(s)
+    const r = s * 0.42
+    let t = 0
+    grupos.forEach((g, gi) => {
+      g.colores.forEach((c, ci) => {
+        t += textW(doc, String(c.name || '').toUpperCase(), CCS) + 4 + r * 2
+        if (ci < g.colores.length - 1) t += GAP_COLOR
+      })
+      if (gi < grupos.length - 1) t += GAP_GRUPO
     })
-    ty += 3
+    return t
   }
+  let cs = 8.5
+  let ctotal = medirCols(cs)
+  while (ctotal > W && cs > 5.5) { cs -= 0.5; ctotal = medirCols(cs) }
+  const r = cs * 0.42
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(cs)
+  let cxp = cx - ctotal / 2
+  grupos.forEach((g, gi) => {
+    g.colores.forEach((c, ci) => {
+      const nm = String(c.name || '').toUpperCase()
+      doc.setTextColor(...INK)
+      doc.text(nm, cxp, y, { charSpace: CCS })
+      cxp += textW(doc, nm, CCS) + 4
+      doc.setFillColor(...hexToRgb(c.hex))
+      doc.circle(cxp + r, y - cs * 0.32, r, 'F')
+      doc.setDrawColor(150, 150, 150); doc.setLineWidth(0.25)
+      doc.circle(cxp + r, y - cs * 0.32, r, 'S')
+      cxp += r * 2
+      if (ci < g.colores.length - 1) cxp += GAP_COLOR
+    })
+    if (gi < grupos.length - 1) cxp += GAP_GRUPO
+  })
+  return y + 12
+}
 
+// ── Media página de un pliego ──
+// Estructura de catálogo impreso: las fotos arriba (1, 2 o 3, del mismo alto)
+// y debajo, centrado, el rótulo de referencias + colores. Al pie, los nombres
+// de archivo para que la diseñadora ubique cada foto en la carpeta.
+async function drawHalf(doc, e, x0, halfW, yTop) {
+  const PAD = 10
+  const X = x0 + PAD
+  const W = halfW - PAD * 2
+  const cx = X + W / 2
+  const BOTTOM = PAGE_H - MARGIN - 16
+  let y = yTop
+
+  // Encabezado del lado: Nº nuevo (lo que la diseñadora rotula)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.setTextColor(...GRAY)
+  doc.text('Nº NUEVO', X, y + 8, { charSpace: 0.8 })
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(20)
+  doc.setTextColor(...ACCENT_DEEP)
+  doc.text(String(e.codigo), X + 52, y + 10)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7.5)
   doc.setTextColor(...GRAY)
-  doc.text('COLORES', tx, ty)
-  ty += 13
-  if (e.colores.length === 0) {
-    doc.setTextColor(...GRAY)
-    doc.setFontSize(9)
-    doc.text('—', tx, ty)
-    ty += 14
-  } else {
-    e.colores.forEach((c) => {
-      doc.setFillColor(...hexToRgb(c.hex))
-      doc.circle(tx + 4, ty - 3, 3.6, 'F')
-      doc.setDrawColor(150, 150, 150)
-      doc.setLineWidth(0.2)
-      doc.circle(tx + 4, ty - 3, 3.6, 'S')
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(9.5)
-      doc.setTextColor(...INK)
-      doc.text(c.name || '', tx + 12, ty)
-      ty += 14
-    })
-  }
+  if (e.marca) doc.text(e.marca, X + W, y + 8, { align: 'right' })
+  y += 22
 
-  // Miniaturas de las fotos 2 y 3 (la 1 es la imagen principal de la página).
-  const extras = fotos.slice(1)
-  if (extras.length) {
-    ty += 4
-    let ex = tx
-    for (let i = 0; i < extras.length; i++) {
-      await drawContained(doc, extras[i].src, ex, ty, 54, 72)
-      doc.setDrawColor(...ACCENT)
-      doc.setLineWidth(0.6)
-      doc.rect(ex, ty, 54, 72, 'S')
-      doc.setFillColor(...ACCENT_DEEP)
-      doc.circle(ex + 8, ty + 8, 6, 'F')
+  // Fotos de la sesión (o el boceto de la ficha si aún no hay ninguna),
+  // todas del mismo alto y repartidas a lo ancho.
+  const fotos = e.fotos || []
+  const imgs = fotos.length ? fotos.map((f) => f.src) : [e.image]
+  const n = imgs.length
+  const GAP = 8
+  // Alto fijo para todas las páginas: así los rótulos quedan a la misma
+  // altura en las dos mitades del pliego, como en el catálogo impreso.
+  const boxH = 290
+  const boxW = Math.min(boxH * 0.72, (W - GAP * (n - 1)) / n)
+  const rowW = boxW * n + GAP * (n - 1)
+  let px = cx - rowW / 2
+  for (let i = 0; i < n; i++) {
+    await drawContained(doc, imgs[i], px, y, boxW, boxH)
+    if (fotos.length > 1) {
+      doc.setFillColor(...INK)
+      doc.circle(px + 10, y + 10, 7, 'F')
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(7)
+      doc.setFontSize(7.5)
       doc.setTextColor(255, 255, 255)
-      doc.text(String(i + 2), ex + 8, ty + 10.5, { align: 'center' })
-      ex += 62
+      doc.text(String(i + 1), px + 10, y + 12.5, { align: 'center' })
     }
+    const f = fotos[i]
+    if (f && (f.rol === 'detalle' || f.refCode)) {
+      const tag = f.rol === 'detalle' ? 'DETALLE' : f.refCode
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(6.5)
+      const tw = doc.getTextWidth(tag) + 10
+      doc.setFillColor(...(f.rol === 'detalle' ? ACCENT_DEEP : INK))
+      doc.roundedRect(px + boxW - tw - 6, y + boxH - 16, tw, 11, 3, 3, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.text(tag, px + boxW - tw / 2 - 6, y + boxH - 8.5, { align: 'center' })
+    }
+    px += boxW + GAP
+  }
+  y += boxH + 22
+
+  // Rótulo: referencias en una línea + colores debajo
+  y = drawRotulo(doc, e.prendas && e.prendas.length ? e.prendas
+    : [{ tipo: e.tipo, code: e.refActual, colores: e.colores || [] }], cx, W, y)
+
+  // Archivos de las fotos, al pie: nombre COMPLETO de cada una para que la
+  // diseñadora la ubique en la carpeta. Compacto, para no competir con el rótulo.
+  if (fotos.length) {
+    y = Math.max(y + 10, BOTTOM - 14 - fotos.length * 13)
+    doc.setDrawColor(...HAIRLINE)
+    doc.setLineWidth(0.4)
+    doc.line(X, y - 8, X + W, y - 8)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(6.5)
+    doc.setTextColor(...GRAY)
+    doc.text(fotos.length === 1 ? 'ARCHIVO DE LA FOTO' : 'ARCHIVOS DE LAS FOTOS', X, y, { charSpace: 0.7 })
+    y += 10
+    fotos.forEach((f, fi) => {
+      doc.setFont('courier', 'bold')
+      doc.setFontSize(7)
+      doc.setTextColor(...ACCENT_DEEP)
+      doc.text(String(fi + 1), X, y)
+      doc.setTextColor(...INK)
+      // Sin flechas ni símbolos fuera de WinAnsi: jsPDF no los tiene en sus
+      // fuentes base y rompe el renglón entero.
+      const suf = f.rol === 'detalle' ? '   (detalle)'
+        : f.refCode ? `   (${f.refCode})` : ''
+      const lines = doc.splitTextToSize((f.name || '(sin nombre)') + suf, W - 11)
+      doc.text(lines, X + 11, y)
+      y += lines.length * 8 + 3
+    })
   }
 }
 

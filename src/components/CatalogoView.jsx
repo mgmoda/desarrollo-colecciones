@@ -23,6 +23,8 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
   const [dragIdx, setDragIdx] = useState(null)
   // Buscador inline para asociar una foto a otra referencia: {idx, fi, q}.
   const [refPick, setRefPick] = useState(null)
+  // Páginas con el bloque de archivos desplegado (por refId).
+  const [archAbiertos, setArchAbiertos] = useState(() => new Set())
   // Reordenamiento: página que se está arrastrando y página destino.
   const [dragPageIdx, setDragPageIdx] = useState(null)
   const [reorderOverIdx, setReorderOverIdx] = useState(null)
@@ -30,7 +32,50 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
   const addBoxRef = useRef(null)
 
   const refById = useMemo(() => new Map(refs.map((r) => [r.id, r])), [refs])
+  const refByCode = useMemo(() => new Map(refs.map((r) => [r.referencia, r])), [refs])
   const marcaOf = (r) => (r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca')
+
+  // Prendas que se rotulan al pie de la página, al estilo del catálogo
+  // impreso ("BLUSA M5087 - PANTALÓN M5088"): la prenda de la página, su
+  // pareja de conjunto y las referencias asociadas a las fotos. Cada una
+  // aporta sus propios colores. Mismo modelo para la pantalla y el PDF.
+  function prendasDe(it, r, fotos) {
+    const out = []
+    const seen = new Set()
+    out.push({
+      key: 'main',
+      tipo: r.tipo || 'Prenda',
+      code: r.referencia || it.refId,
+      colores: (it.colores || []).filter(Boolean),
+      ref: r.id ? r : null,
+      own: true, // sus colores se editan aquí (los demás vienen de su ficha)
+    })
+    if (r.id) seen.add(r.id)
+    if (r.conjunto && r.conjuntoRef) {
+      const par = refByCode.get(r.conjuntoRef)
+      if (par && !seen.has(par.id)) {
+        seen.add(par.id)
+        out.push({
+          key: 'par-' + par.id, tipo: par.tipo || 'Prenda', code: par.referencia,
+          colores: (par.colores || []).filter(Boolean), ref: par,
+        })
+      } else if (!par) {
+        out.push({ key: 'par-code', tipo: 'Prenda', code: r.conjuntoRef, colores: [], ref: null })
+      }
+    }
+    fotos.forEach((f) => {
+      if (!f.refId || seen.has(f.refId)) return
+      seen.add(f.refId)
+      const fr = refById.get(f.refId)
+      if (fr) {
+        out.push({
+          key: 'f-' + fr.id, tipo: fr.tipo || 'Prenda', code: fr.referencia,
+          colores: (fr.colores || []).filter(Boolean), ref: fr,
+        })
+      }
+    })
+    return out
+  }
 
   const cat = catalogos[marcaSel] || { startSerial: '', items: [] }
   const items = cat.items || []
@@ -90,6 +135,13 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
     box.scrollIntoView({ behavior: 'smooth', block: 'center' })
     const input = box.querySelector('input')
     if (input) setTimeout(() => input.focus(), 250)
+  }
+  function toggleArch(refId) {
+    setArchAbiertos((prev) => {
+      const n = new Set(prev)
+      if (n.has(refId)) n.delete(refId); else n.add(refId)
+      return n
+    })
   }
   function removeColor(i, ci) {
     saveItems(items.map((it, k) => (k === i ? { ...it, colores: (it.colores || []).filter((_, c) => c !== ci) } : it)))
@@ -190,6 +242,10 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
           tipo: esConj ? 'Conjunto' : (r.tipo || '—'),
           marca: r.marca || '',
           colores: (it.colores || []).filter(Boolean),
+          // Rótulo del catálogo impreso: TIPO+CÓDIGO de cada prenda con sus colores.
+          prendas: prendasDe(it, r, fotos).map((p) => ({
+            tipo: p.tipo, code: p.code, colores: p.colores,
+          })),
           // La foto 1 de la sesión es la principal del PDF; sin fotos, el boceto.
           image: (fotos[0] && fotos[0].src) || r.image || '',
           // Todas las fotos con su nombre COMPLETO y su rol/referencia asociada.
@@ -224,6 +280,10 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
     const esConj = !!(r.conjunto && r.conjuntoRef)
     const cod = codigo(idx)
     const fotos = getFotos(r)
+    const prendas = prendasDe(it, r, fotos)
+    // Los archivos se despliegan al pedirlo, o solos mientras se busca la
+    // referencia de una foto.
+    const archOpen = archAbiertos.has(it.refId) || !!(refPick && refPick.idx === idx)
     const isSel = selectedIdx === idx
     const isDrag = dragIdx === idx
     const isReorderTarget = dragPageIdx != null && reorderOverIdx === idx && dragPageIdx !== idx
@@ -333,53 +393,104 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
           )}
         </div>
         <div className="cb-info">
-          <div className="cb-ref" title="Abrir ficha"
-            onClick={() => onOpenRef && r.id && onOpenRef(r)}>
-            {esConj ? `${r.referencia} + ${r.conjuntoRef}` : r.referencia}
+          {/* Pie de página al estilo del catálogo impreso: una sola línea
+              centrada "BLUSA M5087 - PANTALÓN M5088" y debajo los colores
+              de cada prenda, en fila. Igual con 1, 2 o 3 fotos. */}
+          <div className="cb-cap">
+            <div className="cb-cap-refs">
+              {prendas.map((p, pi) => (
+                <span className="cb-cap-item" key={p.key}>
+                  {pi > 0 && <span className="cb-cap-sep">-</span>}
+                  <span className={'cb-cap-ref' + (p.ref ? '' : ' cb-cap-ref-plain')}
+                    title={p.ref ? 'Abrir ficha' : undefined}
+                    onClick={(e) => { e.stopPropagation(); if (p.ref && onOpenRef) onOpenRef(p.ref) }}>
+                    <span className="cb-cap-tipo">{p.tipo}</span>
+                    <span className="cb-cap-code">{p.code}</span>
+                  </span>
+                </span>
+              ))}
+            </div>
+            <div className="cb-cap-colors">
+              {prendas.map((p) => (
+                <span className="cb-cap-group" key={p.key}
+                  title={prendas.length > 1 ? `Colores de ${p.code}` : undefined}>
+                  {p.colores.length === 0 ? (
+                    <span className="cb-cap-nocolor">sin colores</span>
+                  ) : p.colores.map((c, ci) => (
+                    <span className="cb-cap-color" key={ci}>
+                      <span className="cb-cap-cname">{c.name}</span>
+                      <span className="cb-dot" style={{ background: c.hex || '#ccc' }} />
+                      {p.own && (
+                        <button className="cb-cap-x" title="Quitar color (solo del catálogo)"
+                          onClick={(e) => { e.stopPropagation(); removeColor(idx, ci) }}>×</button>
+                      )}
+                    </span>
+                  ))}
+                  {p.own && (
+                    <button className="cb-cap-resync" title="Volver a traer los colores de la ficha"
+                      onClick={(e) => { e.stopPropagation(); resyncColors(idx) }}>↺</button>
+                  )}
+                </span>
+              ))}
+            </div>
+            {r.marca && <div className="cb-cap-marca">{r.marca}</div>}
           </div>
-          <div className="cb-meta">
-            <span className={'cb-tipo' + (esConj ? ' conj' : '')}>{esConj ? '⇄ Conjunto' : (r.tipo || 'Sin tipo')}</span>
-            {r.marca && <span className="cb-marca">{r.marca}</span>}
-          </div>
-          {fotos.map((f, fi) => {
+
+          {/* Archivos de las fotos: plegados para no ensuciar el pie; se
+              abren para copiar el nombre o marcar de qué es cada foto. */}
+          {fotos.length > 0 && (
+          <div className={'cb-archivos' + (archOpen ? ' abierto' : '')}>
+          <button className="cb-arch-toggle"
+            title={archOpen ? 'Ocultar los archivos' : 'Ver el nombre de archivo de cada foto y marcar de qué es'}
+            onClick={(e) => { e.stopPropagation(); toggleArch(it.refId) }}>
+            <span className="cb-arch-caret">{archOpen ? '▾' : '▸'}</span>
+            📎 {fotos.length} {fotos.length === 1 ? 'archivo' : 'archivos'}
+            {!archOpen && fotos.some((f) => f.refId || f.rol === 'detalle') && (
+              <span className="cb-arch-badges">
+                {fotos.map((f, fi) => (
+                  f.refId ? <span key={fi} className="cb-arch-b ref">{(refById.get(f.refId) || {}).referencia || f.refId}</span>
+                    : f.rol === 'detalle' ? <span key={fi} className="cb-arch-b det">detalle</span> : null
+                ))}
+              </span>
+            )}
+          </button>
+          {archOpen && fotos.map((f, fi) => {
             const fr = f.refId ? refById.get(f.refId) : null
             const picking = refPick && refPick.idx === idx && refPick.fi === fi
             return (
               <div key={fi} className="cb-fotorow">
-                <div className="cb-filename"
-                  title="Nombre del archivo original — un clic lo selecciona completo para copiarlo">
-                  📎 {fi + 1} · {f.name || '(sin nombre — pégala arrastrando el archivo)'}
-                </div>
-                <div className="cb-fotorow-meta">
-                  {f.refId ? (
-                    <span className="cb-fotoref"
-                      title={fr ? `Foto de ${fr.referencia} · ${fr.tipo || ''}` : `Foto de ${f.refId}`}>
-                      {(fr && fr.referencia) || f.refId}
-                      {fr && fr.tipo ? <span className="cb-fotoref-tipo"> · {fr.tipo}</span> : null}
-                      {(fr ? (fr.colores || []).filter(Boolean) : []).slice(0, 4).map((c, ci) => (
-                        <span key={ci} className="cb-dot" style={{ background: c.hex || '#ccc' }} title={c.name} />
-                      ))}
-                      <button className="cb-color-x" title="Quitar la referencia de esta foto"
-                        onClick={(e) => { e.stopPropagation(); asignarFotoRef(it.refId, fi, null) }}>×</button>
-                    </span>
-                  ) : f.rol === 'detalle' ? (
-                    <span className="cb-fotodet" title="Foto de detalle — sin referencia">
-                      DETALLE
-                      <button className="cb-color-x" title="Quitar la marca de detalle"
-                        onClick={(e) => { e.stopPropagation(); marcarFotoDetalle(it.refId, fi, false) }}>×</button>
-                    </span>
-                  ) : (
-                    <>
-                      <button className="cb-mini" title="Esta foto es de OTRA referencia (ej. el pantalón que acompaña): búscala en la base"
-                        onClick={(e) => { e.stopPropagation(); setRefPick({ idx, fi, q: '' }) }}>
-                        + referencia
-                      </button>
-                      <button className="cb-mini" title="Marcar como foto de DETALLE (sin referencia)"
-                        onClick={(e) => { e.stopPropagation(); marcarFotoDetalle(it.refId, fi, true) }}>
-                        detalle
-                      </button>
-                    </>
-                  )}
+                <div className="cb-fotorow-line">
+                  <div className="cb-filename"
+                    title="Nombre del archivo original — un clic lo selecciona completo para copiarlo">
+                    📎 {fi + 1} · {f.name || '(sin nombre — pégala arrastrando el archivo)'}
+                  </div>
+                  <div className="cb-fotorow-meta">
+                    {f.refId ? (
+                      <span className="cb-fototag-mini"
+                        title={fr ? `Foto de ${fr.referencia} · ${fr.tipo || ''}` : `Foto de ${f.refId}`}>
+                        → {(fr && fr.referencia) || f.refId}
+                        <button className="cb-color-x" title="Quitar la referencia de esta foto"
+                          onClick={(e) => { e.stopPropagation(); asignarFotoRef(it.refId, fi, null) }}>×</button>
+                      </span>
+                    ) : f.rol === 'detalle' ? (
+                      <span className="cb-fotodet" title="Foto de detalle — sin referencia">
+                        DETALLE
+                        <button className="cb-color-x" title="Quitar la marca de detalle"
+                          onClick={(e) => { e.stopPropagation(); marcarFotoDetalle(it.refId, fi, false) }}>×</button>
+                      </span>
+                    ) : (
+                      <>
+                        <button className="cb-mini" title="Esta foto es de OTRA referencia (ej. el pantalón que acompaña): búscala en la base"
+                          onClick={(e) => { e.stopPropagation(); setRefPick({ idx, fi, q: '' }) }}>
+                          + referencia
+                        </button>
+                        <button className="cb-mini" title="Marcar como foto de DETALLE (sin referencia)"
+                          onClick={(e) => { e.stopPropagation(); marcarFotoDetalle(it.refId, fi, true) }}>
+                          detalle
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 {picking && (
                   <div className="cb-refpick" onClick={(e) => e.stopPropagation()}>
@@ -419,19 +530,8 @@ export default function CatalogoView({ refs, marcas, catalogos, onSave, onViewIm
               </div>
             )
           })}
-          <div className="cb-colors">
-            {(it.colores || []).length === 0 && <span className="muted" style={{ fontSize: 11 }}>Sin colores</span>}
-            {(it.colores || []).map((c, ci) => (
-              <span key={ci} className="cb-color" title={c.name}>
-                <span className="cb-dot" style={{ background: c.hex || '#ccc' }} />
-                {c.name}
-                <button className="cb-color-x" title="Quitar color (solo del catálogo)"
-                  onClick={() => removeColor(idx, ci)}>×</button>
-              </span>
-            ))}
-            <button className="cb-resync" title="Volver a traer los colores de la ficha"
-              onClick={() => resyncColors(idx)}>↺</button>
           </div>
+          )}
         </div>
         <div className="cb-controls">
           <span className="cb-move">

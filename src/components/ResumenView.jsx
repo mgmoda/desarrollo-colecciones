@@ -133,8 +133,10 @@ function FlagChip({ value }) {
   return <span className="flag flag-none">—</span>
 }
 
-export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdit, onNew, onViewImage, onOpenDetail, onToggleExtra }) {
+export default function ResumenView({ refs, marcas = [], tracksByRef, pendientesSignal, onEdit, onNew, onViewImage, onOpenDetail, onToggleExtra }) {
   const [q, setQ] = useState('')
+  const [marcaF, setMarcaF] = useState('')
+  const [soloAprobadas, setSoloAprobadas] = useState(false)
   const [soloRepetidas, setSoloRepetidas] = useState(false)
   const [soloPendientes, setSoloPendientes] = useState(false)
   const [soloConjuntos, setSoloConjuntos] = useState(false)
@@ -175,6 +177,8 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
 
   const rows = useMemo(() => {
     let list = refs
+    if (marcaF) list = list.filter((r) => r.marca === marcaF)
+    if (soloAprobadas) list = list.filter((r) => medicionInfo(r).estado === 'aprobada')
     if (soloRepetidas) list = list.filter((r) => veces(r) > 1)
     if (soloPendientes) list = list.filter((r) => r.pendiente)
     if (soloConjuntos) list = list.filter((r) => r.conjunto && r.conjuntoRef)
@@ -207,7 +211,7 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
     }
     RESUMEN_FLAGS.forEach((f) => { accessors['flag_' + f.key] = (r) => flagRank((r.flags || {})[f.key]) })
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [refs, q, soloRepetidas, soloPendientes, soloConjuntos, ocultarDescartadas, soloAprobadasLimpias, soloCostosPorRevisar, soloCostosRevisados, sortKey, sortDir, tracksByRef])
+  }, [refs, q, marcaF, soloAprobadas, soloRepetidas, soloPendientes, soloConjuntos, ocultarDescartadas, soloAprobadasLimpias, soloCostosPorRevisar, soloCostosRevisados, sortKey, sortDir, tracksByRef])
 
   const repetidasCount = useMemo(
     () => refs.filter((r) => veces(r) > 1).length,
@@ -261,6 +265,19 @@ export default function ResumenView({ refs, tracksByRef, pendientesSignal, onEdi
           </p>
         </div>
         <div className="view-actions">
+          {marcas.length > 0 && (
+            <div className="opt-group">
+              <button type="button" className={'opt-btn' + (!marcaF ? ' on' : '')} onClick={() => setMarcaF('')}>Todas</button>
+              {marcas.map((m) => (
+                <button key={m} type="button" className={'opt-btn' + (marcaF === m ? ' on' : '')}
+                  onClick={() => setMarcaF(marcaF === m ? '' : m)}>{m}</button>
+              ))}
+            </div>
+          )}
+          <label className="check check-ok">
+            <input type="checkbox" checked={soloAprobadas}
+              onChange={(e) => setSoloAprobadas(e.target.checked)} /> Solo aprobadas
+          </label>
           {pendientesCount > 0 && (
             <label className="check check-alert">
               <input type="checkbox" checked={soloPendientes}

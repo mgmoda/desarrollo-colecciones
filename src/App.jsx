@@ -527,6 +527,7 @@ export default function App() {
         {tab === 'resumen' && (
           <ResumenView
             refs={refIndexMG}
+            marcas={settings.marcas}
             tracksByRef={tracksByRef}
             onEdit={openEdit}
             onNew={openNew}

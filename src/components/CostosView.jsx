@@ -3,23 +3,48 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { formatPrice } from '../lib/constants.js'
-import { medicionInfo } from '../lib/domain.js'
+import { medicionInfo, buildConjuntoPairs } from '../lib/domain.js'
+
+// Precio "actual" de una prenda para sumar en el conjunto: usa el precio
+// de Talla 6-18 si ya se capturó, si no el costo heredado de la ficha.
+const precioActual = (r) => Number(r.precioTalla618) || Number(r.costo) || 0
 
 // Captura de precios de lista para la diseñadora. Solo referencias
-// aprobadas, filtradas por marca. Columnas editables en línea:
-// nueva referencia, descripción y los dos precios por rango de talla.
+// aprobadas, filtradas por marca. Los conjuntos se colapsan en una sola
+// fila cuyo precio es la suma del costo actual de sus dos prendas.
 export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewImage, onSetFields }) {
   const [q, setQ] = useState('')
   const [marcaF, setMarcaF] = useState('')
   const { sortKey, sortDir, toggle } = useSort('referencia', 'asc')
 
-  const marcaOf = (r) => (r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca')
   const esAprobada = (r) => medicionInfo(r).estado === 'aprobada'
 
   const rows = useMemo(() => {
     // Base: solo aprobadas y de una marca real (Mariset / Casania).
-    let list = refs.filter((r) => esAprobada(r) && marcas.includes(r.marca))
-    if (marcaF) list = list.filter((r) => r.marca === marcaF)
+    let base = refs.filter((r) => esAprobada(r) && marcas.includes(r.marca))
+    if (marcaF) base = base.filter((r) => r.marca === marcaF)
+
+    // Conjuntos: se colapsan en una fila; sus dos prendas salen de la lista.
+    const pairs = buildConjuntoPairs(base)
+    const enPar = new Set()
+    pairs.forEach((p) => { enPar.add(p.top.id); enPar.add(p.bottom.id) })
+    const conjuntoRows = pairs.map(({ top, bottom }) => ({
+      id: 'conj-' + top.id,
+      isConjunto: true,
+      anchor: top,
+      top, bottom,
+      image: top.image,
+      referencia: top.referencia + ' + ' + bottom.referencia,
+      tipo: 'Conjunto',
+      nuevaRef: top.conjuntoNuevaRef || '',
+      descripcion: top.conjuntoDescripcion || '',
+      suma: precioActual(top) + precioActual(bottom),
+      precioTalla618: precioActual(top) + precioActual(bottom),
+      precioTalla20: 0,
+    }))
+    const individuales = base.filter((r) => !enPar.has(r.id))
+    let list = [...conjuntoRows, ...individuales]
+
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((r) =>
@@ -38,9 +63,9 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
   }, [refs, q, marcaF, marcas, sortKey, sortDir])
 
   const thProps = { sortKey, sortDir, onSort: toggle }
-  const guardar = (r, campo, valor) => {
-    if (String(r[campo] ?? '') === String(valor ?? '')) return
-    onSetFields && onSetFields(r.id, { [campo]: valor })
+  const guardar = (ref, campo, valor) => {
+    if (String(ref[campo] ?? '') === String(valor ?? '')) return
+    onSetFields && onSetFields(ref.id, { [campo]: valor })
   }
 
   return (
@@ -81,7 +106,36 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {rows.map((r) => r.isConjunto ? (
+                <tr key={r.id} className="row-conjunto">
+                  <td className="cell-photo">
+                    {r.image ? (
+                      <img src={r.image} alt={r.referencia} className="thumb" title="Ampliar foto"
+                        onClick={() => onViewImage(r.image)} />
+                    ) : <span className="thumb empty">—</span>}
+                  </td>
+                  <td>
+                    <span className="conj-tag">Conjunto</span>
+                    <span className="conj-parts">{r.top.referencia} + {r.bottom.referencia}</span>
+                  </td>
+                  <td>
+                    <InlineText key={r.id} value={r.nuevaRef} placeholder="MG-C…" accent
+                      onCommit={(v) => guardar(r.anchor, 'conjuntoNuevaRef', v)} />
+                  </td>
+                  <td>Conjunto</td>
+                  <td>
+                    <InlineText key={r.id} value={r.descripcion} placeholder="Escribir descripción…" wide
+                      onCommit={(v) => guardar(r.anchor, 'conjuntoDescripcion', v)} />
+                  </td>
+                  <td className="num">
+                    <span className="conj-suma" title={`Suma: ${formatPrice(precioActual(r.top))} + ${formatPrice(precioActual(r.bottom))}`}>
+                      {r.suma > 0 ? formatPrice(r.suma) : '$ —'}
+                    </span>
+                  </td>
+                  <td className="num muted">—</td>
+                  <td className="muted cell-action" onClick={() => onEdit(r.anchor)}>Editar ›</td>
+                </tr>
+              ) : (
                 <tr key={r.id}>
                   <td className="cell-photo">
                     {r.image ? (

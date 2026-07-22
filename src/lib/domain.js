@@ -139,6 +139,35 @@ export function medicionInfo(ref) {
 
 export const MEDICION_RANK = { pendiente: 0, repeticion: 1, descartada: 2, aprobada: 3 }
 
+// Normaliza texto para comparar tipo (minúsculas, sin acentos).
+function normTipo(s) {
+  return (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')
+}
+export function esPrendaTop(r) { return ['blusa', 'camisa', 'top', 'chaqueta'].some((k) => normTipo(r.tipo).includes(k)) }
+export function esPrendaBottom(r) { return ['pantalon', 'short', 'falda'].some((k) => normTipo(r.tipo).includes(k)) }
+
+// Empareja referencias enlazadas por conjunto/conjuntoRef en { top, bottom }.
+// Solo forma el par si ambas prendas están en la lista recibida.
+export function buildConjuntoPairs(refs) {
+  const byId = new Map(refs.map((r) => [r.id, r]))
+  const used = new Set()
+  const pairs = []
+  refs.forEach((r) => {
+    if (used.has(r.id)) return
+    if (!r.conjunto || !r.conjuntoRef) return
+    const partner = byId.get(r.conjuntoRef)
+    if (!partner || used.has(partner.id)) return
+    let top, bottom
+    if (esPrendaTop(r)) { top = r; bottom = partner }
+    else if (esPrendaBottom(r)) { top = partner; bottom = r }
+    else if (esPrendaTop(partner)) { top = partner; bottom = r }
+    else { top = r; bottom = partner }
+    pairs.push({ top, bottom })
+    used.add(r.id); used.add(partner.id)
+  })
+  return pairs
+}
+
 export function emptyRef(id) {
   return {
     id,
@@ -157,6 +186,10 @@ export function emptyRef(id) {
     conjuntoRef: '',
     colores: [],
     colorMuestra: '', precioTela: '', costo: '', costoRevisado: false, topIncluido: '',
+    // Costos (hoja de precios de lista para la diseñadora):
+    nuevaRef: '', descripcion: '', precioTalla618: '', precioTalla20: '',
+    // En un conjunto, estos se guardan en la prenda "de arriba" (ancla):
+    conjuntoNuevaRef: '', conjuntoDescripcion: '',
     cantidad: '',
     // "Producción extra": autorización rápida hecha desde el Resumen sobre
     // una ref que originalmente solo iba a Muestras. Es solo un marcador;

@@ -3772,6 +3772,18 @@ img.ship-ref-photo {
 .cell-input-price { width: 120px; min-width: 0; text-align: right; font-variant-numeric: tabular-nums; }
 .data-table td.num .cell-input-price { display: inline-block; }
 
+/* Fila de conjunto (colapsada): precio = suma de las dos prendas */
+.data-table tbody tr.row-conjunto td { background: #f6f2ea; }
+.data-table tbody tr.row-conjunto:hover td { background: #f1ebdd; }
+.data-table tbody tr.row-conjunto td:first-child { box-shadow: inset 3px 0 0 #a67c52; }
+.conj-tag {
+  display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: #8a5a2b; background: #efe2cf;
+  border-radius: 5px; padding: 2px 6px; margin-right: 8px;
+}
+.conj-parts { font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.conj-suma { font-weight: 700; font-variant-numeric: tabular-nums; padding-right: 7px; }
+
 .cell-check { width: 30px; text-align: center; }
 .cell-check input { cursor: pointer; width: 15px; height: 15px; }
 .data-table tbody tr.row-sel td { background: #eef4f9; }

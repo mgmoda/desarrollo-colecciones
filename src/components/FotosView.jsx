@@ -1,16 +1,13 @@
 import { useMemo, useState } from 'react'
 import SearchInput from './SearchInput.jsx'
-import CatalogoView from './CatalogoView.jsx'
 import { medicionInfo } from '../lib/domain.js'
 
 // Pool único de referencias listas para la sesión de fotos.
 // Dos zonas apiladas: "Por fotografiar" arriba y "Ya fotografiadas" abajo.
 // Sub-bloques por marca dentro de cada zona (como Colección).
-// Incluye el modo "Catálogo": armador por pliegos para la diseñadora.
-export default function FotosView({ refs, marcas, onOpenRef, onViewImage, onSetFields, catalogos, onSaveCatalogo }) {
+export default function FotosView({ refs, marcas, onOpenRef, onViewImage, onSetFields }) {
   const [q, setQ] = useState('')
   const [marcaF, setMarcaF] = useState('')
-  const [modo, setModo] = useState('pool') // 'pool' | 'catalogo'
 
   const marcaOf = (r) => (r.marca && marcas.includes(r.marca) ? r.marca : 'Sin marca')
   const isDescartada = (r) => medicionInfo(r).estado === 'descartada'
@@ -130,40 +127,20 @@ export default function FotosView({ refs, marcas, onOpenRef, onViewImage, onSetF
       <div className="view-head">
         <div>
           <h1 className="view-title">Fotos</h1>
-          <p className="view-sub">
-            {modo === 'pool'
-              ? 'Pool de referencias listas para la sesión de fotos'
-              : 'Armador de catálogo por pliegos — orden, referencias y colores para la diseñadora'}
-          </p>
+          <p className="view-sub">Pool de referencias listas para la sesión de fotos</p>
         </div>
         <div className="view-actions">
           <div className="opt-group">
-            <button type="button" className={'opt-btn' + (modo === 'pool' ? ' on' : '')}
-              onClick={() => setModo('pool')}>📸 Pool</button>
-            <button type="button" className={'opt-btn' + (modo === 'catalogo' ? ' on' : '')}
-              onClick={() => setModo('catalogo')}>📖 Catálogo</button>
+            <button type="button" className={'opt-btn' + (!marcaF ? ' on' : '')} onClick={() => setMarcaF('')}>Todas</button>
+            {marcas.map((m) => (
+              <button key={m} type="button" className={'opt-btn' + (marcaF === m ? ' on' : '')}
+                onClick={() => setMarcaF(marcaF === m ? '' : m)}>{m}</button>
+            ))}
           </div>
-          {modo === 'pool' && (
-            <>
-              <div className="opt-group">
-                <button type="button" className={'opt-btn' + (!marcaF ? ' on' : '')} onClick={() => setMarcaF('')}>Todas</button>
-                {marcas.map((m) => (
-                  <button key={m} type="button" className={'opt-btn' + (marcaF === m ? ' on' : '')}
-                    onClick={() => setMarcaF(marcaF === m ? '' : m)}>{m}</button>
-                ))}
-              </div>
-              <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia…" />
-            </>
-          )}
+          <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia…" />
         </div>
       </div>
 
-      {modo === 'catalogo' ? (
-        <CatalogoView refs={refs} marcas={marcas} catalogos={catalogos || {}}
-          onSave={onSaveCatalogo} onViewImage={onViewImage}
-          onSetFields={onSetFields} onOpenRef={onOpenRef} />
-      ) : (
-      <>
       {/* KPIs por marca — cuántas listas del total de la colección */}
       <div className="fotos-kpis">
         {kpis.allMarcas.map((m) => {
@@ -258,8 +235,6 @@ export default function FotosView({ refs, marcas, onOpenRef, onViewImage, onSetF
             </div>
           )}
         </>
-      )}
-      </>
       )}
     </div>
   )

@@ -11,19 +11,25 @@ const MARGIN = 57
 const INK = [20, 18, 16]
 const BROWN = [74, 59, 42]      // #4a3b2a
 const BAND = [239, 228, 212]    // #efe4d4
-const LINE = [230, 220, 201]
+const GRID = [204, 183, 159]    // #ccb79f  (líneas interiores)
+const OUTER = [184, 157, 122]   // #b89d7a  (borde exterior)
 const MUTED = [161, 144, 122]
 const NONE = [201, 191, 168]
 
 const ROW_H = 18
 const HEAD_BAND_H = 20
+const CONTENT_W = PAGE_W - MARGIN * 2
 
-// Columnas (x desde MARGIN)
-const COL_REF = 0
-const COL_DESC = 58
-const COL_618 = 300
-const COL_20 = 392
-const DESC_MAX = COL_618 - COL_DESC - 10
+// Divisores verticales de columna (x desde MARGIN) y posición del texto.
+const B1 = 56    // REF | DESCRIPCIÓN
+const B2 = 300   // DESCRIPCIÓN | TALLA 6-18
+const B3 = 390   // TALLA 6-18 | TALLA 20
+const PAD = 8
+const COL_REF = PAD
+const COL_DESC = B1 + PAD
+const COL_618 = B2 + PAD
+const COL_20 = B3 + PAD
+const DESC_MAX = B2 - B1 - PAD * 2
 
 const pesos = (n) => (Number(n) > 0 ? '$ ' + Math.round(Number(n)).toLocaleString('es-CO') : '')
 
@@ -72,9 +78,8 @@ function drawHeader(doc, marca, coleccion) {
 // Franja crema con los títulos de columna. Devuelve la Y de la primera fila.
 function drawColumnBand(doc, y) {
   const x = MARGIN
-  const w = PAGE_W - MARGIN * 2
   doc.setFillColor(...BAND)
-  doc.rect(x, y, w, HEAD_BAND_H, 'F')
+  doc.rect(x, y, CONTENT_W, HEAD_BAND_H, 'F')
   doc.setFont('times', 'bold')
   doc.setFontSize(9)
   doc.setTextColor(...BROWN)
@@ -83,7 +88,19 @@ function drawColumnBand(doc, y) {
   doc.text('DESCRIPCIÓN', x + COL_DESC, ty)
   doc.text('TALLA 6-18', x + COL_618, ty)
   doc.text('TALLA 20', x + COL_20, ty)
-  return y + HEAD_BAND_H + 4
+  return y + HEAD_BAND_H
+}
+
+// Cuadrícula tipo Excel: franja inferior, divisores verticales y borde exterior,
+// desde la parte alta de la franja hasta el fondo de la última fila.
+function drawFrame(doc, tableTop, yBottom) {
+  doc.setDrawColor(...GRID)
+  doc.setLineWidth(0.5)
+  doc.line(MARGIN, tableTop + HEAD_BAND_H, MARGIN + CONTENT_W, tableTop + HEAD_BAND_H)
+  ;[B1, B2, B3].forEach((bx) => doc.line(MARGIN + bx, tableTop, MARGIN + bx, yBottom))
+  doc.setDrawColor(...OUTER)
+  doc.setLineWidth(0.8)
+  doc.rect(MARGIN, tableTop, CONTENT_W, yBottom - tableTop)
 }
 
 function drawFooter(doc, pageNum) {
@@ -101,11 +118,13 @@ function drawFooter(doc, pageNum) {
 function drawMarca(doc, marca, rows, coleccion, pageNum) {
   const x = MARGIN
   let y = drawHeader(doc, marca, coleccion)
+  let tableTop = y
   y = drawColumnBand(doc, y)
   const bottomLimit = PAGE_H - 60
 
   rows.forEach((r) => {
     if (y + ROW_H > bottomLimit) {
+      drawFrame(doc, tableTop, y)
       drawFooter(doc, pageNum)
       doc.addPage()
       pageNum += 1
@@ -120,6 +139,7 @@ function drawMarca(doc, marca, rows, coleccion, pageNum) {
       doc.setTextColor(...MUTED)
       doc.text(`LISTADO DE PRECIOS · ${coleccion}`, PAGE_W - MARGIN, y + 4, { align: 'right' })
       y += 16
+      tableTop = y
       y = drawColumnBand(doc, y)
     }
     const ty = y + 12
@@ -138,12 +158,13 @@ function drawMarca(doc, marca, rows, coleccion, pageNum) {
     else { doc.setTextColor(...NONE); doc.text('—', x + COL_618, ty) }
     if (p20) { doc.setTextColor(...INK); doc.text(p20, x + COL_20, ty) }
     else { doc.setTextColor(...NONE); doc.text('—', x + COL_20, ty) }
-    // separador
-    doc.setDrawColor(...LINE)
+    // línea horizontal de fila (cuadrícula)
+    doc.setDrawColor(...GRID)
     doc.setLineWidth(0.5)
-    doc.line(x, y + ROW_H, PAGE_W - MARGIN, y + ROW_H)
+    doc.line(x, y + ROW_H, MARGIN + CONTENT_W, y + ROW_H)
     y += ROW_H
   })
+  drawFrame(doc, tableTop, y)
   drawFooter(doc, pageNum)
   return pageNum
 }

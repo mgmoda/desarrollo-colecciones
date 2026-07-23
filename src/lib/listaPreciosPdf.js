@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf'
+import { MARCA_LOGOS } from './marcaLogos.js'
 
 // Lista de precios por marca, al estilo del listado impreso de MG Moda:
 // tipografía serif, cabecera con el nombre de la marca y franja crema en los
@@ -59,12 +60,20 @@ function drawHeader(doc, marca, coleccion) {
   doc.setTextColor(...MUTED)
   doc.text('DESARROLLO DE COLECCIONES', x + 44, y + 22)
 
-  y += 58
-  doc.setFont('times', 'bold')
-  doc.setFontSize(26)
-  doc.setTextColor(42, 33, 24)
-  doc.text(marca.toUpperCase(), PAGE_W / 2, y, { align: 'center' })
-  y += 16
+  y += 44
+  const logo = MARCA_LOGOS[marca]
+  if (logo) {
+    const hLogo = 42
+    const wLogo = hLogo * (logo.w / logo.h)
+    doc.addImage(logo.dataUri, 'PNG', (PAGE_W - wLogo) / 2, y, wLogo, hLogo)
+    y += hLogo + 15
+  } else {
+    doc.setFont('times', 'bold')
+    doc.setFontSize(26)
+    doc.setTextColor(42, 33, 24)
+    doc.text(marca.toUpperCase(), PAGE_W / 2, y + 22, { align: 'center' })
+    y += 38
+  }
   doc.setFont('times', 'normal')
   doc.setFontSize(9.5)
   doc.setTextColor(...MUTED)
@@ -127,10 +136,17 @@ function drawMarca(doc, marca, rows, coleccion, pageNum) {
       pageNum += 1
       y = MARGIN
       // Cabecera compacta en páginas siguientes
-      doc.setFont('times', 'bold')
-      doc.setFontSize(13)
-      doc.setTextColor(42, 33, 24)
-      doc.text(marca.toUpperCase(), x, y + 4)
+      const logo2 = MARCA_LOGOS[marca]
+      if (logo2) {
+        const hL = 17
+        const wL = hL * (logo2.w / logo2.h)
+        doc.addImage(logo2.dataUri, 'PNG', x, y - 6, wL, hL)
+      } else {
+        doc.setFont('times', 'bold')
+        doc.setFontSize(13)
+        doc.setTextColor(42, 33, 24)
+        doc.text(marca.toUpperCase(), x, y + 4)
+      }
       doc.setFont('times', 'normal')
       doc.setFontSize(8)
       doc.setTextColor(...MUTED)

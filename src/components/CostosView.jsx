@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
+import Modal from './Modal.jsx'
+import PhotoDropzone from './PhotoDropzone.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { formatPrice } from '../lib/constants.js'
 import { medicionInfo, buildConjuntoPairs } from '../lib/domain.js'
@@ -12,9 +14,10 @@ const precioActual = (r) => Number(r.precioTalla618) || Number(r.costo) || 0
 // Captura de precios de lista para la diseñadora. Solo referencias
 // aprobadas, filtradas por marca. Los conjuntos se colapsan en una sola
 // fila cuyo precio es la suma del costo actual de sus dos prendas.
-export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewImage, onSetFields }) {
+export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewImage, onSetFields, onAssignPhoto }) {
   const [q, setQ] = useState('')
   const [marcaF, setMarcaF] = useState('')
+  const [fotoId, setFotoId] = useState(null)
   const { sortKey, sortDir, toggle } = useSort('referencia', 'asc')
 
   const esAprobada = (r) => medicionInfo(r).estado === 'aprobada'
@@ -109,10 +112,12 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
               {rows.map((r) => r.isConjunto ? (
                 <tr key={r.id} className="row-conjunto">
                   <td className="cell-photo">
-                    {r.image ? (
-                      <img src={r.image} alt={r.referencia} className="thumb" title="Ampliar foto"
-                        onClick={() => onViewImage(r.image)} />
-                    ) : <span className="thumb empty">—</span>}
+                    <button type="button" className="thumb-btn" title="Cambiar foto"
+                      onClick={() => setFotoId(r.anchor.id)}>
+                      {r.image ? (
+                        <img src={r.image} alt={r.referencia} className="thumb" />
+                      ) : <span className="thumb empty add">＋</span>}
+                    </button>
                   </td>
                   <td>
                     <span className="conj-tag">Conjunto</span>
@@ -138,10 +143,12 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
               ) : (
                 <tr key={r.id}>
                   <td className="cell-photo">
-                    {r.image ? (
-                      <img src={r.image} alt={r.referencia} className="thumb" title="Ampliar foto"
-                        onClick={() => onViewImage(r.image)} />
-                    ) : <span className="thumb empty">—</span>}
+                    <button type="button" className="thumb-btn" title="Cambiar foto"
+                      onClick={() => setFotoId(r.id)}>
+                      {r.image ? (
+                        <img src={r.image} alt={r.referencia} className="thumb" />
+                      ) : <span className="thumb empty add">＋</span>}
+                    </button>
                   </td>
                   <td className="strong">{r.referencia}</td>
                   <td>
@@ -168,7 +175,32 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
           </table>
         </div>
       )}
+
+      <FotoModal
+        refRow={refs.find((x) => x.id === fotoId) || null}
+        onClose={() => setFotoId(null)}
+        onAssignPhoto={onAssignPhoto}
+      />
     </div>
+  )
+}
+
+// Modal para cambiar la foto de una referencia sin abrir la ficha completa.
+function FotoModal({ refRow, onClose, onAssignPhoto }) {
+  if (!refRow) return null
+  return (
+    <Modal open onClose={onClose} size="sm">
+      <div className="modal-head">
+        <h2 className="modal-title">Foto · {refRow.referencia}</h2>
+        <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
+      </div>
+      <div className="modal-body">
+        <PhotoDropzone
+          value={refRow.image || null}
+          onChange={(dataUrl) => onAssignPhoto && onAssignPhoto(refRow.id, dataUrl)}
+        />
+      </div>
+    </Modal>
   )
 }
 

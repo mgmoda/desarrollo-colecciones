@@ -3807,6 +3807,25 @@ img.ship-ref-photo {
   font-size: 12px;
 }
 
+/* Miniatura clickeable para cambiar la foto (Costos) */
+.thumb-btn {
+  padding: 0; border: none; background: transparent; cursor: pointer;
+  position: relative; display: block; border-radius: 6px;
+}
+.thumb-btn .thumb { cursor: pointer; }
+.thumb-btn:hover .thumb { border-color: #a67c52; }
+.thumb-btn::after {
+  content: '✎'; position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background: rgba(38, 34, 30, 0.45); color: #fff; font-size: 14px;
+  border-radius: 6px; opacity: 0; transition: opacity 0.12s;
+}
+.thumb-btn:hover::after { opacity: 1; }
+.thumb.empty.add {
+  cursor: pointer; color: #a67c52; font-size: 18px; font-weight: 400;
+  border-style: dashed;
+}
+
 /* ---------- Tags / flags ---------- */
 .tag {
   display: inline-block;

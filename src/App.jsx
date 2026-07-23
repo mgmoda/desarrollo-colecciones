@@ -557,7 +557,8 @@ export default function App() {
         )}
         {tab === 'costos' && (
           <CostosView refs={refIndexMG} marcas={settings.marcas} telasCatalog={settings.telas}
-            onEdit={openEdit} onNew={openNew} onViewImage={setLightbox} onSetFields={handleSetFields} />
+            onEdit={openEdit} onNew={openNew} onViewImage={setLightbox} onSetFields={handleSetFields}
+            onAssignPhoto={handleAssignPhoto} />
         )}
         {tab === 'geodesica' && (
           <GeodesicaView refs={refIndex} orders={orders} refMap={refMap}

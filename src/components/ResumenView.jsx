@@ -98,8 +98,8 @@ function ProduccionCell({ item, state, onToggleExtra }) {
 }
 
 // Celda derivada del proceso de medición (estado + fecha + días en tooltip).
-function MedicionChip({ ref }) {
-  const m = medicionInfo(ref)
+function MedicionChip({ refRow }) {
+  const m = medicionInfo(refRow)
   const fecha = m.estado === 'aprobada' ? m.aprobacion : m.ultima
   const tip = m.estado === 'pendiente'
     ? 'Sin medir'
@@ -422,7 +422,7 @@ export default function ResumenView({ refs, marcas = [], tracksByRef, pendientes
                       state={estadoMP(tracksByRef && tracksByRef.get(r.id), r.flags, 'produccion', 'produccion')}
                       onToggleExtra={onToggleExtra} />
                   </td>
-                  <td className="td-flag"><MedicionChip ref={r} /></td>
+                  <td className="td-flag"><MedicionChip refRow={r} /></td>
                   <td className="td-flag">
                     {(() => {
                       const m = medicionInfo(r)

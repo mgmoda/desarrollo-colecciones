@@ -146,6 +146,33 @@ function normTipo(s) {
 export function esPrendaTop(r) { return ['blusa', 'camisa', 'top', 'chaqueta'].some((k) => normTipo(r.tipo).includes(k)) }
 export function esPrendaBottom(r) { return ['pantalon', 'short', 'falda'].some((k) => normTipo(r.tipo).includes(k)) }
 
+// Filas para la lista de precios (PDF) de una marca: solo aprobadas, con los
+// conjuntos colapsados a una fila (ref + descripción + precio sumado). Ordena
+// por nueva referencia. Devuelve [{ ref, desc, t618, t20 }].
+export function buildListaPreciosRows(refs, marca) {
+  const base = refs.filter((r) => medicionInfo(r).estado === 'aprobada' && r.marca === marca)
+  const pairs = buildConjuntoPairs(base)
+  const enPar = new Set()
+  pairs.forEach((p) => { enPar.add(p.top.id); enPar.add(p.bottom.id) })
+  const p618 = (d) => Number(d.precioTalla618) || Number(d.costo) || 0
+  const p20 = (d) => Number(d.precioTalla20) || 0
+  const out = []
+  pairs.forEach(({ top, bottom }) => out.push({
+    ref: top.conjuntoNuevaRef || '',
+    desc: top.conjuntoDescripcion || 'Conjunto',
+    t618: p618(top) + p618(bottom),
+    t20: p20(top) + p20(bottom),
+  }))
+  base.filter((r) => !enPar.has(r.id)).forEach((d) => out.push({
+    ref: d.nuevaRef || '',
+    desc: d.descripcion || d.tipo || '',
+    t618: p618(d),
+    t20: p20(d),
+  }))
+  out.sort((a, b) => (a.ref || 'zzzz').localeCompare(b.ref || 'zzzz'))
+  return out
+}
+
 // Empareja referencias enlazadas por conjunto/conjuntoRef en { top, bottom }.
 // Solo forma el par si ambas prendas están en la lista recibida.
 export function buildConjuntoPairs(refs) {

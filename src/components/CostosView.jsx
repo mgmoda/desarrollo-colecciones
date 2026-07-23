@@ -5,7 +5,8 @@ import Modal from './Modal.jsx'
 import PhotoDropzone from './PhotoDropzone.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { formatPrice } from '../lib/constants.js'
-import { medicionInfo, buildConjuntoPairs } from '../lib/domain.js'
+import { medicionInfo, buildConjuntoPairs, buildListaPreciosRows } from '../lib/domain.js'
+import { generateListaPreciosPDF } from '../lib/listaPreciosPdf.js'
 
 // Precio "actual" de una prenda para sumar en el conjunto: usa el precio
 // de Talla 6-18 si ya se capturó, si no el costo heredado de la ficha.
@@ -70,6 +71,16 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
     if (String(ref[campo] ?? '') === String(valor ?? '')) return
     onSetFields && onSetFields(ref.id, { [campo]: valor })
   }
+  // Exporta la lista de precios en PDF. Con una marca seleccionada exporta
+  // solo esa; con "Todas" genera una sección por marca en el mismo PDF.
+  const exportarPDF = () => {
+    const objetivo = marcaF ? [marcaF] : marcas
+    const sections = objetivo
+      .map((m) => ({ marca: m, rows: buildListaPreciosRows(refs, m) }))
+      .filter((s) => s.rows.length > 0)
+    if (sections.length === 0) return
+    generateListaPreciosPDF(sections)
+  }
   // Celda de foto clickeable. field='image' para la prenda, 'conjuntoImage'
   // para la foto propia del conjunto (se guarda en la prenda ancla).
   const fotoCell = (id, image, field) => (
@@ -98,6 +109,10 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
             ))}
           </div>
           <SearchInput value={q} onChange={setQ} placeholder="Buscar…" />
+          <button className="btn" onClick={exportarPDF}
+            title={marcaF ? `Exportar la lista de precios de ${marcaF}` : 'Exportar la lista de precios (una sección por marca)'}>
+            📄 Exportar PDF{marcaF ? ` · ${marcaF}` : ''}
+          </button>
           <button className="btn btn-primary" onClick={onNew}>+ Referencia</button>
         </div>
       </div>

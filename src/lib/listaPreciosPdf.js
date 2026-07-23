@@ -42,43 +42,26 @@ function ellipsis(doc, text, maxW) {
 }
 
 // Monograma "MG": cuadro oscuro redondeado con las iniciales en serif.
-function drawMonogram(doc, x, y, size) {
-  doc.setFillColor(42, 33, 24)
-  doc.roundedRect(x, y, size, size, 5, 5, 'F')
-  doc.setFont('times', 'normal')
-  doc.setFontSize(size * 0.42)
-  doc.setTextColor(243, 235, 219)
-  doc.text('MG', x + size / 2, y + size / 2 + size * 0.15, { align: 'center' })
-}
-
 function drawHeader(doc, marca, coleccion) {
-  const x = MARGIN
-  let y = MARGIN
-  drawMonogram(doc, x, y, 34)
-  doc.setFont('times', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(...MUTED)
-  doc.text('DESARROLLO DE COLECCIONES', x + 44, y + 22)
-
-  y += 44
+  let y = MARGIN + 14
   const logo = MARCA_LOGOS[marca]
   if (logo) {
-    const hLogo = 42
+    const hLogo = 48
     const wLogo = hLogo * (logo.w / logo.h)
     doc.addImage(logo.dataUri, 'PNG', (PAGE_W - wLogo) / 2, y, wLogo, hLogo)
-    y += hLogo + 15
+    y += hLogo + 16
   } else {
     doc.setFont('times', 'bold')
-    doc.setFontSize(26)
+    doc.setFontSize(28)
     doc.setTextColor(42, 33, 24)
-    doc.text(marca.toUpperCase(), PAGE_W / 2, y + 22, { align: 'center' })
-    y += 38
+    doc.text(marca.toUpperCase(), PAGE_W / 2, y + 26, { align: 'center' })
+    y += 44
   }
   doc.setFont('times', 'normal')
   doc.setFontSize(9.5)
   doc.setTextColor(...MUTED)
   doc.text(`LISTADO DE PRECIOS · COLECCIÓN ${coleccion}`, PAGE_W / 2, y, { align: 'center' })
-  return y + 16
+  return y + 18
 }
 
 // Franja crema con los títulos de columna. Devuelve la Y de la primera fila.

@@ -55,12 +55,9 @@ function drawHeader(doc, marca, coleccion) {
   let y = MARGIN
   drawMonogram(doc, x, y, 34)
   doc.setFont('times', 'normal')
-  doc.setFontSize(11)
-  doc.setTextColor(...BROWN)
-  doc.text('MG MODA S.A.S', x + 44, y + 14)
-  doc.setFontSize(8)
+  doc.setFontSize(9)
   doc.setTextColor(...MUTED)
-  doc.text('DESARROLLO DE COLECCIONES', x + 44, y + 26)
+  doc.text('DESARROLLO DE COLECCIONES', x + 44, y + 22)
 
   y += 58
   doc.setFont('times', 'bold')
@@ -110,7 +107,7 @@ function drawFooter(doc, pageNum) {
   doc.setFont('times', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(...MUTED)
-  doc.text('MG MODA S.A.S · PRECIOS SUGERIDOS AL PÚBLICO', PAGE_W / 2, PAGE_H - 34, { align: 'center' })
+  doc.text('MG MODA S.A.S · PRECIOS PARA DISTRIBUIDORES AUTORIZADOS', PAGE_W / 2, PAGE_H - 34, { align: 'center' })
   doc.text(String(pageNum), PAGE_W - MARGIN, PAGE_H - 34, { align: 'right' })
 }
 

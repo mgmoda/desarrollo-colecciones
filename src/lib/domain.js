@@ -189,7 +189,7 @@ export function emptyRef(id) {
     // Costos (hoja de precios de lista para la diseñadora):
     nuevaRef: '', descripcion: '', precioTalla618: '', precioTalla20: '',
     // En un conjunto, estos se guardan en la prenda "de arriba" (ancla):
-    conjuntoNuevaRef: '', conjuntoDescripcion: '',
+    conjuntoNuevaRef: '', conjuntoDescripcion: '', conjuntoImage: null,
     cantidad: '',
     // "Producción extra": autorización rápida hecha desde el Resumen sobre
     // una ref que originalmente solo iba a Muestras. Es solo un marcador;

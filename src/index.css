@@ -3772,30 +3772,21 @@ img.ship-ref-photo {
 .cell-input-price { width: 120px; min-width: 0; text-align: right; font-variant-numeric: tabular-nums; }
 .data-table td.num .cell-input-price { display: inline-block; }
 
-/* Fila de conjunto (colapsada): precio = suma de las dos prendas */
+/* Conjunto: bloque de tres filas (blusa, falda/pantalón, conjunto) con el
+   mismo tinte y una barra a la izquierda que recorre todo el bloque. */
 .data-table tbody tr.row-conjunto td { background: #f6f2ea; }
 .data-table tbody tr.row-conjunto:hover td { background: #f1ebdd; }
 .data-table tbody tr.row-conjunto td:first-child { box-shadow: inset 3px 0 0 #a67c52; }
+/* Bordes que encierran el bloque: fuerte arriba y abajo, tenue entre filas */
+.data-table tbody tr.row-conjunto td { border-bottom-color: #ece2cf; }
+.data-table tbody tr.row-conjunto.conj-first td { border-top: 2px solid #d9c3a1; }
+.data-table tbody tr.row-conjunto.conj-last td { border-bottom: 2px solid #d9c3a1; }
 .conj-tag {
   display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
   text-transform: uppercase; color: #8a5a2b; background: #efe2cf;
-  border-radius: 5px; padding: 2px 6px; margin-right: 8px;
+  border-radius: 5px; padding: 2px 8px;
 }
 .conj-suma { font-weight: 700; font-variant-numeric: tabular-nums; padding-right: 7px; }
-/* Conjunto: tres referencias (blusa, short/pantalón, conjunto) alineadas */
-.data-table tbody tr.row-conjunto td { vertical-align: top; }
-.conj-refs { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
-.conj-ref-line {
-  min-height: 32px; display: flex; align-items: center; gap: 6px;
-  font-size: 12.5px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums;
-}
-.conj-ref-line em {
-  font-style: normal; text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.05em;
-  font-weight: 700; color: var(--muted); min-width: 62px;
-}
-.conj-ref-total em { color: #8a5a2b; }
-.conj-newrefs { display: flex; flex-direction: column; gap: 4px; }
-.conj-newrefs .cell-input { min-width: 96px; }
 
 .cell-check { width: 30px; text-align: center; }
 .cell-check input { cursor: pointer; width: 15px; height: 15px; }

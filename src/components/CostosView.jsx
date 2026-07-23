@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import Modal from './Modal.jsx'
@@ -17,7 +17,7 @@ const precioActual = (r) => Number(r.precioTalla618) || Number(r.costo) || 0
 export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewImage, onSetFields, onAssignPhoto }) {
   const [q, setQ] = useState('')
   const [marcaF, setMarcaF] = useState('')
-  const [fotoId, setFotoId] = useState(null)
+  const [foto, setFoto] = useState(null) // { id, field } de la foto a cambiar
   const { sortKey, sortDir, toggle } = useSort('referencia', 'asc')
 
   const esAprobada = (r) => medicionInfo(r).estado === 'aprobada'
@@ -70,6 +70,17 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
     if (String(ref[campo] ?? '') === String(valor ?? '')) return
     onSetFields && onSetFields(ref.id, { [campo]: valor })
   }
+  // Celda de foto clickeable. field='image' para la prenda, 'conjuntoImage'
+  // para la foto propia del conjunto (se guarda en la prenda ancla).
+  const fotoCell = (id, image, field) => (
+    <td className="cell-photo">
+      <button type="button" className="thumb-btn" title="Cambiar foto"
+        onClick={() => setFoto({ id, field })}>
+        {image ? <img src={image} alt="" className="thumb" />
+          : <span className="thumb empty add">＋</span>}
+      </button>
+    </td>
+  )
 
   return (
     <div className="view">
@@ -110,56 +121,77 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
             </thead>
             <tbody>
               {rows.map((r) => r.isConjunto ? (
-                <tr key={r.id} className="row-conjunto">
-                  <td className="cell-photo">
-                    <button type="button" className="thumb-btn" title="Cambiar foto"
-                      onClick={() => setFotoId(r.anchor.id)}>
-                      {r.image ? (
-                        <img src={r.image} alt={r.referencia} className="thumb" />
-                      ) : <span className="thumb empty add">＋</span>}
-                    </button>
-                  </td>
-                  <td>
-                    <span className="conj-tag">Conjunto</span>
-                    <div className="conj-refs">
-                      <span className="conj-ref-line"><em>{r.top.tipo || 'Prenda'}</em>{r.top.referencia}</span>
-                      <span className="conj-ref-line"><em>{r.bottom.tipo || 'Prenda'}</em>{r.bottom.referencia}</span>
-                      <span className="conj-ref-line conj-ref-total"><em>Conjunto</em></span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="conj-newrefs">
+                <Fragment key={r.id}>
+                  {/* Bloque de conjunto: blusa, luego falda/pantalón, luego el
+                      conjunto. Cada una en su fila, con su foto y su casilla. */}
+                  <tr className="row-conjunto conj-first">
+                    {fotoCell(r.top.id, r.top.image, 'image')}
+                    <td className="strong">{r.top.referencia}</td>
+                    <td>
                       <InlineText key={r.top.id} value={r.top.nuevaRef || ''} placeholder="MG-…" accent
                         onCommit={(v) => guardar(r.top, 'nuevaRef', v)} />
+                    </td>
+                    <td>{r.top.tipo || 'Blusa'}</td>
+                    <td>
+                      <InlineText key={r.top.id} value={r.top.descripcion || ''} placeholder="Escribir descripción…" wide
+                        onCommit={(v) => guardar(r.top, 'descripcion', v)} />
+                    </td>
+                    <td className="num">
+                      <InlinePrice key={r.top.id} value={(r.top.precioTalla618 != null && r.top.precioTalla618 !== '') ? r.top.precioTalla618 : r.top.costo}
+                        onCommit={(v) => guardar(r.top, 'precioTalla618', v)} />
+                    </td>
+                    <td className="num">
+                      <InlinePrice key={r.top.id} value={r.top.precioTalla20}
+                        onCommit={(v) => guardar(r.top, 'precioTalla20', v)} />
+                    </td>
+                    <td className="muted cell-action" onClick={() => onEdit(r.top)}>Editar ›</td>
+                  </tr>
+                  <tr className="row-conjunto">
+                    {fotoCell(r.bottom.id, r.bottom.image, 'image')}
+                    <td className="strong">{r.bottom.referencia}</td>
+                    <td>
                       <InlineText key={r.bottom.id} value={r.bottom.nuevaRef || ''} placeholder="MG-…" accent
                         onCommit={(v) => guardar(r.bottom, 'nuevaRef', v)} />
+                    </td>
+                    <td>{r.bottom.tipo || 'Prenda'}</td>
+                    <td>
+                      <InlineText key={r.bottom.id} value={r.bottom.descripcion || ''} placeholder="Escribir descripción…" wide
+                        onCommit={(v) => guardar(r.bottom, 'descripcion', v)} />
+                    </td>
+                    <td className="num">
+                      <InlinePrice key={r.bottom.id} value={(r.bottom.precioTalla618 != null && r.bottom.precioTalla618 !== '') ? r.bottom.precioTalla618 : r.bottom.costo}
+                        onCommit={(v) => guardar(r.bottom, 'precioTalla618', v)} />
+                    </td>
+                    <td className="num">
+                      <InlinePrice key={r.bottom.id} value={r.bottom.precioTalla20}
+                        onCommit={(v) => guardar(r.bottom, 'precioTalla20', v)} />
+                    </td>
+                    <td className="muted cell-action" onClick={() => onEdit(r.bottom)}>Editar ›</td>
+                  </tr>
+                  <tr className="row-conjunto conj-last">
+                    {fotoCell(r.anchor.id, r.anchor.conjuntoImage, 'conjuntoImage')}
+                    <td><span className="conj-tag">Conjunto</span></td>
+                    <td>
                       <InlineText key={r.id} value={r.nuevaRef} placeholder="MG-C…" accent
                         onCommit={(v) => guardar(r.anchor, 'conjuntoNuevaRef', v)} />
-                    </div>
-                  </td>
-                  <td>Conjunto</td>
-                  <td>
-                    <InlineText key={r.id} value={r.descripcion} placeholder="Escribir descripción…" wide
-                      onCommit={(v) => guardar(r.anchor, 'conjuntoDescripcion', v)} />
-                  </td>
-                  <td className="num">
-                    <span className="conj-suma" title={`Suma: ${formatPrice(precioActual(r.top))} + ${formatPrice(precioActual(r.bottom))}`}>
-                      {r.suma > 0 ? formatPrice(r.suma) : '$ —'}
-                    </span>
-                  </td>
-                  <td className="num muted">—</td>
-                  <td className="muted cell-action" onClick={() => onEdit(r.anchor)}>Editar ›</td>
-                </tr>
+                    </td>
+                    <td>Conjunto</td>
+                    <td>
+                      <InlineText key={r.id} value={r.descripcion} placeholder="Escribir descripción…" wide
+                        onCommit={(v) => guardar(r.anchor, 'conjuntoDescripcion', v)} />
+                    </td>
+                    <td className="num">
+                      <span className="conj-suma" title={`Suma: ${formatPrice(precioActual(r.top))} + ${formatPrice(precioActual(r.bottom))}`}>
+                        {r.suma > 0 ? formatPrice(r.suma) : '$ —'}
+                      </span>
+                    </td>
+                    <td className="num muted">—</td>
+                    <td className="muted cell-action" onClick={() => onEdit(r.anchor)}>Editar ›</td>
+                  </tr>
+                </Fragment>
               ) : (
                 <tr key={r.id}>
-                  <td className="cell-photo">
-                    <button type="button" className="thumb-btn" title="Cambiar foto"
-                      onClick={() => setFotoId(r.id)}>
-                      {r.image ? (
-                        <img src={r.image} alt={r.referencia} className="thumb" />
-                      ) : <span className="thumb empty add">＋</span>}
-                    </button>
-                  </td>
+                  {fotoCell(r.id, r.image, 'image')}
                   <td className="strong">{r.referencia}</td>
                   <td>
                     <InlineText key={r.id} value={r.nuevaRef || ''} placeholder="MG-…" accent
@@ -187,27 +219,34 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
       )}
 
       <FotoModal
-        refRow={refs.find((x) => x.id === fotoId) || null}
-        onClose={() => setFotoId(null)}
-        onAssignPhoto={onAssignPhoto}
+        refRow={foto ? (refs.find((x) => x.id === foto.id) || null) : null}
+        field={foto ? foto.field : 'image'}
+        onClose={() => setFoto(null)}
+        onSave={(id, field, dataUrl) => {
+          if (field === 'image' && onAssignPhoto) onAssignPhoto(id, dataUrl)
+          else onSetFields && onSetFields(id, { [field]: dataUrl })
+        }}
       />
     </div>
   )
 }
 
 // Modal para cambiar la foto de una referencia sin abrir la ficha completa.
-function FotoModal({ refRow, onClose, onAssignPhoto }) {
+// field: 'image' (foto de la prenda) o 'conjuntoImage' (foto del conjunto).
+function FotoModal({ refRow, field = 'image', onClose, onSave }) {
   if (!refRow) return null
+  const esConjunto = field === 'conjuntoImage'
+  const titulo = esConjunto ? `Foto del conjunto · ${refRow.referencia}` : `Foto · ${refRow.referencia}`
   return (
     <Modal open onClose={onClose} size="sm">
       <div className="modal-head">
-        <h2 className="modal-title">Foto · {refRow.referencia}</h2>
+        <h2 className="modal-title">{titulo}</h2>
         <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
       </div>
       <div className="modal-body">
         <PhotoDropzone
-          value={refRow.image || null}
-          onChange={(dataUrl) => onAssignPhoto && onAssignPhoto(refRow.id, dataUrl)}
+          value={refRow[field] || null}
+          onChange={(dataUrl) => onSave && onSave(refRow.id, field, dataUrl)}
         />
       </div>
     </Modal>

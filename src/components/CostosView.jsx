@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import Modal from './Modal.jsx'
@@ -121,11 +121,21 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
                   </td>
                   <td>
                     <span className="conj-tag">Conjunto</span>
-                    <span className="conj-parts">{r.top.referencia} + {r.bottom.referencia}</span>
+                    <div className="conj-refs">
+                      <span className="conj-ref-line"><em>{r.top.tipo || 'Prenda'}</em>{r.top.referencia}</span>
+                      <span className="conj-ref-line"><em>{r.bottom.tipo || 'Prenda'}</em>{r.bottom.referencia}</span>
+                      <span className="conj-ref-line conj-ref-total"><em>Conjunto</em></span>
+                    </div>
                   </td>
                   <td>
-                    <InlineText key={r.id} value={r.nuevaRef} placeholder="MG-C…" accent
-                      onCommit={(v) => guardar(r.anchor, 'conjuntoNuevaRef', v)} />
+                    <div className="conj-newrefs">
+                      <InlineText key={r.top.id} value={r.top.nuevaRef || ''} placeholder="MG-…" accent
+                        onCommit={(v) => guardar(r.top, 'nuevaRef', v)} />
+                      <InlineText key={r.bottom.id} value={r.bottom.nuevaRef || ''} placeholder="MG-…" accent
+                        onCommit={(v) => guardar(r.bottom, 'nuevaRef', v)} />
+                      <InlineText key={r.id} value={r.nuevaRef} placeholder="MG-C…" accent
+                        onCommit={(v) => guardar(r.anchor, 'conjuntoNuevaRef', v)} />
+                    </div>
                   </td>
                   <td>Conjunto</td>
                   <td>
@@ -205,15 +215,20 @@ function FotoModal({ refRow, onClose, onAssignPhoto }) {
 }
 
 // Campo de texto editable en línea (nueva referencia / descripción).
+// Re-sincroniza con el valor de la ficha cuando cambia y no está en foco,
+// para que al recargar o al actualizarse el dato se vea el valor real.
 function InlineText({ value, placeholder, accent, wide, onCommit }) {
   const [val, setVal] = useState(value)
+  const [foco, setFoco] = useState(false)
+  useEffect(() => { if (!foco) setVal(value) }, [value, foco])
   return (
     <input
       className={'cell-input' + (accent ? ' cell-input-accent' : '') + (wide ? ' cell-input-wide' : '')}
       value={val}
       placeholder={placeholder}
       onChange={(e) => setVal(e.target.value)}
-      onBlur={() => onCommit(val.trim())}
+      onFocus={() => setFoco(true)}
+      onBlur={() => { setFoco(false); onCommit(val.trim()) }}
       onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
     />
   )

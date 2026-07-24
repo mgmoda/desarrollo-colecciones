@@ -26,8 +26,27 @@ const INK = [0, 0, 0]
 
 const pesos = (n) => (Number(n) > 0 ? Math.round(Number(n)).toLocaleString('es-CO') : '')
 
-const NOTA_L1 = 'Talla 20: +$10.000 en Vestido; +$6.000 en Blusa, Short,'
-const NOTA_L2 = 'Falda o Pantalón. En Conjunto, suma la de sus prendas.'
+const NOTA_TITULO = 'RECARGO TALLA 20'
+const NOTA_TEXTO = 'Vestido +$10.000 · Blusa, Short, Falda y Pantalón +$6.000'
+
+// Marcas de corte tenues en las esquinas (fuera de la tarjeta), como guía para
+// la guillotina. Grises y finas: si el corte se corre un poco, no se notan.
+function drawCropMarks(doc, x, y, w, h) {
+  doc.setDrawColor(200, 200, 200)
+  doc.setLineWidth(0.3)
+  const len = 6
+  const gap = 2
+  const x2 = x + w
+  const y2 = y + h
+  doc.line(x - gap - len, y, x - gap, y)
+  doc.line(x, y - gap - len, x, y - gap)
+  doc.line(x2 + gap, y, x2 + gap + len, y)
+  doc.line(x2, y - gap - len, x2, y - gap)
+  doc.line(x - gap - len, y2, x - gap, y2)
+  doc.line(x, y2 + gap, x, y2 + gap + len)
+  doc.line(x2 + gap, y2, x2 + gap + len, y2)
+  doc.line(x2, y2 + gap, x2, y2 + gap + len)
+}
 
 function cardHeight(card) {
   return HEADER_H + card.rows.length * ROW_H
@@ -94,19 +113,19 @@ function drawCard(doc, card, x, y) {
   doc.setLineWidth(1.2)
   doc.rect(x, y, CARD_W, h)
 
-  // NOTA centrada bajo la tarjeta
+  // NOTA (recargo Talla 20) centrada bajo la tarjeta
   const cx = x + CARD_W / 2
   const ny = y + h + 11
-  doc.setFontSize(7)
-  const wBold = doc.getStringUnitWidth('NOTA: ') * 7 / doc.internal.scaleFactor
-  doc.setFont('helvetica', 'normal')
-  const wRest = doc.getStringUnitWidth(NOTA_L1) * 7 / doc.internal.scaleFactor
-  const startX = cx - (wBold + wRest) / 2
+  doc.setTextColor(...INK)
   doc.setFont('helvetica', 'bold')
-  doc.text('NOTA:', startX, ny)
+  doc.setFontSize(7.5)
+  doc.text(NOTA_TITULO, cx, ny, { align: 'center' })
   doc.setFont('helvetica', 'normal')
-  doc.text(NOTA_L1, startX + wBold, ny)
-  doc.text(NOTA_L2, cx, ny + 9, { align: 'center' })
+  doc.setFontSize(7)
+  doc.text(NOTA_TEXTO, cx, ny + 9, { align: 'center' })
+
+  // Guías de corte alrededor de la tarjeta + su nota (la pieza a recortar).
+  drawCropMarks(doc, x, y, CARD_W, h + NOTA_H)
 }
 
 // cards: [{ rows: [{ ref, desc, precio }] }]

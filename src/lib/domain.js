@@ -168,22 +168,23 @@ export function esPrendaBottom(r) { return ['pantalon', 'short', 'falda'].some((
 export function buildListaPreciosRows(refs, marca) {
   const base = refs.filter((r) => medicionInfo(r).estado === 'aprobada' && r.marca === marca)
   const pairs = buildConjuntoPairs(base)
-  const enPar = new Set()
-  pairs.forEach((p) => { enPar.add(p.top.id); enPar.add(p.bottom.id) })
   const p618 = (d) => Number(d.costo) || Number(d.precioTalla618) || 0
   const p20 = (d) => Number(d.precioTalla20) || 0
   const out = []
+  // Cada prenda aprobada aparece con su propia referencia y precio, incluidas
+  // las que forman parte de un conjunto.
+  base.forEach((d) => out.push({
+    ref: d.nuevaRef || '',
+    desc: d.descripcion || d.tipo || '',
+    t618: p618(d),
+    t20: p20(d),
+  }))
+  // Y además, una fila por conjunto con el precio sumado.
   pairs.forEach(({ top, bottom }) => out.push({
     ref: top.conjuntoNuevaRef || '',
     desc: top.conjuntoDescripcion || 'Conjunto',
     t618: p618(top) + p618(bottom),
     t20: p20(top) + p20(bottom),
-  }))
-  base.filter((r) => !enPar.has(r.id)).forEach((d) => out.push({
-    ref: d.nuevaRef || '',
-    desc: d.descripcion || d.tipo || '',
-    t618: p618(d),
-    t20: p20(d),
   }))
   out.sort((a, b) => (a.ref || 'zzzz').localeCompare(b.ref || 'zzzz'))
   return out

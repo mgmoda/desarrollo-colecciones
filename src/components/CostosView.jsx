@@ -9,9 +9,10 @@ import { medicionInfo, buildConjuntoPairs, buildListaPreciosRows, buildTarjetasP
 import { generateListaPreciosPDF } from '../lib/listaPreciosPdf.js'
 import { generateTarjetasPreciosPDF } from '../lib/tarjetasPreciosPdf.js'
 
-// Precio "actual" de una prenda para sumar en el conjunto: usa el precio
-// de Talla 6-18 si ya se capturó, si no el costo heredado de la ficha.
-const precioActual = (r) => Number(r.precioTalla618) || Number(r.costo) || 0
+// El precio de Talla 6-18 ES el costo de la referencia (mismo campo que usan
+// el Resumen y la ficha), para que no queden dos precios distintos.
+// precioTalla618 solo se lee como respaldo de datos antiguos.
+const precioActual = (r) => Number(r.costo) || Number(r.precioTalla618) || 0
 
 // Captura de precios de lista para la diseñadora. Solo referencias
 // aprobadas, filtradas por marca. Los conjuntos se colapsan en una sola
@@ -61,7 +62,7 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
       nuevaRef: (r) => r.nuevaRef || '',
       tipo: (r) => r.tipo,
       descripcion: (r) => r.descripcion || '',
-      precioTalla618: (r) => Number(r.precioTalla618) || Number(r.costo) || 0,
+      precioTalla618: (r) => (r.isConjunto ? r.suma : precioActual(r)),
       precioTalla20: (r) => Number(r.precioTalla20) || 0,
     }
     return sortRows(list, accessors[sortKey], sortDir)
@@ -166,8 +167,8 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
                         onCommit={(v) => guardar(r.top, 'descripcion', v)} />
                     </td>
                     <td className="num">
-                      <InlinePrice key={r.top.id} value={(r.top.precioTalla618 != null && r.top.precioTalla618 !== '') ? r.top.precioTalla618 : r.top.costo}
-                        onCommit={(v) => guardar(r.top, 'precioTalla618', v)} />
+                      <InlinePrice key={r.top.id} value={precioActual(r.top)}
+                        onCommit={(v) => guardar(r.top, 'costo', v)} />
                     </td>
                     <td className="num">
                       <InlinePrice key={r.top.id} value={r.top.precioTalla20}
@@ -188,8 +189,8 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
                         onCommit={(v) => guardar(r.bottom, 'descripcion', v)} />
                     </td>
                     <td className="num">
-                      <InlinePrice key={r.bottom.id} value={(r.bottom.precioTalla618 != null && r.bottom.precioTalla618 !== '') ? r.bottom.precioTalla618 : r.bottom.costo}
-                        onCommit={(v) => guardar(r.bottom, 'precioTalla618', v)} />
+                      <InlinePrice key={r.bottom.id} value={precioActual(r.bottom)}
+                        onCommit={(v) => guardar(r.bottom, 'costo', v)} />
                     </td>
                     <td className="num">
                       <InlinePrice key={r.bottom.id} value={r.bottom.precioTalla20}
@@ -232,8 +233,8 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
                       onCommit={(v) => guardar(r, 'descripcion', v)} />
                   </td>
                   <td className="num">
-                    <InlinePrice key={r.id} value={(r.precioTalla618 != null && r.precioTalla618 !== '') ? r.precioTalla618 : r.costo}
-                      onCommit={(v) => guardar(r, 'precioTalla618', v)} />
+                    <InlinePrice key={r.id} value={precioActual(r)}
+                      onCommit={(v) => guardar(r, 'costo', v)} />
                   </td>
                   <td className="num">
                     <InlinePrice key={r.id} value={r.precioTalla20}

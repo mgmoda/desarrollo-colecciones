@@ -154,7 +154,7 @@ export function buildListaPreciosRows(refs, marca) {
   const pairs = buildConjuntoPairs(base)
   const enPar = new Set()
   pairs.forEach((p) => { enPar.add(p.top.id); enPar.add(p.bottom.id) })
-  const p618 = (d) => Number(d.precioTalla618) || Number(d.costo) || 0
+  const p618 = (d) => Number(d.costo) || Number(d.precioTalla618) || 0
   const p20 = (d) => Number(d.precioTalla20) || 0
   const out = []
   pairs.forEach(({ top, bottom }) => out.push({
@@ -181,7 +181,7 @@ export function buildTarjetasPreciosCards(refs, marca) {
   const pairs = buildConjuntoPairs(base)
   const enPar = new Set()
   pairs.forEach((p) => { enPar.add(p.top.id); enPar.add(p.bottom.id) })
-  const p618 = (d) => Number(d.precioTalla618) || Number(d.costo) || 0
+  const p618 = (d) => Number(d.costo) || Number(d.precioTalla618) || 0
   const linea = (d) => ({ ref: d.nuevaRef || '', desc: d.descripcion || d.tipo || '', precio: p618(d) })
   const cards = []
   pairs.forEach(({ top, bottom }) => cards.push({
@@ -244,7 +244,8 @@ export function emptyRef(id) {
     colores: [],
     colorMuestra: '', precioTela: '', costo: '', costoRevisado: false, topIncluido: '',
     // Costos (hoja de precios de lista para la diseñadora):
-    nuevaRef: '', descripcion: '', precioTalla618: '', precioTalla20: '',
+    // El precio de Talla 6-18 es el mismo campo `costo` de arriba.
+    nuevaRef: '', descripcion: '', precioTalla20: '',
     // En un conjunto, estos se guardan en la prenda "de arriba" (ancla):
     conjuntoNuevaRef: '', conjuntoDescripcion: '', conjuntoImage: null,
     cantidad: '',

@@ -3787,6 +3787,8 @@ img.ship-ref-photo {
   border-radius: 5px; padding: 2px 8px;
 }
 .conj-suma { font-weight: 700; font-variant-numeric: tabular-nums; padding-right: 7px; }
+/* Nueva referencia en el Resumen (solo lectura; se edita en Costos) */
+.data-table td.nueva-ref { font-weight: 600; color: #1f5fa5; white-space: nowrap; }
 
 .cell-check { width: 30px; text-align: center; }
 .cell-check input { cursor: pointer; width: 15px; height: 15px; }

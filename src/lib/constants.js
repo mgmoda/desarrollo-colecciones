@@ -57,6 +57,30 @@ export const DEFAULT_TIPOS = [
 
 export const DEFAULT_MARCAS = ['Mariset', 'Casania']
 
+// Procesos especiales de producción. Es un catálogo editable: se pueden crear
+// otros desde la ficha. Una referencia puede llevar varios, uno o ninguno.
+export const DEFAULT_PROCESOS = [
+  'Recuadros', 'Tintorería', 'Bordado', 'Corte láser', 'Flor', 'Cinturón en tela',
+]
+
+// Color estable para el chip de cada proceso (por nombre, para que los que
+// creen después también tengan uno).
+const PROCESO_COLORS = [
+  { bg: '#eeedfe', fg: '#3c3489', bd: '#cecbf6' },
+  { bg: '#e1f5ee', fg: '#085041', bd: '#9fe1cb' },
+  { bg: '#faece7', fg: '#712b13', bd: '#f5c4b3' },
+  { bg: '#faeeda', fg: '#633806', bd: '#fac775' },
+  { bg: '#fbeaf0', fg: '#72243e', bd: '#f4c0d1' },
+  { bg: '#e6f1fb', fg: '#0c447c', bd: '#b5d4f4' },
+  { bg: '#eaf3de', fg: '#27500a', bd: '#c0dd97' },
+]
+export function procesoColor(nombre) {
+  const s = (nombre || '').toLowerCase()
+  let h = 0
+  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) % 9973
+  return PROCESO_COLORS[h % PROCESO_COLORS.length]
+}
+
 export const DEFAULT_TELAS = [
   'Crochet', 'Lino', 'Algodón', 'Punto', 'Chalís', 'Seda', 'Jean', 'Lycra',
 ]

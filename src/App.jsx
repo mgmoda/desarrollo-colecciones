@@ -23,7 +23,7 @@ import {
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas } from './lib/domain.js'
-import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, EXTERNAL_ORIGENES, formatPrice } from './lib/constants.js'
+import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice } from './lib/constants.js'
 
 const TABS = [
   { key: 'inicio', label: 'Inicio' },
@@ -50,7 +50,7 @@ export default function App() {
 
   const [orders, setOrders] = useState([])
   const [refs, setRefs] = useState([])
-  const [settings, setSettings] = useState({ telas: normalizeTelas(DEFAULT_TELAS), colors: DEFAULT_COLORS, proveedores: [], decorados: ['Flor'], marcas: DEFAULT_MARCAS })
+  const [settings, setSettings] = useState({ telas: normalizeTelas(DEFAULT_TELAS), colors: DEFAULT_COLORS, proveedores: [], decorados: ['Flor'], marcas: DEFAULT_MARCAS, procesos: DEFAULT_PROCESOS })
 
   const [tab, setTab] = useState(() => {
     const saved = localStorage.getItem(TAB_KEY)
@@ -111,6 +111,7 @@ export default function App() {
           colors: st.colors && st.colors.length ? st.colors : DEFAULT_COLORS,
           proveedores: st.proveedores || [],
           decorados: st.decorados && st.decorados.length ? st.decorados : ['Flor'],
+          procesos: st.procesos && st.procesos.length ? st.procesos : DEFAULT_PROCESOS,
           marcas: marcasFixed,
         }
         setSettings(next)
@@ -426,6 +427,34 @@ export default function App() {
     dbSaveSettings(next).catch((e) => console.error(e))
   }
 
+  // Catálogo de procesos especiales (Recuadros, Tintorería, Bordado, …)
+  function addProceso(name) {
+    const v = (name || '').trim()
+    if (!v || settings.procesos.some((d) => d.toLowerCase() === v.toLowerCase())) return
+    const next = { ...settings, procesos: [...settings.procesos, v] }
+    setSettings(next)
+    dbSaveSettings(next).catch((e) => console.error(e))
+  }
+  function editProceso(oldName, newName) {
+    const v = (newName || '').trim()
+    if (!v) return
+    const next = { ...settings, procesos: settings.procesos.map((d) => (d === oldName ? v : d)) }
+    setSettings(next)
+    dbSaveSettings(next).catch((e) => console.error(e))
+    // Renombrar también en las referencias que ya lo tenían.
+    refs.forEach((r) => {
+      if (!Array.isArray(r.procesos) || !r.procesos.includes(oldName)) return
+      const u = { ...r, procesos: r.procesos.map((x) => (x === oldName ? v : x)), updatedAt: Date.now() }
+      upsertRefState(u)
+      dbUpsertRef(u).catch((e) => console.error(e))
+    })
+  }
+  function deleteProceso(name) {
+    const next = { ...settings, procesos: settings.procesos.filter((d) => d !== name) }
+    setSettings(next)
+    dbSaveSettings(next).catch((e) => console.error(e))
+  }
+
   // Catálogo de marcas (Maricet, Casania, …)
   function addMarca(name) {
     const v = (name || '').trim()
@@ -528,6 +557,7 @@ export default function App() {
           <ResumenView
             refs={refIndexMG}
             marcas={settings.marcas}
+            procesosCatalogo={settings.procesos}
             tracksByRef={tracksByRef}
             onEdit={openEdit}
             onNew={openNew}
@@ -592,6 +622,10 @@ export default function App() {
         onAddDecorado={addDecorado}
         onEditDecorado={editDecorado}
         onDeleteDecorado={deleteDecorado}
+        procesosCatalogo={settings.procesos}
+        onAddProceso={addProceso}
+        onEditProceso={editProceso}
+        onDeleteProceso={deleteProceso}
         marcas={settings.marcas}
         onAddMarca={addMarca}
         onEditMarca={editMarca}

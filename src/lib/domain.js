@@ -139,6 +139,22 @@ export function medicionInfo(ref) {
 
 export const MEDICION_RANK = { pendiente: 0, repeticion: 1, descartada: 2, aprobada: 3 }
 
+// Procesos especiales de una referencia. Lee la lista nueva y, por
+// compatibilidad, los interruptores antiguos (tintorería/bordado/decorado).
+export function refProcesos(ref) {
+  if (!ref) return []
+  const out = []
+  const add = (v) => {
+    const s = (v || '').trim()
+    if (s && !out.some((x) => x.toLowerCase() === s.toLowerCase())) out.push(s)
+  }
+  if (Array.isArray(ref.procesos)) ref.procesos.forEach(add)
+  if (ref.tintoreria === 'si') add('Tintorería')
+  if (ref.bordado === 'si') add('Bordado')
+  if (ref.decorado === 'si') add(ref.decoradoDetalle || 'Decorado')
+  return out
+}
+
 // Normaliza texto para comparar tipo (minúsculas, sin acentos).
 function normTipo(s) {
   return (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')
@@ -241,6 +257,8 @@ export function emptyRef(id) {
     decoradoDetalle: '',
     conjunto: false,
     conjuntoRef: '',
+    // Procesos especiales de producción (lista libre del catálogo editable).
+    procesos: [],
     colores: [],
     colorMuestra: '', precioTela: '', costo: '', costoRevisado: false, topIncluido: '',
     // Costos (hoja de precios de lista para la diseñadora):

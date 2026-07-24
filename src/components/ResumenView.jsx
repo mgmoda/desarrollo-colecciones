@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { RESUMEN_FLAGS, ORIGEN_ABBR, AREAS, TOP_LABEL, formatPrice } from '../lib/constants.js'
-import { areaIndex, medicionInfo, MEDICION_RANK, refTelas, telaDisponible } from '../lib/domain.js'
+import { RESUMEN_FLAGS, ORIGEN_ABBR, AREAS, TOP_LABEL, formatPrice, procesoColor } from '../lib/constants.js'
+import { areaIndex, medicionInfo, MEDICION_RANK, refTelas, telaDisponible, refProcesos } from '../lib/domain.js'
 import { generateResumenPDF } from '../lib/resumenPdf.js'
 
 function telasTexto(r) {
@@ -124,6 +124,27 @@ function EtapaCell({ tracks, onOpen }) {
   )
 }
 
+// Chips de los procesos especiales de la referencia. Al hacer clic en uno,
+// filtra la tabla por ese proceso.
+function ProcesosCell({ refRow, onFiltrar }) {
+  const lista = refProcesos(refRow)
+  if (!lista.length) return <span className="muted">—</span>
+  return (
+    <span className="proc-cell">
+      {lista.map((p) => {
+        const c = procesoColor(p)
+        return (
+          <span key={p} className="proc-tag" title={`Filtrar por ${p}`}
+            style={{ background: c.bg, color: c.fg, borderColor: c.bd }}
+            onClick={(e) => { e.stopPropagation(); onFiltrar(p) }}>
+            {p}
+          </span>
+        )
+      })}
+    </span>
+  )
+}
+
 function flagRank(v) { return v && v.si ? 2 : v === 'no' ? 1 : 0 }
 
 // Indicador compacto: Sí / No / — (la fecha se muestra en el tooltip).
@@ -133,9 +154,10 @@ function FlagChip({ value }) {
   return <span className="flag flag-none">—</span>
 }
 
-export default function ResumenView({ refs, marcas = [], tracksByRef, pendientesSignal, onEdit, onNew, onViewImage, onOpenDetail, onToggleExtra }) {
+export default function ResumenView({ refs, marcas = [], procesosCatalogo = [], tracksByRef, pendientesSignal, onEdit, onNew, onViewImage, onOpenDetail, onToggleExtra }) {
   const [q, setQ] = useState('')
   const [marcaF, setMarcaF] = useState('')
+  const [procesoF, setProcesoF] = useState('')
   const [soloAprobadas, setSoloAprobadas] = useState(false)
   const [soloRepetidas, setSoloRepetidas] = useState(false)
   const [soloPendientes, setSoloPendientes] = useState(false)
@@ -178,6 +200,7 @@ export default function ResumenView({ refs, marcas = [], tracksByRef, pendientes
   const rows = useMemo(() => {
     let list = refs
     if (marcaF) list = list.filter((r) => r.marca === marcaF)
+    if (procesoF) list = list.filter((r) => refProcesos(r).some((p) => p.toLowerCase() === procesoF.toLowerCase()))
     if (soloAprobadas) list = list.filter((r) => medicionInfo(r).estado === 'aprobada')
     if (soloRepetidas) list = list.filter((r) => veces(r) > 1)
     if (soloPendientes) list = list.filter((r) => r.pendiente)
@@ -197,6 +220,7 @@ export default function ResumenView({ refs, marcas = [], tracksByRef, pendientes
       foto: (r) => (r.image ? 1 : 0),
       referencia: (r) => r.referencia,
       nuevaRef: (r) => r.nuevaRef || '',
+      procesos: (r) => refProcesos(r).length,
       veces: (r) => veces(r),
       tipo: (r) => r.tipo,
       tela: (r) => telasTexto(r),
@@ -212,12 +236,24 @@ export default function ResumenView({ refs, marcas = [], tracksByRef, pendientes
     }
     RESUMEN_FLAGS.forEach((f) => { accessors['flag_' + f.key] = (r) => flagRank((r.flags || {})[f.key]) })
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [refs, q, marcaF, soloAprobadas, soloRepetidas, soloPendientes, soloConjuntos, ocultarDescartadas, soloAprobadasLimpias, soloCostosPorRevisar, soloCostosRevisados, sortKey, sortDir, tracksByRef])
+  }, [refs, q, marcaF, procesoF, soloAprobadas, soloRepetidas, soloPendientes, soloConjuntos, ocultarDescartadas, soloAprobadasLimpias, soloCostosPorRevisar, soloCostosRevisados, sortKey, sortDir, tracksByRef])
 
   const repetidasCount = useMemo(
     () => refs.filter((r) => veces(r) > 1).length,
     [refs, tracksByRef],
   )
+  // Procesos presentes en las referencias de la marca activa, con su conteo.
+  const procesosConteo = useMemo(() => {
+    const base = marcaF ? refs.filter((r) => r.marca === marcaF) : refs
+    const mapa = new Map()
+    base.forEach((r) => refProcesos(r).forEach((p) => mapa.set(p, (mapa.get(p) || 0) + 1)))
+    procesosCatalogo.forEach((p) => { if (!mapa.has(p)) mapa.set(p, 0) })
+    return [...mapa.entries()]
+      .map(([nombre, n]) => ({ nombre, n }))
+      .filter((x) => x.n > 0)
+      .sort((a, b) => b.n - a.n || a.nombre.localeCompare(b.nombre))
+  }, [refs, marcaF, procesosCatalogo])
+
   const pendientesCount = useMemo(() => refs.filter((r) => r.pendiente).length, [refs])
   const conjuntosCount = useMemo(() => refs.filter((r) => r.conjunto && r.conjuntoRef).length, [refs])
   const costosRevisadosCount = useMemo(() => refs.filter((r) => Number(r.costo) > 0 && r.costoRevisado).length, [refs])
@@ -279,6 +315,24 @@ export default function ResumenView({ refs, marcas = [], tracksByRef, pendientes
             <input type="checkbox" checked={soloAprobadas}
               onChange={(e) => setSoloAprobadas(e.target.checked)} /> Solo aprobadas
           </label>
+          {procesosConteo.length > 0 && (
+            <div className="proc-filtro">
+              <button type="button" className={'proc-f-btn' + (!procesoF ? ' on' : '')}
+                onClick={() => setProcesoF('')}>Todos los procesos</button>
+              {procesosConteo.map(({ nombre, n }) => {
+                const c = procesoColor(nombre)
+                const on = procesoF.toLowerCase() === nombre.toLowerCase()
+                return (
+                  <button key={nombre} type="button"
+                    className={'proc-f-btn' + (on ? ' on' : '')}
+                    style={on ? { background: c.bg, color: c.fg, borderColor: c.bd } : undefined}
+                    onClick={() => setProcesoF(on ? '' : nombre)}>
+                    {nombre} <b>{n}</b>
+                  </button>
+                )
+              })}
+            </div>
+          )}
           {pendientesCount > 0 && (
             <label className="check check-alert">
               <input type="checkbox" checked={soloPendientes}
@@ -344,6 +398,7 @@ export default function ResumenView({ refs, marcas = [], tracksByRef, pendientes
                 <SortTh label="Veces" col="veces" {...thProps} />
                 <SortTh label="Etapa actual" col="etapa" {...thProps} />
                 <SortTh label="Tipo" col="tipo" {...thProps} />
+                <SortTh label="Procesos" col="procesos" {...thProps} />
                 <SortTh label="Tela" col="tela" {...thProps} />
                 <SortTh label="Top/Forro" col="topForro" {...thProps} />
                 <SortTh label="Costos" col="costos_auto" {...thProps} className="th-flag" />
@@ -405,6 +460,7 @@ export default function ResumenView({ refs, marcas = [], tracksByRef, pendientes
                     />
                   </td>
                   <td>{r.tipo}</td>
+                  <td><ProcesosCell refRow={r} onFiltrar={setProcesoF} /></td>
                   <td>
                     {telasTexto(r)}
                     {telaDisponible(r) && (

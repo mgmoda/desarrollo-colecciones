@@ -4,7 +4,7 @@ import PhotoDropzone from './PhotoDropzone.jsx'
 import ComboBox from './ComboBox.jsx'
 import ColorCell from './ColorCell.jsx'
 import DateField from './DateField.jsx'
-import { RESUMEN_FLAGS, DEFAULT_TIPOS, TOP_OPTIONS } from '../lib/constants.js'
+import { RESUMEN_FLAGS, DEFAULT_TIPOS, TOP_OPTIONS, procesoColor } from '../lib/constants.js'
 import { emptyRef, medicionInfo, refTelas } from '../lib/domain.js'
 
 const MAX_COLORS = 6
@@ -43,11 +43,58 @@ function FlagControl({ value, onChange }) {
   )
 }
 
+// Selector múltiple de procesos: chips que se encienden/apagan, más un campo
+// para crear uno nuevo que queda en el catálogo.
+function ProcesosPicker({ value = [], catalogo = [], onChange, onCrear, onBorrar }) {
+  const [nuevo, setNuevo] = useState('')
+  const activos = Array.isArray(value) ? value : []
+  const lista = [...catalogo]
+  activos.forEach((p) => { if (!lista.some((c) => c.toLowerCase() === p.toLowerCase())) lista.push(p) })
+  const alternar = (p) => {
+    const on = activos.some((x) => x.toLowerCase() === p.toLowerCase())
+    onChange(on ? activos.filter((x) => x.toLowerCase() !== p.toLowerCase()) : [...activos, p])
+  }
+  const crear = () => {
+    const v = nuevo.trim()
+    if (!v) return
+    if (onCrear) onCrear(v)
+    if (!activos.some((x) => x.toLowerCase() === v.toLowerCase())) onChange([...activos, v])
+    setNuevo('')
+  }
+  return (
+    <div className="proc-picker">
+      <div className="proc-chips">
+        {lista.map((p) => {
+          const on = activos.some((x) => x.toLowerCase() === p.toLowerCase())
+          const c = procesoColor(p)
+          return (
+            <button key={p} type="button"
+              className={'proc-chip' + (on ? ' on' : '')}
+              style={on ? { background: c.bg, color: c.fg, borderColor: c.bd } : undefined}
+              onClick={() => alternar(p)}>
+              {p}
+              {on && <span className="proc-chip-x">✓</span>}
+            </button>
+          )
+        })}
+        {lista.length === 0 && <span className="muted">Aún no hay procesos en el catálogo.</span>}
+      </div>
+      <div className="proc-nuevo">
+        <input className="input" value={nuevo} placeholder="Crear otro proceso…"
+          onChange={(e) => setNuevo(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); crear() } }} />
+        <button type="button" className="btn" onClick={crear} disabled={!nuevo.trim()}>Agregar</button>
+      </div>
+    </div>
+  )
+}
+
 export default function RefForm({
   open, initial, telas = [], telasCatalog = [], refIds = [],
   onAddTela, onEditTela, onDeleteTela, onUpdateTela,
   proveedores = [], onAddProveedor, onEditProveedor, onDeleteProveedor,
   decorados = [], onAddDecorado, onEditDecorado, onDeleteDecorado,
+  procesosCatalogo = [], onAddProceso, onEditProceso, onDeleteProceso,
   marcas = [], onAddMarca, onEditMarca, onDeleteMarca,
   savedColors = [], onAddColor, onEditColor, onDeleteColor,
   onSave, onClose, onDelete,
@@ -352,40 +399,24 @@ export default function RefForm({
           {/* ---- Procesos ---- */}
           <section className="ff-section">
             <h3 className="ff-section-title">Procesos</h3>
-            <div className="field-row">
-              <div className="field switch-field">
-                <label className="field-label">Proceso tintorería</label>
-                <Toggle on={form.tintoreria === 'si'} onChange={(v) => set('tintoreria', v ? 'si' : 'no')} />
-              </div>
-              <div className="field switch-field">
-                <label className="field-label">Bordado</label>
-                <Toggle on={form.bordado === 'si'} onChange={(v) => set('bordado', v ? 'si' : 'no')} />
-              </div>
-              <div className="field switch-field">
-                <label className="field-label">Decorado</label>
-                <Toggle on={form.decorado === 'si'} onChange={(v) => set('decorado', v ? 'si' : 'no')} />
-              </div>
+            <div className="field">
+              <label className="field-label">
+                Procesos especiales
+                <span className="field-hint"> · marca los que apliquen (puede llevar varios)</span>
+              </label>
+              <ProcesosPicker
+                value={form.procesos}
+                catalogo={procesosCatalogo}
+                onChange={(v) => set('procesos', v)}
+                onCrear={onAddProceso}
+                onBorrar={onDeleteProceso}
+              />
             </div>
-            {form.bordado === 'si' && (
+            {(form.procesos || []).some((p) => /bordado/i.test(p)) && (
               <div className="field">
                 <label className="field-label">Detalle del bordado</label>
                 <input className="input" value={form.bordadoDetalle}
                   onChange={(e) => set('bordadoDetalle', e.target.value)} placeholder="Descripción del bordado" />
-              </div>
-            )}
-            {form.decorado === 'si' && (
-              <div className="field">
-                <label className="field-label">Tipo de decorado</label>
-                <ComboBox
-                  value={form.decoradoDetalle}
-                  options={decorados}
-                  onChange={(v) => set('decoradoDetalle', v)}
-                  onCreate={onAddDecorado}
-                  onEdit={onEditDecorado}
-                  onDelete={onDeleteDecorado}
-                  placeholder="Elegir o crear (ej. Flor)…"
-                  entityLabel="decorado"
-                />
               </div>
             )}
             <div className="field-row">

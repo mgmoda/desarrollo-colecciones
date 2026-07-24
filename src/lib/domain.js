@@ -173,6 +173,36 @@ export function buildListaPreciosRows(refs, marca) {
   return out
 }
 
+// Tarjetas de precio para imprimir y recortar (una por conjunto o por prenda
+// suelta). Un conjunto da una tarjeta de 3 filas: prenda de arriba, prenda de
+// abajo y el conjunto con el precio sumado. Devuelve [{ rows: [{ref,desc,precio}] }].
+export function buildTarjetasPreciosCards(refs, marca) {
+  const base = refs.filter((r) => medicionInfo(r).estado === 'aprobada' && r.marca === marca)
+  const pairs = buildConjuntoPairs(base)
+  const enPar = new Set()
+  pairs.forEach((p) => { enPar.add(p.top.id); enPar.add(p.bottom.id) })
+  const p618 = (d) => Number(d.precioTalla618) || Number(d.costo) || 0
+  const linea = (d) => ({ ref: d.nuevaRef || '', desc: d.descripcion || d.tipo || '', precio: p618(d) })
+  const cards = []
+  pairs.forEach(({ top, bottom }) => cards.push({
+    rows: [
+      linea(top),
+      linea(bottom),
+      {
+        ref: top.conjuntoNuevaRef || '',
+        desc: top.conjuntoDescripcion || 'Conjunto',
+        precio: p618(top) + p618(bottom),
+      },
+    ],
+  }))
+  base.filter((r) => !enPar.has(r.id)).forEach((d) => cards.push({ rows: [linea(d)] }))
+  // Primero los conjuntos (3 filas) y luego las prendas sueltas, cada grupo por
+  // referencia: así las tarjetas de cada fila miden igual y no se desperdicia hoja.
+  cards.sort((a, b) => (b.rows.length - a.rows.length)
+    || (a.rows[0].ref || 'zzzz').localeCompare(b.rows[0].ref || 'zzzz'))
+  return cards
+}
+
 // Empareja referencias enlazadas por conjunto/conjuntoRef en { top, bottom }.
 // Solo forma el par si ambas prendas están en la lista recibida.
 export function buildConjuntoPairs(refs) {

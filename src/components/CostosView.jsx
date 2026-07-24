@@ -5,8 +5,9 @@ import Modal from './Modal.jsx'
 import PhotoDropzone from './PhotoDropzone.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { formatPrice } from '../lib/constants.js'
-import { medicionInfo, buildConjuntoPairs, buildListaPreciosRows } from '../lib/domain.js'
+import { medicionInfo, buildConjuntoPairs, buildListaPreciosRows, buildTarjetasPreciosCards } from '../lib/domain.js'
 import { generateListaPreciosPDF } from '../lib/listaPreciosPdf.js'
+import { generateTarjetasPreciosPDF } from '../lib/tarjetasPreciosPdf.js'
 
 // Precio "actual" de una prenda para sumar en el conjunto: usa el precio
 // de Talla 6-18 si ya se capturó, si no el costo heredado de la ficha.
@@ -81,6 +82,15 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
     if (sections.length === 0) return
     generateListaPreciosPDF(sections)
   }
+  // Tarjetas de precio para recortar (hoja carta), un archivo por marca.
+  const exportarTarjetas = () => {
+    const objetivo = marcaF ? [marcaF] : marcas
+    objetivo.forEach((m, i) => {
+      const cards = buildTarjetasPreciosCards(refs, m)
+      if (!cards.length) return
+      setTimeout(() => generateTarjetasPreciosPDF(m, cards), i * 700)
+    })
+  }
   // Celda de foto clickeable. field='image' para la prenda, 'conjuntoImage'
   // para la foto propia del conjunto (se guarda en la prenda ancla).
   const fotoCell = (id, image, field) => (
@@ -111,7 +121,11 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
           <SearchInput value={q} onChange={setQ} placeholder="Buscar…" />
           <button className="btn" onClick={exportarPDF}
             title={marcaF ? `Exportar la lista de precios de ${marcaF}` : 'Exportar la lista de precios (una sección por marca)'}>
-            📄 Exportar PDF{marcaF ? ` · ${marcaF}` : ''}
+            📄 Lista PDF{marcaF ? ` · ${marcaF}` : ''}
+          </button>
+          <button className="btn" onClick={exportarTarjetas}
+            title="Tarjetas de precio para imprimir y recortar (hoja carta), un archivo por marca">
+            🏷️ Tarjetas PDF{marcaF ? ` · ${marcaF}` : ''}
           </button>
           <button className="btn btn-primary" onClick={onNew}>+ Referencia</button>
         </div>

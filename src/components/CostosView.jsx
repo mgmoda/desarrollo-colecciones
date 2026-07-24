@@ -6,7 +6,7 @@ import PhotoDropzone from './PhotoDropzone.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { formatPrice } from '../lib/constants.js'
 import { medicionInfo, buildConjuntoPairs, buildListaPreciosRows, buildTarjetasPreciosCards, precioTalla20 } from '../lib/domain.js'
-import { generateListaPreciosPDF } from '../lib/listaPreciosPdf.js'
+import { generateListaPreciosPDF, generateListaEcuadorPDF } from '../lib/listaPreciosPdf.js'
 import { generateTarjetasPreciosPDF } from '../lib/tarjetasPreciosPdf.js'
 import { generateRefsExcel } from '../lib/refsExcel.js'
 
@@ -83,6 +83,15 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
       .filter((s) => s.rows.length > 0)
     if (sections.length === 0) return
     generateListaPreciosPDF(sections)
+  }
+  // Lista Ecuador: una columna de precio con 18% de descuento.
+  const exportarEcuador = () => {
+    const objetivo = marcaF ? [marcaF] : marcas
+    const sections = objetivo
+      .map((m) => ({ marca: m, rows: buildListaPreciosRows(refs, m) }))
+      .filter((s) => s.rows.length > 0)
+    if (sections.length === 0) return
+    generateListaEcuadorPDF(sections)
   }
   // Tarjetas de precio para recortar (hoja carta), un archivo por marca.
   const exportarTarjetas = () => {
@@ -163,6 +172,10 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
           <button className="btn" onClick={exportarPDF}
             title={marcaF ? `Exportar la lista de precios de ${marcaF}` : 'Exportar la lista de precios (una sección por marca)'}>
             📄 Lista PDF{marcaF ? ` · ${marcaF}` : ''}
+          </button>
+          <button className="btn" onClick={exportarEcuador}
+            title="Lista para Ecuador: una columna de precio con 18% de descuento">
+            🇪🇨 Ecuador{marcaF ? ` · ${marcaF}` : ''}
           </button>
           <button className="btn" onClick={exportarTarjetas}
             title="Tarjetas de precio para imprimir y recortar (hoja carta), un archivo por marca">

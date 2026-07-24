@@ -29,16 +29,27 @@ const ROW_H = 18
 const HEAD_BAND_H = 20
 const CONTENT_W = PAGE_W - MARGIN * 2
 
-// Divisores verticales de columna (x desde MARGIN) y posición del texto.
-const B1 = 56    // REF | DESCRIPCIÓN
-const B2 = 300   // DESCRIPCIÓN | TALLA 6-18
-const B3 = 390   // TALLA 6-18 | TALLA 20
+const REF_W = 56   // ancho de la columna REF
 const PAD = 8
-const COL_REF = PAD
-const COL_DESC = B1 + PAD
-const COL_618 = B2 + PAD
-const COL_20 = B3 + PAD
-const DESC_MAX = B2 - B1 - PAD * 2
+
+// Columnas de precio: Colombia lleva Talla 6-18 y Talla 20; Ecuador una sola.
+const COLS_COLOMBIA = [
+  { key: 't618', label: 'TALLA 6-18', width: 90 },
+  { key: 't20', label: 'TALLA 20', width: 91 },
+]
+const COLS_ECUADOR = [
+  { key: 'precio', label: 'PRECIO', width: 130 },
+]
+// Calcula posiciones a partir de las columnas de precio (a la derecha).
+function computarLayout(priceCols) {
+  const total = priceCols.reduce((a, c) => a + c.width, 0)
+  const descEnd = CONTENT_W - total
+  let x = descEnd
+  const cols = priceCols.map((c) => { const start = x; x += c.width; return { ...c, x: start } })
+  return { descEnd, cols, descMax: descEnd - REF_W - PAD * 2 }
+}
+let L = computarLayout(COLS_COLOMBIA)  // layout activo (se fija por documento)
+let SUB = null                          // subtítulo (si null, el de colección)
 
 const pesos = (n) => (Number(n) > 0 ? '$ ' + Math.round(Number(n)).toLocaleString('es-CO') : '')
 
@@ -73,7 +84,7 @@ function drawHeader(doc, marca, coleccion) {
   doc.setFont('times', 'normal')
   doc.setFontSize(9.5)
   doc.setTextColor(...TH.muted)
-  doc.text(`LISTADO DE PRECIOS · COLECCIÓN ${coleccion}`, PAGE_W / 2, y, { align: 'center' })
+  doc.text(SUB || `LISTADO DE PRECIOS · COLECCIÓN ${coleccion}`, PAGE_W / 2, y, { align: 'center' })
   return y + 18
 }
 
@@ -86,10 +97,9 @@ function drawColumnBand(doc, y) {
   doc.setFontSize(9)
   doc.setTextColor(...TH.accent)
   const ty = y + 13
-  doc.text('REF', x + COL_REF, ty)
-  doc.text('DESCRIPCIÓN', x + COL_DESC, ty)
-  doc.text('TALLA 6-18', x + COL_618, ty)
-  doc.text('TALLA 20', x + COL_20, ty)
+  doc.text('REF', x + PAD, ty)
+  doc.text('DESCRIPCIÓN', x + REF_W + PAD, ty)
+  L.cols.forEach((c) => doc.text(c.label, x + c.x + PAD, ty))
   return y + HEAD_BAND_H
 }
 
@@ -99,7 +109,7 @@ function drawFrame(doc, tableTop, yBottom) {
   doc.setDrawColor(...TH.grid)
   doc.setLineWidth(0.5)
   doc.line(MARGIN, tableTop + HEAD_BAND_H, MARGIN + CONTENT_W, tableTop + HEAD_BAND_H)
-  ;[B1, B2, B3].forEach((bx) => doc.line(MARGIN + bx, tableTop, MARGIN + bx, yBottom))
+  ;[REF_W, ...L.cols.map((c) => c.x)].forEach((bx) => doc.line(MARGIN + bx, tableTop, MARGIN + bx, yBottom))
   doc.setDrawColor(...TH.outer)
   doc.setLineWidth(0.8)
   doc.rect(MARGIN, tableTop, CONTENT_W, yBottom - tableTop)
@@ -148,7 +158,7 @@ function drawMarca(doc, marca, rows, coleccion, pageNum) {
       doc.setFont('times', 'normal')
       doc.setFontSize(8)
       doc.setTextColor(...TH.muted)
-      doc.text(`LISTADO DE PRECIOS · ${coleccion}`, PAGE_W - MARGIN, y + 4, { align: 'right' })
+      doc.text(SUB || `LISTADO DE PRECIOS · ${coleccion}`, PAGE_W - MARGIN, y + 4, { align: 'right' })
       y += 16
       tableTop = y
       y = drawColumnBand(doc, y)
@@ -158,17 +168,16 @@ function drawMarca(doc, marca, rows, coleccion, pageNum) {
     doc.setFontSize(9)
     // REF
     doc.setTextColor(...TH.accent)
-    doc.text(r.ref || '—', x + COL_REF, ty)
+    doc.text(r.ref || '—', x + PAD, ty)
     // DESCRIPCIÓN
     doc.setTextColor(...TH.ink)
-    doc.text(ellipsis(doc, (r.desc || '').toUpperCase(), DESC_MAX), x + COL_DESC, ty)
-    // PRECIOS
-    const p618 = pesos(r.t618)
-    const p20 = pesos(r.t20)
-    if (p618) { doc.setTextColor(...TH.ink); doc.text(p618, x + COL_618, ty) }
-    else { doc.setTextColor(...TH.none); doc.text('—', x + COL_618, ty) }
-    if (p20) { doc.setTextColor(...TH.ink); doc.text(p20, x + COL_20, ty) }
-    else { doc.setTextColor(...TH.none); doc.text('—', x + COL_20, ty) }
+    doc.text(ellipsis(doc, (r.desc || '').toUpperCase(), L.descMax), x + REF_W + PAD, ty)
+    // PRECIOS (una o varias columnas según el layout)
+    L.cols.forEach((c) => {
+      const val = pesos(r[c.key])
+      if (val) { doc.setTextColor(...TH.ink); doc.text(val, x + c.x + PAD, ty) }
+      else { doc.setTextColor(...TH.none); doc.text('—', x + c.x + PAD, ty) }
+    })
     // línea horizontal de fila (cuadrícula)
     doc.setDrawColor(...TH.grid)
     doc.setLineWidth(0.5)
@@ -181,7 +190,9 @@ function drawMarca(doc, marca, rows, coleccion, pageNum) {
 }
 
 // Construye el documento (sin descargar). sections: [{ marca, rows }].
-export function buildListaPreciosDoc(sections, { coleccion = '2026-2' } = {}) {
+export function buildListaPreciosDoc(sections, { coleccion = '2026-2', priceCols = COLS_COLOMBIA, subtitulo = null } = {}) {
+  L = computarLayout(priceCols)
+  SUB = subtitulo
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   let pageNum = 1
   sections.forEach((sec, i) => {
@@ -197,5 +208,25 @@ export function generateListaPreciosPDF(sections, opts = {}) {
   const nombre = sections.length === 1
     ? `Lista_Precios_${sections[0].marca}.pdf`
     : 'Lista_Precios.pdf'
+  doc.save(nombre)
+}
+
+// Lista de Ecuador: una sola columna PRECIO, con descuento sobre el precio base
+// (Talla 6-18), redondeado a entero. sections: [{ marca, rows con t618 }].
+export function generateListaEcuadorPDF(sections, { descuento = 0.18, coleccion = '2026-2' } = {}) {
+  const secs = sections.map((s) => ({
+    marca: s.marca,
+    rows: s.rows.map((r) => ({
+      ref: r.ref,
+      desc: r.desc,
+      precio: Math.round((Number(r.t618) || 0) * (1 - descuento)),
+    })),
+  }))
+  const doc = buildListaPreciosDoc(secs, {
+    coleccion,
+    priceCols: COLS_ECUADOR,
+    subtitulo: `LISTA ECUADOR · COLECCIÓN ${coleccion}`,
+  })
+  const nombre = secs.length === 1 ? `Lista_Ecuador_${secs[0].marca}.pdf` : 'Lista_Ecuador.pdf'
   doc.save(nombre)
 }

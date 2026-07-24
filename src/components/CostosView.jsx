@@ -8,6 +8,7 @@ import { formatPrice } from '../lib/constants.js'
 import { medicionInfo, buildConjuntoPairs, buildListaPreciosRows, buildTarjetasPreciosCards } from '../lib/domain.js'
 import { generateListaPreciosPDF } from '../lib/listaPreciosPdf.js'
 import { generateTarjetasPreciosPDF } from '../lib/tarjetasPreciosPdf.js'
+import { generateRefsExcel } from '../lib/refsExcel.js'
 
 // El precio de Talla 6-18 ES el costo de la referencia (mismo campo que usan
 // el Resumen y la ficha), para que no queden dos precios distintos.
@@ -92,6 +93,24 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
       setTimeout(() => generateTarjetasPreciosPDF(m, cards), i * 700)
     })
   }
+  // Excel por marca: foto + referencia antigua + nueva referencia + tipo.
+  // Una fila por referencia aprobada (las prendas del conjunto van sueltas).
+  const [excelBusy, setExcelBusy] = useState(false)
+  const exportarExcel = async () => {
+    const objetivo = marcaF ? [marcaF] : marcas
+    setExcelBusy(true)
+    try {
+      for (const m of objetivo) {
+        const lista = refs
+          .filter((r) => esAprobada(r) && r.marca === m)
+          .sort((a, b) => (a.referencia || '').localeCompare(b.referencia || ''))
+          .map((r) => ({ referencia: r.referencia, nuevaRef: r.nuevaRef || '', tipo: r.tipo || '', image: r.image }))
+        if (lista.length) await generateRefsExcel(m, lista)
+      }
+    } finally {
+      setExcelBusy(false)
+    }
+  }
   // Celda de foto clickeable. field='image' para la prenda, 'conjuntoImage'
   // para la foto propia del conjunto (se guarda en la prenda ancla).
   const fotoCell = (id, image, field) => (
@@ -127,6 +146,10 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
           <button className="btn" onClick={exportarTarjetas}
             title="Tarjetas de precio para imprimir y recortar (hoja carta), un archivo por marca">
             🏷️ Tarjetas PDF{marcaF ? ` · ${marcaF}` : ''}
+          </button>
+          <button className="btn" onClick={exportarExcel} disabled={excelBusy}
+            title="Excel con foto, referencia antigua, nueva referencia y tipo (un archivo por marca)">
+            {excelBusy ? '⏳ Generando…' : `📊 Excel${marcaF ? ` · ${marcaF}` : ''}`}
           </button>
           <button className="btn btn-primary" onClick={onNew}>+ Referencia</button>
         </div>

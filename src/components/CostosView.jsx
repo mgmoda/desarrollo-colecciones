@@ -5,7 +5,7 @@ import Modal from './Modal.jsx'
 import PhotoDropzone from './PhotoDropzone.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { formatPrice } from '../lib/constants.js'
-import { medicionInfo, buildConjuntoPairs, buildListaPreciosRows, buildTarjetasPreciosCards } from '../lib/domain.js'
+import { medicionInfo, buildConjuntoPairs, buildListaPreciosRows, buildTarjetasPreciosCards, precioTalla20 } from '../lib/domain.js'
 import { generateListaPreciosPDF } from '../lib/listaPreciosPdf.js'
 import { generateTarjetasPreciosPDF } from '../lib/tarjetasPreciosPdf.js'
 import { generateRefsExcel } from '../lib/refsExcel.js'
@@ -64,7 +64,7 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
       tipo: (r) => r.tipo,
       descripcion: (r) => r.descripcion || '',
       precioTalla618: (r) => (r.isConjunto ? r.suma : precioActual(r)),
-      precioTalla20: (r) => Number(r.precioTalla20) || 0,
+      precioTalla20: (r) => (r.isConjunto ? precioTalla20(r.top) + precioTalla20(r.bottom) : precioTalla20(r)),
     }
     return sortRows(list, accessors[sortKey], sortDir)
   }, [refs, q, marcaF, marcas, sortKey, sortDir])
@@ -215,8 +215,9 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
                         onCommit={(v) => guardar(r.top, 'costo', v)} />
                     </td>
                     <td className="num">
-                      <InlinePrice key={r.top.id} value={r.top.precioTalla20}
-                        onCommit={(v) => guardar(r.top, 'precioTalla20', v)} />
+                      {precioTalla20(r.top) > 0
+                        ? <span className="precio-ro">{formatPrice(precioTalla20(r.top))}</span>
+                        : <span className="muted">—</span>}
                     </td>
                     <td className="muted cell-action" onClick={() => onEdit(r.top)}>Editar ›</td>
                   </tr>
@@ -237,8 +238,9 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
                         onCommit={(v) => guardar(r.bottom, 'costo', v)} />
                     </td>
                     <td className="num">
-                      <InlinePrice key={r.bottom.id} value={r.bottom.precioTalla20}
-                        onCommit={(v) => guardar(r.bottom, 'precioTalla20', v)} />
+                      {precioTalla20(r.bottom) > 0
+                        ? <span className="precio-ro">{formatPrice(precioTalla20(r.bottom))}</span>
+                        : <span className="muted">—</span>}
                     </td>
                     <td className="muted cell-action" onClick={() => onEdit(r.bottom)}>Editar ›</td>
                   </tr>
@@ -259,7 +261,11 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
                         {r.suma > 0 ? formatPrice(r.suma) : '$ —'}
                       </span>
                     </td>
-                    <td className="num muted">—</td>
+                    <td className="num">
+                      {(precioTalla20(r.top) + precioTalla20(r.bottom)) > 0
+                        ? <span className="conj-suma">{formatPrice(precioTalla20(r.top) + precioTalla20(r.bottom))}</span>
+                        : <span className="muted">—</span>}
+                    </td>
                     <td className="muted cell-action" onClick={() => onEdit(r.anchor)}>Editar ›</td>
                   </tr>
                 </Fragment>
@@ -281,8 +287,9 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
                       onCommit={(v) => guardar(r, 'costo', v)} />
                   </td>
                   <td className="num">
-                    <InlinePrice key={r.id} value={r.precioTalla20}
-                      onCommit={(v) => guardar(r, 'precioTalla20', v)} />
+                    {precioTalla20(r) > 0
+                      ? <span className="precio-ro" title="Talla 20 = Talla 6-18 + recargo del tipo">{formatPrice(precioTalla20(r))}</span>
+                      : <span className="muted">—</span>}
                   </td>
                   <td className="muted cell-action" onClick={() => onEdit(r)}>Editar ›</td>
                 </tr>

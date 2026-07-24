@@ -162,6 +162,19 @@ function normTipo(s) {
 export function esPrendaTop(r) { return ['blusa', 'camisa', 'top', 'chaqueta'].some((k) => normTipo(r.tipo).includes(k)) }
 export function esPrendaBottom(r) { return ['pantalon', 'short', 'falda'].some((k) => normTipo(r.tipo).includes(k)) }
 
+// Recargo de la Talla 20 según el tipo de prenda: Vestido/Enterizo +$10.000,
+// las demás (Blusa, Short, Falda, Pantalón…) +$6.000.
+export function recargoTalla20(tipo) {
+  const t = normTipo(tipo)
+  return (t.includes('vestido') || t.includes('enterizo')) ? 10000 : 6000
+}
+// Precio de Talla 20 de una prenda = su precio de Talla 6-18 (costo) más el
+// recargo del tipo. Si no tiene precio base, no hay Talla 20 (0).
+export function precioTalla20(ref) {
+  const base = Number(ref.costo) || Number(ref.precioTalla618) || 0
+  return base > 0 ? base + recargoTalla20(ref.tipo) : 0
+}
+
 // Filas para la lista de precios (PDF) de una marca: solo aprobadas, con los
 // conjuntos colapsados a una fila (ref + descripción + precio sumado). Ordena
 // por nueva referencia. Devuelve [{ ref, desc, t618, t20 }].
@@ -169,22 +182,21 @@ export function buildListaPreciosRows(refs, marca) {
   const base = refs.filter((r) => medicionInfo(r).estado === 'aprobada' && r.marca === marca)
   const pairs = buildConjuntoPairs(base)
   const p618 = (d) => Number(d.costo) || Number(d.precioTalla618) || 0
-  const p20 = (d) => Number(d.precioTalla20) || 0
   const out = []
   // Cada prenda aprobada aparece con su propia referencia y precio, incluidas
-  // las que forman parte de un conjunto.
+  // las que forman parte de un conjunto. La Talla 20 es derivada (helper).
   base.forEach((d) => out.push({
     ref: d.nuevaRef || '',
     desc: d.descripcion || d.tipo || '',
     t618: p618(d),
-    t20: p20(d),
+    t20: precioTalla20(d),
   }))
-  // Y además, una fila por conjunto con el precio sumado.
+  // Y además, una fila por conjunto: precio y Talla 20 = suma de sus prendas.
   pairs.forEach(({ top, bottom }) => out.push({
     ref: top.conjuntoNuevaRef || '',
     desc: top.conjuntoDescripcion || 'Conjunto',
     t618: p618(top) + p618(bottom),
-    t20: p20(top) + p20(bottom),
+    t20: precioTalla20(top) + precioTalla20(bottom),
   }))
   out.sort((a, b) => (a.ref || 'zzzz').localeCompare(b.ref || 'zzzz'))
   return out

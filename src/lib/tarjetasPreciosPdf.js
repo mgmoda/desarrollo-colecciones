@@ -26,8 +26,8 @@ const INK = [0, 0, 0]
 
 const pesos = (n) => (Number(n) > 0 ? Math.round(Number(n)).toLocaleString('es-CO') : '')
 
-const NOTA_L1 = 'La Talla 20 aumenta $10.000 en Conjunto y'
-const NOTA_L2 = '$6.000 en Blusa, Pantalón, Short o Falda'
+const NOTA_L1 = 'Talla 20: +$10.000 en Vestido; +$6.000 en Blusa, Short,'
+const NOTA_L2 = 'Falda o Pantalón. En Conjunto, suma la de sus prendas.'
 
 function cardHeight(card) {
   return HEADER_H + card.rows.length * ROW_H

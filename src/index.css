@@ -3770,6 +3770,8 @@ img.ship-ref-photo {
 .cell-input-accent { font-weight: 600; color: #1f5fa5; min-width: 96px; }
 .cell-input-accent::placeholder { color: #9db4cf; font-weight: 400; }
 .cell-input-price { width: 120px; min-width: 0; text-align: right; font-variant-numeric: tabular-nums; }
+/* Precio derivado (solo lectura), ej. Talla 20 = Talla 6-18 + recargo */
+.precio-ro { font-variant-numeric: tabular-nums; padding-right: 7px; color: var(--ink-soft); }
 .data-table td.num .cell-input-price { display: inline-block; }
 
 /* Conjunto: bloque de tres filas (blusa, falda/pantalón, conjunto) con el

@@ -213,8 +213,10 @@ export function buildTarjetasPreciosCards(refs, marca) {
   const p618 = (d) => Number(d.costo) || Number(d.precioTalla618) || 0
   const linea = (d) => ({ ref: d.nuevaRef || '', desc: d.descripcion || d.tipo || '', precio: p618(d) })
   const cards = []
-  pairs.forEach(({ top, bottom }) => cards.push({
-    rows: [
+  // Cada conjunto genera DOS tarjetas idénticas: una se pone en la blusa y la
+  // otra en el short/pantalón. Salen seguidas (una al lado de la otra).
+  pairs.forEach(({ top, bottom }) => {
+    const rows = [
       linea(top),
       linea(bottom),
       {
@@ -222,8 +224,9 @@ export function buildTarjetasPreciosCards(refs, marca) {
         desc: top.conjuntoDescripcion || 'Conjunto',
         precio: p618(top) + p618(bottom),
       },
-    ],
-  }))
+    ]
+    cards.push({ rows, esConjunto: true }, { rows, esConjunto: true })
+  })
   base.filter((r) => !enPar.has(r.id)).forEach((d) => cards.push({ rows: [linea(d)] }))
   // Primero los conjuntos (3 filas) y luego las prendas sueltas, cada grupo por
   // referencia: así las tarjetas de cada fila miden igual y no se desperdicia hoja.

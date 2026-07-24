@@ -71,8 +71,13 @@ export async function generateRefsExcel(marca, rows) {
     fila.height = ROW_H
     fila.eachCell((cell, col) => {
       cell.alignment = { vertical: 'middle', horizontal: col === 1 ? 'center' : 'left' }
-      cell.font = { size: 11, bold: col === 3 }
+      cell.font = { size: 11 }
       if (col === 3) cell.font = { size: 11, bold: true, color: { argb: 'FF1F5FA5' } }
+      // La fila del conjunto va resaltada, para distinguirla de sus prendas.
+      if (r.esConjunto) {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF6F2EA' } }
+        if (col === 2 || col === 4) cell.font = { size: 11, bold: true, color: { argb: 'FF8A5A2B' } }
+      }
       cell.border = {
         bottom: { style: 'hair', color: { argb: 'FFCCB79F' } },
         left: { style: 'hair', color: { argb: 'FFCCB79F' } },

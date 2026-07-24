@@ -101,10 +101,31 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
     setExcelBusy(true)
     try {
       for (const m of objetivo) {
-        const lista = refs
-          .filter((r) => esAprobada(r) && r.marca === m)
+        const base = refs.filter((r) => esAprobada(r) && r.marca === m)
+        // El conjunto va justo después de sus dos prendas.
+        const pares = buildConjuntoPairs(base)
+        const parDe = new Map()
+        pares.forEach((p) => { parDe.set(p.top.id, p); parDe.set(p.bottom.id, p) })
+        const emitidas = new Set()
+        const lista = []
+        const fila = (r) => ({ referencia: r.referencia, nuevaRef: r.nuevaRef || '', tipo: r.tipo || '', image: r.image })
+        base
+          .slice()
           .sort((a, b) => (a.referencia || '').localeCompare(b.referencia || ''))
-          .map((r) => ({ referencia: r.referencia, nuevaRef: r.nuevaRef || '', tipo: r.tipo || '', image: r.image }))
+          .forEach((r) => {
+            if (emitidas.has(r.id)) return
+            const p = parDe.get(r.id)
+            if (!p) { emitidas.add(r.id); lista.push(fila(r)); return }
+            // Bloque del conjunto: las dos prendas y luego el conjunto.
+            emitidas.add(p.top.id); emitidas.add(p.bottom.id)
+            lista.push(fila(p.top), fila(p.bottom), {
+              referencia: `${p.top.referencia} + ${p.bottom.referencia}`,
+              nuevaRef: p.top.conjuntoNuevaRef || '',
+              tipo: 'Conjunto',
+              image: p.top.conjuntoImage || p.top.image,
+              esConjunto: true,
+            })
+          })
         if (lista.length) await generateRefsExcel(m, lista)
       }
     } finally {

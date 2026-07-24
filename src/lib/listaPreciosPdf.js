@@ -46,8 +46,13 @@ function drawHeader(doc, marca, coleccion) {
   let y = MARGIN + 14
   const logo = MARCA_LOGOS[marca]
   if (logo) {
-    const hLogo = 48
-    const wLogo = hLogo * (logo.w / logo.h)
+    // Encajar el logo dentro de un alto y un ancho máximos, manteniendo
+    // la proporción (los wordmarks anchos no se desbordan).
+    const maxH = 46
+    const maxW = 300
+    let hLogo = maxH
+    let wLogo = hLogo * (logo.w / logo.h)
+    if (wLogo > maxW) { wLogo = maxW; hLogo = wLogo * (logo.h / logo.w) }
     doc.addImage(logo.dataUri, 'PNG', (PAGE_W - wLogo) / 2, y, wLogo, hLogo)
     y += hLogo + 16
   } else {
@@ -121,9 +126,10 @@ function drawMarca(doc, marca, rows, coleccion, pageNum) {
       // Cabecera compacta en páginas siguientes
       const logo2 = MARCA_LOGOS[marca]
       if (logo2) {
-        const hL = 17
-        const wL = hL * (logo2.w / logo2.h)
-        doc.addImage(logo2.dataUri, 'PNG', x, y - 6, wL, hL)
+        let hL = 17
+        let wL = hL * (logo2.w / logo2.h)
+        if (wL > 150) { wL = 150; hL = wL * (logo2.h / logo2.w) }
+        doc.addImage(logo2.dataUri, 'PNG', x, y - hL / 2 + 5, wL, hL)
       } else {
         doc.setFont('times', 'bold')
         doc.setFontSize(13)

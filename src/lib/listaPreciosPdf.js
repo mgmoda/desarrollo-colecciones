@@ -9,13 +9,21 @@ const PAGE_W = 595.28
 const PAGE_H = 841.89
 const MARGIN = 57
 
-const INK = [20, 18, 16]
-const BROWN = [74, 59, 42]      // #4a3b2a
-const BAND = [239, 228, 212]    // #efe4d4
-const GRID = [204, 183, 159]    // #ccb79f  (líneas interiores)
-const OUTER = [184, 157, 122]   // #b89d7a  (borde exterior)
-const MUTED = [161, 144, 122]
-const NONE = [201, 191, 168]
+// Tema por marca. Casania (y las demás) en café/crema; Mariset en negro/gris,
+// para diferenciarlas de un vistazo.
+const THEME_CAFE = {
+  ink: [20, 18, 16], accent: [74, 59, 42], band: [239, 228, 212],
+  grid: [204, 183, 159], outer: [184, 157, 122], muted: [161, 144, 122], none: [201, 191, 168],
+  fallback: [42, 33, 24],
+}
+const THEME_NEGRO = {
+  ink: [17, 17, 17], accent: [17, 17, 17], band: [235, 235, 235],
+  grid: [199, 199, 199], outer: [110, 110, 110], muted: [110, 110, 110], none: [188, 188, 188],
+  fallback: [17, 17, 17],
+}
+const THEMES = { Mariset: THEME_NEGRO }
+const themeDe = (marca) => THEMES[marca] || THEME_CAFE
+let TH = THEME_CAFE
 
 const ROW_H = 18
 const HEAD_BAND_H = 20
@@ -58,13 +66,13 @@ function drawHeader(doc, marca, coleccion) {
   } else {
     doc.setFont('times', 'bold')
     doc.setFontSize(28)
-    doc.setTextColor(42, 33, 24)
+    doc.setTextColor(...TH.fallback)
     doc.text(marca.toUpperCase(), PAGE_W / 2, y + 26, { align: 'center' })
     y += 44
   }
   doc.setFont('times', 'normal')
   doc.setFontSize(9.5)
-  doc.setTextColor(...MUTED)
+  doc.setTextColor(...TH.muted)
   doc.text(`LISTADO DE PRECIOS · COLECCIÓN ${coleccion}`, PAGE_W / 2, y, { align: 'center' })
   return y + 18
 }
@@ -72,11 +80,11 @@ function drawHeader(doc, marca, coleccion) {
 // Franja crema con los títulos de columna. Devuelve la Y de la primera fila.
 function drawColumnBand(doc, y) {
   const x = MARGIN
-  doc.setFillColor(...BAND)
+  doc.setFillColor(...TH.band)
   doc.rect(x, y, CONTENT_W, HEAD_BAND_H, 'F')
   doc.setFont('times', 'bold')
   doc.setFontSize(9)
-  doc.setTextColor(...BROWN)
+  doc.setTextColor(...TH.accent)
   const ty = y + 13
   doc.text('REF', x + COL_REF, ty)
   doc.text('DESCRIPCIÓN', x + COL_DESC, ty)
@@ -88,28 +96,29 @@ function drawColumnBand(doc, y) {
 // Cuadrícula tipo Excel: franja inferior, divisores verticales y borde exterior,
 // desde la parte alta de la franja hasta el fondo de la última fila.
 function drawFrame(doc, tableTop, yBottom) {
-  doc.setDrawColor(...GRID)
+  doc.setDrawColor(...TH.grid)
   doc.setLineWidth(0.5)
   doc.line(MARGIN, tableTop + HEAD_BAND_H, MARGIN + CONTENT_W, tableTop + HEAD_BAND_H)
   ;[B1, B2, B3].forEach((bx) => doc.line(MARGIN + bx, tableTop, MARGIN + bx, yBottom))
-  doc.setDrawColor(...OUTER)
+  doc.setDrawColor(...TH.outer)
   doc.setLineWidth(0.8)
   doc.rect(MARGIN, tableTop, CONTENT_W, yBottom - tableTop)
 }
 
 function drawFooter(doc, pageNum) {
-  doc.setDrawColor(...BROWN)
+  doc.setDrawColor(...TH.accent)
   doc.setLineWidth(1)
   doc.line(MARGIN, PAGE_H - 46, PAGE_W - MARGIN, PAGE_H - 46)
   doc.setFont('times', 'normal')
   doc.setFontSize(8)
-  doc.setTextColor(...MUTED)
+  doc.setTextColor(...TH.muted)
   doc.text('MG MODA S.A.S · PRECIOS PARA DISTRIBUIDORES AUTORIZADOS', PAGE_W / 2, PAGE_H - 34, { align: 'center' })
   doc.text(String(pageNum), PAGE_W - MARGIN, PAGE_H - 34, { align: 'right' })
 }
 
 // Dibuja una marca (una o varias páginas). Devuelve el número de la última página.
 function drawMarca(doc, marca, rows, coleccion, pageNum) {
+  TH = themeDe(marca)
   const x = MARGIN
   let y = drawHeader(doc, marca, coleccion)
   let tableTop = y
@@ -133,12 +142,12 @@ function drawMarca(doc, marca, rows, coleccion, pageNum) {
       } else {
         doc.setFont('times', 'bold')
         doc.setFontSize(13)
-        doc.setTextColor(42, 33, 24)
+        doc.setTextColor(...TH.fallback)
         doc.text(marca.toUpperCase(), x, y + 4)
       }
       doc.setFont('times', 'normal')
       doc.setFontSize(8)
-      doc.setTextColor(...MUTED)
+      doc.setTextColor(...TH.muted)
       doc.text(`LISTADO DE PRECIOS · ${coleccion}`, PAGE_W - MARGIN, y + 4, { align: 'right' })
       y += 16
       tableTop = y
@@ -148,20 +157,20 @@ function drawMarca(doc, marca, rows, coleccion, pageNum) {
     doc.setFont('times', 'normal')
     doc.setFontSize(9)
     // REF
-    doc.setTextColor(...BROWN)
+    doc.setTextColor(...TH.accent)
     doc.text(r.ref || '—', x + COL_REF, ty)
     // DESCRIPCIÓN
-    doc.setTextColor(...INK)
+    doc.setTextColor(...TH.ink)
     doc.text(ellipsis(doc, (r.desc || '').toUpperCase(), DESC_MAX), x + COL_DESC, ty)
     // PRECIOS
     const p618 = pesos(r.t618)
     const p20 = pesos(r.t20)
-    if (p618) { doc.setTextColor(...INK); doc.text(p618, x + COL_618, ty) }
-    else { doc.setTextColor(...NONE); doc.text('—', x + COL_618, ty) }
-    if (p20) { doc.setTextColor(...INK); doc.text(p20, x + COL_20, ty) }
-    else { doc.setTextColor(...NONE); doc.text('—', x + COL_20, ty) }
+    if (p618) { doc.setTextColor(...TH.ink); doc.text(p618, x + COL_618, ty) }
+    else { doc.setTextColor(...TH.none); doc.text('—', x + COL_618, ty) }
+    if (p20) { doc.setTextColor(...TH.ink); doc.text(p20, x + COL_20, ty) }
+    else { doc.setTextColor(...TH.none); doc.text('—', x + COL_20, ty) }
     // línea horizontal de fila (cuadrícula)
-    doc.setDrawColor(...GRID)
+    doc.setDrawColor(...TH.grid)
     doc.setLineWidth(0.5)
     doc.line(x, y + ROW_H, MARGIN + CONTENT_W, y + ROW_H)
     y += ROW_H
@@ -172,7 +181,7 @@ function drawMarca(doc, marca, rows, coleccion, pageNum) {
 }
 
 // Construye el documento (sin descargar). sections: [{ marca, rows }].
-export function buildListaPreciosDoc(sections, { coleccion = '2026-1' } = {}) {
+export function buildListaPreciosDoc(sections, { coleccion = '2026-2' } = {}) {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   let pageNum = 1
   sections.forEach((sec, i) => {

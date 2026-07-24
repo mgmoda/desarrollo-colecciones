@@ -32,10 +32,10 @@ const NOTA_TEXTO = 'Vestido +$10.000 · Blusa, Short, Falda y Pantalón +$6.000'
 // Marcas de corte tenues en las esquinas (fuera de la tarjeta), como guía para
 // la guillotina. Grises y finas: si el corte se corre un poco, no se notan.
 function drawCropMarks(doc, x, y, w, h) {
-  doc.setDrawColor(200, 200, 200)
-  doc.setLineWidth(0.3)
-  const len = 6
-  const gap = 2
+  doc.setDrawColor(170, 170, 170)
+  doc.setLineWidth(0.4)
+  const len = 9
+  const gap = 3
   const x2 = x + w
   const y2 = y + h
   doc.line(x - gap - len, y, x - gap, y)

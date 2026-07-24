@@ -3790,6 +3790,34 @@ img.ship-ref-photo {
 /* Nueva referencia en el Resumen (solo lectura; se edita en Costos) */
 .data-table td.nueva-ref { font-weight: 600; color: #1f5fa5; white-space: nowrap; }
 
+/* Control segmentado de filtros (marca, modo…) usado en varias vistas */
+.opt-group {
+  display: inline-flex;
+  align-items: stretch;
+  background: var(--surface);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.opt-btn {
+  appearance: none;
+  border: none;
+  border-right: 1px solid var(--hairline);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.opt-btn:last-child { border-right: none; }
+.opt-btn:hover { background: #faf8f3; color: var(--ink); }
+.opt-btn.on { background: var(--ink); color: #fff; }
+.opt-btn.on:hover { background: #2c2c34; color: #fff; }
+
 .cell-check { width: 30px; text-align: center; }
 .cell-check input { cursor: pointer; width: 15px; height: 15px; }
 .data-table tbody tr.row-sel td { background: #eef4f9; }

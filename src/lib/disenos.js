@@ -43,7 +43,8 @@ export const FASES = [
 // Eventos de la bitácora. `etapa` es en qué queda el diseño tras el evento;
 // `fase` es a cuál de las tres fases pertenece; `hito` marca los cierres.
 export const EVENTOS = {
-  recibido: { label: 'Recibido de Geodésica', etapa: 'grafico', fase: 'grafico', img: 'varias' },
+  recibido: { label: 'Recibido de Geodésica', etapa: 'pendiente', fase: 'grafico', img: 'varias' },
+  aGrafico: { label: 'Enviado a desarrollo gráfico', etapa: 'grafico', fase: 'grafico' },
   propuesta: { label: 'Propuesta enviada al cliente', etapa: 'enviado', fase: 'grafico', img: 'una', ronda: true },
   correccion: { label: 'Corrección pedida por el cliente', etapa: 'correccion', fase: 'grafico', nota: true, vuelta: true },
   aprobado: { label: 'Diseño aprobado', etapa: 'aprobado', fase: 'grafico', codigoCliente: true, hito: true },
@@ -84,6 +85,7 @@ export function agruparPorFase(eventos = [], etapaActual) {
 
 // Etapas para mostrar y filtrar. `tono` alimenta el color del chip.
 export const ETAPAS = [
+  { key: 'pendiente', label: 'Pendiente', tono: 'gray' },
   { key: 'grafico', label: 'Desarrollo gráfico', tono: 'purple' },
   { key: 'enviado', label: 'Con el cliente', tono: 'blue' },
   { key: 'correccion', label: 'Corrección', tono: 'amber' },
@@ -113,7 +115,7 @@ export const etapaColor = (etapa) => TONOS[ETAPA_TONO[etapa]] || TONOS.gray
 export function disenoInfo(diseno) {
   const evs = (diseno && diseno.eventos) || []
   if (!evs.length) {
-    return { etapa: 'grafico', etiqueta: ETAPA_LABEL.grafico, dias: null, rondas: 0, ultimo: null }
+    return { etapa: 'pendiente', etiqueta: ETAPA_LABEL.pendiente, dias: null, rondas: 0, ultimo: null }
   }
   const ultimo = evs[evs.length - 1]
   const def = EVENTOS[ultimo.tipo] || {}
@@ -134,6 +136,8 @@ export function disenoInfo(diseno) {
 // Qué eventos tiene sentido registrar según dónde está el diseño.
 export function accionesDisponibles(etapa) {
   switch (etapa) {
+    case 'pendiente':
+      return ['aGrafico']
     case 'grafico':
     case 'correccion':
       return ['propuesta']

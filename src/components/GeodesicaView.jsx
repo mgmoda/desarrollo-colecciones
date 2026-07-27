@@ -6,6 +6,7 @@ import DateField from './DateField.jsx'
 import { AREAS, formatDate, formatPrice } from '../lib/constants.js'
 import { orderArea } from '../lib/domain.js'
 import { generateGeodesicaPDF } from '../lib/geodesicaPdf.js'
+import { generateListaFotosPDF } from '../lib/listaFotosPdf.js'
 import DisenosView from './DisenosView.jsx'
 import { dbLoadDisenos } from '../lib/db.js'
 
@@ -161,6 +162,38 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
   const totalSel = seleccionados.reduce((s, it) => s + (it.cantidadTotal * it.precio), 0)
   const totalUnitsSel = seleccionados.reduce((s, it) => s + it.cantidadTotal, 0)
 
+  // Para la lista de fotos se toma TODO lo marcado, sin importar en qué
+  // pestaña se marcó: así se pueden mezclar pendientes con preórdenes.
+  const seleccionFotos = useMemo(() => {
+    const out = []
+    items.forEach((it) => {
+      if (!selected.has(it.refId)) return
+      out.push({
+        referencia: it.refId,
+        producto: it.producto,
+        image: it.image,
+        etapa: it.despachada ? 'Despachada'
+          : it.area ? AREA_LABEL[it.area] : 'Sin iniciar',
+      })
+    })
+    preOrders.forEach((r) => {
+      if (!selected.has(r.id)) return
+      out.push({
+        referencia: r.referencia || r.id,
+        producto: r.geodesicaProducto || '',
+        image: r.image || '',
+        etapa: 'Por programar',
+      })
+    })
+    return out.sort((a, b) => a.referencia.localeCompare(b.referencia))
+  }, [items, preOrders, selected])
+
+  async function generarPdfFotos() {
+    if (seleccionFotos.length === 0) return
+    setBusyPdf(true)
+    try { await generateListaFotosPDF(seleccionFotos) } finally { setBusyPdf(false) }
+  }
+
   async function generarPdf() {
     if (seleccionados.length === 0) return
     setBusyPdf(true)
@@ -210,24 +243,24 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
       {/* Toggle de estado: por programar / pendientes / despachadas / todas */}
       <div className="opt-group" style={{ marginBottom: 10, flexWrap: 'wrap' }}>
         <button type="button" className={'opt-btn' + (estado === 'porProgramar' ? ' on' : '')}
-          onClick={() => { setEstado('porProgramar'); clearSel() }}
+          onClick={() => { setEstado('porProgramar') }}
           title="Preórdenes ingresadas manualmente que aún no llegan en el Excel">
           🗒 Por programar <span className="muted">({conteo.porProgramar})</span>
         </button>
         <button type="button" className={'opt-btn' + (estado === 'pendientes' ? ' on' : '')}
-          onClick={() => { setEstado('pendientes'); clearSel() }}>
+          onClick={() => { setEstado('pendientes') }}>
           Pendientes <span className="muted">({conteo.pendientes})</span>
         </button>
         <button type="button" className={'opt-btn' + (estado === 'despachadas' ? ' on' : '')}
-          onClick={() => { setEstado('despachadas'); clearSel() }}>
+          onClick={() => { setEstado('despachadas') }}>
           Despachadas <span className="muted">({conteo.despachadas})</span>
         </button>
         <button type="button" className={'opt-btn' + (estado === 'todas' ? ' on' : '')}
-          onClick={() => { setEstado('todas'); clearSel() }}>
+          onClick={() => { setEstado('todas') }}>
           Todas <span className="muted">({conteo.todas})</span>
         </button>
         <button type="button" className={'opt-btn' + (estado === 'disenos' ? ' on' : '')}
-          onClick={() => { setEstado('disenos'); clearSel() }}
+          onClick={() => { setEstado('disenos') }}
           title="Diseños que envía Geodésica para desarrollar">
           🎨 Diseños{disenos.length > 0 && <span className="muted"> ({disenos.length})</span>}
         </button>
@@ -248,6 +281,22 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
       </div>
       )}
 
+      {/* Lista para la sesión de fotos: junta lo marcado en cualquier pestaña */}
+      {estado !== 'disenos' && seleccionFotos.length > 0 && (
+        <div className="geo-fotosbar">
+          <span>
+            📸 <strong>{seleccionFotos.length}</strong> {seleccionFotos.length === 1 ? 'prenda marcada' : 'prendas marcadas'} para fotos
+            <span className="muted"> · puedes marcar en Pendientes y en Por programar</span>
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-ghost" onClick={clearSel}>Limpiar</button>
+            <button className="btn btn-primary" disabled={busyPdf} onClick={generarPdfFotos}>
+              {busyPdf ? 'Generando…' : 'PDF para fotos'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {estado === 'disenos' ? (
         <DisenosView
           disenos={disenos}
@@ -257,6 +306,8 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
       ) : estado === 'porProgramar' ? (
         <PorProgramarView
           preOrders={preOrders}
+          selected={selected}
+          onToggleSel={toggleSel}
           q={q}
           onNueva={() => { setEditingPre(null); setPreOrderOpen(true) }}
           onEditar={(r) => { setEditingPre(r); setPreOrderOpen(true) }}
@@ -409,7 +460,7 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
 }
 
 // Sub-vista: preórdenes de Geodésica aún no importadas.
-function PorProgramarView({ preOrders, q, onNueva, onEditar, onEliminar, onViewImage }) {
+function PorProgramarView({ preOrders, q, onNueva, onEditar, onEliminar, onViewImage, selected, onToggleSel }) {
   const term = q.trim().toLowerCase()
   const filtradas = term
     ? preOrders.filter((r) => (r.referencia + ' ' + (r.geodesicaProducto || '')).toLowerCase().includes(term))
@@ -430,7 +481,12 @@ function PorProgramarView({ preOrders, q, onNueva, onEditar, onEliminar, onViewI
       ? new Date(Number(r.geodesicaPreOrderAt)).toLocaleDateString('es-CO')
       : '—'
     return (
-      <tr key={r.id}>
+      <tr key={r.id} className={selected && selected.has(r.id) ? 'row-sel' : ''}>
+        <td className="cell-check">
+          <input type="checkbox" checked={!!(selected && selected.has(r.id))}
+            onChange={() => onToggleSel && onToggleSel(r.id)}
+            title="Marcar para la lista de fotos" />
+        </td>
         <td className="cell-photo">
           {r.image ? (
             <img src={r.image} alt={r.referencia} className="thumb" title="Ampliar foto"
@@ -491,6 +547,7 @@ function PorProgramarView({ preOrders, q, onNueva, onEditar, onEliminar, onViewI
             <table className="data-table">
               <thead>
                 <tr>
+                  <th className="cell-check"></th>
                   <th>Foto</th>
                   <th>Referencia</th>
                   <th>Producto</th>

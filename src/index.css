@@ -3843,12 +3843,13 @@ img.ship-ref-photo {
 .dis-codcli.lg { font-size: 12px; }
 .dis-nombre { margin-left: 8px; font-weight: 400; color: var(--ink-soft); font-size: 14px; }
 .data-table td.dis-alerta { color: #b23121; font-weight: 700; }
-.dis-codigo {
-  display: flex; align-items: center; height: 40px; padding: 0 12px;
-  border: 1px solid var(--hairline-strong); border-radius: var(--radius-sm);
-  background: #faf8f3; font-weight: 700; letter-spacing: 0.03em;
+.input.dis-codigo { font-weight: 700; letter-spacing: 0.03em; }
+.input.dis-codigo.err { border-color: #e0a9a2; color: #b23121; background: #fdf3f2; }
+.dis-cod-reset {
+  margin-left: 8px; border: none; background: transparent; cursor: pointer;
+  font-size: 10.5px; font-weight: 600; color: #a67c52; padding: 0;
 }
-.dis-codigo.err { border-color: #e0a9a2; color: #b23121; background: #fdf3f2; }
+.dis-cod-reset:hover { text-decoration: underline; }
 
 /* Selector de imágenes: pegar (Cmd/Ctrl+V), arrastrar o buscar el archivo */
 .dis-picker-list { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }

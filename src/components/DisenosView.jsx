@@ -227,9 +227,13 @@ function NuevoDisenoModal({ disenos, onClose, onSaved }) {
   const [imgs, setImgs] = useState([])
   const [nota, setNota] = useState('')
   const [guardando, setGuardando] = useState(false)
+  // null = usar el código automático; si se escribe uno propio, manda ese.
+  const [codigoManual, setCodigoManual] = useState(null)
 
-  const codigo = codigoDiseno(tipo, numero)
-  const repetido = disenos.some((d) => d.codigo === codigo)
+  const codigoAuto = codigoDiseno(tipo, numero)
+  const codigo = (codigoManual === null ? codigoAuto : codigoManual).trim()
+  const repetido = codigo !== '' && disenos.some((d) => d.codigo === codigo)
+  const invalido = codigo === '' || repetido
 
   function cambiarTipo(t) {
     setTipo(t)
@@ -237,7 +241,7 @@ function NuevoDisenoModal({ disenos, onClose, onSaved }) {
   }
 
   async function guardar() {
-    if (repetido || guardando) return
+    if (invalido || guardando) return
     setGuardando(true)
     try {
       const base = emptyDiseno(codigo, tipo)
@@ -278,9 +282,23 @@ function NuevoDisenoModal({ disenos, onClose, onSaved }) {
               onChange={(e) => setNumero(Number(e.target.value) || 0)} />
           </div>
           <div className="field">
-            <label className="field-label">Código</label>
-            <div className={'dis-codigo' + (repetido ? ' err' : '')}>{codigo}</div>
-            {repetido && <span className="field-error">Ese código ya existe</span>}
+            <label className="field-label">
+              Código
+              {codigoManual !== null && (
+                <button type="button" className="dis-cod-reset"
+                  title={`Volver al automático (${codigoAuto})`}
+                  onClick={() => setCodigoManual(null)}>↺ automático</button>
+              )}
+            </label>
+            <input className={'input dis-codigo' + (invalido ? ' err' : '')}
+              value={codigo}
+              onChange={(e) => setCodigoManual(e.target.value.toUpperCase())}
+              placeholder={codigoAuto} />
+            {repetido
+              ? <span className="field-error">Ese código ya existe</span>
+              : codigo === ''
+                ? <span className="field-error">Escribe un código</span>
+                : <span className="field-hint">Puedes usar el automático o escribir el del cliente</span>}
           </div>
         </div>
         <div className="field-row">
@@ -306,7 +324,7 @@ function NuevoDisenoModal({ disenos, onClose, onSaved }) {
       </div>
       <div className="modal-foot">
         <button className="btn" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-primary" onClick={guardar} disabled={repetido || guardando}>
+        <button className="btn btn-primary" onClick={guardar} disabled={invalido || guardando}>
           {guardando ? 'Guardando…' : 'Crear diseño'}
         </button>
       </div>

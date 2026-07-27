@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Modal from './Modal.jsx'
 import SearchInput from './SearchInput.jsx'
 import { formatDate } from '../lib/constants.js'
-import { processImage } from '../lib/image.js'
+import { processImage, getImageFromClipboard } from '../lib/image.js'
 import {
   ETAPAS, EVENTOS, TIPOS_DISENO, accionesDisponibles, codigoDiseno,
   disenoInfo, emptyDiseno, etapaColor, siguienteNumero,
@@ -159,21 +159,37 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
 }
 
 // ---- Selector de varias imágenes ----
+// Acepta pegar (Cmd/Ctrl+V), arrastrar y buscar el archivo, como el resto
+// de la app. Solo hay un selector visible a la vez, así que escuchar el
+// "paste" de la ventana es seguro.
 function ImagePicker({ imgs, onChange, label = 'Agregar imágenes' }) {
   const inputRef = useRef(null)
   const [busy, setBusy] = useState(false)
+  const [drag, setDrag] = useState(false)
+  const listaRef = useRef(imgs)
+  listaRef.current = imgs
 
-  async function agregar(files) {
-    if (!files || !files.length) return
+  const agregar = useCallback(async (files) => {
+    const arr = [...(files || [])].filter((f) => f && f.type.startsWith('image/'))
+    if (!arr.length) return
     setBusy(true)
     try {
       const nuevas = []
-      for (const f of files) {
+      for (const f of arr) {
         try { const { dataUrl } = await processImage(f); nuevas.push(dataUrl) } catch (e) { console.error(e) }
       }
-      onChange([...(imgs || []), ...nuevas])
+      if (nuevas.length) onChange([...(listaRef.current || []), ...nuevas])
     } finally { setBusy(false) }
-  }
+  }, [onChange])
+
+  useEffect(() => {
+    function onPaste(e) {
+      const f = getImageFromClipboard(e)
+      if (f) { e.preventDefault(); agregar([f]) }
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [agregar])
 
   return (
     <div className="dis-picker">
@@ -185,13 +201,19 @@ function ImagePicker({ imgs, onChange, label = 'Agregar imágenes' }) {
               onClick={() => onChange(imgs.filter((_, k) => k !== i))}>×</button>
           </span>
         ))}
-        <button type="button" className="dis-add" onClick={() => inputRef.current?.click()} disabled={busy}>
-          {busy ? '…' : '＋'}
-          <span>{label}</span>
+        <button type="button"
+          className={'dis-add' + (drag ? ' is-drag' : '') + (busy ? ' is-busy' : '')}
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setDrag(true) }}
+          onDragLeave={() => setDrag(false)}
+          onDrop={(e) => { e.preventDefault(); setDrag(false); agregar(e.dataTransfer.files) }}>
+          <span className="dis-add-ico" aria-hidden="true">{busy ? '⏳' : drag ? '⬇' : '＋'}</span>
+          <span className="dis-add-tit">{busy ? 'Procesando…' : drag ? 'Suelta aquí' : label}</span>
+          {!busy && !drag && <span className="dis-add-hint">pega con Cmd/Ctrl + V<br />o arrastra el archivo</span>}
         </button>
       </div>
       <input ref={inputRef} type="file" accept="image/*" multiple hidden
-        onChange={(e) => { agregar([...e.target.files]); e.target.value = '' }} />
+        onChange={(e) => { agregar(e.target.files); e.target.value = '' }} />
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { medicionInfo, buildConjuntoPairs, buildListaPreciosRows, buildTarjetasP
 import { generateListaPreciosPDF, generateListaEcuadorPDF } from '../lib/listaPreciosPdf.js'
 import { generateTarjetasPreciosPDF } from '../lib/tarjetasPreciosPdf.js'
 import { generateRefsExcel } from '../lib/refsExcel.js'
+import { generateListaPreciosExcel } from '../lib/listaPreciosExcel.js'
 
 // El precio de Talla 6-18 ES el costo de la referencia (mismo campo que usan
 // el Resumen y la ficha), para que no queden dos precios distintos.
@@ -83,6 +84,17 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
       .filter((s) => s.rows.length > 0)
     if (sections.length === 0) return
     generateListaPreciosPDF(sections)
+  }
+  // La misma lista de precios pero en Excel, con los precios como número.
+  const [listaExcelBusy, setListaExcelBusy] = useState(false)
+  const exportarListaExcel = async () => {
+    const objetivo = marcaF ? [marcaF] : marcas
+    const sections = objetivo
+      .map((m) => ({ marca: m, rows: buildListaPreciosRows(refs, m) }))
+      .filter((s) => s.rows.length > 0)
+    if (sections.length === 0) return
+    setListaExcelBusy(true)
+    try { await generateListaPreciosExcel(sections) } finally { setListaExcelBusy(false) }
   }
   // Lista Ecuador: una columna de precio con 18% de descuento.
   const exportarEcuador = () => {
@@ -172,6 +184,10 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
           <button className="btn" onClick={exportarPDF}
             title={marcaF ? `Exportar la lista de precios de ${marcaF}` : 'Exportar la lista de precios (una sección por marca)'}>
             📄 Lista PDF{marcaF ? ` · ${marcaF}` : ''}
+          </button>
+          <button className="btn" onClick={exportarListaExcel} disabled={listaExcelBusy}
+            title="La misma lista de precios en Excel, con los precios como número para hacer cuentas">
+            {listaExcelBusy ? '⏳ Generando…' : `📗 Lista Excel${marcaF ? ` · ${marcaF}` : ''}`}
           </button>
           <button className="btn" onClick={exportarEcuador}
             title="Lista para Ecuador: una columna de precio con 18% de descuento">

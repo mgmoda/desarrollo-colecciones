@@ -4,9 +4,10 @@ import SearchInput from './SearchInput.jsx'
 import { formatDate } from '../lib/constants.js'
 import { processImage, getImageFromClipboard } from '../lib/image.js'
 import {
-  ETAPAS, EVENTOS, TIPOS_DISENO, accionesDisponibles, codigoDiseno,
+  ETAPAS, EVENTOS, TIPOS_DISENO, accionesDisponibles, agruparPorFase, codigoDiseno,
   disenoInfo, emptyDiseno, etapaColor, siguienteNumero,
 } from '../lib/disenos.js'
+import StrikeOffFormato from './StrikeOffFormato.jsx'
 import { dbLoadDisenoImgs, dbUpsertDiseno, dbDeleteDiseno } from '../lib/db.js'
 
 const hoyISO = () => new Date().toISOString().slice(0, 10)
@@ -346,6 +347,11 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
   // Edición de los datos base y de las imágenes de cada ronda.
   const [editando, setEditando] = useState(false)
   const [ed, setEd] = useState(null)
+  // Formato del strike off para la diseñadora gráfica.
+  const [formato, setFormato] = useState(null)
+  const [tela, setTela] = useState('')
+  const [metros, setMetros] = useState('')
+  const [imgElegida, setImgElegida] = useState(null)
 
   useEffect(() => {
     let vivo = true
@@ -363,7 +369,13 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
     setFecha(hoyISO())
     setNota('')
     setNuevasImgs([])
+    setTela('')
+    setMetros('')
+    setImgElegida(null)
   }
+
+  // Todas las imágenes ya cargadas del diseño, para elegir la del strike off.
+  const todasLasImgs = imgs ? Object.values(imgs).flat() : []
 
   async function registrar() {
     if (guardando) return
@@ -374,6 +386,10 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
       const ev = { tipo: registrando, fecha }
       if (nota.trim()) ev.nota = nota.trim()
       if (def.codigoCliente && codCliente.trim()) ev.codigoCliente = codCliente.trim()
+      if (def.formato) {
+        if (tela.trim()) ev.tela = tela.trim()
+        if (metros) ev.metros = metros
+      }
       eventos.push(ev)
 
       const idx = eventos.length - 1
@@ -381,13 +397,19 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
       if (def.codigoCliente && codCliente.trim()) nuevoMeta.codigoCliente = codCliente.trim()
       if (!meta.thumb && nuevasImgs.length) nuevoMeta.thumb = await hacerThumb(nuevasImgs[0])
 
+      // En el strike off se puede reutilizar una imagen ya cargada del diseño.
+      const delEvento = def.formato && imgElegida
+        ? [imgElegida, ...nuevasImgs]
+        : nuevasImgs
       const nuevasTodas = { ...(imgs || {}) }
-      if (nuevasImgs.length) nuevasTodas['ev-' + idx] = nuevasImgs
+      if (delEvento.length) nuevasTodas['ev-' + idx] = delEvento
 
       await dbUpsertDiseno(nuevoMeta, nuevasTodas)
       setRegistrando(null)
       setImgs(nuevasTodas)
       onSaved()
+      // Tras enviar el strike off, mostrar de una vez el formato.
+      if (def.formato) setFormato({ ev, img: delEvento[0] })
     } catch (e) {
       console.error(e)
       alert('No se pudo registrar: ' + (e.message || e))
@@ -578,32 +600,57 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
       <>
       <div className="modal-body">
         <div className="dis-bitacora">
-          {(meta.eventos || []).map((ev, i) => {
-            const def = EVENTOS[ev.tipo] || { label: ev.tipo }
-            const evImgs = imgs ? (imgs['ev-' + i] || []) : []
-            const esCorreccion = ev.tipo === 'correccion' || ev.tipo === 'strikeoffCorreccion'
-            return (
-              <div key={i} className={'dis-ev' + (esCorreccion ? ' corr' : '')}>
-                <div className="dis-ev-fecha">{formatDate(ev.fecha)}</div>
-                <div className="dis-ev-cuerpo">
-                  <div className="dis-ev-titulo">
-                    {esCorreccion && '↺ '}{def.label}
-                    {ev.codigoCliente && <span className="dis-codcli">{ev.codigoCliente}</span>}
-                  </div>
-                  {ev.nota && <div className="dis-ev-nota">“{ev.nota}”</div>}
-                  {imgs === null ? (
-                    <div className="dis-ev-cargando">cargando imágenes…</div>
-                  ) : evImgs.length > 0 && (
-                    <div className="dis-ev-imgs">
-                      {evImgs.map((src, k) => (
-                        <img key={k} src={src} alt="" onClick={() => onViewImage && onViewImage(src)} />
-                      ))}
+          {agruparPorFase(meta.eventos || [], info.etapa).map((f) => (
+            <section key={f.key} className={'dis-fase ' + f.estado}>
+              <header className="dis-fase-cab">
+                <span className="dis-fase-num">{f.estado === 'hecha' ? '✓' : f.num}</span>
+                <span className="dis-fase-tit">{f.label}</span>
+                <span className="dis-fase-linea" />
+                {f.estado === 'curso' && <span className="dis-fase-est">en curso</span>}
+              </header>
+              <div className="dis-fase-evs">
+                {f.eventos.map((ev) => {
+                  const evImgs = imgs ? (imgs['ev-' + ev.i] || []) : []
+                  const clase = ev.def.vuelta ? ' corr' : ev.def.hito ? ' hito' : ''
+                  return (
+                    <div key={ev.i} className={'dis-ev' + clase}>
+                      <span className="dis-ev-punto" aria-hidden="true" />
+                      <div className="dis-ev-fecha">{formatDate(ev.fecha)}</div>
+                      <div className="dis-ev-cuerpo">
+                        <div className="dis-ev-titulo">
+                          {ev.ronda && <span className="dis-ronda">Ronda {ev.ronda}</span>}
+                          {ev.def.label}
+                          {ev.codigoCliente && <span className="dis-codcli">{ev.codigoCliente}</span>}
+                        </div>
+                        {ev.nota && <div className="dis-ev-nota">“{ev.nota}”</div>}
+                        {(ev.tela || ev.metros) && (
+                          <div className="dis-ev-datos">
+                            {ev.tela && <span><b>Tela:</b> {ev.tela}</span>}
+                            {ev.metros && <span><b>Metros:</b> {ev.metros}</span>}
+                          </div>
+                        )}
+                        {imgs === null ? (
+                          <div className="dis-ev-cargando">cargando imágenes…</div>
+                        ) : evImgs.length > 0 && (
+                          <div className="dis-ev-imgs">
+                            {evImgs.map((src, k) => (
+                              <img key={k} src={src} alt="" onClick={() => onViewImage && onViewImage(src)} />
+                            ))}
+                          </div>
+                        )}
+                        {ev.def.formato && (
+                          <button className="btn btn-ghost dis-formato-btn"
+                            onClick={() => setFormato({ ev, img: evImgs[0] })}>
+                            📋 Ver formato para la diseñadora
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
+                  )
+                })}
               </div>
-            )
-          })}
+            </section>
+          ))}
         </div>
 
         {registrando ? (
@@ -629,9 +676,42 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
                   placeholder={defReg.nota ? 'Ej. bajar saturación del verde' : 'Opcional…'} />
               </div>
             )}
+            {defReg.formato && (
+              <>
+                <div className="field-row">
+                  <div className="field">
+                    <label className="field-label">Tela</label>
+                    <input className="input" value={tela} onChange={(e) => setTela(e.target.value)}
+                      placeholder="Ej. Chalís estampado" />
+                  </div>
+                  <div className="field">
+                    <label className="field-label">Cantidad (metros)</label>
+                    <input className="input" type="number" step="0.5" min="0" value={metros}
+                      onChange={(e) => setMetros(e.target.value)} placeholder="Ej. 3" />
+                  </div>
+                </div>
+                {todasLasImgs.length > 0 && (
+                  <div className="field">
+                    <label className="field-label">Elige la foto del strike off</label>
+                    <div className="dis-elegir">
+                      {todasLasImgs.map((src, k) => (
+                        <button key={k} type="button"
+                          className={'dis-elegir-item' + (imgElegida === src ? ' on' : '')}
+                          onClick={() => setImgElegida(imgElegida === src ? null : src)}>
+                          <img src={src} alt={`opción ${k + 1}`} />
+                          {imgElegida === src && <span className="dis-elegir-ok">✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
             {defReg.img && (
               <div className="field">
-                <label className="field-label">Imágenes</label>
+                <label className="field-label">
+                  {defReg.formato ? 'O sube una foto nueva' : 'Imágenes'}
+                </label>
                 <ImagePicker imgs={nuevasImgs} onChange={setNuevasImgs} label="Subir" />
               </div>
             )}
@@ -661,6 +741,15 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
         <button className="btn" onClick={onClose}>Cerrar</button>
       </div>
       </>
+      )}
+
+      {formato && (
+        <StrikeOffFormato
+          diseno={meta}
+          evento={formato.ev}
+          imagen={formato.img}
+          onClose={() => setFormato(null)}
+        />
       )}
     </Modal>
   )

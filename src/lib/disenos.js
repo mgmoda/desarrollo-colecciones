@@ -33,17 +33,53 @@ export function siguienteNumero(disenos, tipo) {
   return max + 1
 }
 
-// Eventos de la bitácora. `etapa` es en qué queda el diseño tras el evento.
+// Las tres fases del desarrollo, en orden.
+export const FASES = [
+  { key: 'grafico', num: 1, label: 'Desarrollo gráfico' },
+  { key: 'strikeoff', num: 2, label: 'Strike off' },
+  { key: 'muestra', num: 3, label: 'Muestra y despacho' },
+]
+
+// Eventos de la bitácora. `etapa` es en qué queda el diseño tras el evento;
+// `fase` es a cuál de las tres fases pertenece; `hito` marca los cierres.
 export const EVENTOS = {
-  recibido: { label: 'Recibido de Geodésica', etapa: 'grafico', img: 'varias' },
-  propuesta: { label: 'Propuesta enviada al cliente', etapa: 'enviado', img: 'una', ronda: true },
-  correccion: { label: 'Corrección pedida por el cliente', etapa: 'correccion', nota: true },
-  aprobado: { label: 'Diseño aprobado', etapa: 'aprobado', codigoCliente: true },
-  strikeoff: { label: 'Strike off enviado', etapa: 'strikeoff', img: 'una', ronda: true },
-  strikeoffCorreccion: { label: 'Corrección del strike off', etapa: 'strikeoffCorreccion', nota: true },
-  strikeoffAprobado: { label: 'Strike off aprobado', etapa: 'muestraPendiente' },
-  muestra: { label: 'Muestra realizada', etapa: 'muestra', img: 'una' },
-  despachado: { label: 'Despachado a Geodésica', etapa: 'despachado' },
+  recibido: { label: 'Recibido de Geodésica', etapa: 'grafico', fase: 'grafico', img: 'varias' },
+  propuesta: { label: 'Propuesta enviada al cliente', etapa: 'enviado', fase: 'grafico', img: 'una', ronda: true },
+  correccion: { label: 'Corrección pedida por el cliente', etapa: 'correccion', fase: 'grafico', nota: true, vuelta: true },
+  aprobado: { label: 'Diseño aprobado', etapa: 'aprobado', fase: 'grafico', codigoCliente: true, hito: true },
+  strikeoff: { label: 'Strike off enviado', etapa: 'strikeoff', fase: 'strikeoff', img: 'una', ronda: true, formato: true },
+  strikeoffCorreccion: { label: 'Corrección del strike off', etapa: 'strikeoffCorreccion', fase: 'strikeoff', nota: true, vuelta: true },
+  strikeoffAprobado: { label: 'Strike off aprobado', etapa: 'muestraPendiente', fase: 'strikeoff', hito: true },
+  muestra: { label: 'Muestra realizada', etapa: 'muestra', fase: 'muestra', img: 'una' },
+  despachado: { label: 'Despachado a Geodésica', etapa: 'despachado', fase: 'muestra', hito: true },
+}
+
+// Agrupa la bitácora por fase, numerando las rondas dentro de cada una.
+// Devuelve [{ fase, label, num, estado: 'hecha'|'curso', eventos: [{ ...ev, i, ronda }] }]
+export function agruparPorFase(eventos = [], etapaActual) {
+  const faseActual = EVENTOS[(eventos[eventos.length - 1] || {}).tipo]?.fase || 'grafico'
+  const porFase = new Map()
+  let rondaGrafico = 0
+  let rondaStrike = 0
+  eventos.forEach((ev, i) => {
+    const def = EVENTOS[ev.tipo] || {}
+    const fase = def.fase || 'grafico'
+    let ronda = null
+    if (ev.tipo === 'propuesta') { rondaGrafico += 1; ronda = rondaGrafico }
+    if (ev.tipo === 'strikeoff') { rondaStrike += 1; ronda = rondaStrike }
+    if (!porFase.has(fase)) porFase.set(fase, [])
+    porFase.get(fase).push({ ...ev, i, ronda, def })
+  })
+  const orden = FASES.map((f) => f.key)
+  const idxActual = orden.indexOf(faseActual)
+  return FASES
+    .filter((f) => porFase.has(f.key))
+    .map((f) => ({
+      ...f,
+      eventos: porFase.get(f.key),
+      estado: orden.indexOf(f.key) < idxActual ? 'hecha'
+        : etapaActual === 'despachado' ? 'hecha' : 'curso',
+    }))
 }
 
 // Etapas para mostrar y filtrar. `tono` alimenta el color del chip.

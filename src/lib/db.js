@@ -63,6 +63,40 @@ export async function dbSaveSettings(settings) {
   if (error) throw error
 }
 
+// ---- Diseños de Geodésica ----
+// La fila guarda { meta, imgs } por separado: la lista pide solo `meta` para no
+// descargar las imágenes de todas las rondas al abrir el módulo.
+
+export async function dbLoadDisenos() {
+  const { data, error } = await supabase.from('dev_disenos').select('meta:data->meta')
+  if (error) throw error
+  return (data || []).map((r) => r.meta).filter(Boolean)
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+}
+
+// Imágenes de un diseño concreto (se piden solo al abrirlo).
+export async function dbLoadDisenoImgs(codigo) {
+  const { data, error } = await supabase
+    .from('dev_disenos')
+    .select('imgs:data->imgs')
+    .eq('id', codigo)
+    .maybeSingle()
+  if (error) throw error
+  return (data && data.imgs) || {}
+}
+
+export async function dbUpsertDiseno(meta, imgs) {
+  const { error } = await supabase
+    .from('dev_disenos')
+    .upsert({ id: meta.codigo, data: { meta, imgs: imgs || {} } })
+  if (error) throw error
+}
+
+export async function dbDeleteDiseno(codigo) {
+  const { error } = await supabase.from('dev_disenos').delete().eq('id', codigo)
+  if (error) throw error
+}
+
 // Guardado de referencia con debounce — evita escribir en cada tecla.
 const refTimers = {}
 export function queueUpsertRef(ref) {

@@ -6,6 +6,8 @@ import DateField from './DateField.jsx'
 import { AREAS, formatDate, formatPrice } from '../lib/constants.js'
 import { orderArea } from '../lib/domain.js'
 import { generateGeodesicaPDF } from '../lib/geodesicaPdf.js'
+import DisenosView from './DisenosView.jsx'
+import { dbLoadDisenos } from '../lib/db.js'
 
 const AREA_LABEL = { trazos: 'Trazos', corte: 'Corte', enviar: 'Por enviar', talleres: 'En talleres', entrega: 'Entrega ensamble' }
 
@@ -31,6 +33,8 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
   const [areaF, setAreaF] = useState('')
   // 'porProgramar' | 'pendientes' | 'despachadas' | 'todas'
   const [estado, setEstado] = useState('porProgramar')
+  const [disenos, setDisenos] = useState([])
+  const [disenosCargando, setDisenosCargando] = useState(false)
   const [selected, setSelected] = useState(() => new Set())
   const [busyPdf, setBusyPdf] = useState(false)
   const [preOrderOpen, setPreOrderOpen] = useState(false)
@@ -126,6 +130,19 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
     return m
   }, [items, q, estado])
 
+  // Los diseños se cargan solo al entrar a su pestaña (y sin imágenes).
+  function cargarDisenos() {
+    setDisenosCargando(true)
+    dbLoadDisenos()
+      .then(setDisenos)
+      .catch((e) => { console.error('Cargar diseños:', e); setDisenos([]) })
+      .finally(() => setDisenosCargando(false))
+  }
+  useEffect(() => {
+    if (estado === 'disenos' && disenos.length === 0 && !disenosCargando) cargarDisenos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estado])
+
   function toggleSel(id) {
     setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
@@ -209,9 +226,15 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
           onClick={() => { setEstado('todas'); clearSel() }}>
           Todas <span className="muted">({conteo.todas})</span>
         </button>
+        <button type="button" className={'opt-btn' + (estado === 'disenos' ? ' on' : '')}
+          onClick={() => { setEstado('disenos'); clearSel() }}
+          title="Diseños que envía Geodésica para desarrollar">
+          🎨 Diseños{disenos.length > 0 && <span className="muted"> ({disenos.length})</span>}
+        </button>
       </div>
 
-      {/* Filtros por etapa */}
+      {/* Filtros por etapa (no aplican al tablero de diseños) */}
+      {estado !== 'disenos' && (
       <div className="opt-group" style={{ marginBottom: 12, flexWrap: 'wrap' }}>
         <button type="button" className={'opt-btn' + (!areaF ? ' on' : '')} onClick={() => setAreaF('')}>
           Todas las etapas
@@ -223,8 +246,15 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
           </button>
         ))}
       </div>
+      )}
 
-      {estado === 'porProgramar' ? (
+      {estado === 'disenos' ? (
+        <DisenosView
+          disenos={disenos}
+          loading={disenosCargando}
+          onReload={cargarDisenos}
+          onViewImage={onViewImage} />
+      ) : estado === 'porProgramar' ? (
         <PorProgramarView
           preOrders={preOrders}
           q={q}

@@ -3895,6 +3895,21 @@ img.ship-ref-photo {
 .dis-add.is-drag { border-color: #a67c52; background: #fdf6e9; border-style: solid; }
 .dis-add.is-busy { cursor: progress; }
 
+/* Resumen de tiempos del diseño */
+.dis-resumen {
+  display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline;
+  padding: 10px 14px; margin-bottom: 14px;
+  border-radius: var(--radius-sm); background: #f6f4ef;
+  border: 1px solid var(--hairline); font-size: 12px; color: var(--ink-soft);
+}
+.dis-resumen b { font-size: 14px; font-weight: 700; color: var(--ink); }
+.data-table td.dis-total { line-height: 1.25; }
+.dis-total-sub { display: block; font-size: 10px; color: var(--muted); font-weight: 400; }
+.dis-fase-dias {
+  font-size: 10px; font-weight: 700; color: var(--ink-soft);
+  background: #efece4; border-radius: 4px; padding: 2px 6px; white-space: nowrap;
+}
+
 /* Bitácora por fases */
 .dis-bitacora { display: flex; flex-direction: column; gap: 6px; }
 .dis-fase { padding-bottom: 4px; }

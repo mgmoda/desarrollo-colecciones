@@ -5,7 +5,7 @@ import { formatDate } from '../lib/constants.js'
 import { processImage, getImageFromClipboard } from '../lib/image.js'
 import {
   ETAPAS, EVENTOS, TIPOS_DISENO, accionesDisponibles, agruparPorFase, codigoDiseno,
-  disenoInfo, emptyDiseno, etapaColor, siguienteNumero,
+  disenoInfo, duracionFases, emptyDiseno, etapaColor, siguienteNumero,
 } from '../lib/disenos.js'
 import StrikeOffFormato from './StrikeOffFormato.jsx'
 import { dbLoadDisenoImgs, dbUpsertDiseno, dbDeleteDiseno } from '../lib/db.js'
@@ -105,7 +105,8 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
                 <th>Recibido</th>
                 <th>Etapa actual</th>
                 <th className="num">Rondas</th>
-                <th className="num">Espera</th>
+                <th className="num">En etapa</th>
+                <th className="num">Ciclo total</th>
                 <th></th>
               </tr>
             </thead>
@@ -130,6 +131,14 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
                     <td className="num">{info.rondas || <span className="muted">—</span>}</td>
                     <td className={'num' + (alerta ? ' dis-alerta' : '')}>
                       {info.terminado || info.dias == null ? <span className="muted">—</span> : `${info.dias} d`}
+                    </td>
+                    <td className="num dis-total" title={info.diasGrafico != null
+                      ? `${info.diasGrafico} d desde que se mandó a desarrollo gráfico`
+                      : 'Aún no se manda a desarrollo gráfico'}>
+                      {info.diasTotal == null ? <span className="muted">—</span> : `${info.diasTotal} d`}
+                      {info.diasGrafico != null && (
+                        <span className="dis-total-sub">{info.diasGrafico} d gráfico</span>
+                      )}
                     </td>
                     <td className="muted cell-action">Abrir ›</td>
                   </tr>
@@ -599,12 +608,27 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
       ) : (
       <>
       <div className="modal-body">
+        <div className="dis-resumen">
+          <span>
+            <b>{info.diasTotal != null ? `${info.diasTotal} d` : '—'}</b>
+            {info.terminado ? ' de ciclo total' : ' desde que entró'}
+          </span>
+          {info.diasGrafico != null && (
+            <span><b>{info.diasGrafico} d</b> en desarrollo gráfico</span>
+          )}
+          {!info.terminado && info.dias != null && (
+            <span><b>{info.dias} d</b> en “{info.etiqueta}”</span>
+          )}
+          {info.rondas > 0 && <span><b>{info.rondas}</b> {info.rondas === 1 ? 'ronda' : 'rondas'}</span>}
+        </div>
+
         <div className="dis-bitacora">
-          {agruparPorFase(meta.eventos || [], info.etapa).map((f) => (
+          {duracionFases(meta.eventos || [], info.etapa).map((f) => (
             <section key={f.key} className={'dis-fase ' + f.estado}>
               <header className="dis-fase-cab">
                 <span className="dis-fase-num">{f.estado === 'hecha' ? '✓' : f.num}</span>
                 <span className="dis-fase-tit">{f.label}</span>
+                {f.dias != null && <span className="dis-fase-dias">{f.dias} d</span>}
                 <span className="dis-fase-linea" />
                 {f.estado === 'curso' && <span className="dis-fase-est">en curso</span>}
               </header>

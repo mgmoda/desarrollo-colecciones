@@ -1,4 +1,4 @@
-import { diasDesde } from './dates.js'
+import { diasDesde, diasEntre } from './dates.js'
 
 // Diseños que Geodésica envía para desarrollar. El flujo es iterativo:
 // recibido → desarrollo gráfico → propuesta al cliente → (corrección → otra
@@ -122,15 +122,38 @@ export function disenoInfo(diseno) {
   const rondas = evs.filter((e) => e.tipo === 'propuesta').length
   const strikeOffs = evs.filter((e) => e.tipo === 'strikeoff').length
   const etapa = def.etapa || 'grafico'
+  const terminado = etapa === 'despachado'
+  // Ciclo total: desde que entró el diseño hasta hoy (o hasta el despacho).
+  const inicio = evs[0].fecha
+  const diasTotal = terminado ? diasEntre(inicio, ultimo.fecha) : diasDesde(inicio)
+  // Desde que se mandó a la diseñadora gráfica (si ya se mandó).
+  const envioGrafico = evs.find((e) => e.tipo === 'aGrafico')
+  const diasGrafico = envioGrafico
+    ? (terminado ? diasEntre(envioGrafico.fecha, ultimo.fecha) : diasDesde(envioGrafico.fecha))
+    : null
   return {
     etapa,
     etiqueta: ETAPA_LABEL[etapa] || etapa,
     dias: diasDesde(ultimo.fecha),
+    diasTotal,
+    diasGrafico,
     rondas,
     strikeOffs,
     ultimo,
-    terminado: etapa === 'despachado',
+    terminado,
   }
+}
+
+// Duración de cada fase: de su primer evento al primero de la fase siguiente
+// (o hasta hoy si es la fase en curso).
+export function duracionFases(eventos = [], etapaActual) {
+  const grupos = agruparPorFase(eventos, etapaActual)
+  return grupos.map((g, i) => {
+    const desde = g.eventos[0].fecha
+    const siguiente = grupos[i + 1]
+    const hasta = siguiente ? siguiente.eventos[0].fecha : null
+    return { ...g, dias: hasta ? diasEntre(desde, hasta) : diasDesde(desde) }
+  })
 }
 
 // Qué eventos tiene sentido registrar según dónde está el diseño.

@@ -1,4 +1,5 @@
 import { MARCA_LOGOS } from './marcaLogos.js'
+import { DESCUENTO_ECUADOR, precioEcuador } from './listaPreciosPdf.js'
 
 // Lista de precios en Excel: mismo diseño del PDF (logo de la marca, franja de
 // encabezados y cuadrícula) pero con los precios como NÚMEROS, para poder
@@ -15,28 +16,34 @@ const TEMA_NEGRO = {
 }
 const temaDe = (marca) => (marca === 'Mariset' ? TEMA_NEGRO : TEMA_CAFE)
 
-// Columnas: las mismas del PDF.
-const COLS = [
+// Columnas: las mismas del PDF. Colombia lleva las dos tallas; Ecuador, un
+// solo precio.
+const COLS_COLOMBIA = [
   { key: 'ref', header: 'REF', width: 13 },
   { key: 'desc', header: 'DESCRIPCIÓN', width: 46 },
   { key: 't618', header: 'TALLA 6-18', width: 16, precio: true },
   { key: 't20', header: 'TALLA 20', width: 16, precio: true },
 ]
+const COLS_ECUADOR = [
+  { key: 'ref', header: 'REF', width: 13 },
+  { key: 'desc', header: 'DESCRIPCIÓN', width: 52 },
+  { key: 'precio', header: 'PRECIO', width: 18, precio: true },
+]
 const FORMATO_PESOS = '"$ "#,##0'
 const PX_POR_CARACTER = 7
 
 // Convierte una posición en píxeles a { col, fracción } para anclar la imagen.
-function pxAColumna(px) {
+function pxAColumna(px, cols) {
   let restante = px
-  for (let i = 0; i < COLS.length; i += 1) {
-    const anchoPx = COLS[i].width * PX_POR_CARACTER
+  for (let i = 0; i < cols.length; i += 1) {
+    const anchoPx = cols[i].width * PX_POR_CARACTER
     if (restante < anchoPx) return i + restante / anchoPx
     restante -= anchoPx
   }
-  return COLS.length
+  return cols.length
 }
 
-function hojaDeMarca(wb, marca, rows, coleccion) {
+function hojaDeMarca(wb, marca, rows, coleccion, COLS, subtitulo) {
   const T = temaDe(marca)
   const ws = wb.addWorksheet(marca, {
     views: [{ state: 'frozen', ySplit: 6 }],
@@ -54,7 +61,7 @@ function hojaDeMarca(wb, marca, rows, coleccion) {
     const ancho = Math.round(alto * (logo.w / logo.h))
     const id = wb.addImage({ base64: logo.dataUri, extension: 'png' })
     ws.addImage(id, {
-      tl: { col: pxAColumna((anchoTotalPx - ancho) / 2), row: 0.35 },
+      tl: { col: pxAColumna((anchoTotalPx - ancho) / 2, COLS), row: 0.35 },
       ext: { width: ancho, height: alto },
       editAs: 'absolute',
     })
@@ -68,7 +75,7 @@ function hojaDeMarca(wb, marca, rows, coleccion) {
   // Fila 5: subtítulo de colección.
   ws.mergeCells(5, 1, 5, COLS.length)
   const sub = ws.getCell(5, 1)
-  sub.value = `LISTADO DE PRECIOS · COLECCIÓN ${coleccion}`
+  sub.value = subtitulo || `LISTADO DE PRECIOS · COLECCIÓN ${coleccion}`
   sub.font = { name: 'Times New Roman', size: 10, color: { argb: T.tenue } }
   sub.alignment = { vertical: 'middle', horizontal: 'center' }
   ws.getRow(5).height = 20
@@ -92,12 +99,11 @@ function hojaDeMarca(wb, marca, rows, coleccion) {
 
   // Filas de datos: precios como número, con formato de pesos.
   rows.forEach((r) => {
-    const fila = ws.addRow({
-      ref: r.ref || '',
-      desc: (r.desc || '').toUpperCase(),
-      t618: Number(r.t618) > 0 ? Number(r.t618) : null,
-      t20: Number(r.t20) > 0 ? Number(r.t20) : null,
+    const datos = { ref: r.ref || '', desc: (r.desc || '').toUpperCase() }
+    COLS.filter((c) => c.precio).forEach((c) => {
+      datos[c.key] = Number(r[c.key]) > 0 ? Number(r[c.key]) : null
     })
+    const fila = ws.addRow(datos)
     fila.height = 17
     COLS.forEach((c, i) => {
       const cell = fila.getCell(i + 1)
@@ -148,12 +154,14 @@ function hojaDeMarca(wb, marca, rows, coleccion) {
 }
 
 // sections: [{ marca, rows: [{ ref, desc, t618, t20 }] }] — una hoja por marca.
-export async function generateListaPreciosExcel(sections, { coleccion = '2026-2' } = {}) {
+export async function generateListaPreciosExcel(sections, {
+  coleccion = '2026-2', cols = COLS_COLOMBIA, subtitulo = null, nombre = 'Lista_Precios',
+} = {}) {
   const ExcelJS = (await import('exceljs')).default
   const wb = new ExcelJS.Workbook()
   wb.creator = 'MG Moda · Desarrollo de Colecciones'
   wb.created = new Date()
-  sections.forEach((s) => hojaDeMarca(wb, s.marca, s.rows, coleccion))
+  sections.forEach((s) => hojaDeMarca(wb, s.marca, s.rows, coleccion, cols, subtitulo))
 
   const buf = await wb.xlsx.writeBuffer()
   const blob = new Blob([buf], {
@@ -163,10 +171,31 @@ export async function generateListaPreciosExcel(sections, { coleccion = '2026-2'
   const a = document.createElement('a')
   a.href = url
   a.download = sections.length === 1
-    ? `Lista_Precios_${sections[0].marca}.xlsx`
-    : 'Lista_Precios.xlsx'
+    ? `${nombre}_${sections[0].marca}.xlsx`
+    : `${nombre}.xlsx`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+// Lista de Ecuador en Excel: una sola columna PRECIO, con el mismo descuento y
+// redondeo que el PDF. sections: [{ marca, rows con t618 }].
+export async function generateListaEcuadorExcel(sections, {
+  descuento = DESCUENTO_ECUADOR, coleccion = '2026-2',
+} = {}) {
+  const secs = sections.map((s) => ({
+    marca: s.marca,
+    rows: s.rows.map((r) => ({
+      ref: r.ref,
+      desc: r.desc,
+      precio: precioEcuador(r.t618, descuento),
+    })),
+  }))
+  await generateListaPreciosExcel(secs, {
+    coleccion,
+    cols: COLS_ECUADOR,
+    subtitulo: `LISTA ECUADOR · COLECCIÓN ${coleccion}`,
+    nombre: 'Lista_Ecuador',
+  })
 }

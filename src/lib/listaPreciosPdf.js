@@ -211,20 +211,23 @@ export function generateListaPreciosPDF(sections, opts = {}) {
   doc.save(nombre)
 }
 
-// Lista de Ecuador: una sola columna PRECIO, con descuento sobre el precio base
-// (Talla 6-18), redondeado al MIL más cercano (ej. 155.718 → 156.000;
-// 184.418 → 184.000). sections: [{ marca, rows con t618 }].
-export function generateListaEcuadorPDF(sections, { descuento = 0.18, coleccion = '2026-2' } = {}) {
-  const precioEc = (base) => {
-    const con = (Number(base) || 0) * (1 - descuento)
-    return con > 0 ? Math.round(con / 1000) * 1000 : 0
-  }
+// Precio de Ecuador: descuento sobre el precio base (Talla 6-18), cerrado al
+// MIL más cercano (155.718 → 156.000; 184.418 → 184.000). Lo usan por igual
+// el PDF y el Excel, para que nunca den cifras distintas.
+export const DESCUENTO_ECUADOR = 0.18
+export function precioEcuador(base, descuento = DESCUENTO_ECUADOR) {
+  const con = (Number(base) || 0) * (1 - descuento)
+  return con > 0 ? Math.round(con / 1000) * 1000 : 0
+}
+
+// Lista de Ecuador: una sola columna PRECIO. sections: [{ marca, rows con t618 }].
+export function generateListaEcuadorPDF(sections, { descuento = DESCUENTO_ECUADOR, coleccion = '2026-2' } = {}) {
   const secs = sections.map((s) => ({
     marca: s.marca,
     rows: s.rows.map((r) => ({
       ref: r.ref,
       desc: r.desc,
-      precio: precioEc(r.t618),
+      precio: precioEcuador(r.t618, descuento),
     })),
   }))
   const doc = buildListaPreciosDoc(secs, {

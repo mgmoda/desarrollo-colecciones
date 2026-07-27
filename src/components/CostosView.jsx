@@ -9,7 +9,7 @@ import { medicionInfo, buildConjuntoPairs, buildListaPreciosRows, buildTarjetasP
 import { generateListaPreciosPDF, generateListaEcuadorPDF } from '../lib/listaPreciosPdf.js'
 import { generateTarjetasPreciosPDF } from '../lib/tarjetasPreciosPdf.js'
 import { generateRefsExcel } from '../lib/refsExcel.js'
-import { generateListaPreciosExcel } from '../lib/listaPreciosExcel.js'
+import { generateListaPreciosExcel, generateListaEcuadorExcel } from '../lib/listaPreciosExcel.js'
 
 // El precio de Talla 6-18 ES el costo de la referencia (mismo campo que usan
 // el Resumen y la ficha), para que no queden dos precios distintos.
@@ -95,6 +95,17 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
     if (sections.length === 0) return
     setListaExcelBusy(true)
     try { await generateListaPreciosExcel(sections) } finally { setListaExcelBusy(false) }
+  }
+  // Lista Ecuador en Excel, con los precios como número.
+  const [ecExcelBusy, setEcExcelBusy] = useState(false)
+  const exportarEcuadorExcel = async () => {
+    const objetivo = marcaF ? [marcaF] : marcas
+    const sections = objetivo
+      .map((m) => ({ marca: m, rows: buildListaPreciosRows(refs, m) }))
+      .filter((s) => s.rows.length > 0)
+    if (sections.length === 0) return
+    setEcExcelBusy(true)
+    try { await generateListaEcuadorExcel(sections) } finally { setEcExcelBusy(false) }
   }
   // Lista Ecuador: una columna de precio con 18% de descuento.
   const exportarEcuador = () => {
@@ -190,8 +201,12 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
             {listaExcelBusy ? '⏳ Generando…' : `📗 Lista Excel${marcaF ? ` · ${marcaF}` : ''}`}
           </button>
           <button className="btn" onClick={exportarEcuador}
-            title="Lista para Ecuador: una columna de precio con 18% de descuento">
-            🇪🇨 Ecuador{marcaF ? ` · ${marcaF}` : ''}
+            title="Lista para Ecuador en PDF: una columna de precio con 18% de descuento">
+            🇪🇨 Ecuador PDF{marcaF ? ` · ${marcaF}` : ''}
+          </button>
+          <button className="btn" onClick={exportarEcuadorExcel} disabled={ecExcelBusy}
+            title="La lista de Ecuador en Excel, con los precios como número">
+            {ecExcelBusy ? '⏳ Generando…' : `🇪🇨 Ecuador Excel${marcaF ? ` · ${marcaF}` : ''}`}
           </button>
           <button className="btn" onClick={exportarTarjetas}
             title="Tarjetas de precio para imprimir y recortar (hoja carta), un archivo por marca">

@@ -3909,6 +3909,17 @@ img.ship-ref-photo {
   border: 1px solid #d9c3a1; background: #faf8f3;
 }
 .dis-registro-tit { font-weight: 700; font-size: 13.5px; margin-bottom: 10px; }
+.btn.dis-editar { padding: 6px 12px; font-size: 12px; }
+.dis-ed-sep {
+  margin: 18px 0 10px; padding-top: 12px; border-top: 1px solid var(--hairline);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--muted);
+}
+.dis-ed-ev {
+  border: 1px solid var(--hairline); border-radius: var(--radius-sm);
+  padding: 12px 14px; margin-bottom: 10px; background: #fbfaf7;
+}
+.dis-ed-ev-tit { font-weight: 700; font-size: 12.5px; margin-bottom: 8px; color: var(--ink-soft); }
 .dis-registro-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
 /* Control segmentado de filtros (marca, modo…) usado en varias vistas */

@@ -86,6 +86,7 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
         ...it,
         image: ref && ref.image ? ref.image : '',
         precio: ref && ref.costo ? Number(ref.costo) || 0 : 0,
+        maquila: !!(ref && ref.geodesicaMaquila),
         despachada: !!(ref && ref.geodesicaDespachada),
         despachadaAt: (ref && ref.geodesicaDespachadaAt) || null,
       }
@@ -108,7 +109,8 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
       if (estado === 'despachadas' && !it.despachada) return false
       if (areaF && it.area !== areaF) return false
       if (term) {
-        const hay = (it.refId + ' ' + it.producto + ' ' + it.empresa + ' ' + it.taller).toLowerCase()
+        const hay = (it.refId + ' ' + it.producto + ' ' + it.empresa + ' ' + it.taller
+          + (it.maquila ? ' maquila' : '')).toLowerCase()
         if (!hay.includes(term)) return false
       }
       return true
@@ -174,6 +176,9 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
         image: it.image,
         etapa: it.despachada ? 'Despachada'
           : it.area ? AREA_LABEL[it.area] : 'Sin iniciar',
+        // El taller solo importa mientras la prenda está allá.
+        taller: it.area === 'talleres' ? (it.taller || '') : '',
+        maquila: it.maquila,
       })
     })
     preOrders.forEach((r) => {
@@ -183,6 +188,8 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
         producto: r.geodesicaProducto || '',
         image: r.image || '',
         etapa: 'Por programar',
+        taller: '',
+        maquila: !!r.geodesicaMaquila,
       })
     })
     return out.sort((a, b) => a.referencia.localeCompare(b.referencia))
@@ -415,7 +422,10 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
                     </td>
                     <td>{it.producto}</td>
                     <td>{it.empresa}</td>
-                    <td>{it.taller || <span className="muted">—</span>}</td>
+                    <td>
+                      {it.taller || <span className="muted">—</span>}
+                      {it.maquila && <span className="tag-maquila" title="Se ensambla en maquila">🧵 Maquila</span>}
+                    </td>
                     <td>
                       {it.area ? <span className="tag">{AREA_LABEL[it.area]}</span> : <span className="muted">Sin orden</span>}
                     </td>

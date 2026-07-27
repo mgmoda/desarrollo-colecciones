@@ -3828,6 +3828,14 @@ img.ship-ref-photo {
 .proc-nuevo .input { max-width: 260px; }
 .field-hint { font-weight: 400; color: var(--muted); font-size: 11.5px; }
 
+/* Distintivo de maquila junto al taller */
+.tag-maquila {
+  display: inline-block; margin-left: 7px; white-space: nowrap;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.03em;
+  color: #8a5a2b; background: #faeeda; border: 1px solid #eddcbd;
+  border-radius: 5px; padding: 2px 7px;
+}
+
 /* Barra de la lista para sesión de fotos (Geodésica) */
 .geo-fotosbar {
   display: flex; align-items: center; justify-content: space-between;

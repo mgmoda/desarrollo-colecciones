@@ -11,6 +11,8 @@ const MARGIN = 42
 
 const INK = [26, 26, 31]
 const GRAY = [128, 128, 136]
+const ACCENT = [44, 90, 140]      // taller que tiene la prenda
+const MAQUILA = [166, 92, 21]     // distintivo de maquila
 const HAIRLINE = [216, 214, 207]
 const BAND = [244, 242, 237]
 const PHOTO_BG = [238, 236, 232]
@@ -32,7 +34,7 @@ function loadImageSize(src) {
   })
 }
 
-function drawHeader(doc, total, fechaStr) {
+function drawHeader(doc, total, fechaStr, maquilas) {
   const x = MARGIN
   let y = MARGIN
   doc.setFont('helvetica', 'bold')
@@ -45,7 +47,9 @@ function drawHeader(doc, total, fechaStr) {
   doc.text(fechaStr, PAGE_W - MARGIN, y + 4, { align: 'right' })
   y += 17
   doc.setFontSize(10.5)
-  doc.text(`${total} ${total === 1 ? 'referencia' : 'referencias'} · Geodésica`, x, y)
+  const resumen = `${total} ${total === 1 ? 'referencia' : 'referencias'} · Geodésica`
+    + (maquilas > 0 ? `  ·  ${maquilas} en maquila` : '')
+  doc.text(resumen, x, y)
   y += 10
   doc.setDrawColor(...INK)
   doc.setLineWidth(1.4)
@@ -62,7 +66,7 @@ function drawColumnHeader(doc, y) {
   doc.setTextColor(...GRAY)
   doc.text('FOTO', x + 2, y + 2)
   doc.text('REFERENCIA', COL_REF, y + 2)
-  doc.text('ETAPA ACTUAL', COL_ETAPA, y + 2)
+  doc.text('ETAPA · TALLER', COL_ETAPA, y + 2)
   doc.text('PRODUCTO', COL_PROD, y + 2)
   doc.text('✓', PAGE_W - MARGIN - 10, y + 2, { align: 'right' })
   return y + 8
@@ -96,17 +100,30 @@ async function drawRow(doc, item, y) {
   }
 
   const cy = y + PHOTO_H / 2 + 3
-  // Referencia
+  // Referencia, con el distintivo de maquila debajo si aplica
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11.5)
   doc.setTextColor(...INK)
-  doc.text(item.referencia || '—', COL_REF, cy)
+  doc.text(item.referencia || '—', COL_REF, item.maquila ? cy - 6 : cy)
+  if (item.maquila) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7.5)
+    doc.setTextColor(...MAQUILA)
+    doc.text('MAQUILA', COL_REF, cy + 8)
+  }
 
-  // Etapa actual
+  // Etapa actual y, si está en talleres, cuál lo tiene
+  const conTaller = !!item.taller
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
   doc.setTextColor(...INK)
-  doc.text(item.etapa || '—', COL_ETAPA, cy)
+  doc.text(item.etapa || '—', COL_ETAPA, conTaller ? cy - 6 : cy)
+  if (conTaller) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(...ACCENT)
+    doc.text(doc.splitTextToSize(item.taller, COL_PROD - COL_ETAPA - 12)[0], COL_ETAPA, cy + 9)
+  }
 
   // Producto
   doc.setTextColor(...GRAY)
@@ -129,7 +146,8 @@ async function drawRow(doc, item, y) {
 export async function generateListaFotosPDF(items) {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const fecha = formatDate(new Date().toISOString().slice(0, 10)) || ''
-  let y = drawHeader(doc, items.length, fecha)
+  const maquilas = items.filter((i) => i.maquila).length
+  let y = drawHeader(doc, items.length, fecha, maquilas)
   y = drawColumnHeader(doc, y) + 8
 
   for (const item of items) {

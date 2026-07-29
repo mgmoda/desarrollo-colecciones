@@ -577,7 +577,7 @@ export function produccionPorDia(orders, etapaKey, dias) {
     if (!dia) return
     const cant = cantEtapa(o, etapaKey) || cantEtapa(o, 'ordenCorte')
     dia.unidades += cant
-    dia.refs.push({ id: o.id, referencia: o.referencia, orden: o.orden, origen: o.origen, cant })
+    dia.refs.push({ id: o.id, referencia: o.referencia, orden: o.orden, origen: o.origen, cant, fecha })
   })
   mapa.forEach((d) => d.refs.sort((a, b) => b.cant - a.cant))
   return mapa

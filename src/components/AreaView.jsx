@@ -2,35 +2,18 @@ import { useEffect, useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { AREAS, formatDate, ORIGENES, ORIGEN_ABBR, TOP_LABEL, procesoColor } from '../lib/constants.js'
+import { AREAS, formatDate, ORIGENES, ORIGEN_ABBR, TOP_LABEL } from '../lib/constants.js'
 import { ordersForArea, refProcesos, claveOrden, esOrdenTop } from '../lib/domain.js'
 import { diasDesde } from '../lib/dates.js'
 import { generateAreaPDF } from '../lib/areaPdf.js'
 import TopVinculoModal from './TopVinculoModal.jsx'
 import AreaKpis from './AreaKpis.jsx'
+import ProcesosTags from './ProcesosTags.jsx'
 
 const STAGE_LABEL = {
   ordenCorte: 'Orden corte', trazo: 'Trazo', entregaCorte: 'Corte',
   alistamiento: 'Alistamiento', envioEnsamble: 'Envío a taller',
   entregaEnsamble: 'Entrega ensamble', revisado: 'Revisado', entradaBodega: 'Entrada bodega',
-}
-
-// Procesos especiales de la referencia (recuadros, tintorería, bordado…),
-// para que en el taller sepan qué lleva la prenda.
-function ProcesosCell({ refRow }) {
-  const lista = refProcesos(refRow)
-  if (!lista.length) return <span className="muted">—</span>
-  return (
-    <span className="proc-cell">
-      {lista.map((p) => {
-        const c = procesoColor(p)
-        return (
-          <span key={p} className="proc-tag proc-tag-ro" title={p}
-            style={{ background: c.bg, color: c.fg, borderColor: c.bd }}>{p}</span>
-        )
-      })}
-    </span>
-  )
 }
 
 // Celda Top/Forro. Si la prenda lleva top incluido —o si la fila ES un top—
@@ -172,7 +155,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         </div>
       </div>
 
-      <AreaKpis areaKey={areaKey} orders={visibles} enEtapa={enEtapa} />
+      <AreaKpis areaKey={areaKey} orders={visibles} enEtapa={enEtapa}
+        refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
 
       {rows.length === 0 ? (
         <div className="empty-state">
@@ -230,7 +214,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                     <td className="mono">{o.orden}</td>
                     <td className="strong">{o.referencia}</td>
                     <td>{o.producto}</td>
-                    <td><ProcesosCell refRow={ref} /></td>
+                    <td><ProcesosTags refRow={ref} /></td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <TopCell orden={o} refRow={ref} topLinks={topLinks} onAbrir={setTopDe} />
                     </td>

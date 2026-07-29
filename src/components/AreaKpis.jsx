@@ -1,22 +1,23 @@
 import { useMemo, useState } from 'react'
-import { ORIGENES, ORIGEN_ABBR } from '../lib/constants.js'
+import { ORIGENES } from '../lib/constants.js'
+import DiaProduccionModal from './DiaProduccionModal.jsx'
 import { pendienteDeArea, produccionPorDia, totalSemana } from '../lib/domain.js'
 import {
-  etiquetaDia, etiquetaDiaLargo, isoLocal, rangoSemana, semanaAnteriorDe, semanaDe,
+  etiquetaDia, isoLocal, rangoSemana, semanaAnteriorDe, semanaDe,
 } from '../lib/dates.js'
 
 // Cada área mide su propio trabajo por la etapa que ella cierra: Trazos el
 // trazo, Corte la entrega de corte, Por enviar el envío al taller… En Entrega
 // ensamble no hay etapa siguiente, así que se mide lo que va entrando.
 const MEDIDA = {
-  trazos: { etapa: 'trazo', pendiente: 'Pendiente por trazar', hecho: 'Trazado esta semana' },
-  corte: { etapa: 'entregaCorte', pendiente: 'Pendiente por cortar', hecho: 'Cortado esta semana' },
-  enviar: { etapa: 'envioEnsamble', pendiente: 'Pendiente por enviar', hecho: 'Enviado a taller esta semana' },
-  talleres: { etapa: 'entregaEnsamble', pendiente: 'En talleres', hecho: 'Recibido de taller esta semana' },
-  entrega: { etapa: 'entregaEnsamble', pendiente: 'En esta etapa', hecho: 'Recibido esta semana' },
+  trazos: { etapa: 'trazo', pendiente: 'Pendiente por trazar', hecho: 'Trazado esta semana', verbo: 'Trazado' },
+  corte: { etapa: 'entregaCorte', pendiente: 'Pendiente por cortar', hecho: 'Cortado esta semana', verbo: 'Cortado' },
+  enviar: { etapa: 'envioEnsamble', pendiente: 'Pendiente por enviar', hecho: 'Enviado a taller esta semana', verbo: 'Enviado a taller' },
+  talleres: { etapa: 'entregaEnsamble', pendiente: 'En talleres', hecho: 'Recibido de taller esta semana', verbo: 'Recibido de taller' },
+  entrega: { etapa: 'entregaEnsamble', pendiente: 'En esta etapa', hecho: 'Recibido esta semana', verbo: 'Recibido' },
 }
 
-export default function AreaKpis({ areaKey, orders, enEtapa }) {
+export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage, onOpenRef }) {
   const [diaAbierto, setDiaAbierto] = useState('')
   const medida = MEDIDA[areaKey] || MEDIDA.trazos
   const hoy = isoLocal(new Date())
@@ -105,24 +106,10 @@ export default function AreaKpis({ areaKey, orders, enEtapa }) {
         </div>
       </div>
 
-      {detalle && (
-        <div className="kpi-detalle">
-          <p className="kpi-detalle-head">
-            {etiquetaDiaLargo(diaAbierto)}
-            <span className="muted"> · {detalle.unidades.toLocaleString('es-CO')} unidades</span>
-            <button className="kpi-cerrar" onClick={() => setDiaAbierto('')} title="Cerrar">✕</button>
-          </p>
-          <div className="kpi-refs">
-            {detalle.refs.map((r) => (
-              <span key={r.id} className="kpi-ref" title={`Orden ${r.orden}`}>
-                <span className={'origen-chip o-' + r.origen}>{ORIGEN_ABBR[r.origen] || r.origen}</span>
-                {r.referencia}
-                <b>{r.cant}</b>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      <DiaProduccionModal dia={diaAbierto} detalle={detalle} titulo={medida.verbo}
+        refMap={refMap} onViewImage={onViewImage}
+        onOpenRef={(ficha) => { setDiaAbierto(''); onOpenRef && onOpenRef(ficha) }}
+        onClose={() => setDiaAbierto('')} />
     </div>
   )
 }

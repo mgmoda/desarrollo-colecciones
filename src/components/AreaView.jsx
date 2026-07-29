@@ -3,9 +3,10 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { AREAS, formatDate, ORIGENES, ORIGEN_ABBR, TOP_LABEL, procesoColor } from '../lib/constants.js'
-import { ordersForArea, refProcesos } from '../lib/domain.js'
+import { ordersForArea, refProcesos, claveOrden, esOrdenTop } from '../lib/domain.js'
 import { diasDesde } from '../lib/dates.js'
 import { generateAreaPDF } from '../lib/areaPdf.js'
+import TopVinculoModal from './TopVinculoModal.jsx'
 
 const STAGE_LABEL = {
   ordenCorte: 'Orden corte', trazo: 'Trazo', entregaCorte: 'Corte',
@@ -31,7 +32,34 @@ function ProcesosCell({ refRow }) {
   )
 }
 
-export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, fasesOcultas, onToggleFase }) {
+// Celda Top/Forro. Si la prenda lleva top incluido —o si la fila ES un top—
+// se puede abrir para ver dónde va la otra orden y en qué taller está.
+function TopCell({ orden, refRow, topLinks, onAbrir }) {
+  const esTop = esOrdenTop(orden)
+  const marca = refRow && refRow.topIncluido
+  if (!esTop && !marca) return <span className="muted">—</span>
+  if (!esTop && marca !== 'top') {
+    return <span className="tag">{TOP_LABEL[marca] || marca}</span>
+  }
+  const clave = claveOrden(orden)
+  const v = esTop ? topLinks.porTop.get(clave) : topLinks.porBase.get(clave)
+  const pareja = v && (esTop ? v.base : v.top)
+  const etiqueta = esTop ? 'Top de prenda' : (TOP_LABEL[marca] || marca)
+  return (
+    <button type="button"
+      className={'tag tag-link' + (pareja ? '' : ' tag-link-vacio')}
+      onClick={() => onAbrir(orden)}
+      title={pareja
+        ? `${esTop ? 'Prenda' : 'Top'}: orden ${pareja.orden} — clic para ver dónde va`
+        : `${esTop ? 'Sin prenda vinculada' : 'Top aún no programado'} — clic para vincular a mano`}>
+      {etiqueta}
+      <span className="tag-link-sig">{pareja ? `#${pareja.orden}` : '—'}</span>
+    </button>
+  )
+}
+
+export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, fasesOcultas, onToggleFase, topLinks, onVincularTop }) {
+  const [topDe, setTopDe] = useState(null) // orden cuyo vínculo de top se está viendo
   const ocultas = fasesOcultas || new Set()
   const area = AREAS[areaKey]
   const [q, setQ] = useState('')
@@ -196,10 +224,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                     <td className="strong">{o.referencia}</td>
                     <td>{o.producto}</td>
                     <td><ProcesosCell refRow={ref} /></td>
-                    <td>
-                      {ref && ref.topIncluido
-                        ? <span className="tag">{TOP_LABEL[ref.topIncluido] || ref.topIncluido}</span>
-                        : <span className="muted">—</span>}
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <TopCell orden={o} refRow={ref} topLinks={topLinks} onAbrir={setTopDe} />
                     </td>
                     <td>{o.empresa}</td>
                     {showTaller && <td>{taller}</td>}
@@ -220,6 +246,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
           </table>
         </div>
       )}
+
+      <TopVinculoModal orden={topDe} orders={orders} topLinks={topLinks}
+        onVincular={onVincularTop} onClose={() => setTopDe(null)} />
     </div>
   )
 }

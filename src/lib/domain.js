@@ -226,6 +226,107 @@ export function refProcesos(ref) {
   return out
 }
 
+// ---------------------------------------------------------------------------
+// Vínculo prenda ↔ top
+//
+// Cuando una prenda lleva top incluido, el top se corta y se ensambla por su
+// lado, con su propia orden y muchas veces en otro taller. Esa orden se
+// programa con el código de la prenda y el sufijo TOP (MG-V834 TOP).
+//
+// El nombre dice a qué REFERENCIA pertenece el top, pero no a qué LOTE: la
+// misma referencia se produce varias veces. El lote se deduce de tres señales
+// que en los datos siempre concuerdan: misma fase, misma cantidad, y el top se
+// corta después de la prenda (10881 → 10975, 10984 → 11065).
+// ---------------------------------------------------------------------------
+
+const SUFIJO_TOP = /\s+TOP$/i
+
+export function esOrdenTop(o) {
+  return SUFIJO_TOP.test((o && o.referencia) || '')
+}
+
+export function refBaseDeTop(referencia) {
+  return String(referencia || '').replace(SUFIJO_TOP, '').trim()
+}
+
+// Clave estable de una orden: el id se regenera en cada importación, pero la
+// referencia y el número de orden se mantienen.
+export function claveOrden(o) {
+  return o ? `${o.referencia}|${o.orden || ''}` : ''
+}
+
+function numOrden(o) {
+  const n = parseInt(String((o && o.orden) || '').replace(/\D/g, ''), 10)
+  return Number.isFinite(n) ? n : 0
+}
+
+function cantOrden(o) {
+  const s = (o && o.stages && o.stages.ordenCorte) || {}
+  const n = parseInt(String(s.cant || '').replace(/\D/g, ''), 10)
+  return Number.isFinite(n) ? n : null
+}
+
+// Empareja cada orden de top con la orden de prenda a la que pertenece.
+// `refMap` (opcional) resuelve códigos equivalentes, para que un top programado
+// con el código final (M5273 TOP) encuentre igual su prenda (MG-V834).
+// `manual` corrige a mano lo que el automático no acierte: { claveTop: claveBase }
+// —y con cadena vacía se declara que ese top no va con ninguna orden—.
+export function buildTopLinks(orders, refMap, manual) {
+  const fijos = manual || {}
+  const porBase = new Map() // clave de la prenda -> { top, aviso }
+  const porTop = new Map() // clave del top -> { base, aviso }
+  const bases = orders.filter((o) => !esOrdenTop(o))
+
+  orders.filter(esOrdenTop).forEach((top) => {
+    const claveTop = claveOrden(top)
+    const fijo = Object.prototype.hasOwnProperty.call(fijos, claveTop) ? fijos[claveTop] : null
+
+    let elegida = null
+    let aviso = ''
+    const aMano = fijo !== null
+    if (aMano) {
+      if (!fijo) return // marcado a mano como "sin prenda"
+      elegida = bases.find((o) => claveOrden(o) === fijo) || null
+      aviso = elegida ? '' : 'La orden vinculada a mano ya no existe'
+    } else {
+      const raiz = refBaseDeTop(top.referencia)
+      const ficha = refMap && refMap.get(raiz)
+      const codigos = new Set(
+        ficha && Array.isArray(ficha.codigos) ? ficha.codigos.concat(raiz) : [raiz],
+      )
+      const mismos = bases.filter((o) => codigos.has(o.referencia) && o.origen === top.origen)
+      const nTop = numOrden(top)
+      // La prenda de este lote es la última cortada antes del top.
+      const antes = mismos.filter((o) => numOrden(o) < nTop)
+      if (antes.length) {
+        elegida = antes.reduce((a, b) => (numOrden(a) >= numOrden(b) ? a : b))
+      } else if (mismos.length) {
+        // No debería pasar (el top va después), pero si pasa se toma la más
+        // cercana y se avisa en vez de dejar la fila sin dato.
+        elegida = mismos.reduce((a, b) => (numOrden(a) <= numOrden(b) ? a : b))
+        aviso = 'El top se cortó antes que la prenda — verifica el lote'
+      }
+      if (elegida) {
+        const cT = cantOrden(top)
+        const cB = cantOrden(elegida)
+        if (cT != null && cB != null && cT !== cB) {
+          aviso = `Cantidades distintas: prenda ${cB}, top ${cT}`
+        }
+      }
+    }
+
+    if (!elegida) return
+    porTop.set(claveTop, { base: elegida, aviso, aMano })
+    // Si dos tops reclaman la misma prenda, se queda el de número menor.
+    const previo = porBase.get(claveOrden(elegida))
+    if (!previo || numOrden(top) < numOrden(previo.top)) {
+      porBase.set(claveOrden(elegida), { top, aviso, aMano })
+    }
+  })
+
+  return { porBase, porTop }
+}
+
 // Normaliza texto para comparar tipo (minúsculas, sin acentos).
 function normTipo(s) {
   return (s || '').toString().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')

@@ -112,6 +112,37 @@ function filaDeFicha(r, finalDe) {
   return { ...base, referencia: final, refInterna: r.id }
 }
 
+// Prendas enlazadas a otra referencia: "MG-V834 TOP" es el top que acompaña
+// al vestido MG-V834. Llevan sus propios procesos, así que son fila aparte,
+// pero heredan de su base lo que no tengan propio (empezando por la foto).
+function baseEnlazada(codigo, porCodigo) {
+  const i = codigo.lastIndexOf(' ')
+  if (i <= 0) return null
+  const base = codigo.slice(0, i).trim()
+  const sufijo = codigo.slice(i + 1).trim()
+  if (!base || !sufijo) return null
+  const ficha = porCodigo.get(base)
+  return ficha ? { ficha, sufijo } : null
+}
+
+function filaEnlazada(codigo, { ficha, sufijo }, propia, finalDe) {
+  const finalBase = (ficha.nuevaRef || '').trim() || ficha.id
+  const base = propia || { id: codigo, _stub: true }
+  return {
+    ...base,
+    id: codigo,
+    referencia: `${finalBase} ${sufijo}`,
+    refInterna: codigo,
+    codigos: [codigo],
+    enlazadaA: ficha.id,
+    // Lo propio manda; si no lo tiene, se toma de la referencia base.
+    image: base.image || ficha.image,
+    tipo: base.tipo || sufijo,
+    marca: base.marca || ficha.marca,
+    conjuntoRefFinal: base.conjuntoRef && finalDe ? finalDe(base.conjuntoRef) : base.conjuntoRef,
+  }
+}
+
 export function buildRefIndex(orders, refs) {
   const byId = new Map(refs.map((r) => [r.id, r]))
   // Cualquier código conocido apunta a su ficha.
@@ -136,11 +167,17 @@ export function buildRefIndex(orders, refs) {
     const clave = ficha ? ficha.id : cod
     if (seen.has(clave)) return
     seen.add(clave)
-    list.push(ficha ? filaDeFicha(ficha, finalDe) : { id: cod, referencia: cod, codigos: [cod], _stub: true })
+    if (ficha) { list.push(filaDeFicha(ficha, finalDe)); return }
+    const enlace = baseEnlazada(cod, porCodigo)
+    if (enlace) { list.push(filaEnlazada(cod, enlace, byId.get(cod), finalDe)); return }
+    list.push({ id: cod, referencia: cod, codigos: [cod], _stub: true })
   })
   // Referencias que existen como registro pero ya no en órdenes (manuales).
   refs.forEach((r) => {
-    if (!seen.has(r.id)) { seen.add(r.id); list.push(filaDeFicha(r, finalDe)) }
+    if (seen.has(r.id)) return
+    seen.add(r.id)
+    const enlace = baseEnlazada(r.id, porCodigo)
+    list.push(enlace ? filaEnlazada(r.id, enlace, r, finalDe) : filaDeFicha(r, finalDe))
   })
   return list.sort((a, b) => a.referencia.localeCompare(b.referencia))
 }

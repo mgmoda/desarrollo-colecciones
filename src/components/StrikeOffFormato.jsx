@@ -73,9 +73,11 @@ export default function StrikeOffFormato({ diseno, evento, imagen, onClose }) {
         g.fillText(diseno.nombre, W / 2, diseno.codigoCliente ? 268 : 240)
       }
 
-      // Foto, encajada dentro de su recuadro
+      // Foto, encajada dentro de su recuadro. Si hay nota se le cede alto,
+      // porque la nota es la indicación para la diseñadora y no puede faltar.
+      const nota = (evento.nota || '').trim()
       const cajaY = 296
-      const cajaH = 600
+      const cajaH = nota ? 500 : 600
       const cajaX = 70
       const cajaW = W - 140
       g.fillStyle = '#ffffff'
@@ -100,7 +102,7 @@ export default function StrikeOffFormato({ diseno, evento, imagen, onClose }) {
         ['CANTIDAD', evento.metros ? `${evento.metros} metros` : '—'],
         ['FECHA', formatDate(evento.fecha) || '—'],
       ]
-      let y = 960
+      let y = cajaY + cajaH + 64
       g.textAlign = 'left'
       filas.forEach(([et, val]) => {
         g.strokeStyle = LINEA
@@ -118,6 +120,29 @@ export default function StrikeOffFormato({ diseno, evento, imagen, onClose }) {
       })
       g.strokeStyle = LINEA
       g.beginPath(); g.moveTo(70, y - 34); g.lineTo(W - 70, y - 34); g.stroke()
+
+      // Nota: lo que hay que corregir o tener en cuenta.
+      if (nota) {
+        g.fillStyle = TENUE
+        g.font = '600 15px Georgia, serif'
+        g.fillText('NOTA', 82, y + 4)
+        g.fillStyle = '#141210'
+        g.font = 'italic 22px Georgia, serif'
+        let linea = ''
+        let ly = y + 36
+        const ancho = W - 164
+        nota.split(/\s+/).forEach((palabra) => {
+          const prueba = linea ? `${linea} ${palabra}` : palabra
+          if (g.measureText(prueba).width > ancho && linea) {
+            g.fillText(linea, 82, ly)
+            ly += 30
+            linea = palabra
+          } else {
+            linea = prueba
+          }
+        })
+        if (linea) g.fillText(linea, 82, ly)
+      }
 
       // Pie
       g.textAlign = 'center'

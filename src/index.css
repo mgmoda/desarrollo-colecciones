@@ -5522,3 +5522,31 @@ img.ship-ref-photo {
   .dis-fase-grupo { flex-direction: column; gap: 6px; }
   .dis-fase-nom { width: auto; }
 }
+
+/* Botones de corregir/borrar en cada registro de la bitácora. */
+.dis-ev { position: relative; }
+.dis-ev-acciones {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity .12s;
+}
+.dis-ev:hover .dis-ev-acciones,
+.dis-ev-acciones:focus-within { opacity: 1; }
+.dis-ev-btn {
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dis-ev-btn:hover { border-color: var(--ink); color: var(--ink); }
+.dis-ev-btn-del:hover { border-color: var(--danger); color: var(--danger); }
+.dis-ed-ayuda { margin: 0 0 16px; font-size: 13px; color: var(--muted); }

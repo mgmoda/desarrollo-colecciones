@@ -349,6 +349,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
   const [imgs, setImgs] = useState(null)     // null = cargando
   const [registrando, setRegistrando] = useState(null)  // tipo de evento
   const panelRegistro = useRef(null)
+  const [edEv, setEdEv] = useState(null) // { i, fecha, nota, tela, metros, imgs }
   const [fecha, setFecha] = useState(hoyISO())
   const [nota, setNota] = useState('')
   const [codCliente, setCodCliente] = useState(meta?.codigoCliente || '')
@@ -377,6 +378,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
   const yaHechos = new Set((meta.eventos || []).map((e) => e.tipo))
 
   function abrirRegistro(tipo) {
+    setEdEv(null)
     setRegistrando(tipo)
     setFecha(hoyISO())
     setNota('')
@@ -479,21 +481,31 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
     } finally { setGuardando(false) }
   }
 
-  // Borra el último evento (para deshacer un registro equivocado).
-  async function borrarUltimoEvento() {
+  // Borra un registro cualquiera de la bitácora, no solo el último: las
+  // imágenes van indexadas por posición ('ev-3'), así que hay que recorrerlas.
+  async function borrarEvento(i) {
     const evs = meta.eventos || []
-    if (evs.length <= 1) { alert('No se puede borrar el evento inicial. Elimina el diseño si quieres empezar de cero.'); return }
-    const def = EVENTOS[evs[evs.length - 1].tipo] || {}
-    if (!confirm(`¿Deshacer el último registro (“${def.label}”)?`)) return
+    if (evs.length <= 1) { alert('No se puede borrar el único registro. Elimina el diseño si quieres empezar de cero.'); return }
+    const def = EVENTOS[evs[i].tipo] || {}
+    if (!confirm(`¿Borrar el registro “${def.label}” del ${formatDate(evs[i].fecha)}?`)) return
     setGuardando(true)
     try {
-      const idx = evs.length - 1
-      const nuevos = evs.slice(0, idx)
-      const nuevasImgsTodas = { ...(imgs || {}) }
-      delete nuevasImgsTodas['ev-' + idx]
+      const nuevos = evs.filter((_, k) => k !== i)
+      const nuevasImgsTodas = {}
+      evs.forEach((_, k) => {
+        if (k === i) return
+        const lista = (imgs || {})['ev-' + k]
+        if (lista) nuevasImgsTodas['ev-' + (k > i ? k - 1 : k)] = lista
+      })
       const nuevoMeta = { ...meta, eventos: nuevos, updatedAt: Date.now() }
-      // Si se deshace la aprobación, el código del cliente deja de aplicar.
-      if (evs[idx].tipo === 'aprobado') nuevoMeta.codigoCliente = ''
+      // Sin evento de aprobación, el código del cliente deja de aplicar.
+      if (evs[i].tipo === 'aprobado' && !nuevos.some((e) => e.tipo === 'aprobado')) {
+        nuevoMeta.codigoCliente = ''
+      }
+      if (i === 0) {
+        const primera = nuevasImgsTodas['ev-0'] && nuevasImgsTodas['ev-0'][0]
+        nuevoMeta.thumb = primera ? await hacerThumb(primera) : null
+      }
       await dbUpsertDiseno(nuevoMeta, nuevasImgsTodas)
       setImgs(nuevasImgsTodas)
       onSaved()
@@ -508,15 +520,62 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
     try { await dbDeleteDiseno(meta.codigo); onClose(); onSaved() } catch (e) { console.error(e) }
   }
 
+  function abrirEdEvento(i) {
+    const ev = (meta.eventos || [])[i] || {}
+    setRegistrando(null)
+    setEdEv({
+      i,
+      fecha: ev.fecha || '',
+      nota: ev.nota || '',
+      tela: ev.tela || '',
+      metros: ev.metros || '',
+      imgs: [...((imgs || {})['ev-' + i] || [])],
+    })
+  }
+
+  async function guardarEdEvento() {
+    if (guardando || !edEv) return
+    setGuardando(true)
+    try {
+      const { i } = edEv
+      const evs = (meta.eventos || []).map((e) => ({ ...e }))
+      const def = EVENTOS[evs[i].tipo] || {}
+      const ev = { ...evs[i], fecha: edEv.fecha }
+      if (edEv.nota.trim()) ev.nota = edEv.nota.trim(); else delete ev.nota
+      if (def.formato) {
+        if (edEv.tela.trim()) ev.tela = edEv.tela.trim(); else delete ev.tela
+        if (String(edEv.metros).trim()) ev.metros = edEv.metros; else delete ev.metros
+      }
+      evs[i] = ev
+      const nuevasImgsTodas = { ...(imgs || {}) }
+      if (edEv.imgs.length) nuevasImgsTodas['ev-' + i] = edEv.imgs
+      else delete nuevasImgsTodas['ev-' + i]
+
+      const nuevoMeta = { ...meta, eventos: evs, updatedAt: Date.now() }
+      if (evs[0] && evs[0].tipo === 'recibido') nuevoMeta.recibidoAt = evs[0].fecha
+      if (i === 0) {
+        const primera = nuevasImgsTodas['ev-0'] && nuevasImgsTodas['ev-0'][0]
+        nuevoMeta.thumb = primera ? await hacerThumb(primera) : null
+      }
+      await dbUpsertDiseno(nuevoMeta, nuevasImgsTodas)
+      setImgs(nuevasImgsTodas)
+      setEdEv(null)
+      onSaved()
+    } catch (e) {
+      console.error(e)
+      alert('No se pudo guardar: ' + (e.message || e))
+    } finally { setGuardando(false) }
+  }
+
   const defReg = registrando ? EVENTOS[registrando] : null
 
   // El formulario se abre al final de una bitácora larga: si no se lleva a la
   // vista, el usuario cree que el botón no hizo nada y no ve los campos.
   useEffect(() => {
-    if (registrando && panelRegistro.current) {
+    if ((registrando || edEv) && panelRegistro.current) {
       panelRegistro.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
-  }, [registrando])
+  }, [registrando, edEv && edEv.i])
 
   return (
     <Modal open onClose={onClose} size="lg">
@@ -538,6 +597,10 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
       {editando ? (
         <>
         <div className="modal-body">
+          <p className="dis-ed-ayuda">
+            Datos del diseño. Para corregir o borrar un proceso, usa los botones
+            de cada uno en la bitácora.
+          </p>
           <div className="field-row">
             <div className="field">
               <label className="field-label">Código</label>
@@ -574,63 +637,8 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
             </div>
           </div>
 
-          <div className="dis-ed-sep">Rondas — puedes corregir la fecha, la nota, la tela y las imágenes</div>
-          {ed.eventos.map((ev, i) => {
-            const def = EVENTOS[ev.tipo] || { label: ev.tipo }
-            return (
-              <div key={i} className="dis-ed-ev">
-                <div className="dis-ed-ev-tit">{def.label}</div>
-                <div className="field-row">
-                  <div className="field">
-                    <label className="field-label">Fecha</label>
-                    <input className="input" type="date" value={ev.fecha || ''}
-                      onChange={(e) => {
-                        const evs = [...ed.eventos]; evs[i] = { ...ev, fecha: e.target.value }
-                        setEd({ ...ed, eventos: evs })
-                      }} />
-                  </div>
-                  <div className="field" style={{ flex: 2 }}>
-                    <label className="field-label">Nota</label>
-                    <input className="input" value={ev.nota || ''} placeholder="Opcional…"
-                      onChange={(e) => {
-                        const evs = [...ed.eventos]; evs[i] = { ...ev, nota: e.target.value }
-                        setEd({ ...ed, eventos: evs })
-                      }} />
-                  </div>
-                </div>
-                {def.formato && (
-                  <div className="field-row">
-                    <div className="field">
-                      <label className="field-label">Tela</label>
-                      <input className="input" value={ev.tela || ''} placeholder="Ej. Chalís estampado"
-                        onChange={(e) => {
-                          const evs = [...ed.eventos]; evs[i] = { ...ev, tela: e.target.value }
-                          setEd({ ...ed, eventos: evs })
-                        }} />
-                    </div>
-                    <div className="field">
-                      <label className="field-label">Cantidad (metros)</label>
-                      <input className="input" type="number" step="0.5" min="0" value={ev.metros || ''}
-                        placeholder="Ej. 3"
-                        onChange={(e) => {
-                          const evs = [...ed.eventos]; evs[i] = { ...ev, metros: e.target.value }
-                          setEd({ ...ed, eventos: evs })
-                        }} />
-                    </div>
-                  </div>
-                )}
-                <ImagePicker
-                  imgs={ed.imgs['ev-' + i] || []}
-                  onChange={(lista) => setEd({ ...ed, imgs: { ...ed.imgs, ['ev-' + i]: lista } })}
-                  label="Agregar imagen" />
-              </div>
-            )
-          })}
         </div>
         <div className="modal-foot">
-          <button className="btn btn-danger" onClick={borrarUltimoEvento} disabled={guardando}>
-            ↩ Deshacer último registro
-          </button>
           <button className="btn" onClick={() => setEditando(false)}>Cancelar</button>
           <button className="btn btn-primary" onClick={guardarEdicion} disabled={guardando}>
             {guardando ? 'Guardando…' : 'Guardar cambios'}
@@ -701,6 +709,12 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
                           </button>
                         )}
                       </div>
+                      <div className="dis-ev-acciones">
+                        <button className="dis-ev-btn" title="Corregir este proceso"
+                          onClick={() => abrirEdEvento(ev.i)}>✎</button>
+                        <button className="dis-ev-btn dis-ev-btn-del" title="Borrar este proceso"
+                          onClick={() => borrarEvento(ev.i)} disabled={guardando}>✕</button>
+                      </div>
                     </div>
                   )
                 })}
@@ -709,7 +723,50 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
           ))}
         </div>
 
-        {registrando ? (
+        {edEv ? (
+          <div className="dis-registro" ref={panelRegistro}>
+            <div className="dis-registro-tit">
+              Corregir “{(EVENTOS[(meta.eventos || [])[edEv.i].tipo] || {}).label}”
+            </div>
+            <div className="field-row">
+              <div className="field">
+                <label className="field-label">Fecha</label>
+                <input className="input" type="date" value={edEv.fecha}
+                  onChange={(e) => setEdEv({ ...edEv, fecha: e.target.value })} />
+              </div>
+              <div className="field" style={{ flex: 2 }}>
+                <label className="field-label">Nota</label>
+                <input className="input" value={edEv.nota} placeholder="Opcional…"
+                  onChange={(e) => setEdEv({ ...edEv, nota: e.target.value })} />
+              </div>
+            </div>
+            {(EVENTOS[(meta.eventos || [])[edEv.i].tipo] || {}).formato && (
+              <div className="field-row">
+                <div className="field">
+                  <label className="field-label">Tela</label>
+                  <input className="input" value={edEv.tela} placeholder="Ej. Chalís estampado"
+                    onChange={(e) => setEdEv({ ...edEv, tela: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Cantidad (metros)</label>
+                  <input className="input" type="number" step="0.5" min="0" value={edEv.metros}
+                    placeholder="Ej. 3"
+                    onChange={(e) => setEdEv({ ...edEv, metros: e.target.value })} />
+                </div>
+              </div>
+            )}
+            <div className="field">
+              <label className="field-label">Imágenes</label>
+              <ImagePicker imgs={edEv.imgs} onChange={(l) => setEdEv({ ...edEv, imgs: l })} label="Agregar" />
+            </div>
+            <div className="dis-registro-foot">
+              <button className="btn" onClick={() => setEdEv(null)}>Cancelar</button>
+              <button className="btn btn-primary" onClick={guardarEdEvento} disabled={guardando}>
+                {guardando ? 'Guardando…' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        ) : registrando ? (
           <div className="dis-registro" ref={panelRegistro}>
             <div className="dis-registro-tit">{defReg.label}</div>
             <div className="field-row">

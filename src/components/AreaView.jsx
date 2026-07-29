@@ -3,7 +3,7 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { AREAS, formatDate, ORIGEN_ABBR, TOP_LABEL, procesoColor } from '../lib/constants.js'
-import { ordersForArea, refProcesos } from '../lib/domain.js'
+import { ordersForArea, refProcesos, claveOrden } from '../lib/domain.js'
 import { diasDesde } from '../lib/dates.js'
 import { generateAreaPDF } from '../lib/areaPdf.js'
 
@@ -31,7 +31,9 @@ function ProcesosCell({ refRow }) {
   )
 }
 
-export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef }) {
+export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, ordenesOcultas, onOcultarOrdenes }) {
+  const ocultas = ordenesOcultas || new Set()
+  const [verOcultas, setVerOcultas] = useState(false)
   const area = AREAS[areaKey]
   const [q, setQ] = useState('')
   const [origenF, setOrigenF] = useState('') // '' = todas
@@ -53,6 +55,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   const rows = useMemo(() => {
     let list = ordersForArea(orders, areaKey)
     if (origenF) list = list.filter((o) => o.origen === origenF)
+    // Las deshabilitadas salen de la etapa; se pueden mostrar para reactivarlas.
+    list = list.filter((o) => (verOcultas ? ocultas.has(claveOrden(o)) : !ocultas.has(claveOrden(o))))
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((o) =>
@@ -75,13 +79,26 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       atraso: (o) => diasDesde((o.stages[baseStage] || {}).fecha),
     }
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [orders, areaKey, q, origenF, sortKey, sortDir, baseStage, refMap])
+  }, [orders, areaKey, q, origenF, sortKey, sortDir, baseStage, refMap, ocultas, verOcultas])
 
   const thProps = { sortKey, sortDir, onSort: toggle }
 
   const allSelected = rows.length > 0 && rows.every((o) => selected.has(o.id))
   function toggleAll() {
     setSelected(allSelected ? new Set() : new Set(rows.map((o) => o.id)))
+  }
+
+  // Cuántas órdenes de esta etapa están deshabilitadas.
+  const nOcultasEtapa = useMemo(
+    () => ordersForArea(orders, areaKey).filter((o) => ocultas.has(claveOrden(o))).length,
+    [orders, areaKey, ocultas],
+  )
+
+  function cambiarHabilitacion() {
+    const claves = rows.filter((o) => selected.has(o.id)).map(claveOrden)
+    if (!claves.length || !onOcultarOrdenes) return
+    onOcultarOrdenes(claves, !verOcultas)
+    setSelected(new Set())
   }
 
   function generatePdf() {
@@ -125,8 +142,22 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
             <span className="select-caret" aria-hidden="true">▾</span>
           </div>
           {selected.size > 0 && (
-            <button className="btn btn-primary" onClick={generatePdf}>
-              Generar PDF ({selected.size})
+            <>
+              <button className="btn btn-primary" onClick={generatePdf}>
+                Generar PDF ({selected.size})
+              </button>
+              <button className="btn" onClick={cambiarHabilitacion}
+                title={verOcultas
+                  ? 'Volver a mostrar estas órdenes en la etapa'
+                  : 'Sacarlas de la etapa (ej. premuestras ya hechas)'}>
+                {verOcultas ? `Habilitar (${selected.size})` : `Deshabilitar (${selected.size})`}
+              </button>
+            </>
+          )}
+          {(nOcultasEtapa > 0 || verOcultas) && (
+            <button className={'btn' + (verOcultas ? ' btn-primary' : '')}
+              onClick={() => { setVerOcultas(!verOcultas); setSelected(new Set()) }}>
+              {verOcultas ? 'Volver a la etapa' : `Ver deshabilitadas (${nOcultasEtapa})`}
             </button>
           )}
           <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia, producto…" />

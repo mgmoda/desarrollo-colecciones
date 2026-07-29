@@ -22,7 +22,7 @@ import {
   dbLoadOrders, dbLoadRefs, dbLoadSettings,
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings,
 } from './lib/db.js'
-import { buildRefIndex, emptyRef, refTracks, normalizeTelas } from './lib/domain.js'
+import { buildRefIndex, emptyRef, refTracks, normalizeTelas, claveOrden } from './lib/domain.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice } from './lib/constants.js'
 
 const TABS = [
@@ -459,6 +459,21 @@ export default function App() {
   }
 
   // Catálogo de procesos especiales (Recuadros, Tintorería, Bordado, …)
+  // Órdenes deshabilitadas: dejan de aparecer en su etapa (ej. premuestras
+  // que ya se hicieron y quedaron colgadas). Se guardan por clave estable,
+  // así sobreviven a las reimportaciones del Excel.
+  const ordenesOcultas = useMemo(
+    () => new Set(settings.ordenesOcultas || []),
+    [settings.ordenesOcultas],
+  )
+  function ocultarOrdenes(claves, ocultar) {
+    const set = new Set(settings.ordenesOcultas || [])
+    claves.forEach((c) => { ocultar ? set.add(c) : set.delete(c) })
+    const next = { ...settings, ordenesOcultas: [...set] }
+    setSettings(next)
+    dbSaveSettings(next).catch((e) => console.error(e))
+  }
+
   function addProceso(name) {
     const v = (name || '').trim()
     if (!v || settings.procesos.some((d) => d.toLowerCase() === v.toLowerCase())) return
@@ -599,6 +614,7 @@ export default function App() {
         )}
         {AREA_KEYS.includes(tab) && (
           <AreaView areaKey={tab} orders={orders} refMap={refMap}
+            ordenesOcultas={ordenesOcultas} onOcultarOrdenes={ocultarOrdenes}
             onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
         {tab === 'ensamble' && (

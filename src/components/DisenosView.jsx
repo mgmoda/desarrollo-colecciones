@@ -4,7 +4,7 @@ import SearchInput from './SearchInput.jsx'
 import { formatDate } from '../lib/constants.js'
 import { processImage, getImageFromClipboard } from '../lib/image.js'
 import {
-  ETAPAS, EVENTOS, TIPOS_DISENO, accionesDisponibles, agruparPorFase, codigoDiseno,
+  ETAPAS, EVENTOS, TIPOS_DISENO, accionesDisponibles, agruparPorFase, codigoDiseno, eventosPorFase,
   disenoInfo, duracionFases, emptyDiseno, etapaColor, siguienteNumero,
 } from '../lib/disenos.js'
 import StrikeOffFormato from './StrikeOffFormato.jsx'
@@ -348,6 +348,7 @@ function NuevoDisenoModal({ disenos, onClose, onSaved }) {
 function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onViewImage }) {
   const [imgs, setImgs] = useState(null)     // null = cargando
   const [registrando, setRegistrando] = useState(null)  // tipo de evento
+  const panelRegistro = useRef(null)
   const [fecha, setFecha] = useState(hoyISO())
   const [nota, setNota] = useState('')
   const [codCliente, setCodCliente] = useState(meta?.codigoCliente || '')
@@ -371,7 +372,9 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
   }, [meta.codigo])
 
   const info = disenoInfo(meta)
-  const acciones = accionesDisponibles(info.etapa)
+  // Se puede registrar cualquier proceso; los del paso natural van marcados.
+  const sugeridas = new Set(accionesDisponibles(info.etapa))
+  const yaHechos = new Set((meta.eventos || []).map((e) => e.tipo))
 
   function abrirRegistro(tipo) {
     setRegistrando(tipo)
@@ -507,6 +510,14 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
 
   const defReg = registrando ? EVENTOS[registrando] : null
 
+  // El formulario se abre al final de una bitácora larga: si no se lleva a la
+  // vista, el usuario cree que el botón no hizo nada y no ve los campos.
+  useEffect(() => {
+    if (registrando && panelRegistro.current) {
+      panelRegistro.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [registrando])
+
   return (
     <Modal open onClose={onClose} size="lg">
       <div className="modal-head">
@@ -563,7 +574,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
             </div>
           </div>
 
-          <div className="dis-ed-sep">Rondas — puedes corregir la fecha, la nota y las imágenes</div>
+          <div className="dis-ed-sep">Rondas — puedes corregir la fecha, la nota, la tela y las imágenes</div>
           {ed.eventos.map((ev, i) => {
             const def = EVENTOS[ev.tipo] || { label: ev.tipo }
             return (
@@ -587,6 +598,27 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
                       }} />
                   </div>
                 </div>
+                {def.formato && (
+                  <div className="field-row">
+                    <div className="field">
+                      <label className="field-label">Tela</label>
+                      <input className="input" value={ev.tela || ''} placeholder="Ej. Chalís estampado"
+                        onChange={(e) => {
+                          const evs = [...ed.eventos]; evs[i] = { ...ev, tela: e.target.value }
+                          setEd({ ...ed, eventos: evs })
+                        }} />
+                    </div>
+                    <div className="field">
+                      <label className="field-label">Cantidad (metros)</label>
+                      <input className="input" type="number" step="0.5" min="0" value={ev.metros || ''}
+                        placeholder="Ej. 3"
+                        onChange={(e) => {
+                          const evs = [...ed.eventos]; evs[i] = { ...ev, metros: e.target.value }
+                          setEd({ ...ed, eventos: evs })
+                        }} />
+                    </div>
+                  </div>
+                )}
                 <ImagePicker
                   imgs={ed.imgs['ev-' + i] || []}
                   onChange={(lista) => setEd({ ...ed, imgs: { ...ed.imgs, ['ev-' + i]: lista } })}
@@ -678,7 +710,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
         </div>
 
         {registrando ? (
-          <div className="dis-registro">
+          <div className="dis-registro" ref={panelRegistro}>
             <div className="dis-registro-tit">{defReg.label}</div>
             <div className="field-row">
               <div className="field">
@@ -746,17 +778,28 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
               </button>
             </div>
           </div>
-        ) : acciones.length > 0 ? (
-          <div className="dis-acciones">
-            {acciones.map((a) => (
-              <button key={a} className={'btn' + (a === 'aprobado' || a === 'strikeoffAprobado' ? ' btn-ok' : '')}
-                onClick={() => abrirRegistro(a)}>
-                {EVENTOS[a].label}
-              </button>
+        ) : (
+          <div className="dis-elegir-proceso">
+            <p className="dis-elegir-tit">Registrar un proceso</p>
+            {eventosPorFase().map((f) => (
+              <div key={f.key} className="dis-fase-grupo">
+                <span className="dis-fase-nom">{f.num}. {f.label}</span>
+                <div className="dis-fase-btns">
+                  {f.tipos.map((t) => (
+                    <button key={t} type="button"
+                      className={'dis-proc'
+                        + (sugeridas.has(t) ? ' dis-proc-sug' : '')
+                        + (yaHechos.has(t) ? ' dis-proc-hecho' : '')}
+                      onClick={() => abrirRegistro(t)}
+                      title={sugeridas.has(t) ? 'Es el paso que sigue' : 'Registrar este proceso'}>
+                      {EVENTOS[t].label}
+                      {sugeridas.has(t) && <span className="dis-proc-punto" aria-hidden="true" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
-        ) : (
-          <div className="dis-acciones"><span className="muted">Diseño terminado.</span></div>
         )}
       </div>
 

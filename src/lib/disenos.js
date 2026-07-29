@@ -156,7 +156,17 @@ export function duracionFases(eventos = [], etapaActual) {
   })
 }
 
-// Qué eventos tiene sentido registrar según dónde está el diseño.
+// Los eventos de cada fase, para poder elegir cualquiera y no solo el
+// siguiente: el desarrollo no siempre va en línea recta.
+export function eventosPorFase() {
+  return FASES.map((f) => ({
+    ...f,
+    tipos: Object.keys(EVENTOS).filter((k) => (EVENTOS[k].fase || 'grafico') === f.key),
+  }))
+}
+
+// Qué eventos tiene sentido registrar según dónde está el diseño. Ya no
+// limita: solo marca cuáles son el paso natural.
 export function accionesDisponibles(etapa) {
   switch (etapa) {
     case 'pendiente':

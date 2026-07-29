@@ -22,7 +22,7 @@ import {
   dbLoadOrders, dbLoadRefs, dbLoadSettings,
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings,
 } from './lib/db.js'
-import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks } from './lib/domain.js'
+import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice } from './lib/constants.js'
 
 const TABS = [
@@ -474,6 +474,9 @@ export default function App() {
   )
   // claveBase: la orden de la prenda; '' declara que ese top no va con
   // ninguna; null borra la corrección y devuelve el vínculo al automático.
+  // Las dos prendas de un conjunto, emparejadas lote por lote.
+  const conjuntoLinks = useMemo(() => buildConjuntoLinks(orders, refMap), [orders, refMap])
+
   function vincularTop(claveTop, claveBase) {
     const mapa = { ...(settings.vinculosTop || {}) }
     if (claveBase === null) delete mapa[claveTop]
@@ -632,7 +635,7 @@ export default function App() {
         {AREA_KEYS.includes(tab) && (
           <AreaView areaKey={tab} orders={orders} refMap={refMap}
             fasesOcultas={fasesOcultas} onToggleFase={toggleFase}
-            topLinks={topLinks} onVincularTop={vincularTop}
+            topLinks={topLinks} onVincularTop={vincularTop} conjuntoLinks={conjuntoLinks}
             onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
         {tab === 'ensamble' && (

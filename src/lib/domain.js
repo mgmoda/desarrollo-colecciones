@@ -1,5 +1,5 @@
 import { normRef } from './constants.js'
-import { parseDateLoose, diasDesde } from './dates.js'
+import { parseDateLoose, diasDesde, diasEntre } from './dates.js'
 
 export function stageDone(order, key) {
   const s = order.stages && order.stages[key]
@@ -591,4 +591,72 @@ export function totalSemana(orders, etapaKey, dias) {
     refs += d.refs.length
   })
   return { unidades, refs }
+}
+
+// ---------------------------------------------------------------------------
+// Vínculo entre las dos prendas de un conjunto
+//
+// Un conjunto se despacha completo, así que sus dos prendas deberían avanzar
+// a la par. Cada una lleva su propia orden y muchas veces va a un taller
+// distinto: la pareja está declarada en la ficha (conjuntoRef), y el lote se
+// resuelve emparejando en orden las órdenes de cada prenda dentro de la misma
+// fase (el primer lote de la blusa con el primero del pantalón, y así).
+// ---------------------------------------------------------------------------
+
+function numeroOrden(o) {
+  const n = parseInt(String((o && o.orden) || '').replace(/\D/g, ''), 10)
+  return Number.isFinite(n) ? n : 0
+}
+
+const ORIGENES_ORDEN = ['premuestra', 'muestra', 'produccion', 'geodesica']
+
+export function buildConjuntoLinks(orders, refMap) {
+  if (!refMap) return new Map()
+  // Órdenes agrupadas por ficha y fase, en el orden en que se cortaron.
+  const porFicha = new Map()
+  orders.forEach((o) => {
+    const ficha = refMap.get(o.referencia)
+    if (!ficha) return
+    const clave = `${ficha.id}|${o.origen}`
+    const lista = porFicha.get(clave) || porFicha.set(clave, []).get(clave)
+    lista.push(o)
+  })
+  porFicha.forEach((lista) => lista.sort((a, b) => numeroOrden(a) - numeroOrden(b)))
+
+  const enlaces = new Map()
+  const hechos = new Set()
+  refMap.forEach((ficha) => {
+    const parejaId = (ficha.conjuntoRef || '').trim()
+    if (!parejaId) return
+    const pareja = refMap.get(parejaId)
+    if (!pareja || pareja.id === ficha.id) return
+    const par = [ficha.id, pareja.id].sort().join('|')
+    if (hechos.has(par)) return
+    hechos.add(par)
+
+    ORIGENES_ORDEN.forEach((origen) => {
+      const a = porFicha.get(`${ficha.id}|${origen}`) || []
+      const b = porFicha.get(`${pareja.id}|${origen}`) || []
+      const n = Math.min(a.length, b.length)
+      for (let i = 0; i < n; i += 1) {
+        const aviso = a.length !== b.length
+          ? `${ficha.id} tiene ${a.length} lote(s) y ${pareja.id} ${b.length} en esta fase`
+          : ''
+        enlaces.set(claveOrden(a[i]), { pareja: b[i], ficha: pareja, aviso })
+        enlaces.set(claveOrden(b[i]), { pareja: a[i], ficha, aviso })
+      }
+    })
+  })
+  return enlaces
+}
+
+// ¿Van a la par las dos prendas del conjunto? Lo que importa es que entren a
+// ensamble con poca diferencia, porque el conjunto se despacha completo.
+export function estadoConjunto(orden, pareja) {
+  const a = orderArea(orden)
+  const b = orderArea(pareja)
+  const entregaA = (orden.stages && orden.stages.entregaEnsamble && orden.stages.entregaEnsamble.fecha) || ''
+  const entregaB = (pareja.stages && pareja.stages.entregaEnsamble && pareja.stages.entregaEnsamble.fecha) || ''
+  const dias = entregaA && entregaB ? Math.abs(diasEntre(entregaA, entregaB)) : null
+  return { area: a, areaPareja: b, juntas: a === b, dias }
 }

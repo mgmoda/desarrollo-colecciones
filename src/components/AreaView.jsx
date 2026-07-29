@@ -3,12 +3,13 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { AREAS, formatDate, ORIGENES, ORIGEN_ABBR, TOP_LABEL } from '../lib/constants.js'
-import { ordersForArea, refProcesos, claveOrden, esOrdenTop } from '../lib/domain.js'
+import { ordersForArea, refProcesos, claveOrden, esOrdenTop, orderArea } from '../lib/domain.js'
 import { diasDesde, diasEntre } from '../lib/dates.js'
 import { generateAreaPDF } from '../lib/areaPdf.js'
 import TopVinculoModal from './TopVinculoModal.jsx'
 import AreaKpis from './AreaKpis.jsx'
 import ProcesosTags from './ProcesosTags.jsx'
+import ConjuntoModal from './ConjuntoModal.jsx'
 
 // Días que el taller tuvo el lote: del envío a la entrega de ensamble.
 function diasEnTaller(o) {
@@ -25,6 +26,27 @@ const STAGE_LABEL = {
 
 // Celda Top/Forro. Si la prenda lleva top incluido —o si la fila ES un top—
 // se puede abrir para ver dónde va la otra orden y en qué taller está.
+// Celda Producto. Si la prenda va en conjunto, se abre para ver dónde está la
+// otra prenda: el conjunto se despacha completo, así que las dos tienen que
+// entrar a ensamble a la par.
+function ProductoCell({ orden, vinculo, onAbrir }) {
+  if (!vinculo || !vinculo.pareja) return <>{orden.producto}</>
+  const desfasadas = orderArea(orden) !== orderArea(vinculo.pareja)
+  const etapa = orderArea(vinculo.pareja)
+  const etiqueta = etapa ? AREAS[etapa].label : 'Sin iniciar'
+  const otra = (vinculo.ficha && vinculo.ficha.tipo) || 'la otra prenda'
+  return (
+    <button type="button" className="conj-link" onClick={() => onAbrir(orden)}
+      title={`${otra}: orden ${vinculo.pareja.orden}, en ${etiqueta}`
+        + (desfasadas ? ' — va desfasada de esta' : '')}>
+      <span>{orden.producto}</span>
+      <span className={'tag conj-tag' + (desfasadas ? ' tag-warn' : '')}>
+        {desfasadas ? '⚠ ' : ''}{etiqueta}
+      </span>
+    </button>
+  )
+}
+
 function TopCell({ orden, refRow, topLinks, onAbrir }) {
   const esTop = esOrdenTop(orden)
   const marca = refRow && refRow.topIncluido
@@ -49,8 +71,9 @@ function TopCell({ orden, refRow, topLinks, onAbrir }) {
   )
 }
 
-export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, fasesOcultas, onToggleFase, topLinks, onVincularTop }) {
+export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, fasesOcultas, onToggleFase, topLinks, onVincularTop, conjuntoLinks }) {
   const [topDe, setTopDe] = useState(null) // orden cuyo vínculo de top se está viendo
+  const [conjuntoDe, setConjuntoDe] = useState(null) // orden cuyo conjunto se está viendo
   const ocultas = fasesOcultas || new Set()
   const area = AREAS[areaKey]
   const [q, setQ] = useState('')
@@ -226,7 +249,10 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                     <td><span className={'origen-chip o-' + o.origen}>{ORIGEN_ABBR[o.origen] || o.origen}</span></td>
                     <td className="mono">{o.orden}</td>
                     <td className="strong">{o.referencia}</td>
-                    <td>{o.producto}</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <ProductoCell orden={o} vinculo={conjuntoLinks.get(claveOrden(o))}
+                        onAbrir={setConjuntoDe} />
+                    </td>
                     <td><ProcesosTags refRow={ref} /></td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <TopCell orden={o} refRow={ref} topLinks={topLinks} onAbrir={setTopDe} />
@@ -262,6 +288,10 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
           </table>
         </div>
       )}
+
+      <ConjuntoModal orden={conjuntoDe}
+        vinculo={conjuntoDe ? conjuntoLinks.get(claveOrden(conjuntoDe)) : null}
+        refMap={refMap} onViewImage={onViewImage} onClose={() => setConjuntoDe(null)} />
 
       <TopVinculoModal orden={topDe} orders={orders} refMap={refMap} topLinks={topLinks}
         onVincular={onVincularTop} onClose={() => setTopDe(null)} />

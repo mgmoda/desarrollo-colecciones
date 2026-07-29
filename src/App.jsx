@@ -223,9 +223,22 @@ export default function App() {
   // El índice agrega campos calculados (la referencia final como nombre, la
   // lista de códigos). Se quitan antes de guardar para que la ficha conserve
   // su propio código y no se ensucie la base.
+  //
+  // El `id` también hay que restituirlo: la ficha se muestra con la referencia
+  // final (C6882) y el formulario arma el id con lo que ve, así que guardar
+  // creaba una ficha nueva bajo ese código, duplicando la prenda. Su identidad
+  // es el código interno, de él cuelga el histórico de órdenes.
   function paraGuardar(ref) {
-    const { codigos: _c, refInterna, _stub: _s, ...limpio } = ref
-    if (refInterna) limpio.referencia = refInterna
+    const {
+      codigos: _c, refInterna, _stub: _s, conjuntoRefFinal: _cf, duplicadaDe: _d, ...limpio
+    } = ref
+    if (!refInterna) return limpio
+    // Si cambiaron el código que se muestra, lo que cambió es la referencia
+    // final, no el código interno.
+    const mostrado = (limpio.referencia || '').trim()
+    if (mostrado && mostrado !== refInterna) limpio.nuevaRef = mostrado
+    limpio.id = refInterna
+    limpio.referencia = refInterna
     return limpio
   }
 

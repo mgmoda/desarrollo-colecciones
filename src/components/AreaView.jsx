@@ -4,11 +4,18 @@ import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { AREAS, formatDate, ORIGENES, ORIGEN_ABBR, TOP_LABEL } from '../lib/constants.js'
 import { ordersForArea, refProcesos, claveOrden, esOrdenTop } from '../lib/domain.js'
-import { diasDesde } from '../lib/dates.js'
+import { diasDesde, diasEntre } from '../lib/dates.js'
 import { generateAreaPDF } from '../lib/areaPdf.js'
 import TopVinculoModal from './TopVinculoModal.jsx'
 import AreaKpis from './AreaKpis.jsx'
 import ProcesosTags from './ProcesosTags.jsx'
+
+// Días que el taller tuvo el lote: del envío a la entrega de ensamble.
+function diasEnTaller(o) {
+  const envio = (o.stages && o.stages.envioEnsamble && o.stages.envioEnsamble.fecha) || ''
+  const entrega = (o.stages && o.stages.entregaEnsamble && o.stages.entregaEnsamble.fecha) || ''
+  return envio && entrega ? diasEntre(envio, entrega) : null
+}
 
 const STAGE_LABEL = {
   ordenCorte: 'Orden corte', trazo: 'Trazo', entregaCorte: 'Corte',
@@ -58,7 +65,10 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   }
 
   const baseStage = area.base
-  const showTaller = areaKey === 'talleres' || areaKey === 'enviar'
+  const showTaller = areaKey === 'talleres' || areaKey === 'enviar' || areaKey === 'entrega'
+  // En Entrega ensamble ya no hay atraso; lo que importa es cuánto se demoró
+  // el taller con el lote, del envío a la entrega.
+  const showDiasTaller = areaKey === 'entrega'
   const showAtraso = areaKey !== 'entrega' // en entrega ya ingresó: no hay atraso
   const pendienteLabel = area.next ? STAGE_LABEL[area.next] : 'Recibido'
 
@@ -90,6 +100,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       fecha: (o) => (o.stages[baseStage] || {}).fecha,
       cant: (o) => Number((o.stages[baseStage] || {}).cant),
       atraso: (o) => diasDesde((o.stages[baseStage] || {}).fecha),
+      diasTaller: (o) => diasEnTaller(o),
     }
     return sortRows(list, accessors[sortKey], sortDir)
   }, [enEtapa, q, sortKey, sortDir, baseStage, refMap])
@@ -183,6 +194,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />
                 <SortTh label="Cant" col="cant" {...thProps} />
                 {showAtraso && <SortTh label="Atraso" col="atraso" {...thProps} />}
+                {showDiasTaller && <SortTh label="Días en taller" col="diasTaller" {...thProps} />}
                 <th>Pendiente</th>
               </tr>
             </thead>
@@ -192,6 +204,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 const base = o.stages[baseStage] || {}
                 const taller = (o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || ''
                 const atraso = diasDesde(base.fecha)
+                const dias = showDiasTaller ? diasEnTaller(o) : null
                 const canOpen = !!(onOpenRef && ref)
                 return (
                   <tr key={o.id}
@@ -226,6 +239,18 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                       <td className="num">
                         {atraso == null ? '' : (
                           <span className={'tag' + (atraso >= 15 ? ' tag-warn' : '')}>{atraso} d</span>
+                        )}
+                      </td>
+                    )}
+                    {showDiasTaller && (
+                      <td className="num">
+                        {dias == null ? <span className="muted">—</span> : (
+                          <span className={'tag' + (dias < 0 ? ' tag-warn' : '')}
+                            title={dias < 0
+                              ? 'La entrega quedó registrada antes del envío'
+                              : `Enviado ${formatDate(o.stages.envioEnsamble.fecha)}`}>
+                            {dias} d
+                          </span>
                         )}
                       </td>
                     )}

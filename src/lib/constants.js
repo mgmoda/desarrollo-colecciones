@@ -147,7 +147,15 @@ export function formatPrice(value) {
 
 export function formatDate(value) {
   if (!value) return ''
-  const d = value instanceof Date ? value : new Date(value)
+  let d
+  if (value instanceof Date) {
+    d = value
+  } else {
+    // "2026-06-30" lo interpreta new Date() como medianoche UTC, que en
+    // Colombia (UTC-5) cae el día anterior. Se arma la fecha local a mano.
+    const iso = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    d = iso ? new Date(+iso[1], +iso[2] - 1, +iso[3]) : new Date(value)
+  }
   if (isNaN(d)) return typeof value === 'string' ? value : ''
   return d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }

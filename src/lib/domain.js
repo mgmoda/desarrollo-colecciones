@@ -143,7 +143,40 @@ function filaEnlazada(codigo, { ficha, sufijo }, propia, finalDe) {
   }
 }
 
-export function buildRefIndex(orders, refs) {
+// Una misma prenda puede haber quedado con dos fichas: la del código interno
+// (MG-V977) y otra creada aparte con la referencia final (C6882). Son la misma
+// prenda y no deben salir como dos filas. Manda la del código interno, que es
+// de la que cuelga el histórico de órdenes; de la otra se toma solo lo que a
+// aquella le falte, para no pisar datos con vacíos.
+function fundirDuplicadas(refs) {
+  const byId = new Map(refs.map((r) => [r.id, r]))
+  const absorbidas = new Set()
+  const porId = new Map()
+  refs.forEach((a) => {
+    const final = (a.nuevaRef || '').trim()
+    if (!final || final === a.id) return
+    const b = byId.get(final)
+    if (!b || absorbidas.has(a.id)) return
+    absorbidas.add(b.id)
+    const fundida = { ...a }
+    Object.keys(b).forEach((k) => {
+      if (k === 'id' || k === 'referencia' || k === 'nuevaRef' || k === 'updatedAt') return
+      const va = fundida[k]
+      const vacio = va == null || va === ''
+        || (Array.isArray(va) && va.length === 0)
+      if (vacio && b[k] != null && b[k] !== '') fundida[k] = b[k]
+    })
+    fundida.duplicadaDe = b.id
+    porId.set(a.id, fundida)
+  })
+  if (!absorbidas.size) return refs
+  return refs
+    .filter((r) => !absorbidas.has(r.id))
+    .map((r) => porId.get(r.id) || r)
+}
+
+export function buildRefIndex(orders, refsEntrada) {
+  const refs = fundirDuplicadas(refsEntrada)
   const byId = new Map(refs.map((r) => [r.id, r]))
   // Cualquier código conocido apunta a su ficha.
   const porCodigo = new Map()

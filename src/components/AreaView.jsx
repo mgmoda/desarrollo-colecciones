@@ -7,6 +7,7 @@ import { ordersForArea, refProcesos, claveOrden, esOrdenTop } from '../lib/domai
 import { diasDesde } from '../lib/dates.js'
 import { generateAreaPDF } from '../lib/areaPdf.js'
 import TopVinculoModal from './TopVinculoModal.jsx'
+import AreaKpis from './AreaKpis.jsx'
 
 const STAGE_LABEL = {
   ordenCorte: 'Orden corte', trazo: 'Trazo', entregaCorte: 'Corte',
@@ -78,10 +79,14 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   const showAtraso = areaKey !== 'entrega' // en entrega ya ingresó: no hay atraso
   const pendienteLabel = area.next ? STAGE_LABEL[area.next] : 'Recibido'
 
+  // Las fases apagadas no cuentan en ninguna parte: ni en la tabla ni en los
+  // KPIs. La semana mira todas las órdenes, no solo las de esta etapa, porque
+  // lo ya trazado hoy salió de Trazos.
+  const visibles = useMemo(() => orders.filter((o) => !ocultas.has(o.origen)), [orders, ocultas])
+  const enEtapa = useMemo(() => ordersForArea(visibles, areaKey), [visibles, areaKey])
+
   const rows = useMemo(() => {
-    let list = ordersForArea(orders, areaKey)
-    // Las fases deshabilitadas no se muestran en ninguna etapa.
-    list = list.filter((o) => !ocultas.has(o.origen))
+    let list = enEtapa
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((o) =>
@@ -104,7 +109,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       atraso: (o) => diasDesde((o.stages[baseStage] || {}).fecha),
     }
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [orders, areaKey, q, sortKey, sortDir, baseStage, refMap, ocultas])
+  }, [enEtapa, q, sortKey, sortDir, baseStage, refMap])
 
   const thProps = { sortKey, sortDir, onSort: toggle }
 
@@ -166,6 +171,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
           <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia, producto…" />
         </div>
       </div>
+
+      <AreaKpis areaKey={areaKey} orders={visibles} enEtapa={enEtapa} />
 
       {rows.length === 0 ? (
         <div className="empty-state">

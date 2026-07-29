@@ -539,3 +539,56 @@ export function telaResuelta(telaRow, catalog) {
     proveedor: info.proveedor || telaRow.nota || telaRow.proveedor || '',
   }
 }
+
+// ---------------------------------------------------------------------------
+// KPIs por área
+// ---------------------------------------------------------------------------
+
+function cantEtapa(order, key) {
+  const s = (order.stages && order.stages[key]) || {}
+  const n = parseInt(String(s.cant || '').replace(/\D/g, ''), 10)
+  return Number.isFinite(n) ? n : 0
+}
+
+// Lo que falta por hacer en un área: unidades y órdenes, con el desglose por
+// fase. Las unidades salen de la orden de corte, que es la cantidad del lote.
+export function pendienteDeArea(ordersDelArea) {
+  const porFase = {}
+  let unidades = 0
+  ordersDelArea.forEach((o) => {
+    const n = cantEtapa(o, 'ordenCorte')
+    unidades += n
+    const f = porFase[o.origen] || (porFase[o.origen] = { ordenes: 0, unidades: 0 })
+    f.ordenes += 1
+    f.unidades += n
+  })
+  return { unidades, ordenes: ordersDelArea.length, porFase }
+}
+
+// Lo que el área terminó cada día: se mide por la etapa que ella cumple
+// (Trazos cierra el trazo, Corte la entrega de corte, etc.). Una orden ya
+// trazada salió de Trazos, así que hay que mirar todas las órdenes, no solo
+// las que siguen en la etapa.
+export function produccionPorDia(orders, etapaKey, dias) {
+  const mapa = new Map(dias.map((d) => [d, { unidades: 0, refs: [] }]))
+  orders.forEach((o) => {
+    const fecha = (o.stages && o.stages[etapaKey] && o.stages[etapaKey].fecha) || ''
+    const dia = mapa.get(fecha)
+    if (!dia) return
+    const cant = cantEtapa(o, etapaKey) || cantEtapa(o, 'ordenCorte')
+    dia.unidades += cant
+    dia.refs.push({ id: o.id, referencia: o.referencia, orden: o.orden, origen: o.origen, cant })
+  })
+  mapa.forEach((d) => d.refs.sort((a, b) => b.cant - a.cant))
+  return mapa
+}
+
+export function totalSemana(orders, etapaKey, dias) {
+  let unidades = 0
+  let refs = 0
+  produccionPorDia(orders, etapaKey, dias).forEach((d) => {
+    unidades += d.unidades
+    refs += d.refs.length
+  })
+  return { unidades, refs }
+}

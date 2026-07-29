@@ -204,8 +204,16 @@ export default function App() {
     setOrders((prev) => [...prev.filter((o) => o.origen !== origen), ...newOrders])
   }
 
+  // Si la fila viene rotulada con el código nuevo (C6850), los cambios deben
+  // ir a su ficha real (MG-B921) y no crear una ficha aparte.
+  function fichaReal(refId) {
+    const r = refMap.get(refId)
+    return (r && r._aliasDe) ? r._aliasDe : refId
+  }
+
   // Edita inline un campo simple de la referencia (ej. costo desde Geodésica).
-  function handleSetField(refId, field, value) {
+  function handleSetField(refIdEntrada, field, value) {
+    const refId = fichaReal(refIdEntrada)
     const current = refMap.get(refId)
     const base = current && !current._stub ? current : emptyRef(refId)
     const updated = { ...base, id: refId, referencia: refId, [field]: value, updatedAt: Date.now() }
@@ -215,7 +223,8 @@ export default function App() {
 
   // Edita varios campos a la vez con un solo upsert (mejor para batch ops
   // como "marcar como despachada" desde Geodésica).
-  function handleSetFields(refId, fields) {
+  function handleSetFields(refIdEntrada, fields) {
+    const refId = fichaReal(refIdEntrada)
     const current = refMap.get(refId)
     const base = current && !current._stub ? current : emptyRef(refId)
     const updated = { ...base, id: refId, referencia: refId, ...fields, updatedAt: Date.now() }
@@ -236,7 +245,8 @@ export default function App() {
   }
 
   // Asigna una foto a una referencia (creando el registro si no existía).
-  async function handleAssignPhoto(refId, dataUrl) {
+  async function handleAssignPhoto(refIdEntrada, dataUrl) {
+    const refId = fichaReal(refIdEntrada)
     const current = refMap.get(refId)
     const base = current && !current._stub ? current : emptyRef(refId)
     const updated = { ...base, id: refId, referencia: refId, image: dataUrl, updatedAt: Date.now() }
@@ -249,7 +259,12 @@ export default function App() {
   }
 
   function openEdit(ref) {
-    setEditing(ref && !ref._stub ? ref : { ...emptyRef(ref.id), referencia: ref.referencia, _stub: true })
+    // Fila con código nuevo: se edita la ficha de la que hereda los datos.
+    const real = ref && ref._aliasDe ? refMap.get(ref._aliasDe) : ref
+    const objetivo = real || ref
+    setEditing(objetivo && !objetivo._stub
+      ? objetivo
+      : { ...emptyRef(objetivo.id), referencia: objetivo.referencia, _stub: true })
     setFormOpen(true)
   }
   function openNew() { setEditing(null); setFormOpen(true) }

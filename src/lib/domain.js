@@ -96,13 +96,30 @@ export function stageCant(order, key) {
 // ordenada de referencias con su info combinada.
 export function buildRefIndex(orders, refs) {
   const byId = new Map(refs.map((r) => [r.id, r]))
+  // Índice por código nuevo: desde el catálogo, producción rotula las órdenes
+  // con la referencia final (C6850) y no con la interna (MG-B921).
+  const byNueva = new Map()
+  refs.forEach((r) => {
+    const n = (r.nuevaRef || '').trim()
+    if (n && !byId.has(n)) byNueva.set(n, r)
+  })
   const seen = new Set()
   const list = []
   orders.forEach((o) => {
     const id = normRef(o.referencia)
     if (!id || seen.has(id)) return
     seen.add(id)
-    list.push(byId.get(id) || { id, referencia: id, _stub: true })
+    const ficha = byId.get(id)
+    if (ficha) { list.push(ficha); return }
+    const porNueva = byNueva.get(id)
+    if (porNueva) {
+      // Hereda foto, costo y demás de su ficha, pero sigue siendo su propia
+      // fila: así el conteo de órdenes no cambia. `_aliasDe` guarda de quién
+      // vienen los datos, para que al editar se abra la ficha real.
+      list.push({ ...porNueva, id, referencia: id, _aliasDe: porNueva.id })
+      return
+    }
+    list.push({ id, referencia: id, _stub: true })
   })
   // Referencias que existen como registro pero ya no en órdenes (manuales).
   refs.forEach((r) => {

@@ -22,13 +22,6 @@ export function ordersForArea(orders, areaKey) {
   return orders.filter((o) => orderArea(o) === areaKey)
 }
 
-// Clave estable de una orden. El id se regenera en cada importación, así que
-// para recordar decisiones (ej. órdenes deshabilitadas) se usa origen +
-// número de orden + referencia, que sí se mantiene entre archivos.
-export function claveOrden(o) {
-  return `${o.origen}|${o.orden || ''}|${o.referencia || ''}`
-}
-
 // Orden de avance de las áreas (de menos a más avanzada).
 export const AREA_ORDER = ['trazos', 'corte', 'enviar', 'talleres', 'entrega']
 

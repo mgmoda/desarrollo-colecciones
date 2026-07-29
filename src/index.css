@@ -5108,3 +5108,37 @@ img.ship-ref-photo {
   .ref-form-photo { position: static; }
 }
 
+
+/* Interruptores de fase: apagan premuestra/muestra/producción en todas las etapas. */
+.fase-toggles {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-2);
+}
+.fase-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .12s, color .12s, opacity .12s;
+}
+.fase-toggle:hover { background: var(--hover); }
+.fase-toggle-luz {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok, #2e9e5b);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok, #2e9e5b) 22%, transparent);
+}
+.fase-toggle.off { color: var(--muted); opacity: .75; text-decoration: line-through; }
+.fase-toggle.off .fase-toggle-luz { background: var(--border); box-shadow: none; }

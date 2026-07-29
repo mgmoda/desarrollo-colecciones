@@ -22,7 +22,7 @@ import {
   dbLoadOrders, dbLoadRefs, dbLoadSettings,
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings,
 } from './lib/db.js'
-import { buildRefIndex, emptyRef, refTracks, normalizeTelas, claveOrden } from './lib/domain.js'
+import { buildRefIndex, emptyRef, refTracks, normalizeTelas } from './lib/domain.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice } from './lib/constants.js'
 
 const TABS = [
@@ -459,17 +459,17 @@ export default function App() {
   }
 
   // Catálogo de procesos especiales (Recuadros, Tintorería, Bordado, …)
-  // Órdenes deshabilitadas: dejan de aparecer en su etapa (ej. premuestras
-  // que ya se hicieron y quedaron colgadas). Se guardan por clave estable,
-  // así sobreviven a las reimportaciones del Excel.
-  const ordenesOcultas = useMemo(
-    () => new Set(settings.ordenesOcultas || []),
-    [settings.ordenesOcultas],
+  // Fases apagadas: dejan de aparecer en todas las etapas de producción
+  // (ej. las premuestras cuando ya se hicieron). Es un interruptor general,
+  // no se marca orden por orden, y se recuerda entre sesiones.
+  const fasesOcultas = useMemo(
+    () => new Set(settings.fasesOcultas || []),
+    [settings.fasesOcultas],
   )
-  function ocultarOrdenes(claves, ocultar) {
-    const set = new Set(settings.ordenesOcultas || [])
-    claves.forEach((c) => { ocultar ? set.add(c) : set.delete(c) })
-    const next = { ...settings, ordenesOcultas: [...set] }
+  function toggleFase(fase, ocultar) {
+    const set = new Set(settings.fasesOcultas || [])
+    ocultar ? set.add(fase) : set.delete(fase)
+    const next = { ...settings, fasesOcultas: [...set] }
     setSettings(next)
     dbSaveSettings(next).catch((e) => console.error(e))
   }
@@ -614,7 +614,7 @@ export default function App() {
         )}
         {AREA_KEYS.includes(tab) && (
           <AreaView areaKey={tab} orders={orders} refMap={refMap}
-            ordenesOcultas={ordenesOcultas} onOcultarOrdenes={ocultarOrdenes}
+            fasesOcultas={fasesOcultas} onToggleFase={toggleFase}
             onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
         {tab === 'ensamble' && (

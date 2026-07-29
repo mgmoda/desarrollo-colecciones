@@ -23,35 +23,26 @@ function cantDe(o) {
   return ((o.stages && o.stages.ordenCorte) || {}).cant || ''
 }
 
-// Ficha de una orden: dónde va, en qué taller y las fechas de cada etapa.
-function OrdenPanel({ orden, titulo }) {
-  const taller = ((orden.stages && orden.stages.envioEnsamble) || {}).taller || ''
+function tallerDe(o) {
+  return ((o.stages && o.stages.envioEnsamble) || {}).taller || ''
+}
+
+function fechaEtapa(o, k) {
+  return (o && o.stages && o.stages[k] && o.stages[k].fecha) || ''
+}
+
+// Tarjeta de una de las dos órdenes. `lado` ('prenda' | 'top') le pone el
+// color y la etiqueta, para no confundir una con otra.
+function OrdenCard({ orden, lado, etiqueta }) {
   return (
-    <div className="topv-panel">
-      <div className="topv-panel-head">
-        <span className="topv-panel-tit">{titulo}</span>
-        <span className="strong">{orden.referencia}</span>
-      </div>
-      <div className="topv-datos">
-        <div><span className="muted">Orden</span><b className="mono">{orden.orden}</b></div>
-        <div><span className="muted">Fase</span><b>{ORIGENES[orden.origen] || orden.origen}</b></div>
-        <div><span className="muted">Cantidad</span><b>{cantDe(orden) || '—'}</b></div>
-        <div><span className="muted">Etapa actual</span><b>{etapaActual(orden)}</b></div>
-        <div className="topv-ancho">
-          <span className="muted">Taller</span><b>{taller || 'Aún sin enviar'}</b>
-        </div>
-      </div>
-      <ul className="topv-linea">
-        {ETAPAS.map(([k, label]) => {
-          const s = (orden.stages && orden.stages[k]) || {}
-          return (
-            <li key={k} className={s.fecha ? 'ok' : ''}>
-              <span>{label}</span>
-              <span className="mono">{s.fecha ? formatDate(s.fecha) : '—'}</span>
-            </li>
-          )
-        })}
-      </ul>
+    <div className={'topv-card topv-' + lado}>
+      <div className="topv-card-tag">{etiqueta}</div>
+      <p className="topv-card-ref">{orden.referencia}</p>
+      <dl className="topv-card-datos">
+        <dt>Orden</dt><dd className="mono">{orden.orden}</dd>
+        <dt>Taller</dt><dd>{tallerDe(orden) || <span className="muted">Aún sin enviar</span>}</dd>
+        <dt>Va en</dt><dd className="strong">{etapaActual(orden)}</dd>
+      </dl>
     </div>
   )
 }
@@ -60,7 +51,7 @@ function OrdenPanel({ orden, titulo }) {
  * Muestra dónde va el top de una prenda (o, desde la fila del top, a qué
  * prenda y lote pertenece) y permite corregir el vínculo a mano.
  */
-export default function TopVinculoModal({ orden, orders, topLinks, onVincular, onClose }) {
+export default function TopVinculoModal({ orden, orders, refMap, topLinks, onVincular, onClose }) {
   const [eligiendo, setEligiendo] = useState(false)
   const abierto = !!orden
   const esTop = abierto && esOrdenTop(orden)
@@ -69,6 +60,22 @@ export default function TopVinculoModal({ orden, orders, topLinks, onVincular, o
     ? (esTop ? topLinks.porTop.get(clave) : topLinks.porBase.get(clave))
     : null
   const pareja = vinculo ? (esTop ? vinculo.base : vinculo.top) : null
+
+  // Siempre se pinta la prenda a la izquierda y el top a la derecha, sin
+  // importar desde qué fila se haya abierto.
+  const prenda = esTop ? pareja : orden
+  const top = esTop ? orden : pareja
+
+  const ficha = abierto && refMap
+    ? (refMap.get(orden.referencia) || (pareja && refMap.get(pareja.referencia)))
+    : null
+
+  // Fase y cantidad se muestran arriba cuando las dos órdenes coinciden —que
+  // es lo normal, porque el top se corta para el mismo lote—. Si no coinciden,
+  // se muestran dentro de cada tarjeta y se advierte.
+  const refOrden = prenda || top
+  const mismaFase = !prenda || !top || prenda.origen === top.origen
+  const mismaCant = !prenda || !top || cantDe(prenda) === cantDe(top)
 
   // Candidatos para vincular a mano: desde la prenda, los tops de esa misma
   // referencia; desde el top, las órdenes de la prenda.
@@ -83,9 +90,7 @@ export default function TopVinculoModal({ orden, orders, topLinks, onVincular, o
   }, [abierto, esTop, orden, orders])
 
   function vincular(otra) {
-    const claveTop = esTop ? clave : claveOrden(otra)
-    const claveBase = esTop ? claveOrden(otra) : clave
-    onVincular(claveTop, claveBase)
+    onVincular(esTop ? clave : claveOrden(otra), esTop ? claveOrden(otra) : clave)
     setEligiendo(false)
   }
 
@@ -108,30 +113,78 @@ export default function TopVinculoModal({ orden, orders, topLinks, onVincular, o
       {abierto && (
         <>
           <div className="modal-head">
-            <h2>{esTop ? 'Prenda de este top' : 'Top de esta prenda'}</h2>
+            <h2>Prenda y su top</h2>
             <button className="icon-btn" onClick={cerrar} title="Cerrar">✕</button>
           </div>
+
           <div className="modal-body">
-            <div className="topv-grid">
-              <OrdenPanel orden={orden} titulo={esTop ? 'Top' : 'Prenda'} />
-              {pareja ? (
-                <OrdenPanel orden={pareja} titulo={esTop ? 'Prenda' : 'Top'} />
-              ) : (
-                <div className="topv-panel topv-vacio">
-                  <p className="strong">
-                    {esTop ? 'Sin prenda vinculada' : 'Top aún no programado'}
-                  </p>
-                  <p className="muted">
-                    {esTop
-                      ? 'No se encontró la orden de la prenda a la que pertenece este top.'
-                      : 'Esta prenda lleva top incluido, pero todavía no hay una orden de corte para el top de este lote.'}
-                  </p>
-                </div>
-              )}
+            {/* Lo que las dos órdenes comparten: la prenda, el lote. */}
+            <header className="topv-cab">
+              {ficha && ficha.image
+                ? <img className="topv-foto" src={ficha.image} alt="" />
+                : <span className="topv-foto topv-foto-vacia">＋</span>}
+              <div>
+                <p className="topv-cab-ref">{refBaseDeTop((prenda || top).referencia)}</p>
+                {ficha && ficha.descripcion && (
+                  <p className="topv-cab-desc">{ficha.descripcion}</p>
+                )}
+                <p className="topv-cab-lote">
+                  {mismaFase && <span className="tag">{ORIGENES[refOrden.origen] || refOrden.origen}</span>}
+                  {mismaCant && cantDe(refOrden) && <span className="tag">{cantDe(refOrden)} unidades</span>}
+                  {!mismaFase && <span className="tag tag-warn">Fases distintas</span>}
+                  {!mismaCant && <span className="tag tag-warn">Cantidades distintas</span>}
+                </p>
+              </div>
+            </header>
+
+            <div className="topv-cards">
+              {prenda
+                ? <OrdenCard orden={prenda} lado="prenda" etiqueta="La prenda" />
+                : (
+                  <div className="topv-card topv-prenda topv-card-vacia">
+                    <div className="topv-card-tag">La prenda</div>
+                    <p className="strong">Sin prenda vinculada</p>
+                    <p className="muted">No se encontró la orden a la que pertenece este top.</p>
+                  </div>
+                )}
+              {top
+                ? <OrdenCard orden={top} lado="top" etiqueta="Su top" />
+                : (
+                  <div className="topv-card topv-top topv-card-vacia">
+                    <div className="topv-card-tag">Su top</div>
+                    <p className="strong">Top aún no programado</p>
+                    <p className="muted">Todavía no hay orden de corte para el top de este lote.</p>
+                  </div>
+                )}
             </div>
 
+            {/* Las fechas enfrentadas: así se ve de un vistazo si el top va
+                atrasado respecto a la prenda. */}
+            <table className="topv-fechas">
+              <thead>
+                <tr>
+                  <th>Etapa</th>
+                  <th className="topv-th-prenda">Prenda</th>
+                  <th className="topv-th-top">Top</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ETAPAS.map(([k, label]) => {
+                  const fp = fechaEtapa(prenda, k)
+                  const ft = fechaEtapa(top, k)
+                  return (
+                    <tr key={k} className={fp || ft ? '' : 'topv-fila-pend'}>
+                      <th scope="row">{label}</th>
+                      <td className="mono">{fp ? formatDate(fp) : '—'}</td>
+                      <td className="mono">{ft ? formatDate(ft) : '—'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+
             {vinculo && vinculo.aMano && (
-              <p className="topv-manual">Vínculo puesto a mano.</p>
+              <p className="topv-nota">Este vínculo se puso a mano.</p>
             )}
             {vinculo && vinculo.aviso && (
               <p className="topv-aviso">⚠ {vinculo.aviso}</p>
@@ -143,7 +196,9 @@ export default function TopVinculoModal({ orden, orders, topLinks, onVincular, o
                   {esTop ? 'Elige la orden de la prenda:' : 'Elige la orden del top:'}
                 </p>
                 {candidatos.length === 0 ? (
-                  <p className="muted">No hay órdenes {esTop ? 'de esta prenda' : 'de top para esta referencia'}.</p>
+                  <p className="muted">
+                    No hay órdenes {esTop ? 'de esta prenda' : 'de top para esta referencia'}.
+                  </p>
                 ) : (
                   <ul className="topv-cand">
                     {candidatos.map((o) => (
@@ -161,6 +216,7 @@ export default function TopVinculoModal({ orden, orders, topLinks, onVincular, o
               </div>
             )}
           </div>
+
           <div className="modal-foot spread">
             <div className="topv-acciones">
               <button className="btn" onClick={() => setEligiendo(!eligiendo)}>

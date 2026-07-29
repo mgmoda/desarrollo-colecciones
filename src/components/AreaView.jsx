@@ -247,7 +247,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         </div>
       )}
 
-      <TopVinculoModal orden={topDe} orders={orders} topLinks={topLinks}
+      <TopVinculoModal orden={topDe} orders={orders} refMap={refMap} topLinks={topLinks}
         onVincular={onVincularTop} onClose={() => setTopDe(null)} />
     </div>
   )

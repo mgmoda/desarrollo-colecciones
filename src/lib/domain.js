@@ -44,8 +44,13 @@ export function areaBaseFecha(order) {
 
 // Pistas de una referencia, separadas por origen (premuestra/muestra/producción).
 // Para cada origen, la etapa representativa = la MENOS avanzada (lo que falta).
-export function refTracks(orders, refId) {
-  const mine = orders.filter((o) => o.referencia === refId)
+// Acepta un código o la lista de códigos de la prenda (interno y final), para
+// que el histórico no quede partido entre los dos.
+export function refTracks(orders, refIdOCodigos) {
+  const codigos = new Set(
+    (Array.isArray(refIdOCodigos) ? refIdOCodigos : [refIdOCodigos]).filter(Boolean),
+  )
+  const mine = orders.filter((o) => codigos.has(o.referencia))
   const byOrigen = {}
   mine.forEach((o) => { (byOrigen[o.origen] || (byOrigen[o.origen] = [])).push(o) })
   return ['premuestra', 'muestra', 'produccion']
@@ -94,36 +99,48 @@ export function stageCant(order, key) {
 // Une las referencias presentes en las órdenes con los registros de
 // referencia guardados (resumen + costos + foto). Devuelve una lista
 // ordenada de referencias con su info combinada.
+// Una prenda tiene dos códigos: el interno con el que nace (MG-B838) y la
+// referencia final que le asigna el catálogo (M5293). Las órdenes de
+// premuestra vienen con el interno y las de muestra/producción con el final,
+// pero son la misma prenda: aquí se unifican en una sola fila, mostrando la
+// referencia final como nombre y guardando ambos códigos en `codigos`.
+function filaDeFicha(r, finalDe) {
+  const final = (r.nuevaRef || '').trim()
+  const par = r.conjuntoRef && finalDe ? finalDe(r.conjuntoRef) : r.conjuntoRef
+  const base = { ...r, codigos: final ? [r.id, final] : [r.id], conjuntoRefFinal: par }
+  if (!final) return base
+  return { ...base, referencia: final, refInterna: r.id }
+}
+
 export function buildRefIndex(orders, refs) {
   const byId = new Map(refs.map((r) => [r.id, r]))
-  // Índice por código nuevo: desde el catálogo, producción rotula las órdenes
-  // con la referencia final (C6850) y no con la interna (MG-B921).
-  const byNueva = new Map()
+  // Cualquier código conocido apunta a su ficha.
+  const porCodigo = new Map()
   refs.forEach((r) => {
+    porCodigo.set(r.id, r)
     const n = (r.nuevaRef || '').trim()
-    if (n && !byId.has(n)) byNueva.set(n, r)
+    if (n && !byId.has(n)) porCodigo.set(n, r)
   })
+  // La pareja del conjunto se guarda por código interno; para mostrarla se
+  // usa su referencia final.
+  const finalDe = (codigo) => {
+    const f = byId.get(codigo)
+    return (f && (f.nuevaRef || '').trim()) || codigo
+  }
   const seen = new Set()
   const list = []
   orders.forEach((o) => {
-    const id = normRef(o.referencia)
-    if (!id || seen.has(id)) return
-    seen.add(id)
-    const ficha = byId.get(id)
-    if (ficha) { list.push(ficha); return }
-    const porNueva = byNueva.get(id)
-    if (porNueva) {
-      // Hereda foto, costo y demás de su ficha, pero sigue siendo su propia
-      // fila: así el conteo de órdenes no cambia. `_aliasDe` guarda de quién
-      // vienen los datos, para que al editar se abra la ficha real.
-      list.push({ ...porNueva, id, referencia: id, _aliasDe: porNueva.id })
-      return
-    }
-    list.push({ id, referencia: id, _stub: true })
+    const cod = normRef(o.referencia)
+    if (!cod) return
+    const ficha = porCodigo.get(cod)
+    const clave = ficha ? ficha.id : cod
+    if (seen.has(clave)) return
+    seen.add(clave)
+    list.push(ficha ? filaDeFicha(ficha, finalDe) : { id: cod, referencia: cod, codigos: [cod], _stub: true })
   })
   // Referencias que existen como registro pero ya no en órdenes (manuales).
   refs.forEach((r) => {
-    if (!seen.has(r.id)) { seen.add(r.id); list.push(r) }
+    if (!seen.has(r.id)) { seen.add(r.id); list.push(filaDeFicha(r, finalDe)) }
   })
   return list.sort((a, b) => a.referencia.localeCompare(b.referencia))
 }

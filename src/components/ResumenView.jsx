@@ -219,7 +219,7 @@ export default function ResumenView({ refs, marcas = [], procesosCatalogo = [], 
     const accessors = {
       foto: (r) => (r.image ? 1 : 0),
       referencia: (r) => r.referencia,
-      nuevaRef: (r) => r.nuevaRef || '',
+      refInterna: (r) => r.refInterna || '',
       procesos: (r) => refProcesos(r).length,
       veces: (r) => veces(r),
       tipo: (r) => r.tipo,
@@ -394,7 +394,7 @@ export default function ResumenView({ refs, marcas = [], procesosCatalogo = [], 
                 </th>
                 <SortTh label="Foto" col="foto" {...thProps} />
                 <SortTh label="Referencia" col="referencia" {...thProps} />
-                <SortTh label="Nueva ref." col="nuevaRef" {...thProps} />
+                <SortTh label="Cód. interno" col="refInterna" {...thProps} />
                 <SortTh label="Veces" col="veces" {...thProps} />
                 <SortTh label="Etapa actual" col="etapa" {...thProps} />
                 <SortTh label="Tipo" col="tipo" {...thProps} />
@@ -433,11 +433,11 @@ export default function ResumenView({ refs, marcas = [], procesosCatalogo = [], 
                     )}
                     {r.referencia}
                     {r.conjunto && r.conjuntoRef && (
-                      <span className="conj-chip" title={`En conjunto con ${r.conjuntoRef}`}>⇄ Conjunto · {r.conjuntoRef}</span>
+                      <span className="conj-chip" title={`En conjunto con ${r.conjuntoRef}`}>⇄ Conjunto · {r.conjuntoRefFinal || r.conjuntoRef}</span>
                     )}
                   </td>
                   <td className="nueva-ref">
-                    {r.nuevaRef ? r.nuevaRef : <span className="muted">—</span>}
+                    {r.refInterna ? r.refInterna : <span className="muted">—</span>}
                   </td>
                   <td className="num">
                     {(() => {

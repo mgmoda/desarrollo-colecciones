@@ -172,10 +172,18 @@ export default function App() {
 
   // Índice unificado de referencias (resumen + costos + foto).
   const refIndex = useMemo(() => buildRefIndex(orders, refs), [orders, refs])
-  const refMap = useMemo(() => new Map(refIndex.map((r) => [r.id, r])), [refIndex])
+  // Se puede buscar por cualquiera de sus códigos: el interno o el final.
+  const refMap = useMemo(() => {
+    const m = new Map()
+    refIndex.forEach((r) => {
+      m.set(r.id, r)
+      ;(r.codigos || []).forEach((c) => { if (!m.has(c)) m.set(c, r) })
+    })
+    return m
+  }, [refIndex])
   const tracksByRef = useMemo(() => {
     const m = new Map()
-    refIndex.forEach((r) => m.set(r.id, refTracks(orders, r.id)))
+    refIndex.forEach((r) => m.set(r.id, refTracks(orders, r.codigos || r.id)))
     return m
   }, [refIndex, orders])
 
@@ -186,7 +194,8 @@ export default function App() {
   // Resumen, Colección, Autorizaciones ni Costos.
   const refIndexMG = useMemo(() => {
     return refIndex.filter((r) => {
-      const mine = orders.filter((o) => o.referencia === r.id)
+      const codigos = new Set(r.codigos || [r.id])
+      const mine = orders.filter((o) => codigos.has(o.referencia))
       if (mine.length === 0) return true // ref manual sin órdenes → es MG
       const allExternal = mine.every((o) => EXTERNAL_ORIGENES.has(o.origen))
       return !allExternal
@@ -208,7 +217,16 @@ export default function App() {
   // ir a su ficha real (MG-B921) y no crear una ficha aparte.
   function fichaReal(refId) {
     const r = refMap.get(refId)
-    return (r && r._aliasDe) ? r._aliasDe : refId
+    return r ? r.id : refId
+  }
+
+  // El índice agrega campos calculados (la referencia final como nombre, la
+  // lista de códigos). Se quitan antes de guardar para que la ficha conserve
+  // su propio código y no se ensucie la base.
+  function paraGuardar(ref) {
+    const { codigos: _c, refInterna, _stub: _s, ...limpio } = ref
+    if (refInterna) limpio.referencia = refInterna
+    return limpio
   }
 
   // Edita inline un campo simple de la referencia (ej. costo desde Geodésica).
@@ -217,8 +235,9 @@ export default function App() {
     const current = refMap.get(refId)
     const base = current && !current._stub ? current : emptyRef(refId)
     const updated = { ...base, id: refId, referencia: refId, [field]: value, updatedAt: Date.now() }
-    upsertRefState(updated)
-    dbUpsertRef(updated).catch((e) => console.error(e))
+    const limpio = paraGuardar(updated)
+    upsertRefState(limpio)
+    dbUpsertRef(limpio).catch((e) => console.error(e))
   }
 
   // Edita varios campos a la vez con un solo upsert (mejor para batch ops
@@ -228,8 +247,9 @@ export default function App() {
     const current = refMap.get(refId)
     const base = current && !current._stub ? current : emptyRef(refId)
     const updated = { ...base, id: refId, referencia: refId, ...fields, updatedAt: Date.now() }
-    upsertRefState(updated)
-    dbUpsertRef(updated).catch((e) => console.error(e))
+    const limpio = paraGuardar(updated)
+    upsertRefState(limpio)
+    dbUpsertRef(limpio).catch((e) => console.error(e))
   }
 
   // Alterna el flag "Producción extra" desde el Resumen (un solo clic).
@@ -249,7 +269,7 @@ export default function App() {
     const refId = fichaReal(refIdEntrada)
     const current = refMap.get(refId)
     const base = current && !current._stub ? current : emptyRef(refId)
-    const updated = { ...base, id: refId, referencia: refId, image: dataUrl, updatedAt: Date.now() }
+    const updated = paraGuardar({ ...base, id: refId, referencia: refId, image: dataUrl, updatedAt: Date.now() })
     setRefs((list) => {
       const idx = list.findIndex((r) => r.id === refId)
       if (idx >= 0) return list.map((r) => (r.id === refId ? updated : r))
@@ -259,12 +279,7 @@ export default function App() {
   }
 
   function openEdit(ref) {
-    // Fila con código nuevo: se edita la ficha de la que hereda los datos.
-    const real = ref && ref._aliasDe ? refMap.get(ref._aliasDe) : ref
-    const objetivo = real || ref
-    setEditing(objetivo && !objetivo._stub
-      ? objetivo
-      : { ...emptyRef(objetivo.id), referencia: objetivo.referencia, _stub: true })
+    setEditing(ref && !ref._stub ? ref : { ...emptyRef(ref.id), referencia: ref.referencia, _stub: true })
     setFormOpen(true)
   }
   function openNew() { setEditing(null); setFormOpen(true) }
@@ -283,8 +298,9 @@ export default function App() {
     const cur = refMap.get(partnerId)
     const base = cur && !cur._stub ? cur : emptyRef(partnerId)
     const updated = { ...base, id: partnerId, referencia: partnerId, conjunto, conjuntoRef: refId, updatedAt: Date.now() }
-    upsertRefState(updated)
-    dbUpsertRef(updated).catch((e) => console.error(e))
+    const limpio = paraGuardar(updated)
+    upsertRefState(limpio)
+    dbUpsertRef(limpio).catch((e) => console.error(e))
   }
 
   function handleSave(rawRef) {
@@ -350,7 +366,7 @@ export default function App() {
     setEditing(null)
 
     // Persistir en Supabase sin bloquear la UI.
-    dbUpsertRef(ref).catch((e) => {
+    dbUpsertRef(paraGuardar(ref)).catch((e) => {
       console.error('Error guardando referencia:', e)
       const msg = (e && (e.message || e.error_description || e.error)) || 'error desconocido'
       alert(

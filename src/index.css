@@ -3800,6 +3800,8 @@ img.ship-ref-photo {
   white-space: nowrap; cursor: pointer;
 }
 .proc-tag:hover { filter: brightness(0.96); }
+.proc-tag.proc-tag-ro { cursor: default; }
+.proc-tag.proc-tag-ro:hover { filter: none; }
 
 .proc-filtro { display: inline-flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .proc-f-btn {

@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { AREAS, formatDate, ORIGEN_ABBR } from '../lib/constants.js'
-import { ordersForArea } from '../lib/domain.js'
+import { AREAS, formatDate, ORIGEN_ABBR, TOP_LABEL, procesoColor } from '../lib/constants.js'
+import { ordersForArea, refProcesos } from '../lib/domain.js'
 import { diasDesde } from '../lib/dates.js'
 import { generateAreaPDF } from '../lib/areaPdf.js'
 
@@ -11,6 +11,24 @@ const STAGE_LABEL = {
   ordenCorte: 'Orden corte', trazo: 'Trazo', entregaCorte: 'Corte',
   alistamiento: 'Alistamiento', envioEnsamble: 'Envío a taller',
   entregaEnsamble: 'Entrega ensamble', revisado: 'Revisado', entradaBodega: 'Entrada bodega',
+}
+
+// Procesos especiales de la referencia (recuadros, tintorería, bordado…),
+// para que en el taller sepan qué lleva la prenda.
+function ProcesosCell({ refRow }) {
+  const lista = refProcesos(refRow)
+  if (!lista.length) return <span className="muted">—</span>
+  return (
+    <span className="proc-cell">
+      {lista.map((p) => {
+        const c = procesoColor(p)
+        return (
+          <span key={p} className="proc-tag proc-tag-ro" title={p}
+            style={{ background: c.bg, color: c.fg, borderColor: c.bd }}>{p}</span>
+        )
+      })}
+    </span>
+  )
 }
 
 export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef }) {
@@ -38,7 +56,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((o) =>
-        [o.referencia, o.producto, o.empresa, o.orden]
+        [o.referencia, o.producto, o.empresa, o.orden,
+          refProcesos(refMap.get(o.referencia)).join(' ')]
           .some((v) => String(v || '').toLowerCase().includes(term)),
       )
     }
@@ -49,12 +68,14 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       producto: (o) => o.producto,
       empresa: (o) => o.empresa,
       taller: (o) => (o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || '',
+      procesos: (o) => refProcesos(refMap.get(o.referencia)).join(', '),
+      topForro: (o) => (refMap.get(o.referencia) || {}).topIncluido || '',
       fecha: (o) => (o.stages[baseStage] || {}).fecha,
       cant: (o) => Number((o.stages[baseStage] || {}).cant),
       atraso: (o) => diasDesde((o.stages[baseStage] || {}).fecha),
     }
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [orders, areaKey, q, origenF, sortKey, sortDir, baseStage])
+  }, [orders, areaKey, q, origenF, sortKey, sortDir, baseStage, refMap])
 
   const thProps = { sortKey, sortDir, onSort: toggle }
 
@@ -130,6 +151,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 <SortTh label="# Orden" col="orden" {...thProps} />
                 <SortTh label="Referencia" col="referencia" {...thProps} />
                 <SortTh label="Producto" col="producto" {...thProps} />
+                <SortTh label="Procesos" col="procesos" {...thProps} />
+                <SortTh label="Top/Forro" col="topForro" {...thProps} />
                 <SortTh label="Empresa" col="empresa" {...thProps} />
                 {showTaller && <SortTh label="Taller" col="taller" {...thProps} />}
                 <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />
@@ -166,6 +189,12 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                     <td className="mono">{o.orden}</td>
                     <td className="strong">{o.referencia}</td>
                     <td>{o.producto}</td>
+                    <td><ProcesosCell refRow={ref} /></td>
+                    <td>
+                      {ref && ref.topIncluido
+                        ? <span className="tag">{TOP_LABEL[ref.topIncluido] || ref.topIncluido}</span>
+                        : <span className="muted">—</span>}
+                    </td>
                     <td>{o.empresa}</td>
                     {showTaller && <td>{taller}</td>}
                     <td>{formatDate(base.fecha)}</td>

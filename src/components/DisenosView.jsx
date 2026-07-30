@@ -9,6 +9,7 @@ import {
 } from '../lib/disenos.js'
 import StrikeOffFormato from './StrikeOffFormato.jsx'
 import { dbLoadDisenoImgs, dbUpsertDiseno, dbDeleteDiseno } from '../lib/db.js'
+import { generateDisenosPDF } from '../lib/disenosPdf.js'
 
 const hoyISO = () => new Date().toISOString().slice(0, 10)
 
@@ -44,6 +45,7 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
   const [etapaF, setEtapaF] = useState('')
   const [abierto, setAbierto] = useState(null)   // código del diseño abierto
   const [nuevo, setNuevo] = useState(false)
+  const [sel, setSel] = useState(() => new Set())
 
   const conteo = useMemo(() => {
     const m = new Map()
@@ -65,6 +67,36 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
     return list
   }, [disenos, etapaF, q])
 
+  const todos = rows.length > 0 && rows.every((d) => sel.has(d.codigo))
+  function alternar(codigo) {
+    setSel((s) => { const n = new Set(s); n.has(codigo) ? n.delete(codigo) : n.add(codigo); return n })
+  }
+  function alternarTodos() {
+    setSel(todos ? new Set() : new Set(rows.map((d) => d.codigo)))
+  }
+
+  function generarPdf() {
+    const elegidos = rows.filter((d) => sel.has(d.codigo))
+    if (!elegidos.length) return
+    const items = elegidos.map((d) => {
+      const info = disenoInfo(d)
+      return {
+        codigo: d.codigo,
+        codigoCliente: d.codigoCliente || '',
+        nombre: d.nombre || '',
+        tipo: d.tipo || '',
+        etapa: info.etiqueta,
+        recibido: formatDate(d.recibidoAt) || '',
+        rondas: info.rondas || 0,
+        dias: info.terminado ? null : info.dias,
+        diasTotal: info.diasTotal,
+        image: d.thumb || null,
+      }
+    })
+    const etapa = etapaF ? (ETAPAS.find((e) => e.key === etapaF) || {}).label : ''
+    generateDisenosPDF(items, etapa ? `Etapa: ${etapa}` : '')
+  }
+
   return (
     <>
       <div className="view-actions" style={{ marginBottom: 14 }}>
@@ -84,6 +116,11 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
           })}
         </div>
         <SearchInput value={q} onChange={setQ} placeholder="Buscar diseño…" />
+        {sel.size > 0 && (
+          <button className="btn btn-primary" onClick={generarPdf}>
+            Generar PDF ({sel.size})
+          </button>
+        )}
         <button className="btn btn-primary" onClick={() => setNuevo(true)}>+ Diseño</button>
       </div>
 
@@ -99,6 +136,10 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
           <table className="data-table">
             <thead>
               <tr>
+                <th className="cell-check">
+                  <input type="checkbox" checked={todos} onChange={alternarTodos}
+                    title="Seleccionar todo" />
+                </th>
                 <th>Diseño</th>
                 <th>Código</th>
                 <th>Nombre</th>
@@ -115,7 +156,12 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
                 const info = disenoInfo(d)
                 const alerta = !info.terminado && info.dias != null && info.dias >= 7
                 return (
-                  <tr key={d.codigo} className="row-click" onClick={() => setAbierto(d.codigo)}>
+                  <tr key={d.codigo} className={'row-click' + (sel.has(d.codigo) ? ' row-sel' : '')}
+                    onClick={() => setAbierto(d.codigo)}>
+                    <td className="cell-check" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" checked={sel.has(d.codigo)}
+                        onChange={() => alternar(d.codigo)} />
+                    </td>
                     <td className="cell-photo">
                       {d.thumb
                         ? <img src={d.thumb} alt={d.codigo} className="thumb" />

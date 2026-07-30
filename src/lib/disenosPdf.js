@@ -1,15 +1,7 @@
 import { jsPDF } from 'jspdf'
-import { AREAS } from './constants.js'
 
-// Título del reporte de cada área. No es solo de atrasos: es el resumen de lo
-// que hay en la etapa.
-const TITULOS = {
-  trazos: 'Resumen de trazos',
-  corte: 'Resumen de corte',
-  enviar: 'Resumen de por enviar',
-  talleres: 'Resumen de talleres',
-  entrega: 'Resumen de entrega de ensamble',
-}
+// Resumen de los diseños de Geodésica: en qué etapa va cada uno y cuánto
+// lleva. Mismo formato que los resúmenes de las etapas de producción.
 
 const PAGE_W = 595.28
 const PAGE_H = 841.89
@@ -33,17 +25,17 @@ function loadImageSize(src) {
   })
 }
 
-function drawHeader(doc, areaLabel, titulo) {
+function drawHeader(doc, subtitulo) {
   const top = MARGIN
   doc.setTextColor(...GRAY)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8.5)
-  doc.text(`${(areaLabel || '').toUpperCase()} · RESUMEN`, MARGIN, top + 4, { charSpace: 1.2 })
+  doc.text('GEODÉSICA · RESUMEN', MARGIN, top + 4, { charSpace: 1.2 })
 
   doc.setTextColor(...INK)
   doc.setFont('times', 'normal')
   doc.setFontSize(22)
-  doc.text(titulo, MARGIN, top + 28)
+  doc.text('Resumen de diseños', MARGIN, top + 28)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
@@ -52,6 +44,7 @@ function drawHeader(doc, areaLabel, titulo) {
     new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }),
     PAGE_W - MARGIN, top + 4, { align: 'right' },
   )
+  if (subtitulo) doc.text(subtitulo, PAGE_W - MARGIN, top + 22, { align: 'right' })
 
   const lineY = top + 40
   doc.setDrawColor(...INK)
@@ -68,16 +61,15 @@ function drawFooter(doc, page, total) {
   doc.text(`Página ${page} de ${total}`, PAGE_W - MARGIN, y, { align: 'right' })
 }
 
-function drawRow(doc, item, size, y) {
-  // Foto
+function drawRow(doc, it, size, y) {
   doc.setFillColor(...PHOTO_BG)
   doc.roundedRect(MARGIN, y, PHOTO_W, PHOTO_H, 4, 4, 'F')
-  if (item.image && size) {
-    const scale = Math.min(PHOTO_W / size.w, PHOTO_H / size.h)
-    const dw = size.w * scale
-    const dh = size.h * scale
+  if (it.image && size) {
+    const escala = Math.min(PHOTO_W / size.w, PHOTO_H / size.h)
+    const dw = size.w * escala
+    const dh = size.h * escala
     try {
-      doc.addImage(item.image, 'JPEG', MARGIN + (PHOTO_W - dw) / 2, y + (PHOTO_H - dh) / 2, dw, dh)
+      doc.addImage(it.image, 'JPEG', MARGIN + (PHOTO_W - dw) / 2, y + (PHOTO_H - dh) / 2, dw, dh)
     } catch (e) { /* imagen no válida */ }
   } else {
     doc.setFont('helvetica', 'normal')
@@ -87,50 +79,61 @@ function drawRow(doc, item, size, y) {
   }
 
   const tx = MARGIN + PHOTO_W + 16
-  // Referencia
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(13)
   doc.setTextColor(...INK)
-  doc.text(item.referencia || '', tx, y + 13)
+  doc.text(it.codigo || '', tx, y + 13)
 
-  // Producto · Empresa
+  if (it.codigoCliente) {
+    const ancho = doc.getTextWidth(it.codigo || '')
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9.5)
+    doc.setTextColor(15, 110, 86)
+    doc.text(it.codigoCliente, tx + ancho + 10, y + 13)
+  }
+
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9.5)
   doc.setTextColor(...GRAY)
-  const sub = [item.producto, item.empresa].filter(Boolean).join(' · ')
+  const sub = [it.nombre, it.tipo].filter(Boolean).join(' · ')
   if (sub) doc.text(sub, tx, y + 28)
 
-  // Fecha base + pendiente
   doc.setFontSize(9.5)
   doc.setTextColor(...INK)
-  doc.text(`${item.baseLabel || 'Fecha'}: ${item.fecha || '—'}`, tx, y + 44)
-  if (item.pendienteLabel) {
-    doc.setTextColor(...GRAY)
-    doc.text(`Pendiente: ${item.pendienteLabel}`, tx, y + 58)
-  }
+  doc.text(`Etapa: ${it.etapa || '—'}`, tx, y + 44)
+  doc.setTextColor(...GRAY)
+  const pie = [
+    it.recibido ? `Recibido: ${it.recibido}` : '',
+    it.rondas ? `${it.rondas} ${it.rondas === 1 ? 'ronda' : 'rondas'}` : '',
+  ].filter(Boolean).join('   ·   ')
+  if (pie) doc.text(pie, tx, y + 58)
 
-  // Atraso (destacado a la derecha)
-  if (item.atraso != null) {
+  // Días en la etapa, que es lo que hay que vigilar.
+  if (it.dias != null) {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(16)
-    doc.setTextColor(...(item.atraso >= 15 ? RED : INK))
-    doc.text(`${item.atraso} ${item.atraso === 1 ? 'día' : 'días'}`, PAGE_W - MARGIN, y + 16, { align: 'right' })
+    doc.setTextColor(...(it.dias >= 7 ? RED : INK))
+    doc.text(`${it.dias} ${it.dias === 1 ? 'día' : 'días'}`, PAGE_W - MARGIN, y + 16, { align: 'right' })
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(...GRAY)
-    doc.text('de atraso', PAGE_W - MARGIN, y + 30, { align: 'right' })
+    doc.text('en esta etapa', PAGE_W - MARGIN, y + 30, { align: 'right' })
+  }
+  if (it.diasTotal != null) {
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(...GRAY)
+    doc.text(`${it.diasTotal} d de ciclo`, PAGE_W - MARGIN, y + 48, { align: 'right' })
   }
 }
 
-export async function generateAreaPDF(areaKey, items) {
-  const areaLabel = (AREAS[areaKey] || {}).label || areaKey || ''
-  const titulo = TITULOS[areaKey] || `Resumen de ${areaLabel.toLowerCase()}`
+export async function generateDisenosPDF(items, subtitulo) {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const sizes = await Promise.all(
     items.map((it) => (it.image ? loadImageSize(it.image) : Promise.resolve(null))),
   )
 
-  let y = drawHeader(doc, areaLabel, titulo)
+  let y = drawHeader(doc, subtitulo)
 
   items.forEach((it, i) => {
     if (y + ROW_H > PAGE_H - MARGIN) {
@@ -150,6 +153,5 @@ export async function generateAreaPDF(areaKey, items) {
     drawFooter(doc, p, total)
   }
 
-  const fname = `${titulo.toLowerCase().replace(/\s+/g, '-')}.pdf`
-  doc.save(fname)
+  doc.save('resumen-de-disenos.pdf')
 }

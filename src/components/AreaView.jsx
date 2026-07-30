@@ -152,7 +152,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         image: ref && ref.image ? ref.image : null,
       }
     })
-    generateAreaPDF(area.label, items)
+    generateAreaPDF(areaKey, items)
   }
 
   return (

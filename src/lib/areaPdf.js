@@ -1,4 +1,15 @@
 import { jsPDF } from 'jspdf'
+import { AREAS } from './constants.js'
+
+// Título del reporte de cada área. No es solo de atrasos: es el resumen de lo
+// que hay en la etapa.
+const TITULOS = {
+  trazos: 'Resumen de trazos',
+  corte: 'Resumen de corte',
+  enviar: 'Resumen de por enviar',
+  talleres: 'Resumen de talleres',
+  entrega: 'Resumen de entrega de ensamble',
+}
 
 const PAGE_W = 595.28
 const PAGE_H = 841.89
@@ -22,17 +33,17 @@ function loadImageSize(src) {
   })
 }
 
-function drawHeader(doc, areaLabel) {
+function drawHeader(doc, areaLabel, titulo) {
   const top = MARGIN
   doc.setTextColor(...GRAY)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8.5)
-  doc.text(`${(areaLabel || '').toUpperCase()} · REPORTE DE ATRASOS`, MARGIN, top + 4, { charSpace: 1.2 })
+  doc.text(`${(areaLabel || '').toUpperCase()} · RESUMEN`, MARGIN, top + 4, { charSpace: 1.2 })
 
   doc.setTextColor(...INK)
   doc.setFont('times', 'normal')
   doc.setFontSize(22)
-  doc.text('Referencias atrasadas', MARGIN, top + 28)
+  doc.text(titulo, MARGIN, top + 28)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
@@ -111,13 +122,15 @@ function drawRow(doc, item, size, y) {
   }
 }
 
-export async function generateAreaPDF(areaLabel, items) {
+export async function generateAreaPDF(areaKey, items) {
+  const areaLabel = (AREAS[areaKey] || {}).label || areaKey || ''
+  const titulo = TITULOS[areaKey] || `Resumen de ${areaLabel.toLowerCase()}`
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const sizes = await Promise.all(
     items.map((it) => (it.image ? loadImageSize(it.image) : Promise.resolve(null))),
   )
 
-  let y = drawHeader(doc, areaLabel)
+  let y = drawHeader(doc, areaLabel, titulo)
 
   items.forEach((it, i) => {
     if (y + ROW_H > PAGE_H - MARGIN) {
@@ -137,6 +150,6 @@ export async function generateAreaPDF(areaLabel, items) {
     drawFooter(doc, p, total)
   }
 
-  const fname = `atrasos-${(areaLabel || 'area').toLowerCase().replace(/\s+/g, '-')}.pdf`
+  const fname = `${titulo.toLowerCase().replace(/\s+/g, '-')}.pdf`
   doc.save(fname)
 }

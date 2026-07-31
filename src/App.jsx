@@ -4,6 +4,7 @@ import { nombreDeSesion } from './lib/usuarios.js'
 import DashboardView from './components/DashboardView.jsx'
 import ResumenView from './components/ResumenView.jsx'
 import AreaView from './components/AreaView.jsx'
+import OrdenCorteView from './components/OrdenCorteView.jsx'
 import CostosView from './components/CostosView.jsx'
 import SeguimientoView from './components/SeguimientoView.jsx'
 import GeodesicaView from './components/GeodesicaView.jsx'
@@ -31,6 +32,7 @@ import { resumirCambios } from './lib/cambios.js'
 const TABS = [
   { key: 'inicio', label: 'Inicio' },
   { key: 'resumen', label: 'Resumen' },
+  { key: 'ordencorte', label: 'Orden de corte' },
   { key: 'trazos', label: 'Trazos' },
   { key: 'corte', label: 'Corte' },
   { key: 'enviar', label: 'Por enviar' },
@@ -667,6 +669,11 @@ export default function App() {
             onOpenDetail={openDetail}
             onToggleExtra={handleToggleProduccionExtra}
           />
+        )}
+        {tab === 'ordencorte' && (
+          <OrdenCorteView orders={orders} refMap={refMap}
+            fasesOcultas={fasesOcultas} onToggleFase={toggleFase}
+            onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
         {AREA_KEYS.includes(tab) && (
           <AreaView areaKey={tab} orders={orders} refMap={refMap}

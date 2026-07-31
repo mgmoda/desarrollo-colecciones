@@ -85,3 +85,18 @@ export function etiquetaDiaLargo(iso) {
   const dia = DIA_LARGO[d.getDay()]
   return `${dia[0].toUpperCase()}${dia.slice(1)} ${d.getDate()} de ${MES_LARGO[d.getMonth()]}`
 }
+
+// Primer y último día del mes de una fecha, en ISO.
+export function mesDe(fecha) {
+  const base = parseDateLoose(fecha) || new Date()
+  const ini = new Date(base.getFullYear(), base.getMonth(), 1)
+  const fin = new Date(base.getFullYear(), base.getMonth() + 1, 0)
+  return [isoLocal(ini), isoLocal(fin)]
+}
+
+const MES_LARGO_2 = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+  'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+export function nombreMes(fecha) {
+  const d = parseDateLoose(fecha)
+  return d ? MES_LARGO_2[d.getMonth()] : ''
+}

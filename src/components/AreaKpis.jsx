@@ -15,14 +15,21 @@ const MEDIDA = {
   enviar: { etapa: 'envioEnsamble', pendiente: 'Pendiente por enviar', hecho: 'Enviado a taller esta semana', verbo: 'Enviado a taller' },
   talleres: { etapa: 'entregaEnsamble', pendiente: 'En talleres', hecho: 'Recibido de taller esta semana', verbo: 'Recibido de taller' },
   entrega: { etapa: 'entregaEnsamble', pendiente: 'En esta etapa', hecho: 'Recibido esta semana', verbo: 'Recibido' },
+  // La orden de corte no acumula pendientes: se emite y la prenda pasa de una
+  // vez a Trazos. Lo que se mide es cuánto se programa.
+  ordencorte: { etapa: 'ordenCorte', pendiente: 'Programado', hecho: 'Programado esta semana', verbo: 'Programado' },
 }
 
-export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage, onOpenRef }) {
+export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage, onOpenRef, izquierda }) {
   const [diaAbierto, setDiaAbierto] = useState('')
   const medida = MEDIDA[areaKey] || MEDIDA.trazos
   const hoy = isoLocal(new Date())
 
-  const pendiente = useMemo(() => pendienteDeArea(enEtapa), [enEtapa])
+  // Por defecto, la tarjeta de la izquierda es lo que falta en la etapa. Un
+  // módulo puede pasar otra cosa (ej. lo programado en el mes).
+  const propio = useMemo(() => pendienteDeArea(enEtapa || []), [enEtapa])
+  const pendiente = izquierda || propio
+  const etiquetaIzq = (izquierda && izquierda.label) || medida.pendiente
   const dias = useMemo(() => semanaDe(hoy), [hoy])
   const porDia = useMemo(
     () => produccionPorDia(orders, medida.etapa, dias),
@@ -45,7 +52,7 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
     <div className="kpi-wrap">
       <div className="kpi-grid">
         <div className="kpi-card">
-          <p className="kpi-label">{medida.pendiente}</p>
+          <p className="kpi-label">{etiquetaIzq}</p>
           <p className="kpi-cifra">{pendiente.unidades.toLocaleString('es-CO')}</p>
           <p className="kpi-unidad">unidades</p>
           <p className="kpi-desglose">

@@ -693,3 +693,38 @@ export function estadoConjunto(orden, pareja) {
   const dias = entregaA && entregaB ? Math.abs(diasEntre(entregaA, entregaB)) : null
   return { area: a, areaPareja: b, juntas: a === b, dias }
 }
+
+// Lo hecho en una etapa dentro de un rango de fechas: unidades, órdenes y el
+// desglose por fase. Sirve para medir la programación de órdenes de corte,
+// donde lo que importa no es lo que falta sino lo que se emitió.
+export function hechoEnRango(orders, etapaKey, desde, hasta) {
+  const porFase = {}
+  let unidades = 0
+  let ordenes = 0
+  orders.forEach((o) => {
+    const s = (o.stages && o.stages[etapaKey]) || {}
+    const f = s.fecha || ''
+    if (!f || f < desde || f > hasta) return
+    const n = cantEtapa(o, etapaKey) || cantEtapa(o, 'ordenCorte')
+    unidades += n
+    ordenes += 1
+    const g = porFase[o.origen] || (porFase[o.origen] = { ordenes: 0, unidades: 0 })
+    g.ordenes += 1
+    g.unidades += n
+  })
+  return { unidades, ordenes, porFase }
+}
+
+// Órdenes cuya etapa cayó dentro del rango, de la más reciente a la más vieja.
+export function ordenesEnRango(orders, etapaKey, desde, hasta) {
+  return orders
+    .filter((o) => {
+      const f = (o.stages && o.stages[etapaKey] && o.stages[etapaKey].fecha) || ''
+      return f && f >= desde && f <= hasta
+    })
+    .sort((a, b) => {
+      const fa = a.stages[etapaKey].fecha
+      const fb = b.stages[etapaKey].fecha
+      return fa === fb ? String(b.orden).localeCompare(String(a.orden)) : fb.localeCompare(fa)
+    })
+}

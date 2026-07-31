@@ -5614,3 +5614,6 @@ img.ship-ref-photo {
   .act-item { grid-template-columns: 1fr; }
   .act-fecha { grid-column: 1; }
 }
+
+/* Selector de periodo del módulo de orden de corte. */
+.oc-periodos { display: flex; gap: 6px; margin-bottom: 14px; }

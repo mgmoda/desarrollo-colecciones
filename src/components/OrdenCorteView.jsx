@@ -5,7 +5,7 @@ import AreaKpis from './AreaKpis.jsx'
 import ProcesosTags from './ProcesosTags.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { AREAS, ORIGENES, ORIGEN_ABBR, TOP_LABEL, formatDate } from '../lib/constants.js'
-import { hechoEnRango, orderArea, ordenesEnRango, refProcesos } from '../lib/domain.js'
+import { desglosePorMarca, orderArea, ordenesEnRango, refProcesos } from '../lib/domain.js'
 import { isoLocal, mesDe, nombreMes, rangoSemana, semanaDe } from '../lib/dates.js'
 
 // La orden de corte es el arranque de todo: se emite y la prenda queda
@@ -35,10 +35,11 @@ export default function OrdenCorteView({
     [orders, ocultas],
   )
 
-  // Tarjeta de la izquierda: lo programado en el mes en curso.
-  const delMes = useMemo(
-    () => hechoEnRango(visibles, 'ordenCorte', mes[0], mes[1]),
-    [visibles, mes],
+  // Tarjeta de la izquierda: todo lo programado desde que se importa el
+  // archivo, no un mes suelto.
+  const enTotal = useMemo(
+    () => desglosePorMarca(visibles, refMap, 'ordenCorte'),
+    [visibles, refMap],
   )
 
   const rows = useMemo(() => {
@@ -105,7 +106,7 @@ export default function OrdenCorteView({
 
       <AreaKpis areaKey="ordencorte" orders={visibles} enEtapa={[]}
         refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef}
-        izquierda={{ ...delMes, label: `Programado en ${nombreMes(hoy)}` }} />
+        izquierda={{ ...enTotal, label: 'Programado en total' }} sinAcumulado />
 
       <div className="oc-periodos">
         {PERIODOS.map((p) => (

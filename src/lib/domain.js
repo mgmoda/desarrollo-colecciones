@@ -728,3 +728,49 @@ export function ordenesEnRango(orders, etapaKey, desde, hasta) {
       return fa === fb ? String(b.orden).localeCompare(String(a.orden)) : fb.localeCompare(fa)
     })
 }
+
+// ---------------------------------------------------------------------------
+// Desglose de unidades por marca.
+//
+// Geodésica es ensamble para un tercero: va aparte y no tiene marca propia.
+// Casania y Mariset son las de la casa, y su suma es lo que importa mirar
+// junto. La marca sale de la ficha, no de la orden.
+// ---------------------------------------------------------------------------
+
+export const MARCAS_KPI = ['Casania', 'Mariset', 'MG', 'Geodésica', 'Sin marca']
+
+export function desglosePorMarca(orders, refMap, etapaKey) {
+  const vacio = () => ({ ordenes: 0, unidades: 0 })
+  const marcas = {}
+  MARCAS_KPI.forEach((m) => { marcas[m] = vacio() })
+  let unidades = 0
+  let ordenes = 0
+
+  orders.forEach((o) => {
+    const n = cantEtapa(o, etapaKey) || cantEtapa(o, 'ordenCorte')
+    unidades += n
+    ordenes += 1
+    let grupo
+    if (o.origen === 'geodesica') {
+      grupo = 'Geodésica'
+    } else {
+      const ficha = refMap && refMap.get(o.referencia)
+      const marca = (ficha && ficha.marca) || ''
+      grupo = marca === 'Casania' || marca === 'Mariset' ? marca : 'Sin marca'
+    }
+    marcas[grupo].ordenes += 1
+    marcas[grupo].unidades += n
+    // MG es el subtotal de las dos marcas de la casa.
+    if (grupo === 'Casania' || grupo === 'Mariset') {
+      marcas.MG.ordenes += 1
+      marcas.MG.unidades += n
+    }
+  })
+
+  return { unidades, ordenes, marcas }
+}
+
+// Órdenes que ya cumplieron una etapa, en toda la historia importada.
+export function ordenesConEtapa(orders, etapaKey) {
+  return orders.filter((o) => stageDone(o, etapaKey))
+}

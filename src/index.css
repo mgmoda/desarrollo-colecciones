@@ -5272,8 +5272,15 @@ img.ship-ref-photo {
 .kpi-wrap { margin-bottom: 18px; }
 .kpi-grid {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 12px;
+}
+/* Las tarjetas de cifras: una o dos según el módulo, la tira ocupa el resto. */
+.kpi-nums { display: flex; gap: 12px; align-items: stretch; }
+.kpi-nums .kpi-card {
+  flex: 0 0 auto;
+  min-width: 210px;
+  max-width: 280px;
 }
 .kpi-card {
   background: var(--surface);
@@ -5406,8 +5413,36 @@ img.ship-ref-photo {
   .dia-cant { grid-column: 2; text-align: left; }
 }
 
-@media (max-width: 900px) {
+/* Unidades por marca dentro de la tarjeta. */
+.kpi-marcas {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  font-size: 12px;
+}
+.kpi-marcas li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 3px 0;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.kpi-marcas b { font-variant-numeric: tabular-nums; font-weight: 500; }
+.kpi-marca-sub {
+  border-top: 1px solid var(--hairline);
+  margin-top: 2px;
+  padding-top: 5px !important;
+  color: var(--ink) !important;
+}
+.kpi-marca-sub b { font-weight: 600; }
+
+@media (max-width: 1180px) {
   .kpi-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .kpi-nums { flex-direction: column; }
+  .kpi-nums .kpi-card { width: auto; }
   .kpi-dias { grid-template-columns: repeat(4, 1fr); }
 }
 

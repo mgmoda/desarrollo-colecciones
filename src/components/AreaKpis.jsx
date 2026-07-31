@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
-import { ORIGENES } from '../lib/constants.js'
 import DiaProduccionModal from './DiaProduccionModal.jsx'
-import { pendienteDeArea, produccionPorDia, totalSemana } from '../lib/domain.js'
+import {
+  desglosePorMarca, ordenesConEtapa, produccionPorDia, totalSemana,
+} from '../lib/domain.js'
 import {
   etiquetaDia, isoLocal, rangoSemana, semanaAnteriorDe, semanaDe,
 } from '../lib/dates.js'
@@ -20,16 +21,61 @@ const MEDIDA = {
   ordencorte: { etapa: 'ordenCorte', pendiente: 'Programado', hecho: 'Programado esta semana', verbo: 'Programado' },
 }
 
-export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage, onOpenRef, izquierda }) {
+// Rótulo de la tarjeta de acumulado: lo que el área lleva hecho en total.
+const ACUMULADO = {
+  trazos: 'Trazado en total',
+  corte: 'Cortado en total',
+  enviar: 'Enviado a taller en total',
+  talleres: 'Recibido de taller en total',
+  entrega: 'Recibido en total',
+  ordencorte: 'Programado en total',
+}
+
+// Casania · Mariset · MG (las dos) · Geodésica
+function Desglose({ marcas }) {
+  if (!marcas) return null
+  const filas = [
+    ['Casania', marcas.Casania],
+    ['Mariset', marcas.Mariset],
+    ['MG', marcas.MG, true],
+    ['Geodésica', marcas['Geodésica']],
+    ['Sin marca', marcas['Sin marca']],
+  ].filter(([, d]) => d && d.unidades > 0)
+  if (!filas.length) return null
+  return (
+    <ul className="kpi-marcas">
+      {filas.map(([nombre, d, sub]) => (
+        <li key={nombre} className={sub ? 'kpi-marca-sub' : ''} title={`${d.ordenes} órdenes`}>
+          <span>{nombre}</span>
+          <b>{d.unidades.toLocaleString('es-CO')}</b>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage, onOpenRef, izquierda, sinAcumulado }) {
+  // En Entrega ensamble no hay nada "pendiente": lo que entra ya está hecho,
+  // así que la tarjeta de pendientes sería la misma del acumulado.
+  const sinPendiente = areaKey === 'entrega'
   const [diaAbierto, setDiaAbierto] = useState('')
   const medida = MEDIDA[areaKey] || MEDIDA.trazos
   const hoy = isoLocal(new Date())
 
-  // Por defecto, la tarjeta de la izquierda es lo que falta en la etapa. Un
-  // módulo puede pasar otra cosa (ej. lo programado en el mes).
-  const propio = useMemo(() => pendienteDeArea(enEtapa || []), [enEtapa])
+  // Tarjeta de la izquierda: lo que falta en la etapa, desglosado por marca.
+  const propio = useMemo(
+    () => desglosePorMarca(enEtapa || [], refMap, 'ordenCorte'),
+    [enEtapa, refMap],
+  )
   const pendiente = izquierda || propio
   const etiquetaIzq = (izquierda && izquierda.label) || medida.pendiente
+
+  // Segunda tarjeta: lo que el área lleva hecho desde que se importa el
+  // archivo. No se pasa como prop porque sale de lo mismo en todas.
+  const acumulado = useMemo(
+    () => desglosePorMarca(ordenesConEtapa(orders, medida.etapa), refMap, medida.etapa),
+    [orders, medida.etapa, refMap],
+  )
   const dias = useMemo(() => semanaDe(hoy), [hoy])
   const porDia = useMemo(
     () => produccionPorDia(orders, medida.etapa, dias),
@@ -44,29 +90,35 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
     [orders, medida.etapa, hoy],
   )
 
-  const desglose = Object.entries(pendiente.porFase)
-    .sort((a, b) => b[1].unidades - a[1].unidades)
   const detalle = diaAbierto ? porDia.get(diaAbierto) : null
 
   return (
     <div className="kpi-wrap">
       <div className="kpi-grid">
+        <div className="kpi-nums">
+        {!sinPendiente && (
         <div className="kpi-card">
           <p className="kpi-label">{etiquetaIzq}</p>
           <p className="kpi-cifra">{pendiente.unidades.toLocaleString('es-CO')}</p>
           <p className="kpi-unidad">unidades</p>
           <p className="kpi-desglose">
             {pendiente.ordenes} {pendiente.ordenes === 1 ? 'orden' : 'órdenes'}
-            {desglose.length > 0 && (
-              <span className="kpi-fases">
-                {desglose.map(([fase, d]) => (
-                  <span key={fase} title={`${d.unidades} unidades`}>
-                    {d.ordenes} {(ORIGENES[fase] || fase).toLowerCase()}
-                  </span>
-                ))}
-              </span>
-            )}
           </p>
+          <Desglose marcas={pendiente.marcas} />
+        </div>
+        )}
+
+        {!sinAcumulado && (
+        <div className="kpi-card">
+          <p className="kpi-label">{ACUMULADO[areaKey] || 'En total'}</p>
+          <p className="kpi-cifra">{acumulado.unidades.toLocaleString('es-CO')}</p>
+          <p className="kpi-unidad">unidades</p>
+          <p className="kpi-desglose">
+            {acumulado.ordenes} {acumulado.ordenes === 1 ? 'orden' : 'órdenes'}
+          </p>
+          <Desglose marcas={acumulado.marcas} />
+        </div>
+        )}
         </div>
 
         <div className="kpi-card">

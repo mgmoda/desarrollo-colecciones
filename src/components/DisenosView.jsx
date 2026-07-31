@@ -8,7 +8,7 @@ import {
   disenoInfo, duracionFases, emptyDiseno, etapaColor, siguienteNumero,
 } from '../lib/disenos.js'
 import StrikeOffFormato from './StrikeOffFormato.jsx'
-import { dbLoadDisenoImgs, dbUpsertDiseno, dbDeleteDiseno } from '../lib/db.js'
+import { dbLoadDisenoImgs, dbUpsertDiseno, dbDeleteDiseno, dbLog } from '../lib/db.js'
 import { generateDisenosPDF } from '../lib/disenosPdf.js'
 
 const hoyISO = () => new Date().toISOString().slice(0, 10)
@@ -309,6 +309,7 @@ function NuevoDisenoModal({ disenos, onClose, onSaved }) {
       base.thumb = imgs.length ? await hacerThumb(imgs[0]) : null
       const { imgs: _drop, ...meta } = base
       await dbUpsertDiseno(meta, imgs.length ? { 'ev-0': imgs } : {})
+      dbLog('crear', 'diseño', meta.codigo, { tipo: meta.tipo || '' })
       onSaved()
     } catch (e) {
       console.error(e)
@@ -465,6 +466,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
       if (delEvento.length) nuevasTodas['ev-' + idx] = delEvento
 
       await dbUpsertDiseno(nuevoMeta, nuevasTodas)
+      dbLog('registrar', 'diseño', meta.codigo, { proceso: def.label || registrando, fecha })
       setRegistrando(null)
       setImgs(nuevasTodas)
       onSaved()
@@ -553,6 +555,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
         nuevoMeta.thumb = primera ? await hacerThumb(primera) : null
       }
       await dbUpsertDiseno(nuevoMeta, nuevasImgsTodas)
+      dbLog('borrar proceso', 'diseño', meta.codigo, { proceso: def.label || evs[i].tipo, fecha: evs[i].fecha })
       setImgs(nuevasImgsTodas)
       onSaved()
     } catch (e) {
@@ -563,7 +566,11 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
 
   async function eliminar() {
     if (!confirm(`¿Eliminar el diseño ${meta.codigo} y todas sus rondas?`)) return
-    try { await dbDeleteDiseno(meta.codigo); onClose(); onSaved() } catch (e) { console.error(e) }
+    try {
+      await dbDeleteDiseno(meta.codigo)
+      dbLog('eliminar', 'diseño', meta.codigo, { nombre: meta.nombre || '' })
+      onClose(); onSaved()
+    } catch (e) { console.error(e) }
   }
 
   function abrirEdEvento(i) {
@@ -604,6 +611,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
         nuevoMeta.thumb = primera ? await hacerThumb(primera) : null
       }
       await dbUpsertDiseno(nuevoMeta, nuevasImgsTodas)
+      dbLog('corregir', 'diseño', meta.codigo, { proceso: def.label || evs[i].tipo, fecha: ev.fecha })
       setImgs(nuevasImgsTodas)
       setEdEv(null)
       onSaved()

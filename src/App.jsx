@@ -18,13 +18,15 @@ import RefDetail from './components/RefDetail.jsx'
 import PendientesModal from './components/PendientesModal.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import Lightbox from './components/Lightbox.jsx'
+import ActividadModal from './components/ActividadModal.jsx'
 import { supabase } from './lib/supabase.js'
 import {
   dbLoadOrders, dbLoadRefs, dbLoadSettings,
-  dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings,
+  dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings, dbLog,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice } from './lib/constants.js'
+import { resumirCambios } from './lib/cambios.js'
 
 const TABS = [
   { key: 'inicio', label: 'Inicio' },
@@ -65,6 +67,7 @@ export default function App() {
   const [lightbox, setLightbox] = useState(null)
   const [detailRefId, setDetailRefId] = useState(null)
   const [pendientesOpen, setPendientesOpen] = useState(false)
+  const [actividadOpen, setActividadOpen] = useState(false)
 
   // --- Auth ---
   useEffect(() => {
@@ -212,6 +215,7 @@ export default function App() {
   async function handleImported(origen, newOrders) {
     await dbReplaceOrders(origen, newOrders)
     setOrders((prev) => [...prev.filter((o) => o.origen !== origen), ...newOrders])
+    dbLog('importar', 'órdenes', origen, { ordenes: newOrders.length })
   }
 
   // Si la fila viene rotulada con el código nuevo (C6850), los cambios deben
@@ -378,6 +382,18 @@ export default function App() {
     // Cerrar la ventana de inmediato.
     setFormOpen(false)
     setEditing(null)
+
+    // Anotar en la bitácora qué cambió, y si es una ficha nueva.
+    const anterior = refs.find((r) => r.id === ref.id)
+    if (!anterior) {
+      dbLog('crear', 'referencia', ref.id, { referencia: ref.referencia || ref.id })
+    } else {
+      // Al editar solo se anota si algo cambió de verdad.
+      const cambios = resumirCambios(anterior, ref)
+      if (Object.keys(cambios).length) {
+        dbLog('editar', 'referencia', ref.id, { referencia: ref.referencia || ref.id, cambios })
+      }
+    }
 
     // Persistir en Supabase sin bloquear la UI.
     dbUpsertRef(paraGuardar(ref)).catch((e) => {
@@ -586,6 +602,7 @@ export default function App() {
     const id = deleteTarget.id
     setRefs((list) => list.filter((r) => r.id !== id))
     dbDeleteRef(id).catch((e) => console.error(e))
+    dbLog('eliminar', 'referencia', id, { referencia: deleteTarget.referencia || id })
     setDeleteTarget(null)
     setFormOpen(false)
     setEditing(null)
@@ -618,6 +635,8 @@ export default function App() {
           <RefSearch refIds={refIndex.map((r) => r.id)} onSelect={openDetail} />
           <SyncIndicator lastSync={lastSync} syncing={syncing} paused={formOpen || importOpen} onRefresh={syncFromServer} />
           <button className="btn btn-ghost" onClick={() => setImportOpen(true)}>Importar</button>
+          <button className="btn btn-ghost" onClick={() => setActividadOpen(true)}
+            title="Quién cambió qué y cuándo">Actividad</button>
           <span className="sesion-usuario" title={session.user.email}>
             {nombreDeSesion(session.user)}
           </span>
@@ -751,6 +770,8 @@ export default function App() {
         onOpenFicha={openFichaFromDetail}
         onOpenDetail={openDetail}
       />
+
+      {actividadOpen && <ActividadModal onClose={() => setActividadOpen(false)} />}
 
       <Lightbox src={lightbox} onClose={() => setLightbox(null)} />
     </div>

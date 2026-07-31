@@ -106,3 +106,37 @@ export function queueUpsertRef(ref) {
     dbUpsertRef(ref).catch((e) => console.error('Guardar referencia:', e))
   }, 700)
 }
+
+// ---------------------------------------------------------------------------
+// Bitácora: quién cambió qué y cuándo.
+//
+// El usuario no lo manda el navegador: la tabla lo toma del token de la sesión
+// y la regla exige que coincida, así que nadie puede registrar a nombre de
+// otro. Solo hay permiso de insertar y leer —no de modificar ni borrar—, para
+// que lo anotado quede como quedó.
+// ---------------------------------------------------------------------------
+
+export async function dbLog(accion, entidad, clave, detalle) {
+  // Anotar nunca debe tumbar la acción del usuario: si falla, queda en consola.
+  try {
+    const { error } = await supabase.from('dev_log').insert({
+      accion,
+      entidad: entidad || null,
+      clave: clave || null,
+      detalle: detalle || null,
+    })
+    if (error) console.error('Bitácora:', error)
+  } catch (e) {
+    console.error('Bitácora:', e)
+  }
+}
+
+export async function dbLoadLog(limite = 300) {
+  const { data, error } = await supabase
+    .from('dev_log')
+    .select('*')
+    .order('at', { ascending: false })
+    .limit(limite)
+  if (error) throw error
+  return data || []
+}

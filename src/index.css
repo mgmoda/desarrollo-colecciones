@@ -5560,3 +5560,57 @@ img.ship-ref-photo {
   border-left: 1px solid var(--hairline);
   white-space: nowrap;
 }
+
+/* ---------- Actividad: quién cambió qué ---------- */
+.act-buscar { margin-bottom: 14px; }
+.act-lista { list-style: none; margin: 0; padding: 0; }
+.act-item {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-top: 1px solid var(--hairline);
+  font-size: 13px;
+}
+.act-item:first-child { border-top: 0; }
+.act-accion {
+  justify-self: start;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: var(--bg);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.act-crear { background: rgba(46, 158, 91, .12); color: #1f6b3d; }
+.act-editar { background: rgba(55, 138, 221, .12); color: #185fa5; }
+.act-import { background: rgba(176, 118, 63, .14); color: #8d5c2e; }
+.act-borrar { background: rgba(192, 57, 43, .1); color: var(--danger); }
+.act-cuerpo { min-width: 0; }
+.act-linea { margin: 0; }
+.act-clave {
+  margin-left: 6px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+}
+.act-extra { margin-left: 6px; color: var(--muted); }
+.act-fecha { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.act-cambios { list-style: none; margin: 6px 0 0; padding: 0; }
+.act-cambios li {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  font-size: 12px;
+  padding: 1px 0;
+}
+.act-campo { color: var(--muted); min-width: 110px; }
+.act-antes { color: var(--muted); text-decoration: line-through; }
+.act-flecha { color: var(--hairline-strong); }
+.act-despues { color: var(--ink); }
+
+@media (max-width: 640px) {
+  .act-item { grid-template-columns: 1fr; }
+  .act-fecha { grid-column: 1; }
+}

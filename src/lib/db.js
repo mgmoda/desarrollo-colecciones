@@ -140,3 +140,23 @@ export async function dbLoadLog(limite = 300) {
   if (error) throw error
   return data || []
 }
+
+// ---------------------------------------------------------------------------
+// Faltantes de corte: piezas, tela o estampación pendientes de una orden.
+// Reemplazan al grupo de WhatsApp donde las solicitudes se hundían.
+// ---------------------------------------------------------------------------
+
+export async function dbLoadFaltantes() {
+  const list = await loadTable('dev_faltantes')
+  return list.sort((a, b) => (b.creadoAt || 0) - (a.creadoAt || 0))
+}
+
+export async function dbUpsertFaltante(f) {
+  const { error } = await supabase.from('dev_faltantes').upsert({ id: f.id, data: f })
+  if (error) throw error
+}
+
+export async function dbDeleteFaltante(id) {
+  const { error } = await supabase.from('dev_faltantes').delete().eq('id', id)
+  if (error) throw error
+}

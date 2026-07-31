@@ -9,6 +9,7 @@ import CostosView from './components/CostosView.jsx'
 import SeguimientoView from './components/SeguimientoView.jsx'
 import GeodesicaView from './components/GeodesicaView.jsx'
 import FotosView from './components/FotosView.jsx'
+import FaltantesView from './components/FaltantesView.jsx'
 import SyncIndicator from './components/SyncIndicator.jsx'
 import ColeccionView from './components/ColeccionView.jsx'
 import AutorizacionesView from './components/AutorizacionesView.jsx'
@@ -24,6 +25,7 @@ import { supabase } from './lib/supabase.js'
 import {
   dbLoadOrders, dbLoadRefs, dbLoadSettings,
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings, dbLog,
+  dbLoadFaltantes, dbUpsertFaltante, dbDeleteFaltante,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice } from './lib/constants.js'
@@ -35,6 +37,7 @@ const TABS = [
   { key: 'ordencorte', label: 'Orden de corte' },
   { key: 'trazos', label: 'Trazos' },
   { key: 'corte', label: 'Corte' },
+  { key: 'faltantes', label: 'Faltantes' },
   { key: 'enviar', label: 'Por enviar' },
   { key: 'talleres', label: 'En talleres' },
   { key: 'entrega', label: 'Entrega ensamble' },
@@ -54,6 +57,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false)
 
   const [orders, setOrders] = useState([])
+  const [faltantes, setFaltantes] = useState([])
   const [refs, setRefs] = useState([])
   const [settings, setSettings] = useState({ telas: normalizeTelas(DEFAULT_TELAS), colors: DEFAULT_COLORS, proveedores: [], decorados: ['Flor'], marcas: DEFAULT_MARCAS, procesos: DEFAULT_PROCESOS })
 
@@ -88,9 +92,10 @@ export default function App() {
   useEffect(() => {
     if (!userId) { setLoaded(false); return }
     let cancelled = false
-    Promise.all([dbLoadOrders(), dbLoadRefs(), dbLoadSettings()])
-      .then(([o, r, s]) => {
+    Promise.all([dbLoadOrders(), dbLoadRefs(), dbLoadSettings(), dbLoadFaltantes()])
+      .then(([o, r, s, fl]) => {
         if (cancelled) return
+        setFaltantes(fl)
         setOrders(o)
         // Migración silenciosa: corregir "Maricet" → "Mariset" Y eliminar
         // cualquier campo "_stub" que se haya persistido por error.
@@ -140,8 +145,9 @@ export default function App() {
     if (formOpen || importOpen) return
     setSyncing(true)
     try {
-      const [o, r] = await Promise.all([dbLoadOrders(), dbLoadRefs()])
+      const [o, r, fl] = await Promise.all([dbLoadOrders(), dbLoadRefs(), dbLoadFaltantes()])
       setOrders(o)
+      setFaltantes(fl)
       // Merge: conservamos la versión local si su updatedAt es más reciente
       // (significa que tenemos un guardado optimistic aún en vuelo).
       setRefs((local) => {
@@ -178,6 +184,15 @@ export default function App() {
 
   // Índice unificado de referencias (resumen + costos + foto).
   const refIndex = useMemo(() => buildRefIndex(orders, refs), [orders, refs])
+
+  // Faltantes activos (para la insignia en la pestaña) y permisos: por ahora
+  // solo Ninfa y Diego cierran o eliminan faltantes.
+  const faltantesActivos = useMemo(
+    () => faltantes.filter((f) => f.estado !== 'resuelto').length,
+    [faltantes],
+  )
+  const emailSesion = session && session.user ? session.user.email : ''
+  const puedeResolverFaltantes = ['ninfa@mgmoda.local', 'diego_monsalve87@hotmail.com'].includes(emailSesion)
   // Se puede buscar por cualquiera de sus códigos: el interno o el final.
   const refMap = useMemo(() => {
     const m = new Map()
@@ -518,6 +533,22 @@ export default function App() {
     dbSaveSettings(next).catch((e) => console.error(e))
   }
 
+  // Faltantes de corte: guardar con bitácora, y borrar (solo quien resuelve).
+  function saveFaltante(f, accion, detalle) {
+    setFaltantes((list) => {
+      const idx = list.findIndex((x) => x.id === f.id)
+      if (idx >= 0) return list.map((x) => (x.id === f.id ? f : x))
+      return [f, ...list]
+    })
+    dbUpsertFaltante(f).catch((e) => console.error(e))
+    dbLog(accion, 'faltante', f.referencia, { orden: f.orden || '', ...detalle })
+  }
+  function deleteFaltante(f) {
+    setFaltantes((list) => list.filter((x) => x.id !== f.id))
+    dbDeleteFaltante(f.id).catch((e) => console.error(e))
+    dbLog('eliminar', 'faltante', f.referencia, { descripcion: f.descripcion })
+  }
+
   function toggleFase(fase, ocultar) {
     const set = new Set(settings.fasesOcultas || [])
     ocultar ? set.add(fase) : set.delete(fase)
@@ -631,6 +662,9 @@ export default function App() {
                 className={'tab' + (tab === t.key ? ' active' : '')}
                 onClick={() => setTab(t.key)}>
                 {t.label}
+                {t.key === 'faltantes' && faltantesActivos > 0 && (
+                  <span className="tab-badge">{faltantesActivos}</span>
+                )}
               </button>
             ))}
           </nav>
@@ -669,6 +703,13 @@ export default function App() {
             onOpenDetail={openDetail}
             onToggleExtra={handleToggleProduccionExtra}
           />
+        )}
+        {tab === 'faltantes' && (
+          <FaltantesView faltantes={faltantes} refMap={refMap}
+            refIds={refIndex.map((r) => r.referencia)}
+            usuario={nombreDeSesion(session.user).split('@')[0]} puedeResolver={puedeResolverFaltantes}
+            onSave={saveFaltante} onDelete={deleteFaltante}
+            onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
         {tab === 'ordencorte' && (
           <OrdenCorteView orders={orders} refMap={refMap}

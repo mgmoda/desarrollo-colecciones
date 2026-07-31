@@ -5719,3 +5719,71 @@ img.ship-ref-photo {
 .sem-tabla tbody tr:last-child td.sem-col-on { border-bottom: 1px solid var(--hairline-strong); }
 .sem-tabla td.sem-col-on .sem-valor { font-weight: 600; color: var(--ink); }
 .sem-tabla td.sem-col-on .sem-barra { background: color-mix(in srgb, var(--hairline-strong) 55%, transparent); }
+
+/* ---------- Faltantes de corte ---------- */
+.tab-badge {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+.fal-filtros { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.fal-lista { display: flex; flex-direction: column; gap: 10px; }
+.fal-card {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.fal-resuelto { opacity: .65; }
+.fal-cuerpo { display: flex; gap: 14px; }
+.fal-foto {
+  width: 48px;
+  height: 62px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--bg);
+  flex: none;
+  cursor: pointer;
+}
+.fal-foto-vacia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  border: 1px dashed var(--hairline-strong);
+  cursor: default;
+}
+.fal-info { min-width: 0; flex: 1; }
+.fal-ref { margin: 0; font-size: 14px; }
+.fal-ref b { font-size: 15px; }
+.fal-ref-link { cursor: pointer; }
+.fal-ref-link:hover { text-decoration: underline; }
+.fal-chip {
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.fal-pendiente { background: rgba(192, 57, 43, .1); color: var(--danger); }
+.fal-gestion { background: rgba(176, 118, 63, .14); color: #8d5c2e; }
+.fal-resuelto .fal-chip, .fal-chip.fal-resuelto { background: rgba(46, 158, 91, .1); color: #1f6b3d; }
+.fal-texto { margin: 6px 0 0; font-size: 13px; color: var(--ink-soft); }
+.fal-meta { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+.fal-meta b { color: var(--ink-soft); font-weight: 500; }
+.fal-notas {
+  margin-top: 10px;
+  border-top: 1px solid var(--hairline);
+  padding-top: 8px;
+}
+.fal-notas p { margin: 0 0 4px; font-size: 12px; color: var(--ink-soft); }
+.fal-notas b { color: var(--ink); font-weight: 500; }
+.fal-acciones { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.fal-nota-input { flex: 1; min-width: 200px; font-size: 13px; }
+.fal-btn-ok { border-color: #2e9e5b; color: #1f6b3d; background: rgba(46, 158, 91, .08); }
+.fal-textarea { resize: vertical; font: inherit; }

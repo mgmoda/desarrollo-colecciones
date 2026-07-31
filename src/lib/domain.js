@@ -782,7 +782,7 @@ export const MODULOS_FLUJO = [
   { key: 'ordencorte', label: 'Orden de corte', etapa: 'ordenCorte' },
   { key: 'trazos', label: 'Trazos', etapa: 'trazo' },
   { key: 'corte', label: 'Corte', etapa: 'entregaCorte' },
-  { key: 'enviar', label: 'Por enviar', etapa: 'envioEnsamble' },
+  { key: 'enviar', label: 'Enviado a taller', etapa: 'envioEnsamble' },
   { key: 'entrega', label: 'Entrega ensamble', etapa: 'entregaEnsamble' },
 ]
 

@@ -2,11 +2,17 @@ import { useMemo } from 'react'
 import { MODULOS_FLUJO, unidadesPorSemana } from '../lib/domain.js'
 import { isoLocal, rangoSemana, ultimasSemanas } from '../lib/dates.js'
 
-const SEMANAS = 6
+// Doce semanas de historia, pero la tarjeta no crece: se desplaza por dentro.
+const SEMANAS = 12
 
 // Lo que cerró cada módulo en las últimas semanas, para ver el ritmo de un
 // vistazo: si una etapa se frenó o si la carga viene subiendo.
+// "En talleres" no tiene columna propia porque cierra la misma etapa que
+// Entrega ensamble; estando ahí se resalta esa.
+const COLUMNA_DEL_MODULO = { talleres: 'entrega' }
+
 export default function TablaSemanas({ orders, refMap, destacado }) {
+  const columna = COLUMNA_DEL_MODULO[destacado] || destacado
   const hoy = isoLocal(new Date())
   const semanas = useMemo(() => ultimasSemanas(hoy, SEMANAS), [hoy])
   const datos = useMemo(
@@ -30,7 +36,7 @@ export default function TablaSemanas({ orders, refMap, destacado }) {
           <tr>
             <th>Semana</th>
             {MODULOS_FLUJO.map((m) => (
-              <th key={m.key} className={'num' + (m.key === destacado ? ' sem-col-on' : '')}>
+              <th key={m.key} className={'num' + (m.key === columna ? ' sem-col-on' : '')}>
                 {m.label}
               </th>
             ))}
@@ -47,7 +53,7 @@ export default function TablaSemanas({ orders, refMap, destacado }) {
                 const v = d.modulos[m.key].unidades
                 const pct = Math.round((v / topes[m.key]) * 100)
                 return (
-                  <td key={m.key} className={'num sem-celda' + (m.key === destacado ? ' sem-col-on' : '')}>
+                  <td key={m.key} className={'num sem-celda' + (m.key === columna ? ' sem-col-on' : '')}>
                     <span className="sem-barra" style={{ width: `${pct}%` }} aria-hidden="true" />
                     <span className={'sem-valor' + (v === 0 ? ' muted' : '')}>
                       {v.toLocaleString('es-CO')}

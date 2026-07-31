@@ -5654,7 +5654,21 @@ img.ship-ref-photo {
 .oc-periodos { display: flex; gap: 6px; margin-bottom: 14px; }
 
 /* ---------- Unidades por semana, dentro de la tarjeta ---------- */
-.sem-wrap { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hairline); overflow-x: auto; }
+.sem-wrap {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+  overflow: auto;
+  /* Aunque se acumulen semanas, la tarjeta no sigue creciendo hacia abajo:
+     la tabla se desplaza por dentro. */
+  max-height: 218px;
+}
+.sem-tabla thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 2;
+}
 .sem-tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
 .sem-tabla th, .sem-tabla td { padding: 5px 10px; text-align: right; white-space: nowrap; }
 .sem-tabla thead th {
@@ -5689,6 +5703,19 @@ img.ship-ref-photo {
   color: var(--muted);
   font-size: 10px;
 }
-/* La columna del módulo que se está mirando va marcada. */
-.sem-col-on { background: color-mix(in srgb, var(--bg) 55%, transparent); }
-.sem-tabla thead th.sem-col-on { color: var(--ink); }
+/* La columna del módulo que se está mirando: tiene que saltar a la vista. */
+.sem-col-on { background: color-mix(in srgb, var(--bg) 90%, transparent); }
+.sem-tabla thead th.sem-col-on {
+  color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+  border-radius: 5px 5px 0 0;
+  border-bottom-color: var(--ink);
+}
+.sem-tabla td.sem-col-on {
+  border-left: 1px solid var(--hairline-strong);
+  border-right: 1px solid var(--hairline-strong);
+}
+.sem-tabla tbody tr:last-child td.sem-col-on { border-bottom: 1px solid var(--hairline-strong); }
+.sem-tabla td.sem-col-on .sem-valor { font-weight: 600; color: var(--ink); }
+.sem-tabla td.sem-col-on .sem-barra { background: color-mix(in srgb, var(--hairline-strong) 55%, transparent); }

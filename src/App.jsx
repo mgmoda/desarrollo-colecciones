@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Login from './components/Login.jsx'
+import { nombreDeSesion } from './lib/usuarios.js'
 import DashboardView from './components/DashboardView.jsx'
 import ResumenView from './components/ResumenView.jsx'
 import AreaView from './components/AreaView.jsx'
@@ -617,6 +618,9 @@ export default function App() {
           <RefSearch refIds={refIndex.map((r) => r.id)} onSelect={openDetail} />
           <SyncIndicator lastSync={lastSync} syncing={syncing} paused={formOpen || importOpen} onRefresh={syncFromServer} />
           <button className="btn btn-ghost" onClick={() => setImportOpen(true)}>Importar</button>
+          <span className="sesion-usuario" title={session.user.email}>
+            {nombreDeSesion(session.user)}
+          </span>
           <button className="logout-btn" onClick={() => supabase.auth.signOut()} title="Cerrar sesión">Salir</button>
         </div>
       </header>

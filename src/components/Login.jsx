@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { DOMINIO_INTERNO, correoDeUsuario } from '../lib/usuarios.js'
 
 export default function Login() {
-  const [email, setEmail] = useState('')
+  const [usuario, setUsuario] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -12,11 +13,11 @@ export default function Login() {
     setError('')
     setBusy(true)
     const { error: err } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: correoDeUsuario(usuario),
       password,
     })
     setBusy(false)
-    if (err) setError('Correo o contraseña incorrectos.')
+    if (err) setError('Usuario o contraseña incorrectos.')
   }
 
   return (
@@ -27,15 +28,21 @@ export default function Login() {
         <p className="login-sub">Inicia sesión para continuar</p>
 
         <div className="field">
-          <label className="field-label">Correo</label>
+          <label className="field-label">Usuario</label>
           <input
             className="input"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tucorreo@ejemplo.com"
+            type="text"
+            value={usuario}
+            onChange={(e) => setUsuario(e.target.value)}
+            placeholder="marcela"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck="false"
             autoFocus
           />
+          <p className="field-hint">
+            Solo tu usuario. Si entras con correo, escríbelo completo.
+          </p>
         </div>
         <div className="field">
           <label className="field-label">Contraseña</label>

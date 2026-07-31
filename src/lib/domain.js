@@ -774,3 +774,32 @@ export function desglosePorMarca(orders, refMap, etapaKey) {
 export function ordenesConEtapa(orders, etapaKey) {
   return orders.filter((o) => stageDone(o, etapaKey))
 }
+
+// Las etapas que marcan el flujo, una por módulo. "En talleres" no aparece
+// porque cierra la misma etapa que Entrega ensamble: contarla sería contar
+// dos veces la misma prenda.
+export const MODULOS_FLUJO = [
+  { key: 'ordencorte', label: 'Orden de corte', etapa: 'ordenCorte' },
+  { key: 'trazos', label: 'Trazos', etapa: 'trazo' },
+  { key: 'corte', label: 'Corte', etapa: 'entregaCorte' },
+  { key: 'enviar', label: 'Por enviar', etapa: 'envioEnsamble' },
+  { key: 'entrega', label: 'Entrega ensamble', etapa: 'entregaEnsamble' },
+]
+
+// Unidades cerradas en cada módulo, semana por semana, con el desglose por
+// marca de cada celda.
+export function unidadesPorSemana(orders, refMap, semanas) {
+  return semanas.map((dias) => {
+    const desde = dias[0]
+    const hasta = dias[dias.length - 1]
+    const modulos = {}
+    MODULOS_FLUJO.forEach((m) => {
+      const dentro = orders.filter((o) => {
+        const f = (o.stages && o.stages[m.etapa] && o.stages[m.etapa].fecha) || ''
+        return f && f >= desde && f <= hasta
+      })
+      modulos[m.key] = desglosePorMarca(dentro, refMap, m.etapa)
+    })
+    return { dias, desde, hasta, modulos }
+  })
+}

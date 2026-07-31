@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import DiaProduccionModal from './DiaProduccionModal.jsx'
+import TablaSemanas from './TablaSemanas.jsx'
 import {
-  desglosePorMarca, ordenesConEtapa, produccionPorDia, totalSemana,
+  desglosePorMarca, ordenesConEtapa, produccionPorDia,
 } from '../lib/domain.js'
 import {
-  etiquetaDia, isoLocal, rangoSemana, semanaAnteriorDe, semanaDe,
+  etiquetaDia, isoLocal, rangoSemana, semanaDe,
 } from '../lib/dates.js'
 
 // Cada área mide su propio trabajo por la etapa que ella cierra: Trazos el
@@ -81,14 +82,6 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
     () => produccionPorDia(orders, medida.etapa, dias),
     [orders, medida.etapa, dias],
   )
-  const total = useMemo(
-    () => totalSemana(orders, medida.etapa, dias),
-    [orders, medida.etapa, dias],
-  )
-  const previa = useMemo(
-    () => totalSemana(orders, medida.etapa, semanaAnteriorDe(hoy)),
-    [orders, medida.etapa, hoy],
-  )
 
   const detalle = diaAbierto ? porDia.get(diaAbierto) : null
 
@@ -152,16 +145,7 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
             })}
           </div>
 
-          <p className="kpi-total">
-            <span className="muted">Total de la semana</span>
-            <b>{total.unidades.toLocaleString('es-CO')}</b>
-            <span className="muted">
-              unidades en {total.refs} {total.refs === 1 ? 'referencia' : 'referencias'}
-            </span>
-            <span className="kpi-previa">
-              semana pasada {previa.unidades.toLocaleString('es-CO')}
-            </span>
-          </p>
+          <TablaSemanas orders={orders} refMap={refMap} destacado={areaKey} />
         </div>
       </div>
 

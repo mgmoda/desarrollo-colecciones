@@ -5652,3 +5652,43 @@ img.ship-ref-photo {
 
 /* Selector de periodo del módulo de orden de corte. */
 .oc-periodos { display: flex; gap: 6px; margin-bottom: 14px; }
+
+/* ---------- Unidades por semana, dentro de la tarjeta ---------- */
+.sem-wrap { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hairline); overflow-x: auto; }
+.sem-tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sem-tabla th, .sem-tabla td { padding: 5px 10px; text-align: right; white-space: nowrap; }
+.sem-tabla thead th {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--hairline-strong);
+}
+.sem-tabla thead th:first-child, .sem-tabla th[scope="row"] { text-align: left; }
+.sem-tabla th[scope="row"] { font-weight: 400; color: var(--ink-soft); }
+.sem-tabla tbody tr + tr th, .sem-tabla tbody tr + tr td { border-top: 1px solid var(--hairline); }
+.sem-celda { position: relative; }
+.sem-barra {
+  position: absolute;
+  right: 6px;
+  top: 5px;
+  bottom: 5px;
+  background: var(--bg);
+  border-radius: 3px;
+  z-index: 0;
+}
+.sem-valor { position: relative; z-index: 1; font-variant-numeric: tabular-nums; }
+.sem-actual th[scope="row"] { color: var(--ink); font-weight: 500; }
+.sem-actual .sem-valor { font-weight: 500; }
+.sem-chip {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 10px;
+}
+/* La columna del módulo que se está mirando va marcada. */
+.sem-col-on { background: color-mix(in srgb, var(--bg) 55%, transparent); }
+.sem-tabla thead th.sem-col-on { color: var(--ink); }

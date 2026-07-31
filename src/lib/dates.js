@@ -100,3 +100,14 @@ export function nombreMes(fecha) {
   const d = parseDateLoose(fecha)
   return d ? MES_LARGO_2[d.getMonth()] : ''
 }
+
+// Las últimas N semanas, de la más reciente a la más vieja.
+export function ultimasSemanas(fecha, n) {
+  const base = parseDateLoose(fecha) || new Date()
+  const out = []
+  for (let i = 0; i < n; i += 1) {
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() - i * 7)
+    out.push(semanaDe(d))
+  }
+  return out
+}

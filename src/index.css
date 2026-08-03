@@ -5866,7 +5866,11 @@ img.ship-ref-photo {
 .cur-medidas { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 .cur-medidas b { margin-left: 4px; font-variant-numeric: tabular-nums; }
 .cur-tabla { table-layout: fixed; width: 100%; }
-.cur-tabla thead th, .cur-tabla tbody td, .cur-tabla tfoot td {
+/* Mismo relleno y misma alineacion (centrada) en encabezado, filas y pie:
+   cualquier diferencia entre ellos descuadra los numeros a la vista. */
+.cur-tabla thead th, .cur-tabla tbody td, .cur-tabla tbody th,
+.cur-tabla tfoot td, .cur-tabla tfoot th {
+  padding: 8px 10px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -5883,7 +5887,6 @@ img.ship-ref-photo {
 .cur-total {
   border-left: 1px solid var(--hairline-strong);
   font-weight: 600;
-  text-align: right !important;
   width: 84px;
 }
 .cur-tabla tfoot th, .cur-tabla tfoot td {

@@ -3,6 +3,7 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import AreaKpis from './AreaKpis.jsx'
 import ProcesosTags from './ProcesosTags.jsx'
+import CurvaModal, { MEDIDA_DE_AREA } from './CurvaModal.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { AREAS, ORIGENES, ORIGEN_ABBR, TOP_LABEL, formatDate } from '../lib/constants.js'
 import { desglosePorMarca, orderArea, ordenesEnRango, refProcesos } from '../lib/domain.js'
@@ -24,6 +25,7 @@ export default function OrdenCorteView({
   const ocultas = fasesOcultas || new Set()
   const [q, setQ] = useState('')
   const [periodo, setPeriodo] = useState('semana')
+  const [curvaDe, setCurvaDe] = useState(null)
   const { sortKey, sortDir, toggle } = useSort('fecha', 'desc')
 
   const hoy = isoLocal(new Date())
@@ -143,11 +145,10 @@ export default function OrdenCorteView({
                 const ref = refMap.get(o.referencia)
                 const oc = o.stages.ordenCorte || {}
                 const area = orderArea(o)
-                const canOpen = !!(onOpenRef && ref)
                 return (
-                  <tr key={o.id} className={canOpen ? 'row-click' : ''}
-                    onClick={() => canOpen && onOpenRef(ref)}
-                    title={canOpen ? 'Abrir ficha de la referencia' : undefined}>
+                  <tr key={o.id} className="row-click"
+                    onClick={() => setCurvaDe(o)}
+                    title="Ver la curva de tallas y colores de esta orden">
                     <td className="cell-photo">
                       {ref && ref.image ? (
                         <img src={ref.image} alt={o.referencia} className="thumb" title="Ampliar foto"
@@ -178,6 +179,11 @@ export default function OrdenCorteView({
             </tbody>
           </table>
         </div>
+      )}
+      {curvaDe && (
+        <CurvaModal orden={curvaDe} medidaInicial={MEDIDA_DE_AREA.ordencorte}
+          refMap={refMap} onClose={() => setCurvaDe(null)}
+          onOpenRef={onOpenRef} onViewImage={onViewImage} />
       )}
     </div>
   )

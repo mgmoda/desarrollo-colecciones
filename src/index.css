@@ -5843,3 +5843,33 @@ img.ship-ref-photo {
 .fal-pick-sel { font-size: 13px; align-self: center; }
 .fal-pick-sel b { color: var(--ink); }
 .fal-etapa { margin-left: 8px; font-size: 11px; }
+
+/* ---------- Curva de tallas de una orden ---------- */
+.cur-head { display: flex; align-items: center; gap: 12px; }
+.cur-foto {
+  width: 46px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--bg);
+  flex: none;
+  cursor: pointer;
+}
+.cur-foto-vacia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  border: 1px dashed var(--hairline-strong);
+  cursor: default;
+}
+.cur-medidas { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.cur-medidas b { margin-left: 4px; font-variant-numeric: tabular-nums; }
+.cur-tabla th[scope="row"] { text-align: left; font-weight: 500; white-space: nowrap; }
+.cur-tabla td { font-variant-numeric: tabular-nums; }
+.cur-cero { color: var(--hairline-strong); }
+.cur-total { border-left: 1px solid var(--hairline-strong); font-weight: 600; }
+.cur-tabla tfoot th, .cur-tabla tfoot td {
+  border-top: 1px solid var(--hairline-strong);
+  font-weight: 600;
+}

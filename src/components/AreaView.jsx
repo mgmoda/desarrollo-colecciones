@@ -10,6 +10,7 @@ import TopVinculoModal from './TopVinculoModal.jsx'
 import AreaKpis from './AreaKpis.jsx'
 import ProcesosTags from './ProcesosTags.jsx'
 import ConjuntoModal from './ConjuntoModal.jsx'
+import CurvaModal, { MEDIDA_DE_AREA } from './CurvaModal.jsx'
 
 // Días que el taller tuvo el lote: del envío a la entrega de ensamble.
 function diasEnTaller(o) {
@@ -74,6 +75,7 @@ function TopCell({ orden, refRow, topLinks, onAbrir }) {
 export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, fasesOcultas, onToggleFase, topLinks, onVincularTop, conjuntoLinks }) {
   const [topDe, setTopDe] = useState(null) // orden cuyo vínculo de top se está viendo
   const [conjuntoDe, setConjuntoDe] = useState(null) // orden cuyo conjunto se está viendo
+  const [curvaDe, setCurvaDe] = useState(null) // orden cuya curva de tallas se está viendo
   const ocultas = fasesOcultas || new Set()
   const area = AREAS[areaKey]
   const [q, setQ] = useState('')
@@ -231,9 +233,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 const canOpen = !!(onOpenRef && ref)
                 return (
                   <tr key={o.id}
-                    className={(selected.has(o.id) ? 'row-sel' : '') + (canOpen ? ' row-click' : '')}
-                    onClick={() => canOpen && onOpenRef(ref)}
-                    title={canOpen ? 'Abrir ficha de la referencia (foto, costo, telas, etc.)' : undefined}>
+                    className={(selected.has(o.id) ? 'row-sel' : '') + ' row-click'}
+                    onClick={() => setCurvaDe(o)}
+                    title="Ver la curva de tallas y colores de esta orden">
                     <td className="cell-check" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" checked={selected.has(o.id)} onChange={() => toggleSel(o.id)} />
                     </td>
@@ -287,6 +289,12 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
             </tbody>
           </table>
         </div>
+      )}
+
+      {curvaDe && (
+        <CurvaModal orden={curvaDe} medidaInicial={MEDIDA_DE_AREA[areaKey]}
+          refMap={refMap} onClose={() => setCurvaDe(null)}
+          onOpenRef={onOpenRef} onViewImage={onViewImage} />
       )}
 
       <ConjuntoModal orden={conjuntoDe}

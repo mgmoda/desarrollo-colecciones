@@ -5865,10 +5865,27 @@ img.ship-ref-photo {
 }
 .cur-medidas { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 .cur-medidas b { margin-left: 4px; font-variant-numeric: tabular-nums; }
-.cur-tabla th[scope="row"] { text-align: left; font-weight: 500; white-space: nowrap; }
-.cur-tabla td { font-variant-numeric: tabular-nums; }
+.cur-tabla { table-layout: fixed; width: 100%; }
+.cur-tabla thead th, .cur-tabla tbody td, .cur-tabla tfoot td {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.cur-tabla thead th:first-child,
+.cur-tabla th[scope="row"] {
+  text-align: left;
+  font-weight: 500;
+  white-space: nowrap;
+  width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .cur-cero { color: var(--hairline-strong); }
-.cur-total { border-left: 1px solid var(--hairline-strong); font-weight: 600; }
+.cur-total {
+  border-left: 1px solid var(--hairline-strong);
+  font-weight: 600;
+  text-align: right !important;
+  width: 84px;
+}
 .cur-tabla tfoot th, .cur-tabla tfoot td {
   border-top: 1px solid var(--hairline-strong);
   font-weight: 600;

@@ -38,6 +38,10 @@ export default function CurvaModal({ orden, medidaInicial, refMap, onClose, onOp
       const t = String(r.talla || '').trim()
       const c = String(r.color || '').trim() || '—'
       if (!t) return
+      // Factory manda la talla aunque venga toda en cero; esas columnas
+      // vacias solo desalinean la tabla, se omiten.
+      const algo = MEDIDAS.some(([m]) => (Number(r[m]) || 0) > 0)
+      if (!algo) return
       tSet.add(t); cSet.add(c)
       const k = c + '|' + t
       const prev = mapa.get(k) || {}
@@ -110,8 +114,8 @@ export default function CurvaModal({ orden, medidaInicial, refMap, onClose, onOp
                 <thead>
                   <tr>
                     <th>Color</th>
-                    {tallas.map((t) => <th key={t} className="num">{t}</th>)}
-                    <th className="num cur-total">Total</th>
+                    {tallas.map((t) => <th key={t}>{t}</th>)}
+                    <th className="cur-total">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -120,9 +124,9 @@ export default function CurvaModal({ orden, medidaInicial, refMap, onClose, onOp
                       <th scope="row">{c}</th>
                       {tallas.map((t) => {
                         const v = celdas(c, t, medida)
-                        return <td key={t} className={'num' + (v ? '' : ' cur-cero')}>{v || '·'}</td>
+                        return <td key={t} className={v ? '' : 'cur-cero'}>{v || '·'}</td>
                       })}
-                      <td className="num cur-total">{totFila(c, medida).toLocaleString('es-CO')}</td>
+                      <td className="cur-total">{totFila(c, medida).toLocaleString('es-CO')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -130,9 +134,9 @@ export default function CurvaModal({ orden, medidaInicial, refMap, onClose, onOp
                   <tr>
                     <th scope="row">Total</th>
                     {tallas.map((t) => (
-                      <td key={t} className="num">{totCol(t, medida).toLocaleString('es-CO')}</td>
+                      <td key={t}>{totCol(t, medida).toLocaleString('es-CO')}</td>
                     ))}
-                    <td className="num cur-total">{totales[medida].toLocaleString('es-CO')}</td>
+                    <td className="cur-total">{totales[medida].toLocaleString('es-CO')}</td>
                   </tr>
                 </tfoot>
               </table>

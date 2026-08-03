@@ -11,13 +11,13 @@ const SEMANAS = 12
 // Entrega ensamble; estando ahí se resalta esa.
 const COLUMNA_DEL_MODULO = { talleres: 'entrega' }
 
-export default function TablaSemanas({ orders, destacado }) {
+export default function TablaSemanas({ orders, refMap, destacado }) {
   const columna = COLUMNA_DEL_MODULO[destacado] || destacado
   const hoy = isoLocal(new Date())
   const semanas = useMemo(() => ultimasSemanas(hoy, SEMANAS), [hoy])
   const datos = useMemo(
-    () => unidadesPorSemana(orders, semanas),
-    [orders, semanas],
+    () => unidadesPorSemana(orders, refMap, semanas),
+    [orders, refMap, semanas],
   )
 
   // Máximo de cada columna, para la barra de fondo que da la proporción.

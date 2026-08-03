@@ -734,14 +734,17 @@ export function ordenesEnRango(orders, etapaKey, desde, hasta) {
 //
 // Geodésica es ensamble para un tercero. Todo lo demás —Casania, Mariset, y
 // las prendas cuya ficha aún no tiene marca puesta— es producción de la casa
-// y suma a MG. Así los dos renglones siempre dan el total, sin sobrantes.
+// y suma a MG, que es la cifra que se mira primero. Casania y Mariset quedan
+// como detalle de MG, para abrir cuando se quiera ver el reparto.
 // ---------------------------------------------------------------------------
 
 export const MARCAS_KPI = ['MG', 'Geodésica']
+export const SUBMARCAS_KPI = ['Casania', 'Mariset', 'Sin marca']
 
-export function desglosePorMarca(orders, etapaKey) {
+export function desglosePorMarca(orders, refMap, etapaKey) {
   const vacio = () => ({ ordenes: 0, unidades: 0 })
   const marcas = { MG: vacio(), 'Geodésica': vacio() }
+  SUBMARCAS_KPI.forEach((m) => { marcas[m] = vacio() })
   let unidades = 0
   let ordenes = 0
 
@@ -749,9 +752,19 @@ export function desglosePorMarca(orders, etapaKey) {
     const n = cantEtapa(o, etapaKey) || cantEtapa(o, 'ordenCorte')
     unidades += n
     ordenes += 1
-    const grupo = o.origen === 'geodesica' ? 'Geodésica' : 'MG'
-    marcas[grupo].ordenes += 1
-    marcas[grupo].unidades += n
+    if (o.origen === 'geodesica') {
+      marcas['Geodésica'].ordenes += 1
+      marcas['Geodésica'].unidades += n
+      return
+    }
+    // Todo lo que no es Geodésica es de la casa.
+    marcas.MG.ordenes += 1
+    marcas.MG.unidades += n
+    const ficha = refMap && refMap.get(o.referencia)
+    const marca = (ficha && ficha.marca) || ''
+    const sub = marca === 'Casania' || marca === 'Mariset' ? marca : 'Sin marca'
+    marcas[sub].ordenes += 1
+    marcas[sub].unidades += n
   })
 
   return { unidades, ordenes, marcas }
@@ -775,7 +788,7 @@ export const MODULOS_FLUJO = [
 
 // Unidades cerradas en cada módulo, semana por semana, con el desglose por
 // marca de cada celda.
-export function unidadesPorSemana(orders, semanas) {
+export function unidadesPorSemana(orders, refMap, semanas) {
   return semanas.map((dias) => {
     const desde = dias[0]
     const hasta = dias[dias.length - 1]
@@ -785,7 +798,7 @@ export function unidadesPorSemana(orders, semanas) {
         const f = (o.stages && o.stages[m.etapa] && o.stages[m.etapa].fecha) || ''
         return f && f >= desde && f <= hasta
       })
-      modulos[m.key] = desglosePorMarca(dentro, m.etapa)
+      modulos[m.key] = desglosePorMarca(dentro, refMap, m.etapa)
     })
     return { dias, desde, hasta, modulos }
   })

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import DiaProduccionModal from './DiaProduccionModal.jsx'
 import TablaSemanas from './TablaSemanas.jsx'
 import {
-  desglosePorMarca, ordenesConEtapa, produccionPorDia,
+  desglosePorMarca, ordenesConEtapa, produccionPorDia, SUBMARCAS_KPI,
 } from '../lib/domain.js'
 import {
   etiquetaDia, isoLocal, rangoSemana, semanaDe,
@@ -32,27 +32,56 @@ const ACUMULADO = {
   ordencorte: 'Programado en total',
 }
 
-// Lo de la casa contra lo de terceros: MG manda, Geodésica va debajo.
-function Desglose({ marcas }) {
-  if (!marcas) return null
-  const mg = marcas.MG || { unidades: 0, ordenes: 0 }
-  const geo = marcas['Geodésica'] || { unidades: 0, ordenes: 0 }
-  if (!mg.unidades && !geo.unidades) return null
+// Tarjeta de cifra. La grande es MG, que es lo propio; debajo, Geodésica y el
+// total en tamaño normal. Al tocar la cifra se abre el reparto de MG entre
+// Casania y Mariset.
+function TarjetaCifra({ label, datos }) {
+  const [abierto, setAbierto] = useState(false)
+  const m = datos.marcas || {}
+  const cero = { unidades: 0, ordenes: 0 }
+  const mg = m.MG || cero
+  const geo = m['Geodésica'] || cero
+  const num = (n) => n.toLocaleString('es-CO')
+  const subs = SUBMARCAS_KPI.map((k) => [k, m[k] || cero]).filter(([, d]) => d.unidades > 0)
+  const puedeAbrir = subs.length > 1
+
   return (
-    <ul className="kpi-marcas">
-      {mg.unidades > 0 && (
-        <li className="kpi-marca-mg" title={`${mg.ordenes} órdenes`}>
-          <span>MG</span>
-          <b>{mg.unidades.toLocaleString('es-CO')}</b>
-        </li>
+    <div className="kpi-card">
+      <p className="kpi-label">{label}</p>
+      {puedeAbrir ? (
+        <button type="button" className="kpi-cifra-btn" onClick={() => setAbierto(!abierto)}
+          title={abierto ? 'Ocultar el reparto por marca' : 'Ver cuánto va de Casania y de Mariset'}>
+          <span className="kpi-cifra">{num(mg.unidades)}</span>
+          <span className="kpi-caret" aria-hidden="true">{abierto ? '▴' : '▾'}</span>
+        </button>
+      ) : (
+        <p className="kpi-cifra">{num(mg.unidades)}</p>
       )}
-      {geo.unidades > 0 && (
-        <li title={`${geo.ordenes} órdenes`}>
-          <span>Geodésica</span>
-          <b>{geo.unidades.toLocaleString('es-CO')}</b>
-        </li>
-      )}
-    </ul>
+      <p className="kpi-unidad">unidades MG</p>
+      <p className="kpi-desglose">
+        {mg.ordenes} {mg.ordenes === 1 ? 'orden' : 'órdenes'}
+      </p>
+      <ul className="kpi-marcas">
+        {abierto && subs.map(([nombre, d]) => (
+          <li key={nombre} className="kpi-sub" title={`${d.ordenes} órdenes`}>
+            <span>{nombre}</span>
+            <b>{num(d.unidades)}</b>
+          </li>
+        ))}
+        {geo.unidades > 0 && (
+          <>
+            <li title={`${geo.ordenes} órdenes`}>
+              <span>Geodésica</span>
+              <b>{num(geo.unidades)}</b>
+            </li>
+            <li className="kpi-suma" title={`${datos.ordenes} órdenes en total`}>
+              <span>Total</span>
+              <b>{num(datos.unidades)}</b>
+            </li>
+          </>
+        )}
+      </ul>
+    </div>
   )
 }
 
@@ -66,8 +95,8 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
 
   // Tarjeta de la izquierda: lo que falta en la etapa, desglosado por marca.
   const propio = useMemo(
-    () => desglosePorMarca(enEtapa || [], 'ordenCorte'),
-    [enEtapa],
+    () => desglosePorMarca(enEtapa || [], refMap, 'ordenCorte'),
+    [enEtapa, refMap],
   )
   const pendiente = izquierda || propio
   const etiquetaIzq = (izquierda && izquierda.label) || medida.pendiente
@@ -75,8 +104,8 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
   // Segunda tarjeta: lo que el área lleva hecho desde que se importa el
   // archivo. No se pasa como prop porque sale de lo mismo en todas.
   const acumulado = useMemo(
-    () => desglosePorMarca(ordenesConEtapa(orders, medida.etapa), medida.etapa),
-    [orders, medida.etapa],
+    () => desglosePorMarca(ordenesConEtapa(orders, medida.etapa), refMap, medida.etapa),
+    [orders, medida.etapa, refMap],
   )
   const dias = useMemo(() => semanaDe(hoy), [hoy])
   const porDia = useMemo(
@@ -90,28 +119,9 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
     <div className="kpi-wrap">
       <div className="kpi-grid">
         <div className="kpi-nums">
-        {!sinPendiente && (
-        <div className="kpi-card">
-          <p className="kpi-label">{etiquetaIzq}</p>
-          <p className="kpi-cifra">{pendiente.unidades.toLocaleString('es-CO')}</p>
-          <p className="kpi-unidad">unidades</p>
-          <p className="kpi-desglose">
-            {pendiente.ordenes} {pendiente.ordenes === 1 ? 'orden' : 'órdenes'}
-          </p>
-          <Desglose marcas={pendiente.marcas} />
-        </div>
-        )}
-
+        {!sinPendiente && <TarjetaCifra label={etiquetaIzq} datos={pendiente} />}
         {!sinAcumulado && (
-        <div className="kpi-card">
-          <p className="kpi-label">{ACUMULADO[areaKey] || 'En total'}</p>
-          <p className="kpi-cifra">{acumulado.unidades.toLocaleString('es-CO')}</p>
-          <p className="kpi-unidad">unidades</p>
-          <p className="kpi-desglose">
-            {acumulado.ordenes} {acumulado.ordenes === 1 ? 'orden' : 'órdenes'}
-          </p>
-          <Desglose marcas={acumulado.marcas} />
-        </div>
+          <TarjetaCifra label={ACUMULADO[areaKey] || 'En total'} datos={acumulado} />
         )}
         </div>
 
@@ -146,7 +156,7 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
             })}
           </div>
 
-          <TablaSemanas orders={orders} destacado={areaKey} />
+          <TablaSemanas orders={orders} refMap={refMap} destacado={areaKey} />
         </div>
       </div>
 

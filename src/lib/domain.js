@@ -730,44 +730,43 @@ export function ordenesEnRango(orders, etapaKey, desde, hasta) {
 }
 
 // ---------------------------------------------------------------------------
-// Desglose de unidades: lo propio contra lo de terceros.
+// Desglose de unidades: lo propio, los tops y lo de terceros.
 //
-// Geodésica es ensamble para un tercero. Todo lo demás —Casania, Mariset, y
-// las prendas cuya ficha aún no tiene marca puesta— es producción de la casa
-// y suma a MG, que es la cifra que se mira primero. Casania y Mariset quedan
-// como detalle de MG, para abrir cuando se quiera ver el reparto.
+// Los tops se cuentan aparte: son prenda suelta que acompaña a otra, así que
+// sumarlos con las prendas inflaría la producción. Geodésica es ensamble para
+// un tercero. Lo que queda —Casania, Mariset, y las prendas cuya ficha aún no
+// tiene marca puesta— es producción de la casa y suma a MG, la cifra que se
+// mira primero; Casania y Mariset quedan como su detalle.
 // ---------------------------------------------------------------------------
 
-export const MARCAS_KPI = ['MG', 'Geodésica']
+export const MARCAS_KPI = ['MG', 'Tops', 'Geodésica']
 export const SUBMARCAS_KPI = ['Casania', 'Mariset', 'Sin marca']
 
 export function desglosePorMarca(orders, refMap, etapaKey) {
   const vacio = () => ({ ordenes: 0, unidades: 0 })
-  const marcas = { MG: vacio(), 'Geodésica': vacio() }
+  const marcas = {}
+  MARCAS_KPI.forEach((m) => { marcas[m] = vacio() })
   SUBMARCAS_KPI.forEach((m) => { marcas[m] = vacio() })
   let unidades = 0
   let ordenes = 0
 
   orders.forEach((o) => {
     const n = cantEtapa(o, etapaKey) || cantEtapa(o, 'ordenCorte')
+    const suma = (k) => { marcas[k].ordenes += 1; marcas[k].unidades += n }
+    // Los tops no entran en `unidades`/`ordenes`: esa es la cifra de prendas.
+    if (esOrdenTop(o)) { suma('Tops'); return }
     unidades += n
     ordenes += 1
-    if (o.origen === 'geodesica') {
-      marcas['Geodésica'].ordenes += 1
-      marcas['Geodésica'].unidades += n
-      return
-    }
-    // Todo lo que no es Geodésica es de la casa.
-    marcas.MG.ordenes += 1
-    marcas.MG.unidades += n
+    if (o.origen === 'geodesica') { suma('Geodésica'); return }
+    // Todo lo que no es top ni Geodésica es producción de la casa.
+    suma('MG')
     const ficha = refMap && refMap.get(o.referencia)
     const marca = (ficha && ficha.marca) || ''
-    const sub = marca === 'Casania' || marca === 'Mariset' ? marca : 'Sin marca'
-    marcas[sub].ordenes += 1
-    marcas[sub].unidades += n
+    suma(marca === 'Casania' || marca === 'Mariset' ? marca : 'Sin marca')
   })
 
-  return { unidades, ordenes, marcas }
+  // `unidades` y `ordenes` son el total de prendas, sin tops.
+  return { unidades, ordenes, tops: marcas.Tops, marcas }
 }
 
 // Órdenes que ya cumplieron una etapa, en toda la historia importada.

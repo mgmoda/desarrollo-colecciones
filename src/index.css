@@ -5321,6 +5321,14 @@ img.ship-ref-photo {
   margin-bottom: 14px;
 }
 .kpi-rango { margin: 0; font-size: 12px; color: var(--muted); }
+/* Los tops de la semana no entran en los días: van rotulados al lado. */
+.kpi-rango-tops {
+  margin-right: 10px;
+  padding: 1px 6px;
+  border: 1px dashed var(--hairline-strong);
+  border-radius: 999px;
+  font-size: 11px;
+}
 
 .kpi-dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
 .kpi-dia {
@@ -5446,6 +5454,25 @@ img.ship-ref-photo {
   border-top: 1px solid var(--hairline);
   margin-top: 3px;
   padding-top: 6px !important;
+}
+/* Los tops cuelgan debajo del total, con línea punteada, porque no suman
+   ahí: son prenda suelta que acompaña a otra y se cuenta por separado. */
+.kpi-tops {
+  border-top: 1px dashed var(--hairline-strong);
+  margin-top: 3px;
+  padding-top: 6px !important;
+  color: var(--muted) !important;
+}
+.kpi-tops em {
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--hairline-strong);
+  border-radius: 999px;
+  padding: 1px 5px;
+  margin-left: 6px;
 }
 
 /* La cifra grande es un botón cuando hay reparto que abrir. */

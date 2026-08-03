@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import DiaProduccionModal from './DiaProduccionModal.jsx'
 import TablaSemanas from './TablaSemanas.jsx'
 import {
-  desglosePorMarca, ordenesConEtapa, produccionPorDia, SUBMARCAS_KPI,
+  desglosePorMarca, esOrdenTop, ordenesConEtapa, produccionPorDia, SUBMARCAS_KPI,
 } from '../lib/domain.js'
 import {
   etiquetaDia, isoLocal, rangoSemana, semanaDe,
@@ -41,6 +41,7 @@ function TarjetaCifra({ label, datos }) {
   const cero = { unidades: 0, ordenes: 0 }
   const mg = m.MG || cero
   const geo = m['Geodésica'] || cero
+  const tops = m.Tops || cero
   const num = (n) => n.toLocaleString('es-CO')
   const subs = SUBMARCAS_KPI.map((k) => [k, m[k] || cero]).filter(([, d]) => d.unidades > 0)
   const puedeAbrir = subs.length > 1
@@ -80,6 +81,13 @@ function TarjetaCifra({ label, datos }) {
             </li>
           </>
         )}
+        {tops.unidades > 0 && (
+          <li className="kpi-tops"
+            title={`${tops.ordenes} ${tops.ordenes === 1 ? 'orden' : 'órdenes'} de top · no entran en el total`}>
+            <span>Tops <em>aparte</em></span>
+            <b>{num(tops.unidades)}</b>
+          </li>
+        )}
       </ul>
     </div>
   )
@@ -108,10 +116,18 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
     [orders, medida.etapa, refMap],
   )
   const dias = useMemo(() => semanaDe(hoy), [hoy])
+  // El día a día cuenta prendas. Los tops de la semana van en su propia línea
+  // debajo, para que la suma de los días cuadre con el total de arriba.
   const porDia = useMemo(
-    () => produccionPorDia(orders, medida.etapa, dias),
+    () => produccionPorDia(orders.filter((o) => !esOrdenTop(o)), medida.etapa, dias),
     [orders, medida.etapa, dias],
   )
+  const topsSemana = useMemo(() => {
+    let n = 0
+    produccionPorDia(orders.filter(esOrdenTop), medida.etapa, dias)
+      .forEach((d) => { n += d.unidades })
+    return n
+  }, [orders, medida.etapa, dias])
 
   const detalle = diaAbierto ? porDia.get(diaAbierto) : null
 
@@ -128,7 +144,14 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
         <div className="kpi-card">
           <div className="kpi-semana-head">
             <p className="kpi-label">{medida.hecho}</p>
-            <p className="kpi-rango">{rangoSemana(dias)}</p>
+            <p className="kpi-rango">
+              {topsSemana > 0 && (
+                <span className="kpi-rango-tops">
+                  + {topsSemana.toLocaleString('es-CO')} en tops
+                </span>
+              )}
+              {rangoSemana(dias)}
+            </p>
           </div>
 
           <div className="kpi-dias">

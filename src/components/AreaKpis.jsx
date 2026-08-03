@@ -32,25 +32,26 @@ const ACUMULADO = {
   ordencorte: 'Programado en total',
 }
 
-// Casania · Mariset · MG (las dos) · Geodésica
+// Lo de la casa contra lo de terceros: MG manda, Geodésica va debajo.
 function Desglose({ marcas }) {
   if (!marcas) return null
-  const filas = [
-    ['Casania', marcas.Casania],
-    ['Mariset', marcas.Mariset],
-    ['MG', marcas.MG, true],
-    ['Geodésica', marcas['Geodésica']],
-    ['Sin marca', marcas['Sin marca']],
-  ].filter(([, d]) => d && d.unidades > 0)
-  if (!filas.length) return null
+  const mg = marcas.MG || { unidades: 0, ordenes: 0 }
+  const geo = marcas['Geodésica'] || { unidades: 0, ordenes: 0 }
+  if (!mg.unidades && !geo.unidades) return null
   return (
     <ul className="kpi-marcas">
-      {filas.map(([nombre, d, sub]) => (
-        <li key={nombre} className={sub ? 'kpi-marca-sub' : ''} title={`${d.ordenes} órdenes`}>
-          <span>{nombre}</span>
-          <b>{d.unidades.toLocaleString('es-CO')}</b>
+      {mg.unidades > 0 && (
+        <li className="kpi-marca-mg" title={`${mg.ordenes} órdenes`}>
+          <span>MG</span>
+          <b>{mg.unidades.toLocaleString('es-CO')}</b>
         </li>
-      ))}
+      )}
+      {geo.unidades > 0 && (
+        <li title={`${geo.ordenes} órdenes`}>
+          <span>Geodésica</span>
+          <b>{geo.unidades.toLocaleString('es-CO')}</b>
+        </li>
+      )}
     </ul>
   )
 }
@@ -65,8 +66,8 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
 
   // Tarjeta de la izquierda: lo que falta en la etapa, desglosado por marca.
   const propio = useMemo(
-    () => desglosePorMarca(enEtapa || [], refMap, 'ordenCorte'),
-    [enEtapa, refMap],
+    () => desglosePorMarca(enEtapa || [], 'ordenCorte'),
+    [enEtapa],
   )
   const pendiente = izquierda || propio
   const etiquetaIzq = (izquierda && izquierda.label) || medida.pendiente
@@ -74,8 +75,8 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
   // Segunda tarjeta: lo que el área lleva hecho desde que se importa el
   // archivo. No se pasa como prop porque sale de lo mismo en todas.
   const acumulado = useMemo(
-    () => desglosePorMarca(ordenesConEtapa(orders, medida.etapa), refMap, medida.etapa),
-    [orders, medida.etapa, refMap],
+    () => desglosePorMarca(ordenesConEtapa(orders, medida.etapa), medida.etapa),
+    [orders, medida.etapa],
   )
   const dias = useMemo(() => semanaDe(hoy), [hoy])
   const porDia = useMemo(
@@ -145,7 +146,7 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
             })}
           </div>
 
-          <TablaSemanas orders={orders} refMap={refMap} destacado={areaKey} />
+          <TablaSemanas orders={orders} destacado={areaKey} />
         </div>
       </div>
 

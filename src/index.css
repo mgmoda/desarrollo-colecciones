@@ -5429,13 +5429,14 @@ img.ship-ref-photo {
   white-space: nowrap;
 }
 .kpi-marcas b { font-variant-numeric: tabular-nums; font-weight: 500; }
-.kpi-marca-sub {
-  border-top: 1px solid var(--hairline);
-  margin-top: 2px;
-  padding-top: 5px !important;
+/* MG es lo propio: va destacado. Geodésica, que es para un tercero, queda
+   en segundo plano. */
+.kpi-marca-mg {
   color: var(--ink) !important;
+  font-size: 14px;
+  padding-bottom: 5px !important;
 }
-.kpi-marca-sub b { font-weight: 600; }
+.kpi-marca-mg b { font-size: 17px; font-weight: 600; }
 
 @media (max-width: 1180px) {
   .kpi-grid { grid-template-columns: 1fr; }

@@ -40,8 +40,8 @@ export default function OrdenCorteView({
   // Tarjeta de la izquierda: todo lo programado desde que se importa el
   // archivo, no un mes suelto.
   const enTotal = useMemo(
-    () => desglosePorMarca(visibles, refMap, 'ordenCorte'),
-    [visibles, refMap],
+    () => desglosePorMarca(visibles, 'ordenCorte'),
+    [visibles],
   )
 
   const rows = useMemo(() => {

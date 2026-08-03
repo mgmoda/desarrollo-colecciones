@@ -705,8 +705,8 @@ export default function App() {
           />
         )}
         {tab === 'faltantes' && (
-          <FaltantesView faltantes={faltantes} refMap={refMap}
-            refIds={refIndex.map((r) => r.referencia)}
+          <FaltantesView faltantes={faltantes} orders={orders} refMap={refMap}
+            fasesOcultas={fasesOcultas}
             usuario={nombreDeSesion(session.user).split('@')[0]} puedeResolver={puedeResolverFaltantes}
             onSave={saveFaltante} onDelete={deleteFaltante}
             onViewImage={setLightbox} onOpenRef={openEdit} />

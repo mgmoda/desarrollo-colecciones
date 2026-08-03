@@ -1,12 +1,17 @@
 import { useMemo, useState } from 'react'
 import Modal from './Modal.jsx'
 import SearchInput from './SearchInput.jsx'
-import { formatDate, normRef } from '../lib/constants.js'
+import { AREAS, ORIGEN_ABBR, normRef } from '../lib/constants.js'
+import { orderArea, areaIndex } from '../lib/domain.js'
 import { newId } from '../lib/storage.js'
 
 // Faltantes de corte: lo que antes se pedía por el grupo de WhatsApp y se
 // hundía en la conversación. Aquí cada solicitud queda arriba hasta que
 // Ninfa la resuelva, con su edad a la vista y el seguimiento anotado.
+//
+// El reporte no se escribe a mano: se ESCOGE la orden (con su foto) entre
+// las que están en Corte o ya pasaron a Por enviar, así el faltante queda
+// amarrado al número de orden.
 
 const ESTADOS = {
   pendiente: 'Pendiente',
@@ -29,7 +34,7 @@ function edad(f) {
   return Math.max(0, Math.floor((hasta - f.creadoAt) / 86400000))
 }
 
-function FaltanteCard({ f, refMap, usuario, puedeResolver, onSave, onDelete, onViewImage, onOpenRef }) {
+function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, onDelete, onViewImage, onOpenRef }) {
   const [nota, setNota] = useState('')
   const ficha = refMap.get(normRef(f.referencia))
   const dias = edad(f)
@@ -72,10 +77,10 @@ function FaltanteCard({ f, refMap, usuario, puedeResolver, onSave, onDelete, onV
               title={ficha ? 'Abrir la ficha' : undefined}>
               {f.referencia}
             </b>
-            {ficha && ficha.refInterna && ficha.refInterna !== f.referencia && (
-              <span className="muted"> · {ficha.refInterna}</span>
-            )}
             {f.orden && <span className="muted"> · orden {f.orden}</span>}
+            {!resuelto && etapaViva && (
+              <span className="tag fal-etapa" title="Dónde va esa orden hoy">va en {etapaViva}</span>
+            )}
             <span className={'fal-chip fal-' + f.estado}>
               {ESTADOS[f.estado]}{dias != null && (resuelto ? ` en ${dias} d` : ` · ${dias} d`)}
             </span>
@@ -122,15 +127,49 @@ function FaltanteCard({ f, refMap, usuario, puedeResolver, onSave, onDelete, onV
 }
 
 export default function FaltantesView({
-  faltantes, refMap, refIds, usuario, puedeResolver,
+  faltantes, orders, refMap, fasesOcultas, usuario, puedeResolver,
   onSave, onDelete, onViewImage, onOpenRef,
 }) {
   const [filtro, setFiltro] = useState('activos')
   const [q, setQ] = useState('')
   const [creando, setCreando] = useState(false)
-  const [nRef, setNRef] = useState('')
-  const [nOrden, setNOrden] = useState('')
+  const [sel, setSel] = useState(null)        // orden elegida para el reporte
+  const [qSel, setQSel] = useState('')
+  const [todasEtapas, setTodasEtapas] = useState(false)
   const [nTexto, setNTexto] = useState('')
+
+  const visibles = useMemo(
+    () => orders.filter((o) => !(fasesOcultas && fasesOcultas.has(o.origen))),
+    [orders, fasesOcultas],
+  )
+
+  // Dónde va hoy cada orden, para mostrarlo en la tarjeta del faltante.
+  const porOrden = useMemo(() => {
+    const m = new Map()
+    visibles.forEach((o) => m.set(String(o.orden), o))
+    return m
+  }, [visibles])
+
+  // Candidatas para reportar: lo que está en Corte o ya pasó a Por enviar.
+  // El interruptor "todas las etapas" cubre los casos raros.
+  const candidatas = useMemo(() => {
+    let base = visibles.filter((o) => {
+      const a = orderArea(o)
+      if (!a) return false
+      return todasEtapas || a === 'corte' || a === 'enviar'
+    })
+    const term = qSel.trim().toLowerCase()
+    if (term) {
+      base = base.filter((o) => [o.referencia, o.producto, o.orden]
+        .some((v) => String(v || '').toLowerCase().includes(term)))
+    }
+    return [...base].sort((a, b) => {
+      const ia = areaIndex(orderArea(a))
+      const ib = areaIndex(orderArea(b))
+      if (ia !== ib) return ia - ib
+      return String(b.orden).localeCompare(String(a.orden))
+    })
+  }, [visibles, todasEtapas, qSel])
 
   const conteos = useMemo(() => {
     const c = { pendiente: 0, gestion: 0, resuelto: 0 }
@@ -162,14 +201,19 @@ export default function FaltantesView({
     })
   }, [faltantes, filtro, q])
 
+  function abrirReporte() {
+    setSel(null); setQSel(''); setTodasEtapas(false); setNTexto('')
+    setCreando(true)
+  }
+
   function crear() {
-    const ref = normRef(nRef)
     const texto = nTexto.trim()
-    if (!ref || !texto) return
+    if (!sel || !texto) return
     onSave({
       id: newId(),
-      referencia: ref,
-      orden: nOrden.trim(),
+      referencia: normRef(sel.referencia),
+      orden: String(sel.orden || ''),
+      producto: sel.producto || '',
       descripcion: texto,
       estado: 'pendiente',
       creadoPor: usuario,
@@ -177,7 +221,7 @@ export default function FaltantesView({
       notas: [],
       updatedAt: Date.now(),
     }, 'crear', { descripcion: texto })
-    setCreando(false); setNRef(''); setNOrden(''); setNTexto('')
+    setCreando(false)
   }
 
   const FILTROS = [
@@ -199,7 +243,7 @@ export default function FaltantesView({
         </div>
         <div className="view-actions">
           <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia, texto…" />
-          <button className="btn btn-primary" onClick={() => setCreando(true)}>+ Reportar faltante</button>
+          <button className="btn btn-primary" onClick={abrirReporte}>+ Reportar faltante</button>
         </div>
       </div>
 
@@ -217,51 +261,90 @@ export default function FaltantesView({
         </div>
       ) : (
         <div className="fal-lista">
-          {lista.map((f) => (
-            <FaltanteCard key={f.id} f={f} refMap={refMap} usuario={usuario}
-              puedeResolver={puedeResolver} onSave={onSave} onDelete={onDelete}
-              onViewImage={onViewImage} onOpenRef={onOpenRef} />
-          ))}
+          {lista.map((f) => {
+            const ov = f.orden ? porOrden.get(String(f.orden)) : null
+            const area = ov ? orderArea(ov) : null
+            return (
+              <FaltanteCard key={f.id} f={f} refMap={refMap}
+                etapaViva={area ? AREAS[area].label : null}
+                usuario={usuario} puedeResolver={puedeResolver}
+                onSave={onSave} onDelete={onDelete}
+                onViewImage={onViewImage} onOpenRef={onOpenRef} />
+            )
+          })}
         </div>
       )}
 
       {creando && (
-        <Modal open onClose={() => setCreando(false)} size="md">
+        <Modal open onClose={() => setCreando(false)} size="lg">
           <div className="modal-head">
-            <h2>Reportar faltante</h2>
+            <div>
+              <h2>Reportar faltante</h2>
+              <p className="modal-sub">Escoge la orden a la que le faltan piezas</p>
+            </div>
             <button className="icon-btn" onClick={() => setCreando(false)} title="Cerrar">✕</button>
           </div>
           <div className="modal-body">
-            <div className="field-row">
-              <div className="field">
-                <label className="field-label">Referencia</label>
-                <input className="input" value={nRef} list="fal-refs" autoFocus
-                  onChange={(e) => setNRef(e.target.value.toUpperCase())}
-                  placeholder="MG-B872 o C6893" />
-                <datalist id="fal-refs">
-                  {refIds.map((r) => <option key={r} value={r} />)}
-                </datalist>
-              </div>
-              <div className="field">
-                <label className="field-label"># Orden (opcional)</label>
-                <input className="input" value={nOrden}
-                  onChange={(e) => setNOrden(e.target.value)} placeholder="10741" />
-              </div>
+            <div className="fal-pick-barra">
+              <SearchInput value={qSel} onChange={setQSel} placeholder="Buscar orden, referencia…" />
+              <button type="button" className={'opt-btn' + (todasEtapas ? ' on' : '')}
+                onClick={() => setTodasEtapas(!todasEtapas)}
+                title="Ver también trazos, talleres y entrega">
+                Todas las etapas
+              </button>
             </div>
-            <div className="field">
+
+            {candidatas.length === 0 ? (
+              <p className="muted fal-pick-vacio">No hay órdenes en Corte ni Por enviar con ese filtro.</p>
+            ) : (
+              <div className="fal-pick">
+                {candidatas.map((o) => {
+                  const ficha = refMap.get(o.referencia)
+                  const area = orderArea(o)
+                  const on = sel && sel.id === o.id
+                  return (
+                    <button key={o.id} type="button"
+                      className={'fal-pick-item' + (on ? ' on' : '')}
+                      onClick={() => setSel(on ? null : o)}>
+                      {ficha && ficha.image ? (
+                        <img className="fal-pick-foto" src={ficha.image} alt={o.referencia} />
+                      ) : (
+                        <span className="fal-pick-foto fal-foto-vacia">＋</span>
+                      )}
+                      <span className="fal-pick-info">
+                        <span className="fal-pick-ref">
+                          <b>{o.referencia}</b>
+                          <span className={'origen-chip o-' + o.origen}>{ORIGEN_ABBR[o.origen] || o.origen}</span>
+                        </span>
+                        <span className="fal-pick-sub">
+                          orden {o.orden}{o.producto && o.producto !== o.referencia ? ` · ${o.producto}` : ''}
+                        </span>
+                        <span className="fal-pick-etapa">{area ? AREAS[area].label : ''}</span>
+                      </span>
+                      {on && <span className="fal-pick-check">✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            <div className="field" style={{ marginTop: 14 }}>
               <label className="field-label">Qué falta</label>
-              <textarea className="input fal-textarea" value={nTexto} rows={4}
+              <textarea className="input fal-textarea" value={nTexto} rows={3}
                 onChange={(e) => setNTexto(e.target.value)}
                 placeholder="Ej. Faltan mangas estampadas talla 10 coral. Delanteros completos, solo falta lo que va en tela continua." />
+              <p className="field-hint">Escríbelo como lo pondrías en el grupo: piezas, tallas y colores.</p>
             </div>
-            <p className="field-hint">
-              Escríbelo como lo pondrías en el grupo: piezas, tallas y colores.
-            </p>
           </div>
-          <div className="modal-foot">
-            <button className="btn" onClick={() => setCreando(false)}>Cancelar</button>
-            <button className="btn btn-primary" onClick={crear}
-              disabled={!normRef(nRef) || !nTexto.trim()}>Reportar</button>
+          <div className="modal-foot spread">
+            <span className="muted fal-pick-sel">
+              {sel ? <>Orden <b>{sel.orden}</b> · {sel.referencia}</> : 'Ninguna orden elegida'}
+            </span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn" onClick={() => setCreando(false)}>Cancelar</button>
+              <button className="btn btn-primary" onClick={crear}
+                disabled={!sel || !nTexto.trim()}>Reportar</button>
+            </div>
           </div>
         </Modal>
       )}

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import DiaProduccionModal from './DiaProduccionModal.jsx'
 import TablaSemanas from './TablaSemanas.jsx'
 import {
-  desglosePorMarca, esOrdenTop, ordenesConEtapa, produccionPorDia, SUBMARCAS_KPI,
+  desglosePorMarca, cuentaComoTop, ordenesConEtapa, produccionPorDia, SUBMARCAS_KPI,
 } from '../lib/domain.js'
 import {
   etiquetaDia, isoLocal, rangoSemana, semanaDe,
@@ -119,12 +119,12 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
   // El día a día cuenta prendas. Los tops de la semana van en su propia línea
   // debajo, para que la suma de los días cuadre con el total de arriba.
   const porDia = useMemo(
-    () => produccionPorDia(orders.filter((o) => !esOrdenTop(o)), medida.etapa, dias),
+    () => produccionPorDia(orders.filter((o) => !cuentaComoTop(o)), medida.etapa, dias),
     [orders, medida.etapa, dias],
   )
   const topsSemana = useMemo(() => {
     let n = 0
-    produccionPorDia(orders.filter(esOrdenTop), medida.etapa, dias)
+    produccionPorDia(orders.filter(cuentaComoTop), medida.etapa, dias)
       .forEach((d) => { n += d.unidades })
     return n
   }, [orders, medida.etapa, dias])

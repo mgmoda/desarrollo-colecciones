@@ -278,6 +278,16 @@ export function esOrdenTop(o) {
   return SUFIJO_TOP.test((o && o.referencia) || '')
 }
 
+// Para contar, top es todo lo que es top: el que acompaña a una prenda
+// (MG-V834 TOP) y el que es top de por sí (TOP VESTIDO). La vinculación en
+// cambio solo mira el sufijo, porque es la que tiene prenda base que buscar.
+const PREFIJO_TOP = /^TOP\b/i
+
+export function cuentaComoTop(o) {
+  const ref = (o && o.referencia) || ''
+  return SUFIJO_TOP.test(ref) || PREFIJO_TOP.test(ref)
+}
+
 export function refBaseDeTop(referencia) {
   return String(referencia || '').replace(SUFIJO_TOP, '').trim()
 }
@@ -754,7 +764,7 @@ export function desglosePorMarca(orders, refMap, etapaKey) {
     const n = cantEtapa(o, etapaKey) || cantEtapa(o, 'ordenCorte')
     const suma = (k) => { marcas[k].ordenes += 1; marcas[k].unidades += n }
     // Los tops no entran en `unidades`/`ordenes`: esa es la cifra de prendas.
-    if (esOrdenTop(o)) { suma('Tops'); return }
+    if (cuentaComoTop(o)) { suma('Tops'); return }
     unidades += n
     ordenes += 1
     if (o.origen === 'geodesica') { suma('Geodésica'); return }

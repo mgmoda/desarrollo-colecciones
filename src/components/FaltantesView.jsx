@@ -156,7 +156,7 @@ export default function FaltantesView({
     let base = visibles.filter((o) => {
       const a = orderArea(o)
       if (!a) return false
-      return todasEtapas || a === 'corte' || a === 'enviar'
+      return todasEtapas || a === 'corte' || a === 'alistamiento' || a === 'enviar'
     })
     const term = qSel.trim().toLowerCase()
     if (term) {

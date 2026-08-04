@@ -7,12 +7,17 @@ export function stageDone(order, key) {
 }
 
 // El área de una orden = la de su ÚLTIMA etapa cumplida (de la más avanzada
-// a la más temprana). Las etapas intermedias del Excel (alistamiento,
-// revisado, entrada bodega) no definen área propia.
+// a la más temprana). Las etapas del Excel que no definen área propia
+// (revisado, entrada bodega) quedan por fuera.
+//
+// Entre corte y el envío al taller va el alistamiento: lo que salió de corte
+// pero todavía no está alistado espera en su propia área, y solo cuando se
+// alista pasa a Por enviar.
 export function orderArea(order) {
   if (stageDone(order, 'entregaEnsamble')) return 'entrega'
   if (stageDone(order, 'envioEnsamble')) return 'talleres'
-  if (stageDone(order, 'entregaCorte')) return 'enviar'
+  if (stageDone(order, 'alistamiento')) return 'enviar'
+  if (stageDone(order, 'entregaCorte')) return 'alistamiento'
   if (stageDone(order, 'trazo')) return 'corte'
   if (stageDone(order, 'ordenCorte')) return 'trazos'
   return null // aún sin orden de corte
@@ -23,7 +28,7 @@ export function ordersForArea(orders, areaKey) {
 }
 
 // Orden de avance de las áreas (de menos a más avanzada).
-export const AREA_ORDER = ['trazos', 'corte', 'enviar', 'talleres', 'entrega']
+export const AREA_ORDER = ['trazos', 'corte', 'alistamiento', 'enviar', 'talleres', 'entrega']
 
 export function areaIndex(area) {
   const i = AREA_ORDER.indexOf(area)
@@ -32,8 +37,8 @@ export function areaIndex(area) {
 
 // Etapa base de cada área (su fecha inicia el conteo de atraso).
 const AREA_BASE = {
-  trazos: 'ordenCorte', corte: 'trazo', enviar: 'entregaCorte',
-  talleres: 'envioEnsamble', entrega: 'entregaEnsamble',
+  trazos: 'ordenCorte', corte: 'trazo', alistamiento: 'entregaCorte',
+  enviar: 'alistamiento', talleres: 'envioEnsamble', entrega: 'entregaEnsamble',
 }
 export function areaBaseFecha(order) {
   const a = orderArea(order)
@@ -68,7 +73,7 @@ export function refTracks(orders, refIdOCodigos) {
 }
 
 export function areaCounts(orders) {
-  const counts = { trazos: 0, corte: 0, enviar: 0, talleres: 0, entrega: 0, sinIniciar: 0 }
+  const counts = { trazos: 0, corte: 0, alistamiento: 0, enviar: 0, talleres: 0, entrega: 0, sinIniciar: 0 }
   orders.forEach((o) => {
     const a = orderArea(o)
     if (a) counts[a] += 1
@@ -80,7 +85,7 @@ export function areaCounts(orders) {
 // Conteo por área desglosado por fase (premuestra/muestra/producción).
 export function areaCountsDetailed(orders) {
   const mk = () => ({ total: 0, premuestra: 0, muestra: 0, produccion: 0 })
-  const counts = { trazos: mk(), corte: mk(), enviar: mk(), talleres: mk(), entrega: mk(), sinIniciar: mk() }
+  const counts = { trazos: mk(), corte: mk(), alistamiento: mk(), enviar: mk(), talleres: mk(), entrega: mk(), sinIniciar: mk() }
   orders.forEach((o) => {
     const a = orderArea(o) || 'sinIniciar'
     counts[a].total += 1
@@ -791,6 +796,7 @@ export const MODULOS_FLUJO = [
   { key: 'ordencorte', label: 'Orden de corte', etapa: 'ordenCorte' },
   { key: 'trazos', label: 'Trazos', etapa: 'trazo' },
   { key: 'corte', label: 'Corte', etapa: 'entregaCorte' },
+  { key: 'alistamiento', label: 'Alistamiento', etapa: 'alistamiento' },
   { key: 'enviar', label: 'Enviado a taller', etapa: 'envioEnsamble' },
   { key: 'entrega', label: 'Entrega ensamble', etapa: 'entregaEnsamble' },
 ]

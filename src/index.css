@@ -5911,6 +5911,9 @@ select.filtro-taller { flex: none; width: 215px; }
 .fal-arch-meta .fal-chip { margin-left: 0; }
 .fal-arch-quien { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .fal-btn-borrar { color: var(--danger); }
+/* Archivar y eliminar van al pie, con Cerrar: son acciones de cierre, no del
+   trabajo del día. */
+.fal-foot-izq { display: flex; gap: 8px; }
 
 /* Tablero de faltantes: una columna por paso, de reportado a completo. Se
    avanza abriendo la tarjeta, no arrastrando: en el celular arrastrar es

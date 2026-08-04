@@ -115,7 +115,7 @@ function edadColumna(f) {
   return dias(desdeCuando(f), f.estado === 'resuelto' ? f.resueltoAt : null)
 }
 
-function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, onDelete, onArchivar, onViewImage, onOpenRef }) {
+function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, onViewImage, onOpenRef }) {
   const [nota, setNota] = useState('')
   const ficha = refMap.get(normRef(f.referencia))
   const dias = edad(f)
@@ -222,18 +222,6 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
               </select>
               <span className="select-caret" aria-hidden="true">▾</span>
             </div>
-            {f.archivado ? (
-              <button className="btn" onClick={() => onArchivar(f, false)}
-                title="Vuelve al tablero, a la columna donde estaba">Devolver al tablero</button>
-            ) : (
-              <button className="btn" onClick={() => onArchivar(f, true)}
-                title="Sale del tablero pero queda guardado en Archivados">Archivar</button>
-            )}
-            {puedeResolver && (
-              <button className="btn fal-btn-borrar" onClick={() => {
-                if (confirm('Eliminar este faltante definitivamente. No se puede deshacer.')) onDelete(f)
-              }}>Eliminar</button>
-            )}
           </div>
         </div>
       </div>
@@ -525,13 +513,27 @@ export default function FaltantesView({
                 <FaltanteCard f={faltanteAbierto} refMap={refMap}
                   etapaViva={area ? AREAS[area].label : null}
                   usuario={usuario} puedeResolver={puedeResolver}
-                  onSave={onSave} onDelete={(x) => { onDelete(x); setAbierto(null) }}
-                  onArchivar={(x, v) => { archivar(x, v); setAbierto(null) }}
-                  onViewImage={onViewImage} onOpenRef={onOpenRef} />
+                  onSave={onSave} onViewImage={onViewImage} onOpenRef={onOpenRef} />
               )
             })()}
           </div>
-          <div className="modal-foot">
+          <div className="modal-foot spread">
+            <div className="fal-foot-izq">
+              {faltanteAbierto.archivado ? (
+                <button className="btn" onClick={() => { archivar(faltanteAbierto, false); setAbierto(null) }}
+                  title="Vuelve al tablero, a la columna donde estaba">Devolver al tablero</button>
+              ) : (
+                <button className="btn" onClick={() => { archivar(faltanteAbierto, true); setAbierto(null) }}
+                  title="Sale del tablero pero queda guardado en Archivados">Archivar</button>
+              )}
+              {puedeResolver && (
+                <button className="btn fal-btn-borrar" onClick={() => {
+                  if (confirm('Eliminar este faltante definitivamente. No se puede deshacer.')) {
+                    onDelete(faltanteAbierto); setAbierto(null)
+                  }
+                }}>Eliminar</button>
+              )}
+            </div>
             <button className="btn btn-primary" onClick={() => setAbierto(null)}>Cerrar</button>
           </div>
         </Modal>

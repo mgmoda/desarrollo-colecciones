@@ -42,7 +42,7 @@ const TABS = [
   { key: 'corte', label: 'Corte' },
   { key: 'faltantes', label: 'Faltantes' },
   { key: 'enviar', label: 'Por alistar' },
-  { key: 'alistamiento', label: 'Alistamiento' },
+  { key: 'alistamiento', label: 'Por enviar a taller' },
   { key: 'talleres', label: 'En talleres' },
   { key: 'entrega', label: 'Entrega ensamble' },
   { key: 'ensamble', label: 'Seguimiento' },

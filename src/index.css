@@ -4214,6 +4214,10 @@ img.ship-ref-photo {
 .sort-ind { margin-left: 5px; font-size: 10px; opacity: 0.4; }
 .sort-th.active .sort-ind { opacity: 1; }
 .tag-warn { background: #fbe6e3; color: #b23121; }
+/* Aviso de faltante pegado a la referencia, en cualquier etapa donde aparezca:
+   es lo que evita despachar un lote al que le falta una pieza. */
+.fal-tag { margin-left: 7px; border: none; cursor: pointer; font-weight: 500; }
+.fal-tag:hover { background: #f7d5d0; }
 .tag-ok { background: #e3f3e8; color: #1f7a44; font-weight: 600; }
 
 /* Indicador de sincronización (cabecera) */

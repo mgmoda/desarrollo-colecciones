@@ -13,10 +13,18 @@ import { newId } from '../lib/storage.js'
 // las que están en Corte o ya pasaron a Por enviar, así el faltante queda
 // amarrado al número de orden.
 
+// Un faltante pasa por dos manos, y el estado dice de quién es la pelota:
+// Corte lo reporta → Ninfa consigue lo que falta → cuando llega, Corte lo corta
+// y lo entrega. Sin eso, "en gestión" no decía quién tenía que mover.
 const ESTADOS = {
-  pendiente: 'Pendiente',
-  gestion: 'En gestión',
-  resuelto: 'Resuelto',
+  pendiente: 'Con Ninfa',
+  gestion: 'Llegó · falta cortar',
+  resuelto: 'Entregado',
+}
+const QUIEN = {
+  pendiente: 'Ninfa tiene que conseguirlo',
+  gestion: 'Corte tiene que cortarlo y entregarlo',
+  resuelto: '',
 }
 
 function cuando(ts) {
@@ -51,6 +59,13 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
     setNota('')
   }
 
+  // Paso 1: Ninfa avisa que el material ya llegó a la empresa.
+  function marcarLlego() {
+    onSave({ ...f, estado: 'gestion', llegoPor: usuario, llegoAt: Date.now(), updatedAt: Date.now() },
+      'llego', {})
+  }
+
+  // Paso 2: Corte ya lo cortó y lo entregó. Aquí se cierra.
   function resolver() {
     onSave({ ...f, estado: 'resuelto', resueltoPor: usuario, resueltoAt: Date.now(), updatedAt: Date.now() },
       'resolver', {})
@@ -81,14 +96,15 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
             {!resuelto && etapaViva && (
               <span className="tag fal-etapa" title="Dónde va esa orden hoy">va en {etapaViva}</span>
             )}
-            <span className={'fal-chip fal-' + f.estado}>
+            <span className={'fal-chip fal-' + f.estado} title={QUIEN[f.estado]}>
               {ESTADOS[f.estado]}{dias != null && (resuelto ? ` en ${dias} d` : ` · ${dias} d`)}
             </span>
           </p>
           <p className="fal-texto">“{f.descripcion}”</p>
           <p className="fal-meta">
             Reportó <b>{String(f.creadoPor || '').split('@')[0]}</b> · {cuando(f.creadoAt)}
-            {resuelto && <> — resolvió <b>{String(f.resueltoPor || '').split('@')[0]}</b> · {cuando(f.resueltoAt)}</>}
+            {f.llegoAt && <> — llegó, avisó <b>{String(f.llegoPor || '').split('@')[0]}</b> · {cuando(f.llegoAt)}</>}
+            {resuelto && <> — entregó <b>{String(f.resueltoPor || '').split('@')[0]}</b> · {cuando(f.resueltoAt)}</>}
           </p>
 
           {(f.notas || []).length > 0 && (
@@ -106,9 +122,15 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
                 onChange={(e) => setNota(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') agregarNota() }} />
               <button className="btn" onClick={agregarNota} disabled={!nota.trim()}>Anotar</button>
-              {puedeResolver && (
+              {f.estado === 'pendiente' && puedeResolver && (
+                <button className="btn fal-btn-ok" onClick={marcarLlego}
+                  title="El material ya llegó a la empresa — pasa a Corte">✓ Ya llegó</button>
+              )}
+              {/* El último paso lo reporta Corte, así que no va detrás del permiso
+                  de Ninfa: es quien corta el que sabe que ya entregó. */}
+              {f.estado === 'gestion' && (
                 <button className="btn fal-btn-ok" onClick={resolver}
-                  title="Marcar como resuelto">✓ Resuelto</button>
+                  title="Corte ya lo cortó y lo entregó completo">✓ Cortado y entregado</button>
               )}
             </div>
           )}
@@ -226,9 +248,9 @@ export default function FaltantesView({
 
   const FILTROS = [
     ['activos', `Activos ${conteos.pendiente + conteos.gestion}`],
-    ['pendiente', `Pendientes ${conteos.pendiente}`],
-    ['gestion', `En gestión ${conteos.gestion}`],
-    ['resuelto', `Resueltos ${conteos.resuelto}`],
+    ['pendiente', `Con Ninfa ${conteos.pendiente}`],
+    ['gestion', `Por cortar ${conteos.gestion}`],
+    ['resuelto', `Entregados ${conteos.resuelto}`],
   ]
 
   return (

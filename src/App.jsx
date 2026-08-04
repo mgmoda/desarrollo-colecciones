@@ -31,7 +31,7 @@ import {
   dbLoadFaltantes, dbUpsertFaltante, dbDeleteFaltante,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
-import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice } from './lib/constants.js'
+import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice, normRef } from './lib/constants.js'
 import { resumirCambios } from './lib/cambios.js'
 
 const TABS = [
@@ -250,6 +250,22 @@ export default function App() {
 
   // Faltantes activos (para la insignia en la pestaña) y permisos: por ahora
   // solo Ninfa y Diego cierran o eliminan faltantes.
+  // Faltantes vivos por referencia. Viaja con la prenda a todas las etapas: si
+  // una orden va camino al taller y le falta una pieza, tiene que verse ahí,
+  // no solo en el módulo de faltantes.
+  const faltantesPorRef = useMemo(() => {
+    const m = new Map()
+    faltantes.forEach((f) => {
+      if (f.estado === 'resuelto') return
+      const k = normRef(f.referencia)
+      if (!k) return
+      const l = m.get(k) || []
+      l.push(f)
+      m.set(k, l)
+    })
+    return m
+  }, [faltantes])
+
   const faltantesActivos = useMemo(
     () => faltantes.filter((f) => f.estado !== 'resuelto').length,
     [faltantes],
@@ -781,6 +797,7 @@ export default function App() {
         )}
         {AREA_KEYS.includes(tab) && (
           <AreaView key={tab} areaKey={tab} orders={orders} refMap={refMap}
+            faltantesPorRef={faltantesPorRef} onIrAFaltantes={() => setTab('faltantes')}
             fasesOcultas={fasesOcultas} onToggleFase={toggleFase}
             topLinks={topLinks} onVincularTop={vincularTop} conjuntoLinks={conjuntoLinks}
             onViewImage={setLightbox} onOpenRef={openEdit} />

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { AREAS, formatDate, formatPrice, ORIGENES, ORIGEN_ABBR, TOP_LABEL } from '../lib/constants.js'
+import { AREAS, formatDate, formatPrice, normRef, ORIGENES, ORIGEN_ABBR, TOP_LABEL } from '../lib/constants.js'
 import { ordersForArea, refProcesos, claveOrden, esOrdenTop, orderArea } from '../lib/domain.js'
 import { diasDesde, diasEntre } from '../lib/dates.js'
 import { generateAreaPDF } from '../lib/areaPdf.js'
@@ -82,7 +82,7 @@ function TopCell({ orden, refRow, topLinks, onAbrir }) {
   )
 }
 
-export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, fasesOcultas, onToggleFase, topLinks, onVincularTop, conjuntoLinks }) {
+export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, fasesOcultas, onToggleFase, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes }) {
   const [topDe, setTopDe] = useState(null) // orden cuyo vínculo de top se está viendo
   const [conjuntoDe, setConjuntoDe] = useState(null) // orden cuyo conjunto se está viendo
   const [curvaDe, setCurvaDe] = useState(null) // orden cuya curva de tallas se está viendo
@@ -293,7 +293,22 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                     </td>
                     <td><span className={'origen-chip o-' + o.origen}>{ORIGEN_ABBR[o.origen] || o.origen}</span></td>
                     <td className="mono">{o.orden}</td>
-                    <td className="strong">{o.referencia}</td>
+                    <td className="strong">
+                      {o.referencia}
+                      {(() => {
+                        const fs = faltantesPorRef && faltantesPorRef.get(normRef(o.referencia))
+                        if (!fs || !fs.length) return null
+                        // El faltante viaja con la prenda: si va camino al taller
+                        // y le falta una pieza, tiene que verse aquí.
+                        return (
+                          <button type="button" className="tag tag-warn fal-tag"
+                            onClick={(e) => { e.stopPropagation(); onIrAFaltantes && onIrAFaltantes() }}
+                            title={fs.map((f) => `${f.descripcion} — ${f.estado === 'gestion' ? 'llegó, falta cortar' : 'con Ninfa'}`).join('\n')}>
+                            ⚠ Pendiente{fs.length > 1 ? ` ×${fs.length}` : ''}
+                          </button>
+                        )
+                      })()}
+                    </td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <ProductoCell orden={o} vinculo={conjuntoLinks.get(claveOrden(o))}
                         onAbrir={setConjuntoDe} />

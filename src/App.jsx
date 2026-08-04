@@ -25,6 +25,7 @@ import { supabase } from './lib/supabase.js'
 import {
   dbLoadOrders,
   dbLoadRefsMeta,
+  dbLoadOrdersStamp,
   dbLoadRefsByIds, dbLoadRefs, dbLoadSettings,
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings, dbLog,
   dbLoadFaltantes, dbUpsertFaltante, dbDeleteFaltante,
@@ -94,16 +95,20 @@ export default function App() {
   // para pedir solo las que cambiaron. Y una banderita para no encimar tandas.
   const refsMeta = useRef(new Map())
   const enVuelo = useRef(false)
+  // Marca de las órdenes en el servidor: si no se movió, no hay qué bajar.
+  const ordersStamp = useRef(null)
 
   useEffect(() => {
     if (!userId) { setLoaded(false); return }
     let cancelled = false
     Promise.all([
       dbLoadOrders(), dbLoadRefs(), dbLoadSettings(), dbLoadFaltantes(), dbLoadRefsMeta(),
+      dbLoadOrdersStamp(),
     ])
-      .then(([o, r, s, fl, meta]) => {
+      .then(([o, r, s, fl, meta, stamp]) => {
         if (cancelled) return
         refsMeta.current = new Map(meta.map((m) => [m.id, m.updated_at]))
+        ordersStamp.current = stamp
         setFaltantes(fl)
         setOrders(o)
         // Migración silenciosa: corregir "Maricet" → "Mariset" Y eliminar
@@ -160,11 +165,18 @@ export default function App() {
     enVuelo.current = true
     setSyncing(true)
     try {
-      const [o, fl, meta] = await Promise.all([
-        dbLoadOrders(), dbLoadFaltantes(), dbLoadRefsMeta(),
+      const [fl, meta, stamp] = await Promise.all([
+        dbLoadFaltantes(), dbLoadRefsMeta(), dbLoadOrdersStamp(),
       ])
-      setOrders(o)
       setFaltantes(fl)
+
+      // Las órdenes solo se bajan si la marca se movió. Si no hay marca (algo
+      // raro pasó), se bajan igual: más vale gastar datos que quedar viejo.
+      if (!stamp || stamp !== ordersStamp.current) {
+        const o = await dbLoadOrders()
+        setOrders(o)
+        ordersStamp.current = stamp
+      }
 
       const previo = refsMeta.current
       const ahora = new Map(meta.map((m) => [m.id, m.updated_at]))

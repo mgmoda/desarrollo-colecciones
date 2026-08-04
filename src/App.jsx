@@ -719,18 +719,6 @@ export default function App() {
           </div>
         </div>
         <div className="topbar-right">
-          <nav className="tabs">
-            {TABS.map((t) => (
-              <button key={t.key}
-                className={'tab' + (tab === t.key ? ' active' : '')}
-                onClick={() => setTab(t.key)}>
-                {t.label}
-                {t.key === 'faltantes' && faltantesActivos > 0 && (
-                  <span className="tab-badge">{faltantesActivos}</span>
-                )}
-              </button>
-            ))}
-          </nav>
           <RefSearch refIds={refIndex.map((r) => r.id)} onSelect={openDetail} />
           <SyncIndicator lastSync={lastSync} syncing={syncing} paused={formOpen || importOpen} onRefresh={syncFromServer} />
           <button className="btn btn-ghost" onClick={() => setImportOpen(true)}>Importar</button>
@@ -741,6 +729,18 @@ export default function App() {
           </span>
           <button className="logout-btn" onClick={() => supabase.auth.signOut()} title="Cerrar sesión">Salir</button>
         </div>
+        <nav className="tabs">
+          {TABS.map((t) => (
+            <button key={t.key}
+              className={'tab' + (tab === t.key ? ' active' : '')}
+              onClick={() => setTab(t.key)}>
+              {t.label}
+              {t.key === 'faltantes' && faltantesActivos > 0 && (
+                <span className="tab-badge">{faltantesActivos}</span>
+              )}
+            </button>
+          ))}
+        </nav>
       </header>
 
       <main className="content">

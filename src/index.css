@@ -89,7 +89,13 @@ input {
   /* Escalado fluido: se comprime solo en pantallas angostas */
   gap: clamp(10px, 1.4vw, 24px);
   padding: 14px clamp(14px, 2vw, 32px);
+  /* Las pestañas van en su propia fila: son 16 y, junto al buscador y los
+     botones, no caben en una sola línea en un portátil. Apretadas en la misma
+     fila terminaban empujando la página entera a scroll horizontal. */
+  flex-wrap: wrap;
+  row-gap: 10px;
 }
+.topbar > .tabs { flex-basis: 100%; order: 3; }
 
 .brand {
   display: flex;
@@ -2382,8 +2388,10 @@ input {
 .topbar-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: clamp(6px, 0.8vw, 14px);
-  flex: none;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .logout-btn {
   border: 1px solid var(--hairline-strong);
@@ -3753,6 +3761,14 @@ img.ship-ref-photo {
 .data-table td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-soft); }
 .data-table td.strong { font-weight: 600; }
 .data-table td.muted { color: var(--muted); font-size: 12px; }
+/* El nombre del taller es lo más largo de la fila y por sí solo empujaba la
+   tabla fuera de su marco. Se recorta con puntos suspensivos; el nombre
+   completo queda en el título, al pasar el mouse. */
+.data-table td.cel-taller {
+  max-width: 165px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* Celdas editables en línea (Costos) */
 .data-table td.cell-action { color: var(--muted); font-size: 12px; cursor: pointer; white-space: nowrap; }

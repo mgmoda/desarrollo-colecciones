@@ -260,7 +260,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                       <TopCell orden={o} refRow={ref} topLinks={topLinks} onAbrir={setTopDe} />
                     </td>
                     <td>{o.empresa}</td>
-                    {showTaller && <td>{taller}</td>}
+                    {showTaller && <td className="cel-taller" title={taller}>{taller}</td>}
                     <td>{formatDate(base.fecha)}</td>
                     <td className="num">{base.cant}</td>
                     {showAtraso && (

@@ -20,9 +20,11 @@ function diasEnTaller(o) {
 }
 
 // Días que la orden lleva en el área, contados desde su etapa base. Pasado el
-// límite se marca en rojo. En Corte, Por alistar y Por enviar a taller el lote
-// no debería quedarse más de 4 días; en las demás el margen es más ancho.
-const LIMITE_DIAS = { corte: 4, enviar: 4, alistamiento: 4 }
+// límite se marca en rojo. En las etapas de casa —Trazos, Corte, Por alistar y
+// Por enviar a taller— un lote no debería quedarse más de 3 días. En talleres
+// el margen es mucho más ancho, porque un taller sí se toma semanas con un
+// lote y pintarlo todo de rojo dejaría el aviso sin valor.
+const LIMITE_DIAS = { trazos: 3, corte: 3, enviar: 3, alistamiento: 3 }
 const LIMITE_POR_DEFECTO = 14
 
 const STAGE_LABEL = {

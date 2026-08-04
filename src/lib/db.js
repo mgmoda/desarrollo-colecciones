@@ -20,6 +20,23 @@ export async function dbLoadRefs() {
   return list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
 }
 
+// Las fichas pesan: llevan la foto en base64 y entre todas son ~22 MB. Traerlas
+// enteras en cada sincronización es lo que ahogaba el refresco automático. Con
+// `updated_at` (columna real, la pone un trigger) se pregunta primero qué
+// cambió —una lista de ids, unos pocos KB— y solo se bajan esas fichas.
+export async function dbLoadRefsMeta() {
+  const { data, error } = await supabase.from('dev_refs').select('id, updated_at')
+  if (error) throw error
+  return data || []
+}
+
+export async function dbLoadRefsByIds(ids) {
+  if (!ids.length) return []
+  const { data, error } = await supabase.from('dev_refs').select('data').in('id', ids)
+  if (error) throw error
+  return (data || []).map((r) => r.data)
+}
+
 export async function dbLoadSettings() {
   const { data, error } = await supabase
     .from('dev_settings')

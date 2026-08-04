@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Login from './components/Login.jsx'
 import { nombreDeSesion } from './lib/usuarios.js'
 import DashboardView from './components/DashboardView.jsx'
@@ -23,7 +23,9 @@ import Lightbox from './components/Lightbox.jsx'
 import ActividadModal from './components/ActividadModal.jsx'
 import { supabase } from './lib/supabase.js'
 import {
-  dbLoadOrders, dbLoadRefs, dbLoadSettings,
+  dbLoadOrders,
+  dbLoadRefsMeta,
+  dbLoadRefsByIds, dbLoadRefs, dbLoadSettings,
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings, dbLog,
   dbLoadFaltantes, dbUpsertFaltante, dbDeleteFaltante,
 } from './lib/db.js'
@@ -88,13 +90,20 @@ export default function App() {
   const userId = session && session.user ? session.user.id : null
   const [lastSync, setLastSync] = useState(null)
   const [syncing, setSyncing] = useState(false)
+  // Huella de las fichas en el servidor (id → updated_at) de la última vuelta,
+  // para pedir solo las que cambiaron. Y una banderita para no encimar tandas.
+  const refsMeta = useRef(new Map())
+  const enVuelo = useRef(false)
 
   useEffect(() => {
     if (!userId) { setLoaded(false); return }
     let cancelled = false
-    Promise.all([dbLoadOrders(), dbLoadRefs(), dbLoadSettings(), dbLoadFaltantes()])
-      .then(([o, r, s, fl]) => {
+    Promise.all([
+      dbLoadOrders(), dbLoadRefs(), dbLoadSettings(), dbLoadFaltantes(), dbLoadRefsMeta(),
+    ])
+      .then(([o, r, s, fl, meta]) => {
         if (cancelled) return
+        refsMeta.current = new Map(meta.map((m) => [m.id, m.updated_at]))
         setFaltantes(fl)
         setOrders(o)
         // Migración silenciosa: corregir "Maricet" → "Mariset" Y eliminar
@@ -140,34 +149,55 @@ export default function App() {
   // computadores. Se PAUSA mientras tengas la ficha o el importador abierto
   // para no pisar lo que estás editando. Las refs guardadas localmente
   // (optimistic) más recientes que la versión remota se conservan.
+  //
+  // De las fichas solo se pide la huella (id + updated_at) y se bajan las que
+  // cambiaron. Traerlas todas eran ~22 MB por vuelta —la foto va en base64
+  // dentro de la ficha— y con eso la sincronización no alcanzaba a cerrar.
   async function syncFromServer() {
     if (!userId) return
     if (formOpen || importOpen) return
+    if (enVuelo.current) return
+    enVuelo.current = true
     setSyncing(true)
     try {
-      const [o, r, fl] = await Promise.all([dbLoadOrders(), dbLoadRefs(), dbLoadFaltantes()])
+      const [o, fl, meta] = await Promise.all([
+        dbLoadOrders(), dbLoadFaltantes(), dbLoadRefsMeta(),
+      ])
       setOrders(o)
       setFaltantes(fl)
-      // Merge: conservamos la versión local si su updatedAt es más reciente
-      // (significa que tenemos un guardado optimistic aún en vuelo).
+
+      const previo = refsMeta.current
+      const ahora = new Map(meta.map((m) => [m.id, m.updated_at]))
+      const cambiadas = meta.filter((m) => previo.get(m.id) !== m.updated_at).map((m) => m.id)
+      const bajadas = await dbLoadRefsByIds(cambiadas)
+      refsMeta.current = ahora
+
       setRefs((local) => {
-        const localMap = new Map(local.map((rr) => [rr.id, rr]))
-        const remoteFixed = r.map((rr) => {
+        const limpiar = (rr) => {
           const { _stub: _ignore, ...clean } = rr
           if (clean.marca === 'Maricet') clean.marca = 'Mariset'
-          const localRef = localMap.get(clean.id)
-          if (localRef && (localRef.updatedAt || 0) > (clean.updatedAt || 0)) return localRef
           return clean
+        }
+        const nuevas = new Map(bajadas.map((rr) => [rr.id, limpiar(rr)]))
+        const out = []
+        local.forEach((rr) => {
+          // Borrada en otro computador: estaba en el servidor y ya no está.
+          if (!ahora.has(rr.id) && previo.has(rr.id)) return
+          const rem = nuevas.get(rr.id)
+          nuevas.delete(rr.id)
+          // Si lo local es más nuevo hay un guardado en vuelo: manda lo local.
+          if (rem && (rr.updatedAt || 0) <= (rem.updatedAt || 0)) { out.push(rem); return }
+          out.push(rr)
         })
-        // Mantén refs locales que aún no estén en remoto (recién creadas).
-        const remoteIds = new Set(remoteFixed.map((rr) => rr.id))
-        local.forEach((rr) => { if (!remoteIds.has(rr.id)) remoteFixed.push(rr) })
-        return remoteFixed
+        // Fichas creadas en otro computador.
+        nuevas.forEach((rr) => out.push(rr))
+        return out
       })
       setLastSync(Date.now())
     } catch (e) {
       console.error('Sincronizar:', e)
     } finally {
+      enVuelo.current = false
       setSyncing(false)
     }
   }
@@ -177,6 +207,26 @@ export default function App() {
     if (!userId || !loaded) return
     const id = setInterval(() => { syncFromServer() }, 25000)
     return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, loaded, formOpen, importOpen])
+
+  // El reloj de 25 s no basta: el navegador frena los temporizadores de una
+  // pestaña que está atrás y los detiene del todo si el equipo se duerme. Por
+  // eso se sincroniza también al volver a la pestaña o al recuperar internet,
+  // que es justo cuando uno quiere ver el dato al día.
+  useEffect(() => {
+    if (!userId || !loaded) return
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') syncFromServer()
+    }
+    document.addEventListener('visibilitychange', alVolver)
+    window.addEventListener('focus', alVolver)
+    window.addEventListener('online', alVolver)
+    return () => {
+      document.removeEventListener('visibilitychange', alVolver)
+      window.removeEventListener('focus', alVolver)
+      window.removeEventListener('online', alVolver)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, loaded, formOpen, importOpen])
 

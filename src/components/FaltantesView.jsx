@@ -106,8 +106,12 @@ function edad(f) {
   return dias(f.creadoAt, f.estado === 'resuelto' ? f.resueltoAt : null)
 }
 
-// Lo que lleva parada en la columna actual.
+// Lo que lleva parada en la columna actual. En Faltante el reloj no es el de la
+// columna sino el de siempre: desde que se programó. Si una tarjeta vuelve ahí
+// tiene que seguir mostrando los días que lleva el faltante sin resolverse, no
+// arrancar de cero como si fuera nueva.
 function edadColumna(f) {
+  if (f.estado === 'pendiente') return edad(f)
   return dias(desdeCuando(f), f.estado === 'resuelto' ? f.resueltoAt : null)
 }
 

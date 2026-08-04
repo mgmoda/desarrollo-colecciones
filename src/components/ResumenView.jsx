@@ -395,7 +395,7 @@ export default function ResumenView({ refs, marcas = [], procesosCatalogo = [], 
                 <SortTh label="Foto" col="foto" {...thProps} />
                 <SortTh label="Referencia" col="referencia" {...thProps} />
                 <SortTh label="Cód. interno" col="refInterna" {...thProps} />
-                <SortTh label="Veces" col="veces" {...thProps} />
+                <SortTh label="Veces" col="veces" className="num" {...thProps} />
                 <SortTh label="Etapa actual" col="etapa" {...thProps} />
                 <SortTh label="Tipo" col="tipo" {...thProps} />
                 <SortTh label="Procesos" col="procesos" {...thProps} />
@@ -407,8 +407,8 @@ export default function ResumenView({ refs, marcas = [], procesosCatalogo = [], 
                 <SortTh label="Medición" col="medicion" {...thProps} className="th-flag" />
                 <SortTh label="Repetición" col="repeticion" {...thProps} className="th-flag" />
                 <SortTh label="Entrega" col="flag_entrega" {...thProps} className="th-flag" />
-                <SortTh label="Cant" col="cantidad" {...thProps} />
-                <SortTh label="Costo" col="costo" {...thProps} />
+                <SortTh label="Cant" col="cantidad" className="num" {...thProps} />
+                <SortTh label="Costo" col="costo" className="num" {...thProps} />
               </tr>
             </thead>
             <tbody>

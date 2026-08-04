@@ -417,7 +417,7 @@ export default function SeguimientoView({ orders, refMap, onViewImage, onOpenRef
             </div>
             <div className="table-wrap">
               <table className="data-table">
-                <thead><tr><th>Foto</th><th>Referencia</th><th>Origen</th><th>Unidades</th></tr></thead>
+                <thead><tr><th>Foto</th><th>Referencia</th><th>Origen</th><th className="num">Unidades</th></tr></thead>
                 <tbody>
                   {porRef.map((r) => {
                     const rec = refMap.get(r.referencia)
@@ -498,7 +498,7 @@ export default function SeguimientoView({ orders, refMap, onViewImage, onOpenRef
                           <th>Referencia</th>
                           <th>Origen</th>
                           {report === 'ensamble' && <th>Taller</th>}
-                          <th>Unidades</th>
+                          <th className="num">Unidades</th>
                         </tr>
                       </thead>
                       <tbody>

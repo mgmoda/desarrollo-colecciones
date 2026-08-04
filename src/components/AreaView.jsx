@@ -217,9 +217,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 <SortTh label="Empresa" col="empresa" {...thProps} />
                 {showTaller && <SortTh label="Taller" col="taller" {...thProps} />}
                 <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />
-                <SortTh label="Cant" col="cant" {...thProps} />
-                {showAtraso && <SortTh label="Atraso" col="atraso" {...thProps} />}
-                {showDiasTaller && <SortTh label="Días en taller" col="diasTaller" {...thProps} />}
+                <SortTh label="Cant" col="cant" className="num" {...thProps} />
+                {showAtraso && <SortTh label="Atraso" col="atraso" className="num" {...thProps} />}
+                {showDiasTaller && <SortTh label="Días en taller" col="diasTaller" className="num" {...thProps} />}
                 <th>Pendiente</th>
               </tr>
             </thead>

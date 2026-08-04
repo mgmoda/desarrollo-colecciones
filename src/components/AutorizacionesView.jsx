@@ -147,7 +147,7 @@ export default function AutorizacionesView({ refs, tracksByRef, marcas, onOpenRe
                 <th>Referencia</th>
                 <th>Marca</th>
                 <th>Autorizada</th>
-                <th>Esperando</th>
+                <th className="num">Esperando</th>
                 <th>Etapa actual</th>
                 <th>Comentario</th>
               </tr>

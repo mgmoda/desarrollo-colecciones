@@ -3757,7 +3757,13 @@ img.ship-ref-photo {
 .data-table tbody tr.row-aprobada td { background: #f1f9f3; }
 .data-table tbody tr.row-aprobada:hover td { background: #e8f4ec; }
 .data-table tbody tr.row-aprobada td:first-child { box-shadow: inset 3px 0 0 #1f7a44; }
-.data-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+/* Columnas de números —cantidad, atraso, días, precios— centradas junto con su
+   encabezado. Antes el rótulo iba pegado a la izquierda y las cifras a la
+   derecha, y la columna se leía partida en dos. */
+.data-table td.num,
+.data-table thead th.num,
+.data-table thead th.cell-check { text-align: center; }
+.data-table td.num { font-variant-numeric: tabular-nums; }
 .data-table td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-soft); }
 .data-table td.strong { font-weight: 600; }
 .data-table td.muted { color: var(--muted); font-size: 12px; }

@@ -136,7 +136,7 @@ export default function OrdenCorteView({
                 <SortTh label="Top/Forro" col="topForro" {...thProps} />
                 <SortTh label="Empresa" col="empresa" {...thProps} />
                 <SortTh label="Orden corte" col="fecha" {...thProps} />
-                <SortTh label="Cant" col="cant" {...thProps} />
+                <SortTh label="Cant" col="cant" className="num" {...thProps} />
                 <SortTh label="Va en" col="etapa" {...thProps} />
               </tr>
             </thead>

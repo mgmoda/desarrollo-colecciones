@@ -232,8 +232,8 @@ export default function CostosView({ refs, marcas = [], onEdit, onNew, onViewIma
                 <SortTh label="Nueva ref." col="nuevaRef" {...thProps} />
                 <SortTh label="Tipo" col="tipo" {...thProps} />
                 <SortTh label="Descripción" col="descripcion" {...thProps} />
-                <SortTh label="Talla 6–18" col="precioTalla618" {...thProps} />
-                <SortTh label="Talla 20" col="precioTalla20" {...thProps} />
+                <SortTh label="Talla 6–18" col="precioTalla618" className="num" {...thProps} />
+                <SortTh label="Talla 20" col="precioTalla20" className="num" {...thProps} />
                 <th></th>
               </tr>
             </thead>

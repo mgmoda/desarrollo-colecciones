@@ -63,7 +63,6 @@ export default function OrdenCorteView({
       orden: (o) => o.orden,
       referencia: (o) => o.referencia,
       producto: (o) => o.producto,
-      empresa: (o) => o.empresa,
       procesos: (o) => refProcesos(refMap.get(o.referencia)).join(', '),
       topForro: (o) => (refMap.get(o.referencia) || {}).topIncluido || '',
       fecha: (o) => o.stages.ordenCorte.fecha,
@@ -134,7 +133,6 @@ export default function OrdenCorteView({
                 <SortTh label="Producto" col="producto" {...thProps} />
                 <SortTh label="Procesos" col="procesos" {...thProps} />
                 <SortTh label="Top/Forro" col="topForro" {...thProps} />
-                <SortTh label="Empresa" col="empresa" {...thProps} />
                 <SortTh label="Orden corte" col="fecha" {...thProps} />
                 <SortTh label="Cant" col="cant" className="num" {...thProps} />
                 <SortTh label="Va en" col="etapa" {...thProps} />
@@ -167,7 +165,6 @@ export default function OrdenCorteView({
                         ? <span className="tag">{TOP_LABEL[ref.topIncluido] || ref.topIncluido}</span>
                         : <span className="muted">—</span>}
                     </td>
-                    <td>{o.empresa}</td>
                     <td>{formatDate(oc.fecha)}</td>
                     <td className="num">{oc.cant}</td>
                     <td>

@@ -12,6 +12,8 @@ import ProcesosTags from './ProcesosTags.jsx'
 import ConjuntoModal from './ConjuntoModal.jsx'
 import CurvaModal, { MEDIDA_DE_AREA } from './CurvaModal.jsx'
 
+const tallerDe = (o) => (o.stages && o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || ''
+
 // Días que el taller tuvo el lote: del envío a la entrega de ensamble.
 function diasEnTaller(o) {
   const envio = (o.stages && o.stages.envioEnsamble && o.stages.envioEnsamble.fecha) || ''
@@ -87,6 +89,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   const ocultas = fasesOcultas || new Set()
   const area = AREAS[areaKey]
   const [q, setQ] = useState('')
+  const [tallerSel, setTallerSel] = useState('')
   const [selected, setSelected] = useState(() => new Set())
   // La tabla abre ordenada por días, de mayor a menor, para que lo más demorado
   // quede de primero. En Entrega ensamble no hay espera que contar: ahí lo que
@@ -101,7 +104,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   }
 
   const baseStage = area.base
-  const showTaller = areaKey === 'talleres' || areaKey === 'alistamiento' || areaKey === 'entrega'
+  // El taller solo existe una vez el lote salió: en Por enviar a taller la
+  // columna venía siempre vacía, así que ahí no se muestra.
+  const showTaller = areaKey === 'talleres' || areaKey === 'entrega'
   // En Entrega ensamble ya no hay atraso; lo que importa es cuánto se demoró
   // el taller con el lote, del envío a la entrega.
   const showDiasTaller = areaKey === 'entrega'
@@ -115,12 +120,23 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   const visibles = useMemo(() => orders.filter((o) => !ocultas.has(o.origen)), [orders, ocultas])
   const enEtapa = useMemo(() => ordersForArea(visibles, areaKey), [visibles, areaKey])
 
+  // Talleres presentes en la etapa, con cuántas órdenes tiene cada uno.
+  const talleres = useMemo(() => {
+    const m = new Map()
+    enEtapa.forEach((o) => {
+      const t = tallerDe(o)
+      if (t) m.set(t, (m.get(t) || 0) + 1)
+    })
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es'))
+  }, [enEtapa])
+
   const rows = useMemo(() => {
     let list = enEtapa
+    if (tallerSel) list = list.filter((o) => tallerDe(o) === tallerSel)
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((o) =>
-        [o.referencia, o.producto, o.empresa, o.orden,
+        [o.referencia, o.producto, o.empresa, o.orden, tallerDe(o),
           refProcesos(refMap.get(o.referencia)).join(' ')]
           .some((v) => String(v || '').toLowerCase().includes(term)),
       )
@@ -130,8 +146,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       orden: (o) => o.orden,
       referencia: (o) => o.referencia,
       producto: (o) => o.producto,
-      empresa: (o) => o.empresa,
-      taller: (o) => (o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || '',
+      taller: (o) => tallerDe(o),
       procesos: (o) => refProcesos(refMap.get(o.referencia)).join(', '),
       topForro: (o) => (refMap.get(o.referencia) || {}).topIncluido || '',
       fecha: (o) => (o.stages[baseStage] || {}).fecha,
@@ -140,7 +155,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       diasTaller: (o) => diasEnTaller(o),
     }
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [enEtapa, q, sortKey, sortDir, baseStage, refMap])
+  }, [enEtapa, q, tallerSel, sortKey, sortDir, baseStage, refMap])
 
   const thProps = { sortKey, sortDir, onSort: toggle }
 
@@ -200,7 +215,18 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
               Generar PDF ({selected.size})
             </button>
           )}
-          <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia, producto…" />
+          {showTaller && talleres.length > 0 && (
+            <select className="input select filtro-taller" value={tallerSel}
+              onChange={(e) => setTallerSel(e.target.value)}
+              title="Ver solo las órdenes de un taller">
+              <option value="">Todos los talleres ({enEtapa.length})</option>
+              {talleres.map(([nombre, n]) => (
+                <option key={nombre} value={nombre}>{nombre} ({n})</option>
+              ))}
+            </select>
+          )}
+          <SearchInput value={q} onChange={setQ}
+            placeholder={showTaller ? 'Buscar referencia, taller…' : 'Buscar referencia, producto…'} />
         </div>
       </div>
 
@@ -227,7 +253,6 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 <SortTh label="Producto" col="producto" {...thProps} />
                 <SortTh label="Procesos" col="procesos" {...thProps} />
                 <SortTh label="Top/Forro" col="topForro" {...thProps} />
-                <SortTh label="Empresa" col="empresa" {...thProps} />
                 {showTaller && <SortTh label="Taller" col="taller" {...thProps} />}
                 <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />
                 <SortTh label="Cant" col="cant" className="num" {...thProps} />
@@ -272,7 +297,6 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                     <td onClick={(e) => e.stopPropagation()}>
                       <TopCell orden={o} refRow={ref} topLinks={topLinks} onAbrir={setTopDe} />
                     </td>
-                    <td>{o.empresa}</td>
                     {showTaller && <td className="cel-taller" title={taller}>{taller}</td>}
                     <td>{formatDate(base.fecha)}</td>
                     <td className="num">{base.cant}</td>

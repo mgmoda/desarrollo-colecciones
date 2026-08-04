@@ -59,7 +59,19 @@ function conNuevoEstado(f, nuevo, usuario) {
   if (orden >= 1) { next.procesoPor = f.procesoPor || usuario; next.procesoAt = f.procesoAt || ahora }
   if (orden >= 2) { next.llegoPor = f.llegoPor || usuario; next.llegoAt = f.llegoAt || ahora }
   if (orden >= 3) { next.resueltoPor = f.resueltoPor || usuario; next.resueltoAt = f.resueltoAt || ahora }
+  // El reloj de la columna arranca en cada movida: lo que importa del día a día
+  // es cuánto lleva parada AHÍ, no desde que nació el faltante.
+  next.desdeAt = ahora
+  next.historial = [...(f.historial || []), { de: f.estado, a: nuevo, por: usuario, at: ahora }]
   return next
+}
+
+// Desde cuándo está en la columna donde está. Los faltantes viejos no tienen
+// `desdeAt`, así que se cae a la marca del paso, y de últimas a la creación.
+function desdeCuando(f) {
+  if (f.desdeAt) return f.desdeAt
+  const campo = (FIRMA[f.estado] || [])[1]
+  return (campo && f[campo]) || f.creadoAt
 }
 
 function nombreCorto(v) {
@@ -83,18 +95,27 @@ function cuando(ts) {
     + ' ' + d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
 }
 
-// Edad del faltante: días completos desde que se reportó (o cuánto tardó en
-// resolverse). Con piso, para que lo reportado hoy diga 0 y no 1.
+// Días completos entre dos instantes, con piso: lo de hoy dice 0, no 1.
+function dias(desde, hasta) {
+  if (!desde) return null
+  return Math.max(0, Math.floor(((hasta || Date.now()) - desde) / 86400000))
+}
+
+// Total desde que se reportó (o cuánto tardó en cerrarse).
 function edad(f) {
-  const hasta = f.estado === 'resuelto' && f.resueltoAt ? f.resueltoAt : Date.now()
-  if (!f.creadoAt) return null
-  return Math.max(0, Math.floor((hasta - f.creadoAt) / 86400000))
+  return dias(f.creadoAt, f.estado === 'resuelto' ? f.resueltoAt : null)
+}
+
+// Lo que lleva parada en la columna actual.
+function edadColumna(f) {
+  return dias(desdeCuando(f), f.estado === 'resuelto' ? f.resueltoAt : null)
 }
 
 function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, onDelete, onViewImage, onOpenRef }) {
   const [nota, setNota] = useState('')
   const ficha = refMap.get(normRef(f.referencia))
   const dias = edad(f)
+  const enCol = edadColumna(f)
   const resuelto = f.estado === 'resuelto'
 
   function agregarNota() {
@@ -119,11 +140,14 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
   return (
     <article className={'fal-card' + (resuelto ? ' fal-resuelto' : '')}>
       <div className="fal-cuerpo">
-        {dias != null && (
-          <div className={'fal-dias' + (!resuelto && dias > LIMITE_DIAS ? ' fal-dias-alto' : '')}
-            title={resuelto ? 'Días que tardó en resolverse' : 'Días desde que se reportó'}>
-            <b>{dias}</b>
-            <span>{dias === 1 ? 'día' : 'días'}</span>
+        {enCol != null && (
+          <div className={'fal-dias' + (!resuelto && enCol > LIMITE_DIAS ? ' fal-dias-alto' : '')}
+            title={`${enCol} ${enCol === 1 ? 'día' : 'días'} en ${ESTADOS[f.estado]}`}>
+            <b>{enCol}</b>
+            <span>{enCol === 1 ? 'día aquí' : 'días aquí'}</span>
+            {dias != null && dias !== enCol && (
+              <em title="Desde que se reportó el faltante">{dias} en total</em>
+            )}
           </div>
         )}
         {ficha && ficha.image ? (
@@ -154,6 +178,23 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
             {f.llegoAt && <> — llegó <b>{String(f.llegoPor || '').split('@')[0]}</b> · {cuando(f.llegoAt)}</>}
             {resuelto && <> — entregó <b>{String(f.resueltoPor || '').split('@')[0]}</b> · {cuando(f.resueltoAt)}</>}
           </p>
+
+          {(f.historial || []).length > 0 && (
+            <div className="fal-historial">
+              <p className="fal-historial-tit">Recorrido</p>
+              <ol>
+                <li>
+                  <b>{nombreCorto(f.creadoPor)}</b> lo reportó · {cuando(f.creadoAt)}
+                </li>
+                {(f.historial || []).map((h, i) => (
+                  <li key={i}>
+                    <b>{nombreCorto(h.por)}</b> lo pasó de {ESTADOS[h.de] || h.de} a{' '}
+                    <b>{ESTADOS[h.a] || h.a}</b> · {cuando(h.at)}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
 
           {(f.notas || []).length > 0 && (
             <div className="fal-notas">
@@ -299,6 +340,8 @@ export default function FaltantesView({
       estado: 'pendiente',
       creadoPor: usuario,
       creadoAt: Date.now(),
+      desdeAt: Date.now(),
+      historial: [],
       notas: [],
       updatedAt: Date.now(),
     }, 'crear', { descripcion: texto })
@@ -343,8 +386,9 @@ export default function FaltantesView({
                   <p className="fal-col-vacia">—</p>
                 ) : columnas[k].map((f) => {
                   const ficha = refMap.get(normRef(f.referencia))
-                  const dias = edad(f)
-                  const alto = k !== 'resuelto' && dias != null && dias > LIMITE_DIAS
+                  const enCol = edadColumna(f)
+                  const total = edad(f)
+                  const alto = k !== 'resuelto' && enCol != null && enCol > LIMITE_DIAS
                   const [cPor, cAt] = FIRMA[k]
                   const quien = nombreCorto(f[cPor])
                   return (
@@ -366,7 +410,15 @@ export default function FaltantesView({
                         <span className="fal-t-texto">{f.descripcion}</span>
                       </span>
                       <span className="fal-t-lado">
-                        <span className={'fal-t-dias' + (alto ? ' fal-dias-alto' : '')}>{dias}<i>d</i></span>
+                        <span className={'fal-t-dias' + (alto ? ' fal-dias-alto' : '')}
+                          title={`${enCol} ${enCol === 1 ? 'día' : 'días'} en ${ESTADOS[k]}`}>
+                          {enCol}<i>d</i>
+                        </span>
+                        {total != null && total !== enCol && (
+                          <span className="fal-t-total" title="Días desde que se reportó el faltante">
+                            de {total}
+                          </span>
+                        )}
                         {quien && (
                           <span className="fal-t-quien" title={`${f[cPor]} · ${cuando(f[cAt])}`}>{quien}</span>
                         )}

@@ -5968,6 +5968,12 @@ select.filtro-taller { flex: none; width: 215px; }
   gap: 5px;
   align-self: flex-start;
 }
+.fal-t-total {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .fal-t-quien {
   max-width: 84px;
   padding: 1px 7px;
@@ -6060,6 +6066,49 @@ select.filtro-taller { flex: none; width: 215px; }
   color: var(--ink);
 }
 .fal-dias span { display: block; margin-top: 1px; font-size: 11px; color: var(--muted); }
+.fal-dias em {
+  display: block;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px dashed var(--hairline-strong);
+  font-style: normal;
+  font-size: 10.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+/* Recorrido de la tarjeta: quién la movió, de dónde a dónde y cuándo. Es lo
+   que responde "por qué lleva tantos días" cuando una vuelve para atrás. */
+.fal-historial { margin-top: 10px; }
+.fal-historial-tit {
+  margin: 0 0 5px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+.fal-historial ol {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 11px;
+  border-left: 2px solid var(--hairline);
+}
+.fal-historial li {
+  position: relative;
+  padding: 2px 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.fal-historial li::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--hairline-strong);
+}
+.fal-historial li b { color: var(--ink); font-weight: 600; }
 .fal-dias-alto { background: #fbe6e3; border-color: #efc7c0; }
 .fal-dias-alto b { color: #b23121; }
 .fal-dias-alto span { color: #b23121; }

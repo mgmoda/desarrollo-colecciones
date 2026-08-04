@@ -5941,6 +5941,10 @@ select.filtro-taller { flex: none; width: 215px; }
   transition: border-color .15s ease, background .15s ease;
 }
 .fal-t-card:hover { border-color: var(--hairline-strong); background: #faf8f3; }
+.fal-t-card:active { cursor: grabbing; }
+.fal-t-arrastrando { opacity: .4; }
+/* Columna resaltada mientras se sostiene una tarjeta encima. */
+.fal-col-sobre { border-color: var(--ink); background: #f6f4ee; }
 .fal-t-card:last-child { margin-bottom: 0; }
 .fal-t-foto { width: 34px; height: 44px; object-fit: cover; border-radius: 4px; display: block; }
 .fal-t-info { min-width: 0; }
@@ -5956,11 +5960,22 @@ select.filtro-taller { flex: none; width: 215px; }
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+/* Días arriba y quién lo dejó ahí debajo, los dos a la derecha y alineados. */
+.fal-t-lado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  align-self: flex-start;
+}
 .fal-t-quien {
-  display: block;
-  margin-top: 4px;
+  max-width: 84px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #ecebf5;
   font-size: 11px;
-  color: var(--muted);
+  font-weight: 600;
+  color: #4a4784;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

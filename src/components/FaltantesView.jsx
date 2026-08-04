@@ -43,8 +43,34 @@ const TOPE_COMPLETOS = 12
 // Mismo criterio que las tablas de área: pasados 3 días la cifra sale en rojo.
 const LIMITE_DIAS = 3
 
-// Día y mes, para la firma de la tarjeta del tablero. La hora completa queda
-// en el title, que ahí sí hay espacio.
+// Los empleados entran como "marcela", "monica", "ninfa". Se muestra el nombre
+// solo, con mayúscula. Quien tenga correo real se recorta antes de la arroba.
+// Mover una tarjeta de columna. Cada paso deja su marca de quién y cuándo; al
+// devolverla se borran las marcas de los pasos que ya no aplican, para que los
+// días no queden mintiendo. La usan el desplegable y el arrastre.
+function conNuevoEstado(f, nuevo, usuario) {
+  const ahora = Date.now()
+  const {
+    procesoPor: _pp, procesoAt: _pa, llegoPor: _lp, llegoAt: _la,
+    resueltoPor: _rp, resueltoAt: _ra, ...limpio
+  } = f
+  const next = { ...limpio, estado: nuevo, updatedAt: ahora }
+  const orden = COLUMNAS.indexOf(nuevo)
+  if (orden >= 1) { next.procesoPor = f.procesoPor || usuario; next.procesoAt = f.procesoAt || ahora }
+  if (orden >= 2) { next.llegoPor = f.llegoPor || usuario; next.llegoAt = f.llegoAt || ahora }
+  if (orden >= 3) { next.resueltoPor = f.resueltoPor || usuario; next.resueltoAt = f.resueltoAt || ahora }
+  return next
+}
+
+function nombreCorto(v) {
+  const base = String(v || '').split('@')[0]
+  // Solo el nombre de pila: "marcela" queda igual, y "diego_monsalve87" queda
+  // en "Diego". El identificador completo se guarda en el title.
+  const pila = (base.split(/[._-]+/).filter(Boolean)[0] || '').replace(/\d+$/, '')
+  if (!pila) return ''
+  return pila.charAt(0).toUpperCase() + pila.slice(1)
+}
+
 function diaMes(ts) {
   if (!ts) return ''
   return new Date(ts).toLocaleDateString('es-CO', { day: 'numeric', month: 'numeric' })
@@ -87,18 +113,7 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
   // su marca de quién y cuándo, y al retroceder se borran las que ya no aplican.
   function mover(nuevo) {
     if (nuevo === f.estado) return
-    const ahora = Date.now()
-    const {
-      procesoPor: _pp, procesoAt: _pa, llegoPor: _lp, llegoAt: _la,
-      resueltoPor: _rp, resueltoAt: _ra, ...limpio
-    } = f
-    const next = { ...limpio, estado: nuevo, updatedAt: ahora }
-    const orden = COLUMNAS.indexOf(nuevo)
-    // Se conservan las marcas de los pasos que la tarjeta sí alcanzó.
-    if (orden >= 1) { next.procesoPor = f.procesoPor || usuario; next.procesoAt = f.procesoAt || ahora }
-    if (orden >= 2) { next.llegoPor = f.llegoPor || usuario; next.llegoAt = f.llegoAt || ahora }
-    if (orden >= 3) { next.resueltoPor = f.resueltoPor || usuario; next.resueltoAt = f.resueltoAt || ahora }
-    onSave(next, 'mover', { de: ESTADOS[f.estado], a: ESTADOS[nuevo] })
+    onSave(conNuevoEstado(f, nuevo, usuario), 'mover', { de: ESTADOS[f.estado], a: ESTADOS[nuevo] })
   }
 
   return (
@@ -179,6 +194,8 @@ export default function FaltantesView({
   onSave, onDelete, onViewImage, onOpenRef,
 }) {
   const [abierto, setAbierto] = useState(null) // id del faltante abierto en el modal
+  const [arrastrando, setArrastrando] = useState(null) // id de la tarjeta que se arrastra
+  const [colSobre, setColSobre] = useState(null)       // columna bajo el cursor
   const [q, setQ] = useState('')
   const [creando, setCreando] = useState(false)
   const [sel, setSel] = useState(null)        // orden elegida para el reporte
@@ -256,6 +273,15 @@ export default function FaltantesView({
     [faltantes, abierto],
   )
 
+  // Soltar una tarjeta en otra columna. El arrastre y el desplegable hacen lo
+  // mismo: uno es cómodo con mouse, el otro en el celular.
+  function soltarEn(estado) {
+    const f = faltantes.find((x) => x.id === arrastrando)
+    setArrastrando(null); setColSobre(null)
+    if (!f || f.estado === estado) return
+    onSave(conNuevoEstado(f, estado, usuario), 'mover', { de: ESTADOS[f.estado], a: ESTADOS[estado] })
+  }
+
   function abrirReporte() {
     setSel(null); setQSel(''); setTodasEtapas(false); setNTexto('')
     setCreando(true)
@@ -304,7 +330,11 @@ export default function FaltantesView({
         <div className="fal-tablero-wrap">
           <div className="fal-tablero">
             {COLUMNAS.map((k) => (
-              <section key={k} className={'fal-col fal-col-' + k}>
+              <section key={k}
+                className={'fal-col fal-col-' + k + (colSobre === k && arrastrando ? ' fal-col-sobre' : '')}
+                onDragOver={(e) => { if (arrastrando) { e.preventDefault(); setColSobre(k) } }}
+                onDragLeave={() => setColSobre((c) => (c === k ? null : c))}
+                onDrop={(e) => { e.preventDefault(); soltarEn(k) }}>
                 <p className="fal-col-head" title={QUIEN[k]}>
                   <span>{ESTADOS[k]}</span>
                   <b>{k === 'resuelto' ? conteos.resuelto : columnas[k].length}</b>
@@ -315,31 +345,33 @@ export default function FaltantesView({
                   const ficha = refMap.get(normRef(f.referencia))
                   const dias = edad(f)
                   const alto = k !== 'resuelto' && dias != null && dias > LIMITE_DIAS
+                  const [cPor, cAt] = FIRMA[k]
+                  const quien = nombreCorto(f[cPor])
                   return (
-                    <button key={f.id} type="button" className="fal-t-card"
+                    <div key={f.id} className={'fal-t-card' + (arrastrando === f.id ? ' fal-t-arrastrando' : '')}
+                      role="button" tabIndex={0}
+                      draggable
+                      onDragStart={(e) => { setArrastrando(f.id); e.dataTransfer.effectAllowed = 'move' }}
+                      onDragEnd={() => { setArrastrando(null); setColSobre(null) }}
                       onClick={() => setAbierto(f.id)}
-                      title="Abrir para mover o anotar">
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAbierto(f.id) } }}
+                      title="Arrástrala a otra columna, o ábrela para anotar">
                       {ficha && ficha.image ? (
-                        <img className="fal-t-foto" src={ficha.image} alt={f.referencia} />
+                        <img className="fal-t-foto" src={ficha.image} alt={f.referencia} draggable={false} />
                       ) : (
                         <span className="fal-t-foto fal-foto-vacia">＋</span>
                       )}
                       <span className="fal-t-info">
                         <span className="fal-t-ref">{f.referencia}</span>
                         <span className="fal-t-texto">{f.descripcion}</span>
-                        {(() => {
-                          const [cPor, cAt] = FIRMA[k]
-                          const quien = String(f[cPor] || '').split('@')[0]
-                          if (!quien && !f[cAt]) return null
-                          return (
-                            <span className="fal-t-quien" title={`${quien || '—'} · ${cuando(f[cAt])}`}>
-                              {quien || '—'}{f[cAt] ? ` · ${diaMes(f[cAt])}` : ''}
-                            </span>
-                          )
-                        })()}
                       </span>
-                      <span className={'fal-t-dias' + (alto ? ' fal-dias-alto' : '')}>{dias}<i>d</i></span>
-                    </button>
+                      <span className="fal-t-lado">
+                        <span className={'fal-t-dias' + (alto ? ' fal-dias-alto' : '')}>{dias}<i>d</i></span>
+                        {quien && (
+                          <span className="fal-t-quien" title={`${f[cPor]} · ${cuando(f[cAt])}`}>{quien}</span>
+                        )}
+                      </span>
+                    </div>
                   )
                 })}
                 {k === 'resuelto' && conteos.resuelto > columnas.resuelto.length && (

@@ -109,16 +109,18 @@ function drawRow(doc, item, size, y) {
     doc.text(`Pendiente: ${item.pendienteLabel}`, tx, y + 58)
   }
 
-  // Atraso (destacado a la derecha)
+  // Días en la etapa (destacado a la derecha). El límite lo pone el área, para
+  // que el rojo del PDF sea el mismo que el de la pantalla.
   if (item.atraso != null) {
+    const limite = item.limiteDias != null ? item.limiteDias : 14
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(16)
-    doc.setTextColor(...(item.atraso >= 15 ? RED : INK))
+    doc.setTextColor(...(item.atraso > limite ? RED : INK))
     doc.text(`${item.atraso} ${item.atraso === 1 ? 'día' : 'días'}`, PAGE_W - MARGIN, y + 16, { align: 'right' })
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(...GRAY)
-    doc.text('de atraso', PAGE_W - MARGIN, y + 30, { align: 'right' })
+    doc.text('en esta etapa', PAGE_W - MARGIN, y + 30, { align: 'right' })
   }
 }
 

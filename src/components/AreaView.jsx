@@ -19,6 +19,12 @@ function diasEnTaller(o) {
   return envio && entrega ? diasEntre(envio, entrega) : null
 }
 
+// Días que la orden lleva en el área, contados desde su etapa base. Pasado el
+// límite se marca en rojo. En Corte, Por alistar y Por enviar a taller el lote
+// no debería quedarse más de 4 días; en las demás el margen es más ancho.
+const LIMITE_DIAS = { corte: 4, enviar: 4, alistamiento: 4 }
+const LIMITE_POR_DEFECTO = 14
+
 const STAGE_LABEL = {
   ordenCorte: 'Orden corte', trazo: 'Trazo', entregaCorte: 'Corte',
   alistamiento: 'Alistamiento', envioEnsamble: 'Envío a taller',
@@ -95,6 +101,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   // el taller con el lote, del envío a la entrega.
   const showDiasTaller = areaKey === 'entrega'
   const showAtraso = areaKey !== 'entrega' // en entrega ya ingresó: no hay atraso
+  const limiteDias = LIMITE_DIAS[areaKey] != null ? LIMITE_DIAS[areaKey] : LIMITE_POR_DEFECTO
   const pendienteLabel = area.next ? STAGE_LABEL[area.next] : 'Recibido'
 
   // Las fases apagadas no cuentan en ninguna parte: ni en la tabla ni en los
@@ -150,6 +157,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         baseLabel: STAGE_LABEL[baseStage],
         fecha: formatDate(base.fecha),
         atraso: showAtraso ? diasDesde(base.fecha) : null,
+        limiteDias,
         pendienteLabel,
         image: ref && ref.image ? ref.image : null,
       }
@@ -218,7 +226,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 {showTaller && <SortTh label="Taller" col="taller" {...thProps} />}
                 <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />
                 <SortTh label="Cant" col="cant" className="num" {...thProps} />
-                {showAtraso && <SortTh label="Atraso" col="atraso" className="num" {...thProps} />}
+                {showAtraso && <SortTh label="Días" col="atraso" className="num" {...thProps} />}
                 {showDiasTaller && <SortTh label="Días en taller" col="diasTaller" className="num" {...thProps} />}
                 <th>Pendiente</th>
               </tr>
@@ -266,7 +274,12 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                     {showAtraso && (
                       <td className="num">
                         {atraso == null ? '' : (
-                          <span className={'tag' + (atraso >= 15 ? ' tag-warn' : '')}>{atraso} d</span>
+                          <span className={'tag' + (atraso > limiteDias ? ' tag-warn' : '')}
+                            title={atraso > limiteDias
+                              ? `Lleva más de ${limiteDias} días en esta etapa`
+                              : `${atraso} ${atraso === 1 ? 'día' : 'días'} en esta etapa`}>
+                            {atraso} d
+                          </span>
                         )}
                       </td>
                     )}

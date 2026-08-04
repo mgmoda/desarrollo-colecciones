@@ -4,7 +4,7 @@ import PhotoDropzone from './PhotoDropzone.jsx'
 import ComboBox from './ComboBox.jsx'
 import ColorCell from './ColorCell.jsx'
 import DateField from './DateField.jsx'
-import { RESUMEN_FLAGS, DEFAULT_TIPOS, TOP_OPTIONS, procesoColor } from '../lib/constants.js'
+import { RESUMEN_FLAGS, DEFAULT_TIPOS, TOP_OPTIONS, procesoColor, formatPrice } from '../lib/constants.js'
 import { emptyRef, medicionInfo, refTelas } from '../lib/domain.js'
 
 const MAX_COLORS = 6
@@ -419,6 +419,19 @@ export default function RefForm({
                   onChange={(e) => set('bordadoDetalle', e.target.value)} placeholder="Descripción del bordado" />
               </div>
             )}
+            <div className="field">
+              <label className="field-label">
+                Valor a pagar a taller
+                <span className="field-hint"> · ensamble, viene de Factory</span>
+              </label>
+              {initial && initial.valorTaller ? (
+                <p className="ff-solo-lectura">{formatPrice(initial.valorTaller)}</p>
+              ) : (
+                <p className="ff-solo-lectura muted">
+                  La ficha del producto en Factory no tiene valor de ensamble
+                </p>
+              )}
+            </div>
             <div className="field-row">
               <div className="field">
                 <label className="field-label">Estampado</label>

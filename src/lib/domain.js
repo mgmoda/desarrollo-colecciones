@@ -182,6 +182,15 @@ function fundirDuplicadas(refs) {
 
 export function buildRefIndex(orders, refsEntrada) {
   const refs = fundirDuplicadas(refsEntrada)
+  // Lo que se le paga al taller por ensamblar la prenda. Sale de la ficha del
+  // producto en Factory (proceso Ensamble) y viaja con las órdenes, así que se
+  // lee de ahí: es dato de Factory, no algo que se edite en el sistema.
+  const valorTaller = new Map()
+  orders.forEach((o) => {
+    const v = Number(o.valorTaller) || 0
+    const cod = normRef(o.referencia)
+    if (v && cod && !valorTaller.has(cod)) valorTaller.set(cod, v)
+  })
   const byId = new Map(refs.map((r) => [r.id, r]))
   // Cualquier código conocido apunta a su ficha.
   const porCodigo = new Map()
@@ -217,7 +226,14 @@ export function buildRefIndex(orders, refsEntrada) {
     const enlace = baseEnlazada(r.id, porCodigo)
     list.push(enlace ? filaEnlazada(r.id, enlace, r, finalDe) : filaDeFicha(r, finalDe))
   })
-  return list.sort((a, b) => a.referencia.localeCompare(b.referencia))
+  return list
+    .map((r) => {
+      const v = (r.codigos || [r.id])
+        .map((c) => valorTaller.get(normRef(c)))
+        .find(Boolean)
+      return v ? { ...r, valorTaller: v } : r
+    })
+    .sort((a, b) => a.referencia.localeCompare(b.referencia))
 }
 
 // Resumen del proceso de medición a partir de la bitácora de rondas.

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { AREAS, formatDate, ORIGENES, ORIGEN_ABBR, TOP_LABEL } from '../lib/constants.js'
+import { AREAS, formatDate, formatPrice, ORIGENES, ORIGEN_ABBR, TOP_LABEL } from '../lib/constants.js'
 import { ordersForArea, refProcesos, claveOrden, esOrdenTop, orderArea } from '../lib/domain.js'
 import { diasDesde, diasEntre } from '../lib/dates.js'
 import { generateAreaPDF } from '../lib/areaPdf.js'
@@ -110,6 +110,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   // En Entrega ensamble ya no hay atraso; lo que importa es cuánto se demoró
   // el taller con el lote, del envío a la entrega.
   const showDiasTaller = areaKey === 'entrega'
+  // Lo que se le paga al taller por ensamblar. Se muestra donde se decide el
+  // despacho, que es cuando el dato sirve para algo.
+  const showValorTaller = areaKey === 'alistamiento'
   const showAtraso = areaKey !== 'entrega' // en entrega ya ingresó: no hay atraso
   const limiteDias = LIMITE_DIAS[areaKey] != null ? LIMITE_DIAS[areaKey] : LIMITE_POR_DEFECTO
   const pendienteLabel = area.next ? STAGE_LABEL[area.next] : 'Recibido'
@@ -153,6 +156,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       cant: (o) => Number((o.stages[baseStage] || {}).cant),
       atraso: (o) => diasDesde((o.stages[baseStage] || {}).fecha),
       diasTaller: (o) => diasEnTaller(o),
+      valorTaller: (o) => Number(o.valorTaller) || 0,
     }
     return sortRows(list, accessors[sortKey], sortDir)
   }, [enEtapa, q, tallerSel, sortKey, sortDir, baseStage, refMap])
@@ -254,6 +258,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 <SortTh label="Procesos" col="procesos" {...thProps} />
                 <SortTh label="Top/Forro" col="topForro" {...thProps} />
                 {showTaller && <SortTh label="Taller" col="taller" {...thProps} />}
+                {showValorTaller && <SortTh label="Valor taller" col="valorTaller" className="num" {...thProps} />}
                 <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />
                 <SortTh label="Cant" col="cant" className="num" {...thProps} />
                 {showAtraso && <SortTh label="Días" col="atraso" className="num" {...thProps} />}
@@ -298,6 +303,13 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                       <TopCell orden={o} refRow={ref} topLinks={topLinks} onAbrir={setTopDe} />
                     </td>
                     {showTaller && <td className="cel-taller" title={taller}>{taller}</td>}
+                    {showValorTaller && (
+                      <td className="num" title={o.valorTaller
+                        ? 'Valor de ensamble de la ficha del producto en Factory'
+                        : 'La ficha del producto no tiene valor de ensamble'}>
+                        {o.valorTaller ? formatPrice(o.valorTaller) : <span className="muted">—</span>}
+                      </td>
+                    )}
                     <td>{formatDate(base.fecha)}</td>
                     <td className="num">{base.cant}</td>
                     {showAtraso && (

@@ -1,16 +1,16 @@
 import { useMemo } from 'react'
 import Modal from './Modal.jsx'
 import ProcesosTags from './ProcesosTags.jsx'
-import { ORIGENES, ORIGEN_ABBR, TOP_LABEL, formatDate } from '../lib/constants.js'
+import { ORIGENES, ORIGEN_ABBR, TOP_LABEL } from '../lib/constants.js'
 import { etiquetaDiaLargo } from '../lib/dates.js'
 
 /**
- * Lo que se hizo un día en un área, referencia por referencia: foto, códigos,
- * fase, cantidad, procesos especiales y acabado del top.
+ * Lo que se hizo un día en un área, en cuadrícula: una fila por referencia con
+ * foto, códigos, fase, marca, procesos y cantidad.
  *
- * Cuando lo del día pasó por taller —lo enviado y lo recibido— las referencias
- * van agrupadas por taller, de mayor a menor despacho, para leer de una qué se
- * le mandó a cada uno sin tener que cruzar la lista a mano.
+ * Cuando el día mide el paso por taller, la columna Taller va combinada como en
+ * una hoja de cálculo: una sola celda por taller, con su total, abarcando las
+ * filas que se le despacharon.
  */
 export default function DiaProduccionModal({
   dia, detalle, titulo, refMap, onViewImage, onOpenRef, onClose, porTaller,
@@ -34,53 +34,53 @@ export default function DiaProduccionModal({
     return [...m.values()].sort((a, b) => b.unidades - a.unidades)
   }, [refs, porTaller])
 
-  function Item({ r }) {
+  const conTaller = !!grupos
+
+  function Fila({ r, primeraDelGrupo, grupo }) {
     const ficha = refMap && refMap.get(r.referencia)
     const abrible = !!(onOpenRef && ficha)
     return (
-      <li className={'dia-item' + (abrible ? ' dia-item-click' : '')}
+      <tr className={(abrible ? 'row-click' : '') + (primeraDelGrupo ? ' dia-fila-corte' : '')}
         onClick={() => abrible && onOpenRef(ficha)}
         title={abrible ? 'Abrir la ficha de la referencia' : undefined}>
-        {ficha && ficha.image ? (
-          <img className="dia-foto" src={ficha.image} alt={r.referencia}
-            title="Ampliar foto"
-            onClick={(e) => { e.stopPropagation(); onViewImage && onViewImage(ficha.image) }} />
-        ) : (
-          <span className="dia-foto dia-foto-vacia">＋</span>
+        <td className="cell-photo">
+          {ficha && ficha.image ? (
+            <img src={ficha.image} alt={r.referencia} className="thumb" title="Ampliar foto"
+              onClick={(e) => { e.stopPropagation(); onViewImage && onViewImage(ficha.image) }} />
+          ) : (
+            <span className="thumb empty">＋</span>
+          )}
+        </td>
+        <td>
+          <span className={'origen-chip o-' + r.origen} title={ORIGENES[r.origen] || r.origen}>
+            {ORIGEN_ABBR[r.origen] || r.origen}
+          </span>
+        </td>
+        <td className="strong">{r.referencia}</td>
+        <td className="dia-desc-cel">
+          {(ficha && (ficha.descripcion || ficha.tipo)) || <span className="muted">—</span>}
+        </td>
+        <td className="mono">{r.orden}</td>
+        <td>{(ficha && ficha.marca) || <span className="muted">—</span>}</td>
+        <td>
+          <ProcesosTags refRow={ficha} vacio="—" />
+          {ficha && ficha.topIncluido && (
+            <span className="tag">{TOP_LABEL[ficha.topIncluido] || ficha.topIncluido}</span>
+          )}
+        </td>
+        {conTaller && primeraDelGrupo && (
+          <td className="dia-taller-cel" rowSpan={grupo.refs.length}>
+            <b>{grupo.taller}</b>
+            <span>{grupo.unidades.toLocaleString('es-CO')} und · {grupo.refs.length}
+              {grupo.refs.length === 1 ? ' ref' : ' refs'}</span>
+          </td>
         )}
-
-        <div className="dia-info">
-          <p className="dia-ref">
-            {r.referencia}
-            <span className={'origen-chip o-' + r.origen}
-              title={ORIGENES[r.origen] || r.origen}>
-              {ORIGEN_ABBR[r.origen] || r.origen}
-            </span>
-          </p>
-          <p className="dia-desc">
-            {(ficha && (ficha.descripcion || ficha.tipo)) || <span className="muted">Sin descripción</span>}
-          </p>
-          <p className="dia-meta">
-            <span>Orden <b className="mono">{r.orden}</b></span>
-            {ficha && ficha.marca && <span>{ficha.marca}</span>}
-            {ficha && ficha.tela && <span>{ficha.tela}</span>}
-            {r.fecha && <span>{formatDate(r.fecha)}</span>}
-          </p>
-          <p className="dia-procesos">
-            <ProcesosTags refRow={ficha} vacio="Sin procesos especiales" />
-            {ficha && ficha.topIncluido && (
-              <span className="tag">{TOP_LABEL[ficha.topIncluido] || ficha.topIncluido}</span>
-            )}
-          </p>
-        </div>
-
-        <div className="dia-cant">
-          <b>{r.cant}</b>
-          <span>und</span>
-        </div>
-      </li>
+        <td className="num strong">{r.cant}</td>
+      </tr>
     )
   }
+
+  const columnas = conTaller ? 8 : 7
 
   return (
     <Modal open={abierto} onClose={onClose} size="lg">
@@ -94,7 +94,7 @@ export default function DiaProduccionModal({
                 <span className="modal-sub-sep"> · </span>
                 <b>{detalle.unidades.toLocaleString('es-CO')}</b> unidades en {refs.length}
                 {refs.length === 1 ? ' referencia' : ' referencias'}
-                {grupos && (
+                {conTaller && (
                   <>
                     <span className="modal-sub-sep"> · </span>
                     {grupos.length} {grupos.length === 1 ? 'taller' : 'talleres'}
@@ -106,24 +106,36 @@ export default function DiaProduccionModal({
           </div>
 
           <div className="modal-body">
-            {grupos ? grupos.map((g) => (
-              <section key={g.taller} className="dia-grupo">
-                <p className="dia-grupo-tit">
-                  <span className="dia-grupo-taller">{g.taller}</span>
-                  <span className="dia-grupo-cifra">
-                    {g.unidades.toLocaleString('es-CO')} und · {g.refs.length}
-                    {g.refs.length === 1 ? ' referencia' : ' referencias'}
-                  </span>
-                </p>
-                <ul className="dia-lista">
-                  {g.refs.map((r) => <Item key={r.id} r={r} />)}
-                </ul>
-              </section>
-            )) : (
-              <ul className="dia-lista">
-                {refs.map((r) => <Item key={r.id} r={r} />)}
-              </ul>
-            )}
+            <div className="table-wrap">
+              <table className="data-table dia-tabla">
+                <thead>
+                  <tr>
+                    <th>Foto</th>
+                    <th>Fase</th>
+                    <th>Referencia</th>
+                    <th>Descripción</th>
+                    <th># Orden</th>
+                    <th>Marca</th>
+                    <th>Procesos</th>
+                    {conTaller && <th>Taller</th>}
+                    <th className="num">Cant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {conTaller
+                    ? grupos.map((g) => g.refs.map((r, i) => (
+                      <Fila key={r.id} r={r} grupo={g} primeraDelGrupo={i === 0} />
+                    )))
+                    : refs.map((r) => <Fila key={r.id} r={r} />)}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th colSpan={columnas}>Total del día</th>
+                    <td className="num strong">{detalle.unidades.toLocaleString('es-CO')}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
 
           <div className="modal-foot">

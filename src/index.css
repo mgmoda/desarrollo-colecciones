@@ -5398,29 +5398,50 @@ select.filtro-taller { flex: none; width: 215px; }
 .modal-sub-sep { color: var(--hairline-strong); }
 
 .dia-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-/* Agrupación por taller dentro del día: un título por taller con su total,
-   ordenados de mayor a menor despacho. */
-.dia-grupo + .dia-grupo { margin-top: 20px; }
-.dia-grupo-tit {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0 0 9px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--hairline-strong);
+/* Detalle del día en cuadrícula. A diferencia de las tablas del sistema aquí
+   sí se ven las divisiones de columna: son pocas filas y muchos datos por fila,
+   y la retícula es lo que deja seguir el renglón sin perderse. */
+.dia-tabla th,
+.dia-tabla td { border-right: 1px solid var(--hairline); }
+.dia-tabla th:last-child,
+.dia-tabla td:last-child { border-right: none; }
+/* La descripción es lo único que puede ser largo: que use el espacio sobrante
+   en vez de estirar la tabla. */
+.dia-tabla .dia-desc-cel { white-space: normal; min-width: 190px; line-height: 1.3; }
+/* Celda de taller combinada, al estilo de una hoja de cálculo: una sola por
+   taller, abarcando las filas que se le despacharon. */
+.dia-tabla .dia-taller-cel {
+  vertical-align: middle;
+  text-align: center;
+  background: #faf8f3;
+  border-left: 1px solid var(--hairline-strong);
+  white-space: normal;
+  min-width: 150px;
 }
-.dia-grupo-taller {
-  font-size: 13px;
+.dia-tabla .dia-taller-cel b {
+  display: block;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ink);
-  letter-spacing: 0.01em;
+  line-height: 1.25;
 }
-.dia-grupo-cifra {
-  font-size: 11.5px;
+.dia-tabla .dia-taller-cel span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
   color: var(--muted);
-  white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+/* Línea más marcada donde arranca cada taller. */
+.dia-tabla tbody tr.dia-fila-corte td { border-top: 1px solid var(--hairline-strong); }
+.dia-tabla tbody tr:first-child td { border-top: none; }
+.dia-tabla tfoot th,
+.dia-tabla tfoot td {
+  background: #f6f4ee;
+  border-top: 1px solid var(--hairline-strong);
+  padding: 9px;
+  font-size: 12px;
+  text-align: right;
 }
 .dia-item {
   display: grid;

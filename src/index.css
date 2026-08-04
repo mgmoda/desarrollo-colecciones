@@ -4357,6 +4357,10 @@ img.ship-ref-photo {
 /* Selector de taller en la cabecera. Sin ancho propio se estira a toda la fila
    y empuja el buscador al renglón de abajo. */
 select.filtro-taller { flex: none; width: 215px; }
+/* Selector de columna en la tarjeta del faltante: dice dónde está y sirve para
+   moverla, hacia adelante o hacia atrás. */
+.fal-mover { flex: none; width: 160px; }
+.fal-mover select.select { width: 160px; font-weight: 500; }
 .select-caret {
   position: absolute;
   right: 12px;

@@ -67,28 +67,23 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
     setNota('')
   }
 
-  // Ninfa lo tomó. No interesa QUÉ está haciendo —pedir tela, mandar a
-  // estampar—, solo que ya está en sus manos y corriendo.
-  function marcarProceso() {
-    onSave({ ...f, estado: 'proceso', procesoPor: usuario, procesoAt: Date.now(), updatedAt: Date.now() },
-      'proceso', {})
-  }
-
-  // Paso 2: Ninfa avisa que el material ya llegó a la empresa.
-  function marcarLlego() {
-    onSave({ ...f, estado: 'gestion', llegoPor: usuario, llegoAt: Date.now(), updatedAt: Date.now() },
-      'llego', {})
-  }
-
-  // Paso 2: Corte ya lo cortó y lo entregó. Aquí se cierra.
-  function resolver() {
-    onSave({ ...f, estado: 'resuelto', resueltoPor: usuario, resueltoAt: Date.now(), updatedAt: Date.now() },
-      'resolver', {})
-  }
-
-  function reabrir() {
-    const { resueltoPor: _p, resueltoAt: _a, ...resto } = f
-    onSave({ ...resto, estado: 'gestion', updatedAt: Date.now() }, 'reabrir', {})
+  // Mover de columna. Se escoge a cuál, no se avanza a ciegas: así también se
+  // puede devolver una tarjeta si alguien la movió por error. Cada paso deja
+  // su marca de quién y cuándo, y al retroceder se borran las que ya no aplican.
+  function mover(nuevo) {
+    if (nuevo === f.estado) return
+    const ahora = Date.now()
+    const {
+      procesoPor: _pp, procesoAt: _pa, llegoPor: _lp, llegoAt: _la,
+      resueltoPor: _rp, resueltoAt: _ra, ...limpio
+    } = f
+    const next = { ...limpio, estado: nuevo, updatedAt: ahora }
+    const orden = COLUMNAS.indexOf(nuevo)
+    // Se conservan las marcas de los pasos que la tarjeta sí alcanzó.
+    if (orden >= 1) { next.procesoPor = f.procesoPor || usuario; next.procesoAt = f.procesoAt || ahora }
+    if (orden >= 2) { next.llegoPor = f.llegoPor || usuario; next.llegoAt = f.llegoAt || ahora }
+    if (orden >= 3) { next.resueltoPor = f.resueltoPor || usuario; next.resueltoAt = f.resueltoAt || ahora }
+    onSave(next, 'mover', { de: ESTADOS[f.estado], a: ESTADOS[nuevo] })
   }
 
   return (
@@ -138,37 +133,26 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
             </div>
           )}
 
-          {!resuelto && (
-            <div className="fal-acciones">
-              <input className="input fal-nota-input" value={nota}
-                placeholder="Agregar nota de seguimiento…"
-                onChange={(e) => setNota(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') agregarNota() }} />
-              <button className="btn" onClick={agregarNota} disabled={!nota.trim()}>Anotar</button>
-              {f.estado === 'pendiente' && puedeResolver && (
-                <button className="btn" onClick={marcarProceso}
-                  title="Ninfa ya lo está gestionando">▸ Ponerlo en proceso</button>
-              )}
-              {f.estado === 'proceso' && puedeResolver && (
-                <button className="btn fal-btn-ok" onClick={marcarLlego}
-                  title="Ninfa ya entregó lo que faltaba — pasa a Corte">✓ Entregado</button>
-              )}
-              {/* El último paso lo reporta Corte, así que no va detrás del permiso
-                  de Ninfa: es quien corta el que sabe que ya entregó. */}
-              {f.estado === 'gestion' && (
-                <button className="btn fal-btn-ok" onClick={resolver}
-                  title="Corte ya lo cortó — no queda nada pendiente">✓ Completo</button>
-              )}
+          <div className="fal-acciones">
+            <input className="input fal-nota-input" value={nota}
+              placeholder="Agregar nota de seguimiento…"
+              onChange={(e) => setNota(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') agregarNota() }} />
+            <button className="btn" onClick={agregarNota} disabled={!nota.trim()}>Anotar</button>
+            <div className="select-wrap fal-mover">
+              <select className="input select" value={f.estado}
+                onChange={(e) => mover(e.target.value)}
+                title="Mover a otra columna del tablero">
+                {COLUMNAS.map((k) => <option key={k} value={k}>{ESTADOS[k]}</option>)}
+              </select>
+              <span className="select-caret" aria-hidden="true">▾</span>
             </div>
-          )}
-          {resuelto && puedeResolver && (
-            <div className="fal-acciones">
-              <button className="btn" onClick={reabrir}>Reabrir</button>
+            {resuelto && puedeResolver && (
               <button className="btn" onClick={() => {
                 if (confirm('¿Eliminar este faltante definitivamente?')) onDelete(f)
               }}>Eliminar</button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </article>

@@ -90,7 +90,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   }
 
   const baseStage = area.base
-  const showTaller = areaKey === 'talleres' || areaKey === 'enviar' || areaKey === 'entrega'
+  const showTaller = areaKey === 'talleres' || areaKey === 'alistamiento' || areaKey === 'entrega'
   // En Entrega ensamble ya no hay atraso; lo que importa es cuánto se demoró
   // el taller con el lote, del envío a la entrega.
   const showDiasTaller = areaKey === 'entrega'

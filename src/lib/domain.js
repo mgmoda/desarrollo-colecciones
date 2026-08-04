@@ -10,14 +10,14 @@ export function stageDone(order, key) {
 // a la más temprana). Las etapas del Excel que no definen área propia
 // (revisado, entrada bodega) quedan por fuera.
 //
-// Entre corte y el envío al taller va el alistamiento: lo que salió de corte
-// pero todavía no está alistado espera en su propia área, y solo cuando se
-// alista pasa a Por enviar.
+// Entre corte y el envío al taller va el alistamiento. Lo que salió de corte y
+// todavía no se alista espera en Por alistar; una vez alistado pasa a
+// Alistamiento, que es la lista de lo que está listo para despachar al taller.
 export function orderArea(order) {
   if (stageDone(order, 'entregaEnsamble')) return 'entrega'
   if (stageDone(order, 'envioEnsamble')) return 'talleres'
-  if (stageDone(order, 'alistamiento')) return 'enviar'
-  if (stageDone(order, 'entregaCorte')) return 'alistamiento'
+  if (stageDone(order, 'alistamiento')) return 'alistamiento'
+  if (stageDone(order, 'entregaCorte')) return 'enviar'
   if (stageDone(order, 'trazo')) return 'corte'
   if (stageDone(order, 'ordenCorte')) return 'trazos'
   return null // aún sin orden de corte
@@ -28,7 +28,7 @@ export function ordersForArea(orders, areaKey) {
 }
 
 // Orden de avance de las áreas (de menos a más avanzada).
-export const AREA_ORDER = ['trazos', 'corte', 'alistamiento', 'enviar', 'talleres', 'entrega']
+export const AREA_ORDER = ['trazos', 'corte', 'enviar', 'alistamiento', 'talleres', 'entrega']
 
 export function areaIndex(area) {
   const i = AREA_ORDER.indexOf(area)
@@ -37,8 +37,8 @@ export function areaIndex(area) {
 
 // Etapa base de cada área (su fecha inicia el conteo de atraso).
 const AREA_BASE = {
-  trazos: 'ordenCorte', corte: 'trazo', alistamiento: 'entregaCorte',
-  enviar: 'alistamiento', talleres: 'envioEnsamble', entrega: 'entregaEnsamble',
+  trazos: 'ordenCorte', corte: 'trazo', enviar: 'entregaCorte',
+  alistamiento: 'alistamiento', talleres: 'envioEnsamble', entrega: 'entregaEnsamble',
 }
 export function areaBaseFecha(order) {
   const a = orderArea(order)

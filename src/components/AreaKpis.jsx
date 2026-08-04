@@ -14,8 +14,8 @@ import {
 const MEDIDA = {
   trazos: { etapa: 'trazo', pendiente: 'Pendiente por trazar', hecho: 'Trazado esta semana', verbo: 'Trazado' },
   corte: { etapa: 'entregaCorte', pendiente: 'Pendiente por cortar', hecho: 'Cortado esta semana', verbo: 'Cortado' },
-  alistamiento: { etapa: 'alistamiento', pendiente: 'Pendiente por alistar', hecho: 'Alistado esta semana', verbo: 'Alistado' },
-  enviar: { etapa: 'envioEnsamble', pendiente: 'Pendiente por enviar', hecho: 'Enviado a taller esta semana', verbo: 'Enviado a taller' },
+  enviar: { etapa: 'alistamiento', pendiente: 'Pendiente por alistar', hecho: 'Alistado esta semana', verbo: 'Alistado' },
+  alistamiento: { etapa: 'envioEnsamble', pendiente: 'Pendiente por enviar', hecho: 'Enviado a taller esta semana', verbo: 'Enviado a taller' },
   talleres: { etapa: 'entregaEnsamble', pendiente: 'En talleres', hecho: 'Recibido de taller esta semana', verbo: 'Recibido de taller' },
   entrega: { etapa: 'entregaEnsamble', pendiente: 'En esta etapa', hecho: 'Recibido esta semana', verbo: 'Recibido' },
   // La orden de corte no acumula pendientes: se emite y la prenda pasa de una
@@ -27,8 +27,8 @@ const MEDIDA = {
 const ACUMULADO = {
   trazos: 'Trazado en total',
   corte: 'Cortado en total',
-  alistamiento: 'Alistado en total',
-  enviar: 'Enviado a taller en total',
+  enviar: 'Alistado en total',
+  alistamiento: 'Enviado a taller en total',
   talleres: 'Recibido de taller en total',
   entrega: 'Recibido en total',
   ordencorte: 'Programado en total',

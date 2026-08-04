@@ -41,8 +41,8 @@ const TABS = [
   { key: 'trazos', label: 'Trazos' },
   { key: 'corte', label: 'Corte' },
   { key: 'faltantes', label: 'Faltantes' },
+  { key: 'enviar', label: 'Por alistar' },
   { key: 'alistamiento', label: 'Alistamiento' },
-  { key: 'enviar', label: 'Por enviar' },
   { key: 'talleres', label: 'En talleres' },
   { key: 'entrega', label: 'Entrega ensamble' },
   { key: 'ensamble', label: 'Seguimiento' },
@@ -52,7 +52,7 @@ const TABS = [
   { key: 'costos', label: 'Costos' },
   { key: 'geodesica', label: 'Geodésica' },
 ]
-const AREA_KEYS = ['trazos', 'corte', 'alistamiento', 'enviar', 'talleres', 'entrega']
+const AREA_KEYS = ['trazos', 'corte', 'enviar', 'alistamiento', 'talleres', 'entrega']
 const TAB_KEY = 'desarrollo-colecciones:tab'
 
 export default function App() {

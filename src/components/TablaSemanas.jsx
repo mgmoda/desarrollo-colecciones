@@ -8,8 +8,12 @@ const SEMANAS = 12
 // Lo que cerró cada módulo en las últimas semanas, para ver el ritmo de un
 // vistazo: si una etapa se frenó o si la carga viene subiendo.
 // "En talleres" no tiene columna propia porque cierra la misma etapa que
-// Entrega ensamble; estando ahí se resalta esa.
-const COLUMNA_DEL_MODULO = { talleres: 'entrega' }
+// Entrega ensamble; estando ahí se resalta esa. Y cada área resalta la etapa
+// que ella cierra: Por alistar cierra el alistamiento, y Alistamiento —que ya
+// tiene el lote listo— cierra el envío al taller.
+const COLUMNA_DEL_MODULO = {
+  talleres: 'entrega', enviar: 'alistamiento', alistamiento: 'enviar',
+}
 
 export default function TablaSemanas({ orders, refMap, destacado }) {
   const columna = COLUMNA_DEL_MODULO[destacado] || destacado

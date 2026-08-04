@@ -15,11 +15,11 @@ const MEDIDAS = [
 ]
 
 // La medida que se abre por defecto según la etapa desde la que se hizo clic.
-// Factory no manda columna de alistamiento en la curva, así que Alistamiento
-// abre en lo entregado de corte, que es justo lo que está por alistar.
+// Factory no manda columna de alistamiento en la curva, así que las dos áreas
+// entre corte y el taller abren en lo entregado de corte.
 export const MEDIDA_DE_AREA = {
   ordencorte: 'prog', trazos: 'prog', corte: 'trazo',
-  alistamiento: 'corte', enviar: 'corte', talleres: 'env', entrega: 'ent',
+  enviar: 'corte', alistamiento: 'corte', talleres: 'env', entrega: 'ent',
 }
 
 function filas(curva) {

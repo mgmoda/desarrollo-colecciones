@@ -18,8 +18,8 @@ export const STAGES = [
 export const AREAS = {
   trazos: { label: 'Trazos', responsable: 'Marcela', base: 'ordenCorte', next: 'trazo' },
   corte: { label: 'Corte', responsable: 'Mónica', base: 'trazo', next: 'entregaCorte' },
-  alistamiento: { label: 'Alistamiento', responsable: '', base: 'entregaCorte', next: 'alistamiento' },
-  enviar: { label: 'Por enviar', responsable: '', base: 'alistamiento', next: 'envioEnsamble' },
+  enviar: { label: 'Por alistar', responsable: '', base: 'entregaCorte', next: 'alistamiento' },
+  alistamiento: { label: 'Alistamiento', responsable: '', base: 'alistamiento', next: 'envioEnsamble' },
   talleres: { label: 'En talleres', responsable: '', base: 'envioEnsamble', next: 'entregaEnsamble' },
   entrega: { label: 'Entrega ensamble', responsable: '', base: 'entregaEnsamble', next: null },
 }

@@ -37,10 +37,10 @@ import { resumirCambios } from './lib/cambios.js'
 const TABS = [
   { key: 'inicio', label: 'Inicio' },
   { key: 'resumen', label: 'Resumen' },
+  { key: 'faltantes', label: 'Faltantes' },
   { key: 'ordencorte', label: 'Orden de corte' },
   { key: 'trazos', label: 'Trazos' },
   { key: 'corte', label: 'Corte' },
-  { key: 'faltantes', label: 'Faltantes' },
   { key: 'enviar', label: 'Por alistar' },
   { key: 'alistamiento', label: 'Por enviar a taller' },
   { key: 'talleres', label: 'En talleres' },
@@ -55,7 +55,7 @@ const TABS = [
 const AREA_KEYS = ['trazos', 'corte', 'enviar', 'alistamiento', 'talleres', 'entrega']
 // Lo que ve quien no es admin: el recorrido de producción y los faltantes.
 const TABS_OPERACION = [
-  'ordencorte', 'trazos', 'corte', 'faltantes',
+  'faltantes', 'ordencorte', 'trazos', 'corte',
   'enviar', 'alistamiento', 'talleres', 'entrega',
 ]
 const TAB_KEY = 'desarrollo-colecciones:tab'
@@ -272,8 +272,11 @@ export default function App() {
     return m
   }, [faltantes])
 
+  // La insignia cuenta solo lo que está en la columna Faltante: lo que nadie ha
+  // tomado todavía. Apenas Ninfa lo pasa a En proceso deja de pesar en el aviso,
+  // porque ya está andando.
   const faltantesActivos = useMemo(
-    () => faltantes.filter((f) => f.estado !== 'resuelto').length,
+    () => faltantes.filter((f) => f.estado === 'pendiente').length,
     [faltantes],
   )
   const emailSesion = session && session.user ? session.user.email : ''

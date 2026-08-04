@@ -88,7 +88,10 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   const area = AREAS[areaKey]
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState(() => new Set())
-  const { sortKey, sortDir, toggle } = useSort('orden', 'asc')
+  // La tabla abre ordenada por días, de mayor a menor, para que lo más demorado
+  // quede de primero. En Entrega ensamble no hay espera que contar: ahí lo que
+  // ordena es cuánto se demoró el taller con el lote.
+  const { sortKey, sortDir, toggle } = useSort(areaKey === 'entrega' ? 'diasTaller' : 'atraso', 'desc')
 
   // Limpia la selección al cambiar de área.
   useEffect(() => { setSelected(new Set()) }, [areaKey])

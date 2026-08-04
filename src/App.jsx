@@ -780,7 +780,7 @@ export default function App() {
             onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
         {AREA_KEYS.includes(tab) && (
-          <AreaView areaKey={tab} orders={orders} refMap={refMap}
+          <AreaView key={tab} areaKey={tab} orders={orders} refMap={refMap}
             fasesOcultas={fasesOcultas} onToggleFase={toggleFase}
             topLinks={topLinks} onVincularTop={vincularTop} conjuntoLinks={conjuntoLinks}
             onViewImage={setLightbox} onOpenRef={openEdit} />

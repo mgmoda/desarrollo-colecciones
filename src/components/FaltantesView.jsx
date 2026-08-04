@@ -30,10 +30,25 @@ const QUIEN = {
   resuelto: 'Cortado y entregado, sin pendientes',
 }
 const COLUMNAS = ['pendiente', 'proceso', 'gestion', 'resuelto']
+// Quién y cuándo dejó la tarjeta en cada columna. Cada paso guarda su propia
+// firma, así que la tarjeta muestra la del paso en el que está parada.
+const FIRMA = {
+  pendiente: ['creadoPor', 'creadoAt'],
+  proceso: ['procesoPor', 'procesoAt'],
+  gestion: ['llegoPor', 'llegoAt'],
+  resuelto: ['resueltoPor', 'resueltoAt'],
+}
 // La columna de completos crecería sin fin; se muestran los últimos.
 const TOPE_COMPLETOS = 12
 // Mismo criterio que las tablas de área: pasados 3 días la cifra sale en rojo.
 const LIMITE_DIAS = 3
+
+// Día y mes, para la firma de la tarjeta del tablero. La hora completa queda
+// en el title, que ahí sí hay espacio.
+function diaMes(ts) {
+  if (!ts) return ''
+  return new Date(ts).toLocaleDateString('es-CO', { day: 'numeric', month: 'numeric' })
+}
 
 function cuando(ts) {
   if (!ts) return ''
@@ -312,6 +327,16 @@ export default function FaltantesView({
                       <span className="fal-t-info">
                         <span className="fal-t-ref">{f.referencia}</span>
                         <span className="fal-t-texto">{f.descripcion}</span>
+                        {(() => {
+                          const [cPor, cAt] = FIRMA[k]
+                          const quien = String(f[cPor] || '').split('@')[0]
+                          if (!quien && !f[cAt]) return null
+                          return (
+                            <span className="fal-t-quien" title={`${quien || '—'} · ${cuando(f[cAt])}`}>
+                              {quien || '—'}{f[cAt] ? ` · ${diaMes(f[cAt])}` : ''}
+                            </span>
+                          )
+                        })()}
                       </span>
                       <span className={'fal-t-dias' + (alto ? ' fal-dias-alto' : '')}>{dias}<i>d</i></span>
                     </button>

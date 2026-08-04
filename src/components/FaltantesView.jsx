@@ -17,15 +17,19 @@ import { newId } from '../lib/storage.js'
 // Corte lo reporta → Ninfa consigue lo que falta → cuando llega, Corte lo corta
 // y lo entrega. Sin eso, "en gestión" no decía quién tenía que mover.
 const ESTADOS = {
-  pendiente: 'Con Ninfa',
+  pendiente: 'Sin empezar',
+  proceso: 'En proceso',
   gestion: 'Llegó · falta cortar',
   resuelto: 'Entregado',
 }
 const QUIEN = {
-  pendiente: 'Ninfa tiene que conseguirlo',
+  pendiente: 'Ninfa todavía no lo ha tomado',
+  proceso: 'Ninfa ya lo está gestionando — pedir tela, mandar a estampar…',
   gestion: 'Corte tiene que cortarlo y entregarlo',
   resuelto: '',
 }
+// Mismo criterio que las tablas de área: pasados 3 días la cifra sale en rojo.
+const LIMITE_DIAS = 3
 
 function cuando(ts) {
   if (!ts) return ''
@@ -59,7 +63,14 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
     setNota('')
   }
 
-  // Paso 1: Ninfa avisa que el material ya llegó a la empresa.
+  // Ninfa lo tomó. No interesa QUÉ está haciendo —pedir tela, mandar a
+  // estampar—, solo que ya está en sus manos y corriendo.
+  function marcarProceso() {
+    onSave({ ...f, estado: 'proceso', procesoPor: usuario, procesoAt: Date.now(), updatedAt: Date.now() },
+      'proceso', {})
+  }
+
+  // Paso 2: Ninfa avisa que el material ya llegó a la empresa.
   function marcarLlego() {
     onSave({ ...f, estado: 'gestion', llegoPor: usuario, llegoAt: Date.now(), updatedAt: Date.now() },
       'llego', {})
@@ -79,6 +90,13 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
   return (
     <article className={'fal-card' + (resuelto ? ' fal-resuelto' : '')}>
       <div className="fal-cuerpo">
+        {dias != null && (
+          <div className={'fal-dias' + (!resuelto && dias > LIMITE_DIAS ? ' fal-dias-alto' : '')}
+            title={resuelto ? 'Días que tardó en resolverse' : 'Días desde que se reportó'}>
+            <b>{dias}</b>
+            <span>{dias === 1 ? 'día' : 'días'}</span>
+          </div>
+        )}
         {ficha && ficha.image ? (
           <img className="fal-foto" src={ficha.image} alt={f.referencia} title="Ampliar foto"
             onClick={() => onViewImage && onViewImage(ficha.image)} />
@@ -97,13 +115,14 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
               <span className="tag fal-etapa" title="Dónde va esa orden hoy">va en {etapaViva}</span>
             )}
             <span className={'fal-chip fal-' + f.estado} title={QUIEN[f.estado]}>
-              {ESTADOS[f.estado]}{dias != null && (resuelto ? ` en ${dias} d` : ` · ${dias} d`)}
+              {ESTADOS[f.estado]}
             </span>
           </p>
           <p className="fal-texto">“{f.descripcion}”</p>
           <p className="fal-meta">
             Reportó <b>{String(f.creadoPor || '').split('@')[0]}</b> · {cuando(f.creadoAt)}
-            {f.llegoAt && <> — llegó, avisó <b>{String(f.llegoPor || '').split('@')[0]}</b> · {cuando(f.llegoAt)}</>}
+            {f.procesoAt && <> — lo tomó <b>{String(f.procesoPor || '').split('@')[0]}</b> · {cuando(f.procesoAt)}</>}
+            {f.llegoAt && <> — llegó <b>{String(f.llegoPor || '').split('@')[0]}</b> · {cuando(f.llegoAt)}</>}
             {resuelto && <> — entregó <b>{String(f.resueltoPor || '').split('@')[0]}</b> · {cuando(f.resueltoAt)}</>}
           </p>
 
@@ -123,6 +142,10 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
                 onKeyDown={(e) => { if (e.key === 'Enter') agregarNota() }} />
               <button className="btn" onClick={agregarNota} disabled={!nota.trim()}>Anotar</button>
               {f.estado === 'pendiente' && puedeResolver && (
+                <button className="btn" onClick={marcarProceso}
+                  title="Ninfa ya lo está gestionando">▸ En proceso</button>
+              )}
+              {f.estado === 'proceso' && puedeResolver && (
                 <button className="btn fal-btn-ok" onClick={marcarLlego}
                   title="El material ya llegó a la empresa — pasa a Corte">✓ Ya llegó</button>
               )}
@@ -194,7 +217,7 @@ export default function FaltantesView({
   }, [visibles, todasEtapas, qSel])
 
   const conteos = useMemo(() => {
-    const c = { pendiente: 0, gestion: 0, resuelto: 0 }
+    const c = { pendiente: 0, proceso: 0, gestion: 0, resuelto: 0 }
     faltantes.forEach((f) => { if (c[f.estado] != null) c[f.estado] += 1 })
     return c
   }, [faltantes])
@@ -247,8 +270,9 @@ export default function FaltantesView({
   }
 
   const FILTROS = [
-    ['activos', `Activos ${conteos.pendiente + conteos.gestion}`],
-    ['pendiente', `Con Ninfa ${conteos.pendiente}`],
+    ['activos', `Activos ${conteos.pendiente + conteos.proceso + conteos.gestion}`],
+    ['pendiente', `Sin empezar ${conteos.pendiente}`],
+    ['proceso', `En proceso ${conteos.proceso}`],
     ['gestion', `Por cortar ${conteos.gestion}`],
     ['resuelto', `Entregados ${conteos.resuelto}`],
   ]

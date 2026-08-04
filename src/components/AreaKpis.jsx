@@ -192,6 +192,7 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
       </div>
 
       <DiaProduccionModal dia={diaAbierto} detalle={detalle} titulo={medida.verbo}
+        porTaller={medida.etapa === 'envioEnsamble' || medida.etapa === 'entregaEnsamble'}
         refMap={refMap} onViewImage={onViewImage}
         onOpenRef={(ficha) => { setDiaAbierto(''); onOpenRef && onOpenRef(ficha) }}
         onClose={() => setDiaAbierto('')} />

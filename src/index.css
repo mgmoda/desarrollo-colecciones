@@ -5398,6 +5398,30 @@ select.filtro-taller { flex: none; width: 215px; }
 .modal-sub-sep { color: var(--hairline-strong); }
 
 .dia-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+/* Agrupación por taller dentro del día: un título por taller con su total,
+   ordenados de mayor a menor despacho. */
+.dia-grupo + .dia-grupo { margin-top: 20px; }
+.dia-grupo-tit {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 9px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--hairline-strong);
+}
+.dia-grupo-taller {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+}
+.dia-grupo-cifra {
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .dia-item {
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr) auto;

@@ -7,6 +7,7 @@ import {
 import {
   etiquetaDia, isoLocal, rangoSemana, semanaDe,
 } from '../lib/dates.js'
+import { AREAS } from '../lib/constants.js'
 
 // Cada área mide su propio trabajo por la etapa que ella cierra: Trazos el
 // trazo, Corte la entrega de corte, Por enviar el envío al taller… En Entrega
@@ -104,9 +105,14 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
   const hoy = isoLocal(new Date())
 
   // Tarjeta de la izquierda: lo que falta en la etapa, desglosado por marca.
+  // Se cuenta con la cantidad de la etapa base —la que ya se cumplió— porque
+  // esa es la que de verdad está esperando: un lote programado de 43 del que
+  // corte entregó 40 deja 40 por alistar, no 43. Es la misma cifra que muestra
+  // la tabla, así que la tarjeta y las filas cuadran.
+  const baseEtapa = (AREAS[areaKey] && AREAS[areaKey].base) || 'ordenCorte'
   const propio = useMemo(
-    () => desglosePorMarca(enEtapa || [], refMap, 'ordenCorte'),
-    [enEtapa, refMap],
+    () => desglosePorMarca(enEtapa || [], refMap, baseEtapa),
+    [enEtapa, refMap, baseEtapa],
   )
   const pendiente = izquierda || propio
   const etiquetaIzq = (izquierda && izquierda.label) || medida.pendiente

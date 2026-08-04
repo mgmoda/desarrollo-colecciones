@@ -598,20 +598,6 @@ function cantEtapa(order, key) {
   return Number.isFinite(n) ? n : 0
 }
 
-// Lo que falta por hacer en un área: unidades y órdenes, con el desglose por
-// fase. Las unidades salen de la orden de corte, que es la cantidad del lote.
-export function pendienteDeArea(ordersDelArea) {
-  const porFase = {}
-  let unidades = 0
-  ordersDelArea.forEach((o) => {
-    const n = cantEtapa(o, 'ordenCorte')
-    unidades += n
-    const f = porFase[o.origen] || (porFase[o.origen] = { ordenes: 0, unidades: 0 })
-    f.ordenes += 1
-    f.unidades += n
-  })
-  return { unidades, ordenes: ordersDelArea.length, porFase }
-}
 
 // Lo que el área terminó cada día: se mide por la etapa que ella cumple
 // (Trazos cierra el trazo, Corte la entrega de corte, etc.). Una orden ya

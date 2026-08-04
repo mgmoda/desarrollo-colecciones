@@ -262,7 +262,7 @@ export default function App() {
   const faltantesPorRef = useMemo(() => {
     const m = new Map()
     faltantes.forEach((f) => {
-      if (f.estado === 'resuelto') return
+      if (f.estado === 'resuelto' || f.archivado) return
       const k = normRef(f.referencia)
       if (!k) return
       const l = m.get(k) || []
@@ -276,7 +276,7 @@ export default function App() {
   // tomado todavía. Apenas Ninfa lo pasa a En proceso deja de pesar en el aviso,
   // porque ya está andando.
   const faltantesActivos = useMemo(
-    () => faltantes.filter((f) => f.estado === 'pendiente').length,
+    () => faltantes.filter((f) => f.estado === 'pendiente' && !f.archivado).length,
     [faltantes],
   )
   const emailSesion = session && session.user ? session.user.email : ''

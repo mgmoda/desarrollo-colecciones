@@ -115,7 +115,7 @@ function edadColumna(f) {
   return dias(desdeCuando(f), f.estado === 'resuelto' ? f.resueltoAt : null)
 }
 
-function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, onDelete, onViewImage, onOpenRef }) {
+function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, onDelete, onArchivar, onViewImage, onOpenRef }) {
   const [nota, setNota] = useState('')
   const ficha = refMap.get(normRef(f.referencia))
   const dias = edad(f)
@@ -222,9 +222,16 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
               </select>
               <span className="select-caret" aria-hidden="true">▾</span>
             </div>
-            {resuelto && puedeResolver && (
-              <button className="btn" onClick={() => {
-                if (confirm('¿Eliminar este faltante definitivamente?')) onDelete(f)
+            {f.archivado ? (
+              <button className="btn" onClick={() => onArchivar(f, false)}
+                title="Vuelve al tablero, a la columna donde estaba">Devolver al tablero</button>
+            ) : (
+              <button className="btn" onClick={() => onArchivar(f, true)}
+                title="Sale del tablero pero queda guardado en Archivados">Archivar</button>
+            )}
+            {puedeResolver && (
+              <button className="btn fal-btn-borrar" onClick={() => {
+                if (confirm('Eliminar este faltante definitivamente. No se puede deshacer.')) onDelete(f)
               }}>Eliminar</button>
             )}
           </div>
@@ -241,6 +248,7 @@ export default function FaltantesView({
   const [abierto, setAbierto] = useState(null) // id del faltante abierto en el modal
   const [arrastrando, setArrastrando] = useState(null) // id de la tarjeta que se arrastra
   const [colSobre, setColSobre] = useState(null)       // columna bajo el cursor
+  const [verArchivados, setVerArchivados] = useState(false)
   const [q, setQ] = useState('')
   const [creando, setCreando] = useState(false)
   const [sel, setSel] = useState(null)        // orden elegida para el reporte
@@ -283,12 +291,12 @@ export default function FaltantesView({
 
   const conteos = useMemo(() => {
     const c = { pendiente: 0, proceso: 0, gestion: 0, resuelto: 0 }
-    faltantes.forEach((f) => { if (c[f.estado] != null) c[f.estado] += 1 })
+    faltantes.forEach((f) => { if (!f.archivado && c[f.estado] != null) c[f.estado] += 1 })
     return c
   }, [faltantes])
 
   const masViejo = useMemo(() => {
-    const activos = faltantes.filter((f) => f.estado !== 'resuelto')
+    const activos = faltantes.filter((f) => !f.archivado && f.estado !== 'resuelto')
     return activos.reduce((m, f) => Math.max(m, edad(f) || 0), 0)
   }, [faltantes])
 
@@ -297,10 +305,11 @@ export default function FaltantesView({
   // interesa lo último que se cerró.
   const columnas = useMemo(() => {
     const term = q.trim().toLowerCase()
+    const vivos = faltantes.filter((f) => !f.archivado)
     const filtrados = term
-      ? faltantes.filter((f) => [f.referencia, f.orden, f.descripcion, f.creadoPor]
+      ? vivos.filter((f) => [f.referencia, f.orden, f.descripcion, f.creadoPor]
         .some((v) => String(v || '').toLowerCase().includes(term)))
-      : faltantes
+      : vivos
     const out = {}
     COLUMNAS.forEach((k) => { out[k] = [] })
     filtrados.forEach((f) => { if (out[f.estado]) out[f.estado].push(f) })
@@ -317,6 +326,28 @@ export default function FaltantesView({
     () => faltantes.find((f) => f.id === abierto) || null,
     [faltantes, abierto],
   )
+
+  const archivados = useMemo(() => {
+    const term = q.trim().toLowerCase()
+    const l = faltantes.filter((f) => f.archivado)
+    const fil = term
+      ? l.filter((f) => [f.referencia, f.orden, f.descripcion, f.creadoPor]
+        .some((v) => String(v || '').toLowerCase().includes(term)))
+      : l
+    return [...fil].sort((a, b) => (b.archivadoAt || 0) - (a.archivadoAt || 0))
+  }, [faltantes, q])
+
+  // Archivar saca la tarjeta del tablero sin borrar nada: el faltante queda con
+  // su recorrido completo, por si hay que mirar atrás.
+  function archivar(f, valor) {
+    const next = valor
+      ? { ...f, archivado: true, archivadoPor: usuario, archivadoAt: Date.now(), updatedAt: Date.now() }
+      : (() => {
+        const { archivado: _a, archivadoPor: _p, archivadoAt: _t, ...resto } = f
+        return { ...resto, updatedAt: Date.now() }
+      })()
+    onSave(next, valor ? 'archivar' : 'desarchivar', {})
+  }
 
   // Soltar una tarjeta en otra columna. El arrastre y el desplegable hacen lo
   // mismo: uno es cómodo con mouse, el otro en el celular.
@@ -364,11 +395,49 @@ export default function FaltantesView({
         </div>
         <div className="view-actions">
           <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia, texto…" />
+          <button type="button" className={'opt-btn' + (verArchivados ? ' on' : '')}
+            onClick={() => setVerArchivados(!verArchivados)}
+            title="Los que se sacaron del tablero, con su recorrido completo">
+            Archivados {faltantes.filter((f) => f.archivado).length}
+          </button>
           <button className="btn btn-primary" onClick={abrirReporte}>+ Reportar faltante</button>
         </div>
       </div>
 
-      {faltantes.length === 0 ? (
+      {verArchivados ? (
+        archivados.length === 0 ? (
+          <div className="empty-state">
+            <p>No hay faltantes archivados.</p>
+            <p className="muted">Al archivar uno sale del tablero pero queda aquí, con su recorrido.</p>
+          </div>
+        ) : (
+          <div className="fal-archivo">
+            {archivados.map((f) => {
+              const ficha = refMap.get(normRef(f.referencia))
+              return (
+                <button key={f.id} type="button" className="fal-arch-item"
+                  onClick={() => setAbierto(f.id)} title="Abrir para devolverlo al tablero o eliminarlo">
+                  {ficha && ficha.image ? (
+                    <img className="fal-t-foto" src={ficha.image} alt={f.referencia} />
+                  ) : (
+                    <span className="fal-t-foto fal-foto-vacia">＋</span>
+                  )}
+                  <span className="fal-arch-info">
+                    <span className="fal-t-ref">{f.referencia}</span>
+                    <span className="fal-t-texto">{f.descripcion}</span>
+                  </span>
+                  <span className="fal-arch-meta">
+                    <span className={'fal-chip fal-' + f.estado}>{ESTADOS[f.estado]}</span>
+                    <span className="fal-arch-quien">
+                      archivó {nombreCorto(f.archivadoPor)} · {cuando(f.archivadoAt)}
+                    </span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        )
+      ) : faltantes.filter((f) => !f.archivado).length === 0 ? (
         <div className="empty-state">
           <p>No hay faltantes reportados.</p>
           <p className="muted">Cuando en corte falte una pieza, repórtala aquí con “+ Reportar faltante”.</p>
@@ -457,6 +526,7 @@ export default function FaltantesView({
                   etapaViva={area ? AREAS[area].label : null}
                   usuario={usuario} puedeResolver={puedeResolver}
                   onSave={onSave} onDelete={(x) => { onDelete(x); setAbierto(null) }}
+                  onArchivar={(x, v) => { archivar(x, v); setAbierto(null) }}
                   onViewImage={onViewImage} onOpenRef={onOpenRef} />
               )
             })()}

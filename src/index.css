@@ -5887,6 +5887,31 @@ select.filtro-taller { flex: none; width: 215px; }
   vertical-align: 1px;
 }
 .fal-filtros { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+/* Archivados: lista simple, sin columnas. No es trabajo pendiente, es memoria. */
+.fal-archivo { display: flex; flex-direction: column; gap: 8px; }
+.fal-arch-item {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  opacity: .8;
+}
+.fal-arch-item:hover { opacity: 1; border-color: var(--hairline-strong); }
+.fal-arch-item .fal-t-foto { width: 40px; height: 50px; }
+.fal-arch-info { min-width: 0; }
+.fal-arch-info .fal-t-texto { -webkit-line-clamp: 1; }
+.fal-arch-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.fal-arch-meta .fal-chip { margin-left: 0; }
+.fal-arch-quien { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.fal-btn-borrar { color: var(--danger); }
+
 /* Tablero de faltantes: una columna por paso, de reportado a completo. Se
    avanza abriendo la tarjeta, no arrastrando: en el celular arrastrar es
    incómodo y un botón no se equivoca de columna. */

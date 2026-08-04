@@ -16,18 +16,22 @@ import { newId } from '../lib/storage.js'
 // Un faltante pasa por dos manos, y el estado dice de quién es la pelota:
 // Corte lo reporta → Ninfa consigue lo que falta → cuando llega, Corte lo corta
 // y lo entrega. Sin eso, "en gestión" no decía quién tenía que mover.
+// Las cuatro columnas del tablero, en el orden en que avanza un faltante.
 const ESTADOS = {
-  pendiente: 'Sin empezar',
+  pendiente: 'Faltante',
   proceso: 'En proceso',
-  gestion: 'Llegó · falta cortar',
-  resuelto: 'Entregado',
+  gestion: 'Entregado',
+  resuelto: 'Completo',
 }
 const QUIEN = {
-  pendiente: 'Ninfa todavía no lo ha tomado',
-  proceso: 'Ninfa ya lo está gestionando — pedir tela, mandar a estampar…',
-  gestion: 'Corte tiene que cortarlo y entregarlo',
-  resuelto: '',
+  pendiente: 'Corte lo reportó — Ninfa todavía no lo ha tomado',
+  proceso: 'Ninfa lo está gestionando — pedir tela, mandar a estampar…',
+  gestion: 'Ninfa ya lo entregó — falta que Corte lo corte',
+  resuelto: 'Cortado y entregado, sin pendientes',
 }
+const COLUMNAS = ['pendiente', 'proceso', 'gestion', 'resuelto']
+// La columna de completos crecería sin fin; se muestran los últimos.
+const TOPE_COMPLETOS = 12
 // Mismo criterio que las tablas de área: pasados 3 días la cifra sale en rojo.
 const LIMITE_DIAS = 3
 
@@ -143,17 +147,17 @@ function FaltanteCard({ f, refMap, etapaViva, usuario, puedeResolver, onSave, on
               <button className="btn" onClick={agregarNota} disabled={!nota.trim()}>Anotar</button>
               {f.estado === 'pendiente' && puedeResolver && (
                 <button className="btn" onClick={marcarProceso}
-                  title="Ninfa ya lo está gestionando">▸ En proceso</button>
+                  title="Ninfa ya lo está gestionando">▸ Ponerlo en proceso</button>
               )}
               {f.estado === 'proceso' && puedeResolver && (
                 <button className="btn fal-btn-ok" onClick={marcarLlego}
-                  title="El material ya llegó a la empresa — pasa a Corte">✓ Ya llegó</button>
+                  title="Ninfa ya entregó lo que faltaba — pasa a Corte">✓ Entregado</button>
               )}
               {/* El último paso lo reporta Corte, así que no va detrás del permiso
                   de Ninfa: es quien corta el que sabe que ya entregó. */}
               {f.estado === 'gestion' && (
                 <button className="btn fal-btn-ok" onClick={resolver}
-                  title="Corte ya lo cortó y lo entregó completo">✓ Cortado y entregado</button>
+                  title="Corte ya lo cortó — no queda nada pendiente">✓ Completo</button>
               )}
             </div>
           )}
@@ -175,7 +179,7 @@ export default function FaltantesView({
   faltantes, orders, refMap, fasesOcultas, usuario, puedeResolver,
   onSave, onDelete, onViewImage, onOpenRef,
 }) {
-  const [filtro, setFiltro] = useState('activos')
+  const [abierto, setAbierto] = useState(null) // id del faltante abierto en el modal
   const [q, setQ] = useState('')
   const [creando, setCreando] = useState(false)
   const [sel, setSel] = useState(null)        // orden elegida para el reporte
@@ -227,24 +231,31 @@ export default function FaltantesView({
     return activos.reduce((m, f) => Math.max(m, edad(f) || 0), 0)
   }, [faltantes])
 
-  const lista = useMemo(() => {
-    let l = faltantes
-    if (filtro === 'activos') l = l.filter((f) => f.estado !== 'resuelto')
-    else if (filtro !== 'todos') l = l.filter((f) => f.estado === filtro)
+  // Reparto en columnas. Dentro de cada una, lo más viejo arriba: lo que lleva
+  // más días esperando es lo que hay que mover. Los completos al revés, que ahí
+  // interesa lo último que se cerró.
+  const columnas = useMemo(() => {
     const term = q.trim().toLowerCase()
-    if (term) {
-      l = l.filter((f) => [f.referencia, f.orden, f.descripcion, f.creadoPor]
+    const filtrados = term
+      ? faltantes.filter((f) => [f.referencia, f.orden, f.descripcion, f.creadoPor]
         .some((v) => String(v || '').toLowerCase().includes(term)))
-    }
-    // Los activos, del más viejo al más nuevo: lo urgente arriba, que no se
-    // hunda como en WhatsApp. Los resueltos, del más reciente hacia atrás.
-    return [...l].sort((a, b) => {
-      const ra = a.estado === 'resuelto' ? 1 : 0
-      const rb = b.estado === 'resuelto' ? 1 : 0
-      if (ra !== rb) return ra - rb
-      return ra ? (b.creadoAt - a.creadoAt) : (a.creadoAt - b.creadoAt)
+      : faltantes
+    const out = {}
+    COLUMNAS.forEach((k) => { out[k] = [] })
+    filtrados.forEach((f) => { if (out[f.estado]) out[f.estado].push(f) })
+    COLUMNAS.forEach((k) => {
+      out[k].sort((a, b) => (k === 'resuelto'
+        ? (b.resueltoAt || b.creadoAt) - (a.resueltoAt || a.creadoAt)
+        : a.creadoAt - b.creadoAt))
     })
-  }, [faltantes, filtro, q])
+    out.resuelto = out.resuelto.slice(0, TOPE_COMPLETOS)
+    return out
+  }, [faltantes, q])
+
+  const faltanteAbierto = useMemo(
+    () => faltantes.find((f) => f.id === abierto) || null,
+    [faltantes, abierto],
+  )
 
   function abrirReporte() {
     setSel(null); setQSel(''); setTodasEtapas(false); setNTexto('')
@@ -269,14 +280,6 @@ export default function FaltantesView({
     setCreando(false)
   }
 
-  const FILTROS = [
-    ['activos', `Activos ${conteos.pendiente + conteos.proceso + conteos.gestion}`],
-    ['pendiente', `Sin empezar ${conteos.pendiente}`],
-    ['proceso', `En proceso ${conteos.proceso}`],
-    ['gestion', `Por cortar ${conteos.gestion}`],
-    ['resuelto', `Entregados ${conteos.resuelto}`],
-  ]
-
   return (
     <div className="view">
       <div className="view-head">
@@ -293,32 +296,78 @@ export default function FaltantesView({
         </div>
       </div>
 
-      <div className="fal-filtros">
-        {FILTROS.map(([k, label]) => (
-          <button key={k} type="button" className={'opt-btn' + (filtro === k ? ' on' : '')}
-            onClick={() => setFiltro(k)}>{label}</button>
-        ))}
-      </div>
-
-      {lista.length === 0 ? (
+      {faltantes.length === 0 ? (
         <div className="empty-state">
-          <p>{faltantes.length === 0 ? 'No hay faltantes reportados.' : 'Nada en este filtro.'}</p>
-          {faltantes.length === 0 && <p className="muted">Cuando en corte falte una pieza, repórtala aquí con “+ Reportar faltante”.</p>}
+          <p>No hay faltantes reportados.</p>
+          <p className="muted">Cuando en corte falte una pieza, repórtala aquí con “+ Reportar faltante”.</p>
         </div>
       ) : (
-        <div className="fal-lista">
-          {lista.map((f) => {
-            const ov = f.orden ? porOrden.get(String(f.orden)) : null
-            const area = ov ? orderArea(ov) : null
-            return (
-              <FaltanteCard key={f.id} f={f} refMap={refMap}
-                etapaViva={area ? AREAS[area].label : null}
-                usuario={usuario} puedeResolver={puedeResolver}
-                onSave={onSave} onDelete={onDelete}
-                onViewImage={onViewImage} onOpenRef={onOpenRef} />
-            )
-          })}
+        <div className="fal-tablero-wrap">
+          <div className="fal-tablero">
+            {COLUMNAS.map((k) => (
+              <section key={k} className={'fal-col fal-col-' + k}>
+                <p className="fal-col-head" title={QUIEN[k]}>
+                  <span>{ESTADOS[k]}</span>
+                  <b>{k === 'resuelto' ? conteos.resuelto : columnas[k].length}</b>
+                </p>
+                {columnas[k].length === 0 ? (
+                  <p className="fal-col-vacia">—</p>
+                ) : columnas[k].map((f) => {
+                  const ficha = refMap.get(normRef(f.referencia))
+                  const dias = edad(f)
+                  const alto = k !== 'resuelto' && dias != null && dias > LIMITE_DIAS
+                  return (
+                    <button key={f.id} type="button" className="fal-t-card"
+                      onClick={() => setAbierto(f.id)}
+                      title="Abrir para mover o anotar">
+                      {ficha && ficha.image ? (
+                        <img className="fal-t-foto" src={ficha.image} alt={f.referencia} />
+                      ) : (
+                        <span className="fal-t-foto fal-foto-vacia">＋</span>
+                      )}
+                      <span className="fal-t-info">
+                        <span className="fal-t-ref">{f.referencia}</span>
+                        <span className="fal-t-texto">{f.descripcion}</span>
+                      </span>
+                      <span className={'fal-t-dias' + (alto ? ' fal-dias-alto' : '')}>{dias}<i>d</i></span>
+                    </button>
+                  )
+                })}
+                {k === 'resuelto' && conteos.resuelto > columnas.resuelto.length && (
+                  <p className="fal-col-mas">y {conteos.resuelto - columnas.resuelto.length} más</p>
+                )}
+              </section>
+            ))}
+          </div>
         </div>
+      )}
+
+      {faltanteAbierto && (
+        <Modal open onClose={() => setAbierto(null)} size="lg">
+          <div className="modal-head">
+            <div>
+              <h2>{faltanteAbierto.referencia}</h2>
+              <p className="modal-sub">{ESTADOS[faltanteAbierto.estado]} · {QUIEN[faltanteAbierto.estado]}</p>
+            </div>
+            <button className="icon-btn" onClick={() => setAbierto(null)} title="Cerrar">✕</button>
+          </div>
+          <div className="modal-body">
+            {(() => {
+              const ov = faltanteAbierto.orden ? porOrden.get(String(faltanteAbierto.orden)) : null
+              const area = ov ? orderArea(ov) : null
+              return (
+                <FaltanteCard f={faltanteAbierto} refMap={refMap}
+                  etapaViva={area ? AREAS[area].label : null}
+                  usuario={usuario} puedeResolver={puedeResolver}
+                  onSave={onSave} onDelete={(x) => { onDelete(x); setAbierto(null) }}
+                  onViewImage={onViewImage} onOpenRef={onOpenRef} />
+              )
+            })()}
+          </div>
+          <div className="modal-foot">
+            <button className="btn btn-primary" onClick={() => setAbierto(null)}>Cerrar</button>
+          </div>
+        </Modal>
       )}
 
       {creando && (

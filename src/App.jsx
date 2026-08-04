@@ -53,6 +53,11 @@ const TABS = [
   { key: 'geodesica', label: 'Geodésica' },
 ]
 const AREA_KEYS = ['trazos', 'corte', 'enviar', 'alistamiento', 'talleres', 'entrega']
+// Lo que ve quien no es admin: el recorrido de producción y los faltantes.
+const TABS_OPERACION = [
+  'ordencorte', 'trazos', 'corte', 'faltantes',
+  'enviar', 'alistamiento', 'talleres', 'entrega',
+]
 const TAB_KEY = 'desarrollo-colecciones:tab'
 
 export default function App() {
@@ -245,6 +250,7 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem(TAB_KEY, tab) }, [tab])
 
+
   // Índice unificado de referencias (resumen + costos + foto).
   const refIndex = useMemo(() => buildRefIndex(orders, refs), [orders, refs])
 
@@ -271,7 +277,21 @@ export default function App() {
     [faltantes],
   )
   const emailSesion = session && session.user ? session.user.email : ''
-  const puedeResolverFaltantes = ['ninfa@mgmoda.local', 'diego_monsalve87@hotmail.com'].includes(emailSesion)
+  // Diego ve y edita todo. Los demás solo trabajan las etapas de producción y
+  // los faltantes: ven sus tablas, pero no editan fichas ni importan.
+  const ADMINS = ['diego_monsalve87@hotmail.com']
+  const esAdmin = ADMINS.includes(emailSesion)
+  const puedeResolverFaltantes = ['ninfa@mgmoda.local', ...ADMINS].includes(emailSesion)
+  const tabsVisibles = useMemo(
+    () => (esAdmin ? TABS : TABS.filter((t) => TABS_OPERACION.includes(t.key))),
+    [esAdmin],
+  )
+
+  // Si quedó guardada una pestaña que este usuario no puede ver, se lo lleva a
+  // la primera que sí. Pasa al cambiar de sesión en el mismo computador.
+  useEffect(() => {
+    if (!tabsVisibles.some((t) => t.key === tab)) setTab(tabsVisibles[0].key)
+  }, [tabsVisibles, tab])
   // Se puede buscar por cualquiera de sus códigos: el interno o el final.
   const refMap = useMemo(() => {
     const m = new Map()
@@ -393,6 +413,8 @@ export default function App() {
   }
 
   function openEdit(ref) {
+    // Quien no es admin no edita fichas: se le abre la vista de solo lectura.
+    if (!esAdmin) { setDetailRefId(ref.id); return }
     setEditing(ref && !ref._stub ? ref : { ...emptyRef(ref.id), referencia: ref.referencia, _stub: true })
     setFormOpen(true)
   }
@@ -737,7 +759,9 @@ export default function App() {
         <div className="topbar-right">
           <RefSearch refIds={refIndex.map((r) => r.id)} onSelect={openDetail} />
           <SyncIndicator lastSync={lastSync} syncing={syncing} paused={formOpen || importOpen} onRefresh={syncFromServer} />
-          <button className="btn btn-ghost" onClick={() => setImportOpen(true)}>Importar</button>
+          {esAdmin && (
+            <button className="btn btn-ghost" onClick={() => setImportOpen(true)}>Importar</button>
+          )}
           <button className="btn btn-ghost" onClick={() => setActividadOpen(true)}
             title="Quién cambió qué y cuándo">Actividad</button>
           <span className="sesion-usuario" title={session.user.email}>
@@ -746,7 +770,7 @@ export default function App() {
           <button className="logout-btn" onClick={() => supabase.auth.signOut()} title="Cerrar sesión">Salir</button>
         </div>
         <nav className="tabs">
-          {TABS.map((t) => (
+          {tabsVisibles.map((t) => (
             <button key={t.key}
               className={'tab' + (tab === t.key ? ' active' : '')}
               onClick={() => setTab(t.key)}>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import DiaProduccionModal from './DiaProduccionModal.jsx'
 import TablaSemanas from './TablaSemanas.jsx'
 import {
@@ -35,8 +35,9 @@ const ACUMULADO = {
   ordencorte: 'Programado en total',
 }
 
-// Tarjeta de cifra. La grande es MG, que es lo propio; debajo, Geodésica y el
-// total en tamaño normal. Al tocar la cifra se abre el reparto de MG entre
+// Tarjeta de cifra. La grande es todo lo que hay en la etapa —MG, Geodésica y
+// tops— para que cuadre a simple vista con las filas de la tabla de abajo;
+// debajo va el reparto. Al tocar la cifra se abre el detalle de MG entre
 // Casania y Mariset.
 function TarjetaCifra({ label, datos }) {
   const [abierto, setAbierto] = useState(false)
@@ -49,50 +50,54 @@ function TarjetaCifra({ label, datos }) {
   const subs = SUBMARCAS_KPI.map((k) => [k, m[k] || cero]).filter(([, d]) => d.unidades > 0)
   const puedeAbrir = subs.length > 1
 
+  // `datos.unidades` no trae los tops: son prenda aparte y así se cuentan en la
+  // tabla de semanas. Pero en la tarjeta sí van sumados, porque ocupan filas en
+  // la tabla y sin ellos la cifra nunca cuadraba con lo que se ve.
+  const unidades = datos.unidades + tops.unidades
+  const ordenes = datos.ordenes + tops.ordenes
+
+  // Cada renglón lleva su conteo de órdenes al lado, para poder cruzarlo con
+  // la tabla. Si solo hay uno sobra la lista: sería repetir la cifra grande.
+  const filas = [
+    ['MG', mg],
+    ['Geodésica', geo],
+    ['Tops', tops],
+  ].filter(([, d]) => d.unidades > 0)
+
   return (
     <div className="kpi-card">
       <p className="kpi-label">{label}</p>
       {puedeAbrir ? (
         <button type="button" className="kpi-cifra-btn" onClick={() => setAbierto(!abierto)}
           title={abierto ? 'Ocultar el reparto por marca' : 'Ver cuánto va de Casania y de Mariset'}>
-          <span className="kpi-cifra">{num(mg.unidades)}</span>
+          <span className="kpi-cifra">{num(unidades)}</span>
           <span className="kpi-caret" aria-hidden="true">{abierto ? '▴' : '▾'}</span>
         </button>
       ) : (
-        <p className="kpi-cifra">{num(mg.unidades)}</p>
+        <p className="kpi-cifra">{num(unidades)}</p>
       )}
-      <p className="kpi-unidad">unidades MG</p>
+      <p className="kpi-unidad">unidades</p>
       <p className="kpi-desglose">
-        {mg.ordenes} {mg.ordenes === 1 ? 'orden' : 'órdenes'} MG
+        {ordenes} {ordenes === 1 ? 'orden' : 'órdenes'}
       </p>
-      <ul className="kpi-marcas">
-        {/* El número de órdenes va junto a cada cifra: sin eso no se sabía a
-            cuáles filas de la tabla corresponde cada renglón. */}
-        {abierto && subs.map(([nombre, d]) => (
-          <li key={nombre} className="kpi-sub">
-            <span>{nombre} <i>{d.ordenes}</i></span>
-            <b>{num(d.unidades)}</b>
-          </li>
-        ))}
-        {geo.unidades > 0 && (
-          <>
-            <li>
-              <span>Geodésica <i>{geo.ordenes}</i></span>
-              <b>{num(geo.unidades)}</b>
-            </li>
-            <li className="kpi-suma">
-              <span>Total <i>{datos.ordenes}</i></span>
-              <b>{num(datos.unidades)}</b>
-            </li>
-          </>
-        )}
-        {tops.unidades > 0 && (
-          <li className="kpi-tops" title="Los tops se cuentan aparte, no entran en el total">
-            <span>Tops <i>{tops.ordenes}</i> <em>aparte</em></span>
-            <b>{num(tops.unidades)}</b>
-          </li>
-        )}
-      </ul>
+      {filas.length > 1 && (
+        <ul className="kpi-marcas">
+          {filas.map(([nombre, d]) => (
+            <Fragment key={nombre}>
+              <li>
+                <span>{nombre} <i>{d.ordenes}</i></span>
+                <b>{num(d.unidades)}</b>
+              </li>
+              {nombre === 'MG' && abierto && subs.map(([sub, ds]) => (
+                <li key={sub} className="kpi-sub">
+                  <span>{sub} <i>{ds.ordenes}</i></span>
+                  <b>{num(ds.unidades)}</b>
+                </li>
+              ))}
+            </Fragment>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

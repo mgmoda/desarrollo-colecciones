@@ -35,11 +35,16 @@ const ACUMULADO = {
   ordencorte: 'Programado en total',
 }
 
-// Tarjeta de cifra. La grande es todo lo que hay en la etapa —MG, Geodésica y
-// tops— para que cuadre a simple vista con las filas de la tabla de abajo;
-// debajo va el reparto. Al tocar la cifra se abre el detalle de MG entre
-// Casania y Mariset.
-function TarjetaCifra({ label, datos }) {
+// Tarjeta de cifra, con dos maneras de encabezar según lo que mida:
+//
+//   modo 'mg'  — para los acumulados. La cifra grande es MG, que es lo propio
+//                de la casa, y debajo va Geodésica, los tops y el total.
+//   por defecto — para los pendientes. La cifra grande es todo lo que hay en
+//                la etapa, tops incluidos, porque tiene que cuadrar de un
+//                vistazo con las filas de la tabla de abajo.
+//
+// Al tocar la cifra se abre el detalle de MG entre Casania y Mariset.
+function TarjetaCifra({ label, datos, modo }) {
   const [abierto, setAbierto] = useState(false)
   const m = datos.marcas || {}
   const cero = { unidades: 0, ordenes: 0 }
@@ -51,18 +56,29 @@ function TarjetaCifra({ label, datos }) {
   const puedeAbrir = subs.length > 1
 
   // `datos.unidades` no trae los tops: son prenda aparte y así se cuentan en la
-  // tabla de semanas. Pero en la tarjeta sí van sumados, porque ocupan filas en
-  // la tabla y sin ellos la cifra nunca cuadraba con lo que se ve.
-  const unidades = datos.unidades + tops.unidades
-  const ordenes = datos.ordenes + tops.ordenes
+  // tabla de semanas. En la tarjeta sí van sumados, porque ocupan filas en la
+  // tabla y sin ellos la cifra nunca cuadraba con lo que se ve.
+  const total = {
+    unidades: datos.unidades + tops.unidades,
+    ordenes: datos.ordenes + tops.ordenes,
+  }
+  const soloMG = modo === 'mg'
+  const cifra = soloMG ? mg : total
 
   // Cada renglón lleva su conteo de órdenes al lado, para poder cruzarlo con
-  // la tabla. Si solo hay uno sobra la lista: sería repetir la cifra grande.
-  const filas = [
-    ['MG', mg],
-    ['Geodésica', geo],
-    ['Tops', tops],
-  ].filter(([, d]) => d.unidades > 0)
+  // la tabla. Si queda uno solo sobra la lista: repetiría la cifra grande.
+  const filas = []
+  if (!soloMG && mg.unidades > 0) filas.push(['MG', mg, ''])
+  if (geo.unidades > 0) filas.push(['Geodésica', geo, ''])
+  if (tops.unidades > 0) filas.push(['Tops', tops, ''])
+  if (soloMG && filas.length) filas.push(['Total', total, 'kpi-suma'])
+
+  const renglonSub = ([sub, d]) => (
+    <li key={sub} className="kpi-sub">
+      <span>{sub} <i>{d.ordenes}</i></span>
+      <b>{num(d.unidades)}</b>
+    </li>
+  )
 
   return (
     <div className="kpi-card">
@@ -70,30 +86,26 @@ function TarjetaCifra({ label, datos }) {
       {puedeAbrir ? (
         <button type="button" className="kpi-cifra-btn" onClick={() => setAbierto(!abierto)}
           title={abierto ? 'Ocultar el reparto por marca' : 'Ver cuánto va de Casania y de Mariset'}>
-          <span className="kpi-cifra">{num(unidades)}</span>
+          <span className="kpi-cifra">{num(cifra.unidades)}</span>
           <span className="kpi-caret" aria-hidden="true">{abierto ? '▴' : '▾'}</span>
         </button>
       ) : (
-        <p className="kpi-cifra">{num(unidades)}</p>
+        <p className="kpi-cifra">{num(cifra.unidades)}</p>
       )}
-      <p className="kpi-unidad">unidades</p>
+      <p className="kpi-unidad">{soloMG ? 'unidades MG' : 'unidades'}</p>
       <p className="kpi-desglose">
-        {ordenes} {ordenes === 1 ? 'orden' : 'órdenes'}
+        {cifra.ordenes} {cifra.ordenes === 1 ? 'orden' : 'órdenes'}{soloMG ? ' MG' : ''}
       </p>
-      {filas.length > 1 && (
+      {filas.length > 0 && (
         <ul className="kpi-marcas">
-          {filas.map(([nombre, d]) => (
+          {soloMG && abierto && subs.map(renglonSub)}
+          {filas.map(([nombre, d, clase]) => (
             <Fragment key={nombre}>
-              <li>
+              <li className={clase}>
                 <span>{nombre} <i>{d.ordenes}</i></span>
                 <b>{num(d.unidades)}</b>
               </li>
-              {nombre === 'MG' && abierto && subs.map(([sub, ds]) => (
-                <li key={sub} className="kpi-sub">
-                  <span>{sub} <i>{ds.ordenes}</i></span>
-                  <b>{num(ds.unidades)}</b>
-                </li>
-              ))}
+              {!soloMG && nombre === 'MG' && abierto && subs.map(renglonSub)}
             </Fragment>
           ))}
         </ul>
@@ -149,9 +161,12 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
     <div className="kpi-wrap">
       <div className="kpi-grid">
         <div className="kpi-nums">
-        {!sinPendiente && <TarjetaCifra label={etiquetaIzq} datos={pendiente} />}
+        {!sinPendiente && (
+          <TarjetaCifra label={etiquetaIzq} datos={pendiente}
+            modo={(izquierda && izquierda.modo) || ''} />
+        )}
         {!sinAcumulado && (
-          <TarjetaCifra label={ACUMULADO[areaKey] || 'En total'} datos={acumulado} />
+          <TarjetaCifra label={ACUMULADO[areaKey] || 'En total'} datos={acumulado} modo="mg" />
         )}
         </div>
 

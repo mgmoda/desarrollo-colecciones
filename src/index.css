@@ -5536,6 +5536,13 @@ select.filtro-taller { flex: none; width: 215px; }
 }
 /* Casania y Mariset: detalle que se abre desde la cifra de MG. */
 .kpi-sub { padding-left: 10px !important; }
+/* El total de la etapa cierra la lista, separado por una línea: es la suma de
+   lo de arriba, no otra marca más. */
+.kpi-suma {
+  border-top: 1px solid var(--hairline);
+  margin-top: 3px;
+  padding-top: 6px !important;
+}
 .kpi-sub span::before {
   content: '';
   display: inline-block;

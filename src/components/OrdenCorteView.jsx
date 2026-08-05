@@ -107,7 +107,7 @@ export default function OrdenCorteView({
 
       <AreaKpis areaKey="ordencorte" orders={visibles} enEtapa={[]}
         refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef}
-        izquierda={{ ...enTotal, label: 'Programado en total' }} sinAcumulado />
+        izquierda={{ ...enTotal, label: 'Programado en total', modo: 'mg' }} sinAcumulado />
 
       <div className="oc-periodos">
         {PERIODOS.map((p) => (

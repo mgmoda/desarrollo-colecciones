@@ -63,31 +63,32 @@ function TarjetaCifra({ label, datos }) {
       )}
       <p className="kpi-unidad">unidades MG</p>
       <p className="kpi-desglose">
-        {mg.ordenes} {mg.ordenes === 1 ? 'orden' : 'órdenes'}
+        {mg.ordenes} {mg.ordenes === 1 ? 'orden' : 'órdenes'} MG
       </p>
       <ul className="kpi-marcas">
+        {/* El número de órdenes va junto a cada cifra: sin eso no se sabía a
+            cuáles filas de la tabla corresponde cada renglón. */}
         {abierto && subs.map(([nombre, d]) => (
-          <li key={nombre} className="kpi-sub" title={`${d.ordenes} órdenes`}>
-            <span>{nombre}</span>
+          <li key={nombre} className="kpi-sub">
+            <span>{nombre} <i>{d.ordenes}</i></span>
             <b>{num(d.unidades)}</b>
           </li>
         ))}
         {geo.unidades > 0 && (
           <>
-            <li title={`${geo.ordenes} órdenes`}>
-              <span>Geodésica</span>
+            <li>
+              <span>Geodésica <i>{geo.ordenes}</i></span>
               <b>{num(geo.unidades)}</b>
             </li>
-            <li className="kpi-suma" title={`${datos.ordenes} órdenes en total`}>
-              <span>Total</span>
+            <li className="kpi-suma">
+              <span>Total <i>{datos.ordenes}</i></span>
               <b>{num(datos.unidades)}</b>
             </li>
           </>
         )}
         {tops.unidades > 0 && (
-          <li className="kpi-tops"
-            title={`${tops.ordenes} ${tops.ordenes === 1 ? 'orden' : 'órdenes'} de top · no entran en el total`}>
-            <span>Tops <em>aparte</em></span>
+          <li className="kpi-tops" title="Los tops se cuentan aparte, no entran en el total">
+            <span>Tops <i>{tops.ordenes}</i> <em>aparte</em></span>
             <b>{num(tops.unidades)}</b>
           </li>
         )}

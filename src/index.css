@@ -5527,6 +5527,13 @@ select.filtro-taller { flex: none; width: 215px; }
   white-space: nowrap;
 }
 .kpi-marcas b { font-variant-numeric: tabular-nums; font-weight: 500; }
+/* Cuántas órdenes hay detrás de cada cifra, para poder cruzarlas con la tabla. */
+.kpi-marcas i {
+  font-style: normal;
+  font-size: 10.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
 /* Casania y Mariset: detalle que se abre desde la cifra de MG. */
 .kpi-sub { padding-left: 10px !important; }
 .kpi-sub span::before {

@@ -168,6 +168,7 @@ export default function ResumenView({ refs, marcas = [], procesosCatalogo = [], 
   const [soloCostosPorRevisar, setSoloCostosPorRevisar] = useState(false)
   const [soloCostosRevisados, setSoloCostosRevisados] = useState(false)
   const [selected, setSelected] = useState(() => new Set())
+  const [tituloPdf, setTituloPdf] = useState('')
   const { sortKey, sortDir, toggle } = useSort('referencia', 'asc')
 
   function toggleSel(id) {
@@ -279,7 +280,7 @@ export default function ResumenView({ refs, marcas = [], procesosCatalogo = [], 
       comentario: r.comentario,
       image: r.image || null,
     }))
-    generateResumenPDF(items, 'Referencias seleccionadas')
+    generateResumenPDF(items, tituloPdf.trim() || 'Referencias seleccionadas')
   }
 
   return (
@@ -372,8 +373,17 @@ export default function ResumenView({ refs, marcas = [], procesosCatalogo = [], 
                 if (e.target.checked) setSoloCostosPorRevisar(false)
               }} /> Costos revisados ({costosRevisadosCount})
           </label>
+          {/* El título va escrito a mano porque estas listas son de una sola
+              vez —"Cantidades iguales", "Pendientes de tela"— y no vale la pena
+              guardarlas como un dato más de la referencia. */}
           {selected.size > 0 && (
-            <button className="btn btn-primary" onClick={generatePdf}>Generar PDF ({selected.size})</button>
+            <div className="resumen-pdf">
+              <input className="input" value={tituloPdf} onChange={(e) => setTituloPdf(e.target.value)}
+                placeholder="Título del PDF" title="Cómo se titula la lista en el PDF" />
+              <button className="btn btn-primary" onClick={generatePdf}>
+                Generar PDF ({selected.size})
+              </button>
+            </div>
           )}
           <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia, tela…" />
           <button className="btn btn-primary" onClick={onNew}>+ Referencia</button>

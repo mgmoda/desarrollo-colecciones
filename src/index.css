@@ -4201,6 +4201,10 @@ img.ship-ref-photo {
 
 .check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
 
+/* Título del PDF, pegado al botón: se escribe justo antes de generarlo. */
+.resumen-pdf { display: inline-flex; align-items: center; gap: 8px; }
+.resumen-pdf .input { width: 190px; }
+
 .photo-import-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .photo-import-actions .import-drop { flex: 1; min-width: 140px; }
 .photo-import-result { margin-top: 8px; }

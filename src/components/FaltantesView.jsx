@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import Modal from './Modal.jsx'
 import SearchInput from './SearchInput.jsx'
 import { AREAS, ORIGEN_ABBR, normRef } from '../lib/constants.js'
+import { diasEntre } from '../lib/dates.js'
 import { orderArea, areaIndex } from '../lib/domain.js'
 import { newId } from '../lib/storage.js'
 
@@ -95,10 +96,14 @@ function cuando(ts) {
     + ' ' + d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
 }
 
-// Días completos entre dos instantes, con piso: lo de hoy dice 0, no 1.
+// Días entre dos instantes, contados por calendario igual que en el resto del
+// sistema: lo de hoy dice 0 y lo de ayer 1, sin importar la hora. Antes se
+// contaban bloques de 24 horas, así que un faltante reportado ayer a las cinco
+// seguía diciendo 0 hasta las cinco de hoy.
 function dias(desde, hasta) {
   if (!desde) return null
-  return Math.max(0, Math.floor(((hasta || Date.now()) - desde) / 86400000))
+  const n = diasEntre(desde, hasta || Date.now())
+  return n == null ? null : Math.max(0, n)
 }
 
 // Total desde que se reportó (o cuánto tardó en cerrarse).

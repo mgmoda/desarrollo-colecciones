@@ -51,7 +51,7 @@ export default function AutorizacionesView({ refs, tracksByRef, marcas, onOpenRe
       if (r.produccionExtra && eP !== 'programada') {
         const ts = Number(r.produccionExtraFecha) || 0
         const fecha = ts ? new Date(ts).toISOString().slice(0, 10) : ''
-        const dias = ts ? Math.floor((Date.now() - ts) / 86400000) : null
+        const dias = ts ? diasDesde(ts) : null
         extras.push({ ref: r, tracks, fecha, dias })
       }
     })

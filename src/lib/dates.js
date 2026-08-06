@@ -3,6 +3,8 @@
 export function parseDateLoose(v) {
   if (!v) return null
   if (v instanceof Date) return isNaN(v) ? null : v
+  // Marca de tiempo (los faltantes y las autorizaciones guardan el instante).
+  if (typeof v === 'number') { const d = new Date(v); return isNaN(d) ? null : d }
   const s = String(v).trim()
   let m = s.match(/^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})$/) // ISO yyyy-mm-dd
   if (m) { const d = new Date(+m[1], +m[2] - 1, +m[3]); return isNaN(d) ? null : d }
@@ -12,17 +14,29 @@ export function parseDateLoose(v) {
   return isNaN(d) ? null : d
 }
 
-// Días transcurridos desde una fecha hasta hoy (null si no hay fecha válida).
-export function diasDesde(fecha) {
-  const d = parseDateLoose(fecha)
+// Los días se cuentan por calendario, no por horas transcurridas: lo de hoy es
+// 0 así sean las once de la noche, y lo de ayer es 1 así hayan pasado dos
+// horas. Contar horas hacía que una orden de corte de hoy pasara de 0 a 1 al
+// mediodía, y que la de ayer se fuera a 2. Para eso hay que arrancar las dos
+// fechas en la medianoche de su día.
+function aMedianoche(v) {
+  const d = parseDateLoose(v)
   if (!d) return null
-  return Math.round((Date.now() - d.getTime()) / 86400000)
+  const m = new Date(d.getTime())
+  m.setHours(0, 0, 0, 0)
+  return m
 }
 
-// Días entre dos fechas (null si alguna no es válida).
+// Días transcurridos desde una fecha hasta hoy (null si no hay fecha válida).
+export function diasDesde(fecha) {
+  return diasEntre(fecha, new Date())
+}
+
+// Días entre dos fechas (null si alguna no es válida). El Math.round cubre los
+// cambios de horario, en que un día dura 23 o 25 horas.
 export function diasEntre(desde, hasta) {
-  const a = parseDateLoose(desde)
-  const b = parseDateLoose(hasta)
+  const a = aMedianoche(desde)
+  const b = aMedianoche(hasta)
   if (!a || !b) return null
   return Math.round((b.getTime() - a.getTime()) / 86400000)
 }

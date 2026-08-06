@@ -5,6 +5,7 @@ import { useSort, sortRows } from '../lib/sort.js'
 import { RESUMEN_FLAGS, ORIGEN_ABBR, AREAS, TOP_LABEL, formatPrice, procesoColor } from '../lib/constants.js'
 import { areaIndex, medicionInfo, MEDICION_RANK, refTelas, telaDisponible, refProcesos } from '../lib/domain.js'
 import { generateResumenPDF } from '../lib/resumenPdf.js'
+import { diasDesde } from '../lib/dates.js'
 
 function telasTexto(r) {
   return refTelas(r).map((t) => t.nombre).filter(Boolean).join(' / ')
@@ -53,7 +54,7 @@ const UMBRAL_EXTRA_ROJO = 7
 function ProduccionCell({ item, state, onToggleExtra }) {
   const isExtra = !!item.produccionExtra
   const dias = isExtra && item.produccionExtraFecha
-    ? Math.floor((Date.now() - Number(item.produccionExtraFecha)) / 86400000)
+    ? diasDesde(Number(item.produccionExtraFecha))
     : null
 
   function toggle(e) { e.stopPropagation(); onToggleExtra && onToggleExtra(item) }

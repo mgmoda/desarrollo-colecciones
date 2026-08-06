@@ -9,21 +9,14 @@ import { generateGeodesicaPDF } from '../lib/geodesicaPdf.js'
 import { generateListaFotosPDF } from '../lib/listaFotosPdf.js'
 import DisenosView from './DisenosView.jsx'
 import { dbLoadDisenos } from '../lib/db.js'
+import { diasEntre } from '../lib/dates.js'
 
 const AREA_LABEL = { trazos: 'Trazos', corte: 'Corte', enviar: 'Por enviar', talleres: 'En talleres', entrega: 'Entrega ensamble' }
 
 // Días desde hoy hasta la fecha dada (positivo = futuro, negativo = pasado).
 // Devuelve null si la fecha no es parseable.
 function diasHasta(fechaStr) {
-  if (!fechaStr) return null
-  const parts = String(fechaStr).split('-')
-  if (parts.length !== 3) return null
-  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
-  if (isNaN(d.getTime())) return null
-  const hoy = new Date()
-  hoy.setHours(0, 0, 0, 0)
-  d.setHours(0, 0, 0, 0)
-  return Math.round((d.getTime() - hoy.getTime()) / 86400000)
+  return diasEntre(new Date(), fechaStr)
 }
 
 // Vista dedicada a Geodésica: agrupa las órdenes por referencia, muestra

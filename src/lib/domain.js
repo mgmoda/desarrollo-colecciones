@@ -1,5 +1,5 @@
 import { normRef } from './constants.js'
-import { parseDateLoose, diasDesde, diasEntre } from './dates.js'
+import { diasDesde, diasEntre } from './dates.js'
 
 export function stageDone(order, key) {
   const s = order.stages && order.stages[key]
@@ -250,12 +250,7 @@ export function medicionInfo(ref) {
   const terminal = estado === 'aprobada' || estado === 'descartada'
   const primera = rounds[0].fecha || ''
   const aprobacion = estado === 'aprobada' ? (last.fecha || '') : ''
-  const d0 = parseDateLoose(primera)
-  let dias = null
-  if (d0) {
-    const end = terminal ? parseDateLoose(last.fecha) : new Date()
-    if (end) dias = Math.round((end.getTime() - d0.getTime()) / 86400000)
-  }
+  const dias = diasEntre(primera, terminal ? last.fecha : new Date())
   // Días que lleva en la repetición ACTUAL (desde la fecha de la última
   // repetición hasta hoy). Solo aplica mientras siga en repetición.
   const diasRepeticion = estado === 'repeticion' ? diasDesde(last.fecha) : null

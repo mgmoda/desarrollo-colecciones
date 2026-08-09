@@ -2,12 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import Modal from './Modal.jsx'
 import { formatDate } from '../lib/constants.js'
 
-// Formato del strike off para enviarle a la diseñadora gráfica: se dibuja en
-// un canvas, así lo que se ve en pantalla ES la imagen que se descarga o de la
-// que se toma la captura para WhatsApp.
+// La hoja que se le manda a la diseñadora gráfica. Se dibuja en un canvas, así
+// lo que se ve en pantalla ES la imagen que se descarga o se pega en WhatsApp.
+//
+// Hay dos: la del strike off, vertical, con la tela y los metros; y la de la
+// corrección, horizontal —foto a la izquierda, observaciones a la derecha—,
+// que es como se venían mandando a mano: el cliente marca sobre la tela el
+// tono o el tamaño que quiere y al lado va escrito qué hay que cambiar.
 
 const W = 900
 const H = 1260
+const WC = 1500
+const HC = 760
 const CREMA = '#faf6ee'
 const CAFE = '#4a3b2a'
 const TENUE = '#a1907a'
@@ -23,7 +29,97 @@ function cargarImagen(src) {
   })
 }
 
-export default function StrikeOffFormato({ diseno, evento, imagen, onClose }) {
+// Texto centrado dentro de un ancho, devolviendo el alto que ocupó.
+function parrafo(g, texto, x, y, ancho, alto) {
+  const lineas = []
+  let linea = ''
+  texto.split(/\s+/).forEach((palabra) => {
+    const prueba = linea ? `${linea} ${palabra}` : palabra
+    if (g.measureText(prueba).width > ancho && linea) { lineas.push(linea); linea = palabra }
+    else linea = prueba
+  })
+  if (linea) lineas.push(linea)
+  lineas.forEach((l, i) => g.fillText(l, x, y + i * alto))
+  return lineas.length * alto
+}
+
+// Hoja de corrección: la foto manda, porque es donde el cliente marcó lo que
+// quiere cambiar, y al lado va escrito qué es.
+function dibujarCorreccion(g, diseno, evento, foto) {
+  g.fillStyle = CREMA
+  g.fillRect(0, 0, WC, HC)
+  g.strokeStyle = '#d9c3a1'
+  g.lineWidth = 3
+  g.strokeRect(22, 22, WC - 44, HC - 44)
+
+  const M = 46
+  const cajaW = Math.round((WC - M * 3) * 0.56)
+  const cajaX = M
+  const cajaY = M + 18
+  const cajaH = HC - cajaY - M
+
+  g.fillStyle = '#ffffff'
+  g.fillRect(cajaX, cajaY, cajaW, cajaH)
+  g.strokeStyle = LINEA
+  g.lineWidth = 1.5
+  g.strokeRect(cajaX, cajaY, cajaW, cajaH)
+  if (foto) {
+    const escala = Math.min(cajaW / foto.width, cajaH / foto.height)
+    const fw = foto.width * escala
+    const fh = foto.height * escala
+    g.drawImage(foto, cajaX + (cajaW - fw) / 2, cajaY + (cajaH - fh) / 2, fw, fh)
+  } else {
+    g.fillStyle = TENUE
+    g.textAlign = 'center'
+    g.font = '20px Georgia, serif'
+    g.fillText('Sin foto', cajaX + cajaW / 2, cajaY + cajaH / 2)
+  }
+
+  // Columna derecha: de quién es el diseño y qué hay que corregir.
+  const colX = cajaX + cajaW + M
+  const colW = WC - colX - M
+  const centro = colX + colW / 2
+  g.textAlign = 'center'
+
+  g.fillStyle = TENUE
+  g.font = '600 15px Georgia, serif'
+  g.fillText('CORRECCIÓN GRÁFICA', centro, cajaY + 44)
+  g.fillStyle = CAFE
+  g.font = 'bold 42px Georgia, serif'
+  g.fillText(diseno.codigo || '', centro, cajaY + 96)
+  if (diseno.codigoCliente) {
+    g.fillStyle = '#085041'
+    g.font = '600 19px Georgia, serif'
+    g.fillText(diseno.codigoCliente, centro, cajaY + 124)
+  }
+  g.strokeStyle = LINEA
+  g.lineWidth = 1.5
+  g.beginPath(); g.moveTo(colX + 20, cajaY + 152); g.lineTo(colX + colW - 20, cajaY + 152); g.stroke()
+
+  // Las observaciones, que son el motivo de la hoja: grandes y en mayúscula.
+  const nota = (evento.nota || '').trim().toUpperCase()
+  g.fillStyle = '#141210'
+  g.font = '28px Helvetica, Arial, sans-serif'
+  const alto = parrafo(g, nota || 'SIN OBSERVACIONES', centro, cajaY + 210, colW - 24, 40)
+
+  let y = cajaY + 210 + alto + 46
+  if (evento.tela) {
+    g.fillStyle = TENUE
+    g.font = '600 14px Georgia, serif'
+    g.fillText('TELA', centro, y)
+    g.fillStyle = '#141210'
+    g.font = 'bold 24px Georgia, serif'
+    g.fillText(evento.tela, centro, y + 30)
+  }
+
+  g.fillStyle = TENUE
+  g.font = '14px Georgia, serif'
+  g.fillText(formatDate(evento.fecha) || '', centro, cajaY + cajaH - 34)
+  g.fillText('MG MODA S.A.S · GEODÉSICA', centro, cajaY + cajaH - 10)
+}
+
+export default function FormatoDisenadora({ diseno, evento, imagen, variante = 'strikeoff', onClose }) {
+  const correccion = variante === 'correccion'
   const canvasRef = useRef(null)
   const [listo, setListo] = useState(false)
 
@@ -35,6 +131,8 @@ export default function StrikeOffFormato({ diseno, evento, imagen, onClose }) {
       const c = canvasRef.current
       if (!c) return
       const g = c.getContext('2d')
+
+      if (correccion) { dibujarCorreccion(g, diseno, evento, foto); setListo(true); return }
 
       // Fondo
       g.fillStyle = CREMA
@@ -153,14 +251,14 @@ export default function StrikeOffFormato({ diseno, evento, imagen, onClose }) {
       setListo(true)
     })()
     return () => { vivo = false }
-  }, [diseno, evento, imagen])
+  }, [diseno, evento, imagen, correccion])
 
   function descargar() {
     const c = canvasRef.current
     if (!c) return
     const a = document.createElement('a')
     a.href = c.toDataURL('image/png')
-    a.download = `StrikeOff_${diseno.codigo}.png`
+    a.download = `${correccion ? 'Correccion' : 'StrikeOff'}_${diseno.codigo}.png`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -182,11 +280,11 @@ export default function StrikeOffFormato({ diseno, evento, imagen, onClose }) {
   return (
     <Modal open onClose={onClose} size="md">
       <div className="modal-head">
-        <h2 className="modal-title">Formato del strike off</h2>
+        <h2 className="modal-title">{correccion ? 'Corrección para la diseñadora' : 'Formato del strike off'}</h2>
         <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
       </div>
       <div className="modal-body">
-        <canvas ref={canvasRef} width={W} height={H} className="so-canvas" />
+        <canvas ref={canvasRef} width={correccion ? WC : W} height={correccion ? HC : H} className="so-canvas" />
       </div>
       <div className="modal-foot">
         <span className="so-hint">Cópiala o descárgala para enviarla por WhatsApp</span>

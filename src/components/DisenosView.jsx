@@ -7,7 +7,7 @@ import {
   ETAPAS, EVENTOS, TIPOS_DISENO, accionesDisponibles, agruparPorFase, codigoDiseno, eventosPorFase,
   disenoInfo, duracionFases, emptyDiseno, etapaColor, siguienteNumero,
 } from '../lib/disenos.js'
-import StrikeOffFormato from './StrikeOffFormato.jsx'
+import FormatoDisenadora from './FormatoDisenadora.jsx'
 import { dbLoadDisenoImgs, dbUpsertDiseno, dbDeleteDiseno, dbLog } from '../lib/db.js'
 import { generateDisenosPDF } from '../lib/disenosPdf.js'
 
@@ -459,7 +459,8 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
       if (!meta.thumb && nuevasImgs.length) nuevoMeta.thumb = await hacerThumb(nuevasImgs[0])
 
       // En el strike off se puede reutilizar una imagen ya cargada del diseño.
-      const delEvento = def.formato && imgElegida
+      const conPicker = def.formato || def.formatoCorreccion
+      const delEvento = conPicker && imgElegida
         ? [imgElegida, ...nuevasImgs]
         : nuevasImgs
       const nuevasTodas = { ...(imgs || {}) }
@@ -470,8 +471,10 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
       setRegistrando(null)
       setImgs(nuevasTodas)
       onSaved()
-      // Tras enviar el strike off, mostrar de una vez el formato.
-      if (def.formato) setFormato({ ev, img: delEvento[0] })
+      // Recién registrado, mostrar de una vez la hoja para mandarla.
+      if (def.formato || def.formatoCorreccion) {
+        setFormato({ ev, img: delEvento[0], variante: def.formatoCorreccion ? 'correccion' : 'strikeoff' })
+      }
     } catch (e) {
       console.error(e)
       alert('No se pudo registrar: ' + (e.message || e))
@@ -764,10 +767,16 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
                             ))}
                           </div>
                         )}
-                        {ev.def.formato && (
+                        {(ev.def.formato || ev.def.formatoCorreccion) && (
                           <button className="btn btn-ghost dis-formato-btn"
-                            onClick={() => setFormato({ ev, img: evImgs[0] })}>
-                            📋 Ver formato para la diseñadora
+                            onClick={() => setFormato({
+                              ev,
+                              img: evImgs[0],
+                              variante: ev.def.formatoCorreccion ? 'correccion' : 'strikeoff',
+                            })}>
+                            📋 {ev.def.formatoCorreccion
+                              ? 'Ver corrección para la diseñadora'
+                              : 'Ver formato para la diseñadora'}
                           </button>
                         )}
                       </div>
@@ -866,9 +875,11 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
                       placeholder={defReg.tela ? 'Ej. 30' : 'Ej. 3'} />
                   </div>
                 </div>
-                {defReg.formato && todasLasImgs.length > 0 && (
+                {(defReg.formato || defReg.formatoCorreccion) && todasLasImgs.length > 0 && (
                   <div className="field">
-                    <label className="field-label">Elige la foto del strike off</label>
+                    <label className="field-label">
+                      {defReg.formatoCorreccion ? 'Elige la foto marcada por el cliente' : 'Elige la foto del strike off'}
+                    </label>
                     <div className="dis-elegir">
                       {todasLasImgs.map((src, k) => (
                         <button key={k} type="button"
@@ -931,10 +942,11 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
       )}
 
       {formato && (
-        <StrikeOffFormato
+        <FormatoDisenadora
           diseno={meta}
           evento={formato.ev}
           imagen={formato.img}
+          variante={formato.variante}
           onClose={() => setFormato(null)}
         />
       )}

@@ -46,12 +46,17 @@ export const EVENTOS = {
   recibido: { label: 'Recibido de Geodésica', etapa: 'pendiente', fase: 'grafico', img: 'varias' },
   aGrafico: { label: 'Enviado a desarrollo gráfico', etapa: 'grafico', fase: 'grafico' },
   propuesta: { label: 'Propuesta enviada al cliente', etapa: 'enviado', fase: 'grafico', img: 'una', ronda: true },
-  correccion: { label: 'Corrección pedida por el cliente', etapa: 'correccion', fase: 'grafico', nota: true, vuelta: true },
+  // Una sola corrección para todo el desarrollo. Da igual si el cliente la
+  // pide viendo la propuesta o viendo el strike off: lo que se corrige es
+  // siempre el arte y siempre lo hace la diseñadora gráfica. Por eso lleva
+  // fotos —el cliente marca sobre la tela el tono o el tamaño que quiere— y
+  // saca su propia hoja para mandársela a ella.
+  correccion: { label: 'Corrección gráfica', etapa: 'correccion', fase: 'sigue', nota: true, vuelta: true, formatoCorreccion: true },
   aprobado: { label: 'Diseño aprobado', etapa: 'aprobado', fase: 'grafico', codigoCliente: true, hito: true },
-  strikeoff: { label: 'Strike off enviado', etapa: 'strikeoff', fase: 'strikeoff', img: 'una', ronda: true, formato: true },
-  // Lo que se corrige tras ver el strike off es el arte, no la estampación:
-  // vuelve a la diseñadora gráfica y de ahí sale otra ronda de strike off.
-  strikeoffCorreccion: { label: 'Corrección del arte', etapa: 'strikeoffCorreccion', fase: 'strikeoff', nota: true, vuelta: true },
+  strikeoff: { label: 'Strike off', etapa: 'strikeoff', fase: 'strikeoff', img: 'una', ronda: true, formato: true },
+  // Quedó de cuando había dos correcciones distintas. Ya no se ofrece, pero
+  // sigue definida para que los diseños viejos se sigan leyendo bien.
+  strikeoffCorreccion: { label: 'Corrección gráfica', etapa: 'correccion', fase: 'sigue', nota: true, vuelta: true, formatoCorreccion: true, oculto: true },
   strikeoffAprobado: { label: 'Strike off aprobado', etapa: 'muestraPendiente', fase: 'strikeoff', hito: true },
   // Aprobado el strike off se manda a imprimir tela de verdad, en metros, y
   // solo con esa se confecciona la prenda. Son dos cosas distintas y antes
@@ -64,13 +69,17 @@ export const EVENTOS = {
 // Agrupa la bitácora por fase, numerando las rondas dentro de cada una.
 // Devuelve [{ fase, label, num, estado: 'hecha'|'curso', eventos: [{ ...ev, i, ronda }] }]
 export function agruparPorFase(eventos = [], etapaActual) {
-  const faseActual = EVENTOS[(eventos[eventos.length - 1] || {}).tipo]?.fase || 'grafico'
   const porFase = new Map()
   let rondaGrafico = 0
   let rondaStrike = 0
+  // La corrección gráfica no tiene fase propia: se queda donde esté el diseño
+  // en ese momento. Si se pide viendo el strike off, va bajo Strike off; si se
+  // pide viendo la propuesta, bajo Desarrollo gráfico.
+  let faseAnterior = 'grafico'
   eventos.forEach((ev, i) => {
     const def = EVENTOS[ev.tipo] || {}
-    const fase = def.fase || 'grafico'
+    const fase = def.fase === 'sigue' ? faseAnterior : (def.fase || 'grafico')
+    faseAnterior = fase
     let ronda = null
     if (ev.tipo === 'propuesta') { rondaGrafico += 1; ronda = rondaGrafico }
     if (ev.tipo === 'strikeoff') { rondaStrike += 1; ronda = rondaStrike }
@@ -78,7 +87,7 @@ export function agruparPorFase(eventos = [], etapaActual) {
     porFase.get(fase).push({ ...ev, i, ronda, def })
   })
   const orden = FASES.map((f) => f.key)
-  const idxActual = orden.indexOf(faseActual)
+  const idxActual = orden.indexOf(faseAnterior)
   // Una fase se da por cerrada solo si su hito quedó registrado. Antes bastaba
   // con que el diseño hubiera pasado a la siguiente, así que una fase saltada
   // —un strike off que nunca se aprobó— mostraba un ✓ que no era cierto.
@@ -104,7 +113,6 @@ export const ETAPAS = [
   { key: 'correccion', label: 'Corrección', tono: 'amber' },
   { key: 'aprobado', label: 'Aprobado', tono: 'teal' },
   { key: 'strikeoff', label: 'Strike off', tono: 'pink' },
-  { key: 'strikeoffCorreccion', label: 'Corrección strike off', tono: 'amber' },
   { key: 'muestraPendiente', label: 'Muestra pendiente', tono: 'coral' },
   { key: 'telaMuestra', label: 'Tela de muestra', tono: 'coral' },
   { key: 'muestra', label: 'Muestra de prenda', tono: 'coral' },
@@ -170,12 +178,31 @@ export function duracionFases(eventos = [], etapaActual) {
   })
 }
 
+// Los eventos que ofrece una fase. La corrección gráfica no es de ninguna en
+// particular —se puede pedir en cualquier punto— así que se cuela justo antes
+// del cierre de la fase, que es donde tiene sentido: se corrige mientras
+// todavía no se ha aprobado.
+function tiposDeFase(fase) {
+  const propios = Object.keys(EVENTOS).filter((k) => {
+    const d = EVENTOS[k]
+    return !d.oculto && (d.fase || 'grafico') === fase
+  })
+  const sueltos = fase === 'muestra' ? [] : Object.keys(EVENTOS).filter((k) => {
+    const d = EVENTOS[k]
+    return !d.oculto && d.fase === 'sigue'
+  })
+  if (!sueltos.length) return propios
+  const iHito = propios.findIndex((k) => EVENTOS[k].hito)
+  const corte = iHito === -1 ? propios.length : iHito
+  return [...propios.slice(0, corte), ...sueltos, ...propios.slice(corte)]
+}
+
 // Los eventos de cada fase, para poder elegir cualquiera y no solo el
 // siguiente: el desarrollo no siempre va en línea recta.
 export function eventosPorFase() {
   return FASES.map((f) => ({
     ...f,
-    tipos: Object.keys(EVENTOS).filter((k) => (EVENTOS[k].fase || 'grafico') === f.key),
+    tipos: tiposDeFase(f.key),
   }))
 }
 
@@ -186,16 +213,15 @@ export function accionesDisponibles(etapa) {
     case 'pendiente':
       return ['aGrafico']
     case 'grafico':
-    case 'correccion':
       return ['propuesta']
+    case 'correccion':
+      return ['propuesta', 'strikeoff']
     case 'enviado':
       return ['correccion', 'aprobado']
     case 'aprobado':
       return ['strikeoff', 'telaMuestra']
     case 'strikeoff':
-      return ['strikeoffCorreccion', 'strikeoffAprobado']
-    case 'strikeoffCorreccion':
-      return ['strikeoff']
+      return ['correccion', 'strikeoffAprobado']
     case 'muestraPendiente':
       return ['telaMuestra']
     case 'telaMuestra':

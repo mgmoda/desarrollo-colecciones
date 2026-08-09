@@ -11,6 +11,17 @@ export const STAGES = [
   { key: 'entradaBodega', label: 'Entrada bodega', hasDias: true },
 ]
 
+// Días que una orden puede quedarse en un área antes de pintarse en rojo. En
+// las etapas de casa —Trazos, Corte, Por alistar y Por enviar a taller— un
+// lote no debería quedarse más de 3 días. En talleres el margen es mucho más
+// ancho, porque un taller sí se toma semanas con un lote y pintarlo todo de
+// rojo dejaría el aviso sin valor.
+const LIMITE_DIAS = { trazos: 3, corte: 3, enviar: 3, alistamiento: 3 }
+const LIMITE_POR_DEFECTO = 14
+export const limiteDiasArea = (area) => (
+  LIMITE_DIAS[area] != null ? LIMITE_DIAS[area] : LIMITE_POR_DEFECTO
+)
+
 // Áreas de trabajo. Cada orden cae en el área de su ÚLTIMA etapa cumplida:
 //   base  = etapa ya cumplida que define el área (y desde cuya fecha se cuenta el atraso)
 //   next  = etapa siguiente que aún NO se ha cumplido (lo pendiente)

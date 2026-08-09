@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { AREAS, formatDate, formatPrice, normRef, ORIGENES, ORIGEN_ABBR, TOP_LABEL } from '../lib/constants.js'
+import { AREAS, formatDate, formatPrice, limiteDiasArea, normRef, ORIGENES, ORIGEN_ABBR, TOP_LABEL } from '../lib/constants.js'
 import { ordersForArea, refProcesos, claveOrden, esOrdenTop, orderArea } from '../lib/domain.js'
 import { diasDesde, diasEntre } from '../lib/dates.js'
 import { generateAreaPDF } from '../lib/areaPdf.js'
@@ -20,14 +20,6 @@ function diasEnTaller(o) {
   const entrega = (o.stages && o.stages.entregaEnsamble && o.stages.entregaEnsamble.fecha) || ''
   return envio && entrega ? diasEntre(envio, entrega) : null
 }
-
-// Días que la orden lleva en el área, contados desde su etapa base. Pasado el
-// límite se marca en rojo. En las etapas de casa —Trazos, Corte, Por alistar y
-// Por enviar a taller— un lote no debería quedarse más de 3 días. En talleres
-// el margen es mucho más ancho, porque un taller sí se toma semanas con un
-// lote y pintarlo todo de rojo dejaría el aviso sin valor.
-const LIMITE_DIAS = { trazos: 3, corte: 3, enviar: 3, alistamiento: 3 }
-const LIMITE_POR_DEFECTO = 14
 
 const STAGE_LABEL = {
   ordenCorte: 'Orden corte', trazo: 'Trazo', entregaCorte: 'Corte',
@@ -114,7 +106,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   // despacho, que es cuando el dato sirve para algo.
   const showValorTaller = areaKey === 'alistamiento'
   const showAtraso = areaKey !== 'entrega' // en entrega ya ingresó: no hay atraso
-  const limiteDias = LIMITE_DIAS[areaKey] != null ? LIMITE_DIAS[areaKey] : LIMITE_POR_DEFECTO
+  const limiteDias = limiteDiasArea(areaKey)
   const pendienteLabel = area.next ? STAGE_LABEL[area.next] : 'Recibido'
 
   // Las fases apagadas no cuentan en ninguna parte: ni en la tabla ni en los

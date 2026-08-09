@@ -3,13 +3,13 @@ import SearchInput from './SearchInput.jsx'
 import Modal from './Modal.jsx'
 import PhotoDropzone from './PhotoDropzone.jsx'
 import DateField from './DateField.jsx'
-import { AREAS, formatDate, formatPrice } from '../lib/constants.js'
-import { orderArea } from '../lib/domain.js'
+import { AREAS, formatDate, formatPrice, limiteDiasArea } from '../lib/constants.js'
+import { areaBaseFecha, orderArea } from '../lib/domain.js'
 import { generateGeodesicaPDF } from '../lib/geodesicaPdf.js'
 import { generateListaFotosPDF } from '../lib/listaFotosPdf.js'
 import DisenosView from './DisenosView.jsx'
 import { dbLoadDisenos } from '../lib/db.js'
-import { diasEntre } from '../lib/dates.js'
+import { diasDesde, diasEntre } from '../lib/dates.js'
 
 const AREA_LABEL = { trazos: 'Trazos', corte: 'Corte', enviar: 'Por enviar', talleres: 'En talleres', entrega: 'Entrega ensamble' }
 
@@ -55,7 +55,7 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
       if (!map.has(refId)) {
         map.set(refId, {
           refId, producto: o.producto || refId, empresa: o.empresa || '',
-          taller: '', cantidadTotal: 0, area: null, areaRank: -1, ordenes: 0,
+          taller: '', cantidadTotal: 0, area: null, areaRank: -1, desde: '', ordenes: 0,
         })
       }
       const it = map.get(refId)
@@ -71,7 +71,11 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
       if (t && !it.taller) it.taller = t
       const a = orderArea(o)
       const rank = a ? AREA_RANK[a] : -1
-      if (rank > it.areaRank) { it.area = a; it.areaRank = rank }
+      // La referencia se muestra en su área más avanzada. Si varias órdenes
+      // están en esa misma área, manda la más vieja: es la que lleva esperando.
+      const desde = areaBaseFecha(o)
+      if (rank > it.areaRank) { it.area = a; it.areaRank = rank; it.desde = desde }
+      else if (rank === it.areaRank && desde && (!it.desde || desde < it.desde)) it.desde = desde
     })
     const out = [...map.values()].map((it) => {
       const ref = refMap.get(it.refId)
@@ -387,13 +391,15 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
                 <th className="num">Cant. total</th>
                 <th>Precio unit.</th>
                 <th className="num">Subtotal</th>
-                <th>Estado</th>
+                <th className="num">Días</th>
               </tr>
             </thead>
             <tbody>
               {filtrados.map((it) => {
                 const ref = refMap.get(it.refId)
                 const sub = it.cantidadTotal * it.precio
+                const dias = it.area ? diasDesde(it.desde) : null
+                const limite = limiteDiasArea(it.area)
                 return (
                   <tr key={it.refId}
                     className={(selected.has(it.refId) ? 'row-sel' : '') + (it.despachada ? ' geo-despachada' : '')}>
@@ -428,10 +434,20 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
                         onCommit={(v) => onSetField && onSetField(it.refId, 'costo', v)} />
                     </td>
                     <td className="num strong">{sub > 0 ? formatPrice(sub) : <span className="muted">—</span>}</td>
-                    <td>
-                      {it.despachada
-                        ? <span className="tag tag-ok" title={it.despachadaAt ? new Date(it.despachadaAt).toLocaleDateString('es-CO') : ''}>✓ Despachada</span>
-                        : <span className="muted">—</span>}
+                    <td className="num">
+                      {it.despachada ? (
+                        <span className="tag tag-ok"
+                          title={it.despachadaAt ? new Date(it.despachadaAt).toLocaleDateString('es-CO') : ''}>
+                          ✓ Despachada
+                        </span>
+                      ) : dias == null ? <span className="muted">—</span> : (
+                        <span className={'tag' + (dias > limite ? ' tag-warn' : '')}
+                          title={dias > limite
+                            ? `Lleva más de ${limite} días en ${AREA_LABEL[it.area]}`
+                            : `${dias} ${dias === 1 ? 'día' : 'días'} en ${AREA_LABEL[it.area]}`}>
+                          {dias} d
+                        </span>
+                      )}
                     </td>
                   </tr>
                 )

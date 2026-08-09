@@ -51,12 +51,12 @@ export const EVENTOS = {
   // siempre el arte y siempre lo hace la diseñadora gráfica. Por eso lleva
   // fotos —el cliente marca sobre la tela el tono o el tamaño que quiere— y
   // saca su propia hoja para mandársela a ella.
-  correccion: { label: 'Corrección gráfica', etapa: 'correccion', fase: 'sigue', nota: true, vuelta: true, formatoCorreccion: true },
+  correccion: { label: 'Corrección gráfica', etapa: 'correccion', fase: 'sigue', nota: true, vuelta: true, img: 'varias', formatoCorreccion: true },
   aprobado: { label: 'Diseño aprobado', etapa: 'aprobado', fase: 'grafico', codigoCliente: true, hito: true },
   strikeoff: { label: 'Strike off', etapa: 'strikeoff', fase: 'strikeoff', img: 'una', ronda: true, formato: true },
   // Quedó de cuando había dos correcciones distintas. Ya no se ofrece, pero
   // sigue definida para que los diseños viejos se sigan leyendo bien.
-  strikeoffCorreccion: { label: 'Corrección gráfica', etapa: 'correccion', fase: 'sigue', nota: true, vuelta: true, formatoCorreccion: true, oculto: true },
+  strikeoffCorreccion: { label: 'Corrección gráfica', etapa: 'correccion', fase: 'sigue', nota: true, vuelta: true, img: 'varias', formatoCorreccion: true, oculto: true },
   strikeoffAprobado: { label: 'Strike off aprobado', etapa: 'muestraPendiente', fase: 'strikeoff', hito: true },
   // Aprobado el strike off se manda a imprimir tela de verdad, en metros, y
   // solo con esa se confecciona la prenda. Son dos cosas distintas y antes

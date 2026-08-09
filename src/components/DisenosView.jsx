@@ -875,29 +875,33 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
                       placeholder={defReg.tela ? 'Ej. 30' : 'Ej. 3'} />
                   </div>
                 </div>
-                {(defReg.formato || defReg.formatoCorreccion) && todasLasImgs.length > 0 && (
-                  <div className="field">
-                    <label className="field-label">
-                      {defReg.formatoCorreccion ? 'Elige la foto marcada por el cliente' : 'Elige la foto del strike off'}
-                    </label>
-                    <div className="dis-elegir">
-                      {todasLasImgs.map((src, k) => (
-                        <button key={k} type="button"
-                          className={'dis-elegir-item' + (imgElegida === src ? ' on' : '')}
-                          onClick={() => setImgElegida(imgElegida === src ? null : src)}>
-                          <img src={src} alt={`opción ${k + 1}`} />
-                          {imgElegida === src && <span className="dis-elegir-ok">✓</span>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </>
+            )}
+            {/* Reutilizar una foto que ya está en el diseño, en vez de volver
+                a subirla. Sirve para el strike off y para la corrección. */}
+            {(defReg.formato || defReg.formatoCorreccion) && todasLasImgs.length > 0 && (
+              <div className="field">
+                <label className="field-label">
+                  {defReg.formatoCorreccion ? 'Elige la foto marcada por el cliente' : 'Elige la foto del strike off'}
+                </label>
+                <div className="dis-elegir">
+                  {todasLasImgs.map((src, k) => (
+                    <button key={k} type="button"
+                      className={'dis-elegir-item' + (imgElegida === src ? ' on' : '')}
+                      onClick={() => setImgElegida(imgElegida === src ? null : src)}>
+                      <img src={src} alt={`opción ${k + 1}`} />
+                      {imgElegida === src && <span className="dis-elegir-ok">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
             {defReg.img && (
               <div className="field">
                 <label className="field-label">
-                  {defReg.formato ? 'O sube una foto nueva' : 'Imágenes'}
+                  {defReg.formatoCorreccion
+                    ? 'Sube la foto que marcó el cliente'
+                    : defReg.formato ? 'O sube una foto nueva' : 'Imágenes'}
                 </label>
                 <ImagePicker imgs={nuevasImgs} onChange={setNuevasImgs} label="Subir" />
               </div>

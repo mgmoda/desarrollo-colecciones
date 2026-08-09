@@ -118,7 +118,7 @@ function dibujarCorreccion(g, diseno, evento, foto) {
   g.fillText('MG MODA S.A.S · GEODÉSICA', centro, cajaY + cajaH - 10)
 }
 
-export default function FormatoDisenadora({ diseno, evento, imagen, variante = 'strikeoff', onClose }) {
+export default function FormatoDisenadora({ diseno, evento, imagen, variante = 'strikeoff', titulo = 'STRIKE OFF', onClose }) {
   const correccion = variante === 'correccion'
   const canvasRef = useRef(null)
   const [listo, setListo] = useState(false)
@@ -147,7 +147,7 @@ export default function FormatoDisenadora({ diseno, evento, imagen, variante = '
       g.fillStyle = CAFE
       g.textAlign = 'center'
       g.font = '600 22px Georgia, "Times New Roman", serif'
-      g.fillText('STRIKE OFF', W / 2, 92)
+      g.fillText(titulo, W / 2, 92)
       g.fillStyle = TENUE
       g.font = '15px Georgia, "Times New Roman", serif'
       g.fillText('SOLICITUD PARA DESARROLLO GRÁFICO', W / 2, 120)
@@ -251,14 +251,15 @@ export default function FormatoDisenadora({ diseno, evento, imagen, variante = '
       setListo(true)
     })()
     return () => { vivo = false }
-  }, [diseno, evento, imagen, correccion])
+  }, [diseno, evento, imagen, correccion, titulo])
 
   function descargar() {
     const c = canvasRef.current
     if (!c) return
     const a = document.createElement('a')
     a.href = c.toDataURL('image/png')
-    a.download = `${correccion ? 'Correccion' : 'StrikeOff'}_${diseno.codigo}.png`
+    const nombre = correccion ? 'Correccion' : titulo.replace(/\s+/g, '')
+    a.download = `${nombre}_${diseno.codigo}.png`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -280,7 +281,9 @@ export default function FormatoDisenadora({ diseno, evento, imagen, variante = '
   return (
     <Modal open onClose={onClose} size="md">
       <div className="modal-head">
-        <h2 className="modal-title">{correccion ? 'Corrección para la diseñadora' : 'Formato del strike off'}</h2>
+        <h2 className="modal-title">
+          {correccion ? 'Corrección para la diseñadora' : `Formato · ${titulo.toLowerCase()}`}
+        </h2>
         <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
       </div>
       <div className="modal-body">

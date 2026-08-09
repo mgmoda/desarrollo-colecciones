@@ -473,7 +473,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
       onSaved()
       // Recién registrado, mostrar de una vez la hoja para mandarla.
       if (def.formato || def.formatoCorreccion) {
-        setFormato({ ev, img: delEvento[0], variante: def.formatoCorreccion ? 'correccion' : 'strikeoff' })
+        setFormato({ ev, img: delEvento[0], variante: def.formatoCorreccion ? 'correccion' : 'strikeoff', titulo: def.hoja })
       }
     } catch (e) {
       console.error(e)
@@ -773,6 +773,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
                               ev,
                               img: evImgs[0],
                               variante: ev.def.formatoCorreccion ? 'correccion' : 'strikeoff',
+                              titulo: ev.def.hoja,
                             })}>
                             📋 {ev.def.formatoCorreccion
                               ? 'Ver corrección para la diseñadora'
@@ -951,6 +952,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
           evento={formato.ev}
           imagen={formato.img}
           variante={formato.variante}
+          titulo={formato.titulo}
           onClose={() => setFormato(null)}
         />
       )}

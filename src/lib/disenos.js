@@ -53,7 +53,7 @@ export const EVENTOS = {
   // saca su propia hoja para mandársela a ella.
   correccion: { label: 'Corrección gráfica', etapa: 'correccion', fase: 'sigue', nota: true, vuelta: true, img: 'varias', formatoCorreccion: true },
   aprobado: { label: 'Diseño aprobado', etapa: 'aprobado', fase: 'grafico', codigoCliente: true, hito: true },
-  strikeoff: { label: 'Strike off', etapa: 'strikeoff', fase: 'strikeoff', img: 'una', ronda: true, formato: true },
+  strikeoff: { label: 'Strike off', etapa: 'strikeoff', fase: 'strikeoff', img: 'una', ronda: true, formato: true, hoja: 'STRIKE OFF' },
   // Quedó de cuando había dos correcciones distintas. Ya no se ofrece, pero
   // sigue definida para que los diseños viejos se sigan leyendo bien.
   strikeoffCorreccion: { label: 'Corrección gráfica', etapa: 'correccion', fase: 'sigue', nota: true, vuelta: true, img: 'varias', formatoCorreccion: true, oculto: true },
@@ -61,7 +61,9 @@ export const EVENTOS = {
   // Aprobado el strike off se manda a imprimir tela de verdad, en metros, y
   // solo con esa se confecciona la prenda. Son dos cosas distintas y antes
   // cabían las dos en un mismo "Muestra realizada".
-  telaMuestra: { label: 'Tela de muestra impresa', etapa: 'telaMuestra', fase: 'muestra', tela: true },
+  // Lleva la misma hoja del strike off, porque también se le manda a la
+  // diseñadora gráfica: es ella la que programa esa impresión.
+  telaMuestra: { label: 'Tela de muestra impresa', etapa: 'telaMuestra', fase: 'muestra', img: 'una', tela: true, formato: true, hoja: 'TELA DE MUESTRA' },
   muestra: { label: 'Muestra de prenda confeccionada', etapa: 'muestra', fase: 'muestra', img: 'una' },
   despachado: { label: 'Despachado a Geodésica', etapa: 'despachado', fase: 'muestra', hito: true },
 }

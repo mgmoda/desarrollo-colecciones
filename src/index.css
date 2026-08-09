@@ -3954,6 +3954,10 @@ img.ship-ref-photo {
   font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
   color: #8a5a2b; background: #faeeda; border-radius: 4px; padding: 2px 7px;
 }
+/* Fase que quedó atrás sin su cierre: en rojo, porque es un dato faltante y
+   no un estado normal del flujo. */
+.dis-fase-est.abierta { color: #8c2f28; background: #f8e5e2; }
+.dis-fase.abierta .dis-fase-num { background: #b0aca1; }
 .dis-fase-evs { padding-left: 10px; border-left: 2px solid var(--hairline); margin-left: 9px; }
 
 .dis-ev {

@@ -447,7 +447,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
       const ev = { tipo: registrando, fecha }
       if (nota.trim()) ev.nota = nota.trim()
       if (def.codigoCliente && codCliente.trim()) ev.codigoCliente = codCliente.trim()
-      if (def.formato) {
+      if (def.formato || def.tela) {
         if (tela.trim()) ev.tela = tela.trim()
         if (metros) ev.metros = metros
       }
@@ -595,7 +595,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
       const def = EVENTOS[evs[i].tipo] || {}
       const ev = { ...evs[i], fecha: edEv.fecha }
       if (edEv.nota.trim()) ev.nota = edEv.nota.trim(); else delete ev.nota
-      if (def.formato) {
+      if (def.formato || def.tela) {
         if (edEv.tela.trim()) ev.tela = edEv.tela.trim(); else delete ev.tela
         if (String(edEv.metros).trim()) ev.metros = edEv.metros; else delete ev.metros
       }
@@ -725,6 +725,14 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
                 {f.dias != null && <span className="dis-fase-dias">{f.dias} d</span>}
                 <span className="dis-fase-linea" />
                 {f.estado === 'curso' && <span className="dis-fase-est">en curso</span>}
+                {/* La fase quedó atrás sin registrar su cierre: se avisa en vez
+                    de darla por buena con un ✓. */}
+                {f.estado === 'abierta' && (
+                  <span className="dis-fase-est abierta"
+                    title="Se pasó a la siguiente fase sin registrar el cierre de esta">
+                    sin cerrar
+                  </span>
+                )}
               </header>
               <div className="dis-fase-evs">
                 {f.eventos.map((ev) => {
@@ -794,7 +802,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
                   onChange={(e) => setEdEv({ ...edEv, nota: e.target.value })} />
               </div>
             </div>
-            {(EVENTOS[(meta.eventos || [])[edEv.i].tipo] || {}).formato && (
+            {(() => { const d = EVENTOS[(meta.eventos || [])[edEv.i].tipo] || {}; return d.formato || d.tela })() && (
               <div className="field-row">
                 <div className="field">
                   <label className="field-label">Tela</label>
@@ -843,7 +851,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
                   placeholder={defReg.nota ? 'Ej. bajar saturación del verde' : 'Opcional…'} />
               </div>
             )}
-            {defReg.formato && (
+            {(defReg.formato || defReg.tela) && (
               <>
                 <div className="field-row">
                   <div className="field">
@@ -854,10 +862,11 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
                   <div className="field">
                     <label className="field-label">Cantidad (metros)</label>
                     <input className="input" type="number" step="0.5" min="0" value={metros}
-                      onChange={(e) => setMetros(e.target.value)} placeholder="Ej. 3" />
+                      onChange={(e) => setMetros(e.target.value)}
+                      placeholder={defReg.tela ? 'Ej. 30' : 'Ej. 3'} />
                   </div>
                 </div>
-                {todasLasImgs.length > 0 && (
+                {defReg.formato && todasLasImgs.length > 0 && (
                   <div className="field">
                     <label className="field-label">Elige la foto del strike off</label>
                     <div className="dis-elegir">

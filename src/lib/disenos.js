@@ -49,9 +49,15 @@ export const EVENTOS = {
   correccion: { label: 'Corrección pedida por el cliente', etapa: 'correccion', fase: 'grafico', nota: true, vuelta: true },
   aprobado: { label: 'Diseño aprobado', etapa: 'aprobado', fase: 'grafico', codigoCliente: true, hito: true },
   strikeoff: { label: 'Strike off enviado', etapa: 'strikeoff', fase: 'strikeoff', img: 'una', ronda: true, formato: true },
-  strikeoffCorreccion: { label: 'Corrección del strike off', etapa: 'strikeoffCorreccion', fase: 'strikeoff', nota: true, vuelta: true },
+  // Lo que se corrige tras ver el strike off es el arte, no la estampación:
+  // vuelve a la diseñadora gráfica y de ahí sale otra ronda de strike off.
+  strikeoffCorreccion: { label: 'Corrección del arte', etapa: 'strikeoffCorreccion', fase: 'strikeoff', nota: true, vuelta: true },
   strikeoffAprobado: { label: 'Strike off aprobado', etapa: 'muestraPendiente', fase: 'strikeoff', hito: true },
-  muestra: { label: 'Muestra realizada', etapa: 'muestra', fase: 'muestra', img: 'una' },
+  // Aprobado el strike off se manda a imprimir tela de verdad, en metros, y
+  // solo con esa se confecciona la prenda. Son dos cosas distintas y antes
+  // cabían las dos en un mismo "Muestra realizada".
+  telaMuestra: { label: 'Tela de muestra impresa', etapa: 'telaMuestra', fase: 'muestra', tela: true },
+  muestra: { label: 'Muestra de prenda confeccionada', etapa: 'muestra', fase: 'muestra', img: 'una' },
   despachado: { label: 'Despachado a Geodésica', etapa: 'despachado', fase: 'muestra', hito: true },
 }
 
@@ -73,14 +79,21 @@ export function agruparPorFase(eventos = [], etapaActual) {
   })
   const orden = FASES.map((f) => f.key)
   const idxActual = orden.indexOf(faseActual)
+  // Una fase se da por cerrada solo si su hito quedó registrado. Antes bastaba
+  // con que el diseño hubiera pasado a la siguiente, así que una fase saltada
+  // —un strike off que nunca se aprobó— mostraba un ✓ que no era cierto.
   return FASES
     .filter((f) => porFase.has(f.key))
-    .map((f) => ({
-      ...f,
-      eventos: porFase.get(f.key),
-      estado: orden.indexOf(f.key) < idxActual ? 'hecha'
-        : etapaActual === 'despachado' ? 'hecha' : 'curso',
-    }))
+    .map((f) => {
+      const eventos = porFase.get(f.key)
+      const cerrada = eventos.some((ev) => (EVENTOS[ev.tipo] || {}).hito)
+      const pasada = orden.indexOf(f.key) < idxActual || etapaActual === 'despachado'
+      return {
+        ...f,
+        eventos,
+        estado: cerrada ? 'hecha' : pasada ? 'abierta' : 'curso',
+      }
+    })
 }
 
 // Etapas para mostrar y filtrar. `tono` alimenta el color del chip.
@@ -93,7 +106,8 @@ export const ETAPAS = [
   { key: 'strikeoff', label: 'Strike off', tono: 'pink' },
   { key: 'strikeoffCorreccion', label: 'Corrección strike off', tono: 'amber' },
   { key: 'muestraPendiente', label: 'Muestra pendiente', tono: 'coral' },
-  { key: 'muestra', label: 'Muestra', tono: 'coral' },
+  { key: 'telaMuestra', label: 'Tela de muestra', tono: 'coral' },
+  { key: 'muestra', label: 'Muestra de prenda', tono: 'coral' },
   { key: 'despachado', label: 'Despachado', tono: 'green' },
 ]
 export const ETAPA_LABEL = Object.fromEntries(ETAPAS.map((e) => [e.key, e.label]))
@@ -177,12 +191,14 @@ export function accionesDisponibles(etapa) {
     case 'enviado':
       return ['correccion', 'aprobado']
     case 'aprobado':
-      return ['strikeoff', 'muestra']
+      return ['strikeoff', 'telaMuestra']
     case 'strikeoff':
       return ['strikeoffCorreccion', 'strikeoffAprobado']
     case 'strikeoffCorreccion':
       return ['strikeoff']
     case 'muestraPendiente':
+      return ['telaMuestra']
+    case 'telaMuestra':
       return ['muestra']
     case 'muestra':
       return ['despachado']

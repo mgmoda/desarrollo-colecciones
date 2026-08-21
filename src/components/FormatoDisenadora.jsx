@@ -45,7 +45,7 @@ function parrafo(g, texto, x, y, ancho, alto) {
 
 // Hoja de corrección: la foto manda, porque es donde el cliente marcó lo que
 // quiere cambiar, y al lado va escrito qué es.
-function dibujarCorreccion(g, diseno, evento, foto) {
+function dibujarCorreccion(g, diseno, evento, foto, rotulo) {
   g.fillStyle = CREMA
   g.fillRect(0, 0, WC, HC)
   g.strokeStyle = '#d9c3a1'
@@ -83,7 +83,7 @@ function dibujarCorreccion(g, diseno, evento, foto) {
 
   g.fillStyle = TENUE
   g.font = '600 15px Georgia, serif'
-  g.fillText('CORRECCIÓN GRÁFICA', centro, cajaY + 44)
+  g.fillText(rotulo, centro, cajaY + 44)
   g.fillStyle = CAFE
   g.font = 'bold 42px Georgia, serif'
   g.fillText(diseno.codigo || '', centro, cajaY + 96)
@@ -118,7 +118,10 @@ function dibujarCorreccion(g, diseno, evento, foto) {
   g.fillText('MG MODA S.A.S · GEODÉSICA', centro, cajaY + cajaH - 10)
 }
 
-export default function FormatoDisenadora({ diseno, evento, imagen, variante = 'strikeoff', titulo = 'STRIKE OFF', onClose }) {
+export default function FormatoDisenadora({ diseno, evento, imagen, variante = 'strikeoff', titulo, onClose }) {
+  // El rótulo lo pone el proceso: strike off, tela de muestra, corrección o
+  // ajuste. Los valores por defecto son por si llega sin él.
+  const rotulo = titulo || (variante === 'correccion' ? 'CORRECCIÓN GRÁFICA' : 'STRIKE OFF')
   const correccion = variante === 'correccion'
   const canvasRef = useRef(null)
   const [listo, setListo] = useState(false)
@@ -132,7 +135,7 @@ export default function FormatoDisenadora({ diseno, evento, imagen, variante = '
       if (!c) return
       const g = c.getContext('2d')
 
-      if (correccion) { dibujarCorreccion(g, diseno, evento, foto); setListo(true); return }
+      if (correccion) { dibujarCorreccion(g, diseno, evento, foto, rotulo); setListo(true); return }
 
       // Fondo
       g.fillStyle = CREMA
@@ -147,7 +150,7 @@ export default function FormatoDisenadora({ diseno, evento, imagen, variante = '
       g.fillStyle = CAFE
       g.textAlign = 'center'
       g.font = '600 22px Georgia, "Times New Roman", serif'
-      g.fillText(titulo, W / 2, 92)
+      g.fillText(rotulo, W / 2, 92)
       g.fillStyle = TENUE
       g.font = '15px Georgia, "Times New Roman", serif'
       g.fillText('SOLICITUD PARA DESARROLLO GRÁFICO', W / 2, 120)
@@ -251,14 +254,14 @@ export default function FormatoDisenadora({ diseno, evento, imagen, variante = '
       setListo(true)
     })()
     return () => { vivo = false }
-  }, [diseno, evento, imagen, correccion, titulo])
+  }, [diseno, evento, imagen, correccion, rotulo])
 
   function descargar() {
     const c = canvasRef.current
     if (!c) return
     const a = document.createElement('a')
     a.href = c.toDataURL('image/png')
-    const nombre = correccion ? 'Correccion' : titulo.replace(/\s+/g, '')
+    const nombre = rotulo.replace(/\s+/g, '')
     a.download = `${nombre}_${diseno.codigo}.png`
     document.body.appendChild(a)
     a.click()
@@ -282,7 +285,7 @@ export default function FormatoDisenadora({ diseno, evento, imagen, variante = '
     <Modal open onClose={onClose} size="md">
       <div className="modal-head">
         <h2 className="modal-title">
-          {correccion ? 'Corrección para la diseñadora' : `Formato · ${titulo.toLowerCase()}`}
+          {`Hoja · ${rotulo.toLowerCase()}`}
         </h2>
         <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
       </div>

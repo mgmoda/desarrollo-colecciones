@@ -40,9 +40,26 @@ function EtapaChip({ etapa, etiqueta, small }) {
   )
 }
 
+// Un diseño que ya se despachó y volvió con ajustes tiene dos cosas que
+// contar: dónde está ahora y que la prenda ya se había entregado. Si solo se
+// muestra la etapa, el despacho desaparece de la vista.
+function EtapaCelda({ info }) {
+  return (
+    <>
+      <EtapaChip etapa={info.etapa} etiqueta={info.etiqueta} />
+      {info.reabierto && (
+        <span className="dis-desp-sub" title="Ya se había despachado; volvió con ajustes">
+          despachado {formatDate(info.despachadoAt)}
+        </span>
+      )}
+    </>
+  )
+}
+
 export default function DisenosView({ disenos, loading, onReload, onViewImage }) {
   const [q, setQ] = useState('')
   const [etapaF, setEtapaF] = useState('')
+  const [soloAjustes, setSoloAjustes] = useState(false)
   const [abierto, setAbierto] = useState(null)   // código del diseño abierto
   const [nuevo, setNuevo] = useState(false)
   const [sel, setSel] = useState(() => new Set())
@@ -56,16 +73,22 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
     return m
   }, [disenos])
 
+  const conAjustes = useMemo(
+    () => disenos.filter((d) => disenoInfo(d).ajustes > 0).length,
+    [disenos],
+  )
+
   const rows = useMemo(() => {
     let list = disenos
     if (etapaF) list = list.filter((d) => disenoInfo(d).etapa === etapaF)
+    if (soloAjustes) list = list.filter((d) => disenoInfo(d).ajustes > 0)
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((d) => [d.codigo, d.codigoCliente, d.nombre, d.tipo]
         .some((v) => String(v || '').toLowerCase().includes(term)))
     }
     return list
-  }, [disenos, etapaF, q])
+  }, [disenos, etapaF, q, soloAjustes])
 
   const todos = rows.length > 0 && rows.every((d) => sel.has(d.codigo))
   function alternar(codigo) {
@@ -114,6 +137,13 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
               </button>
             )
           })}
+          {conAjustes > 0 && (
+            <button type="button" className={'proc-f-btn' + (soloAjustes ? ' on' : '')}
+              title="Diseños que volvieron después de despacharse"
+              onClick={() => setSoloAjustes(!soloAjustes)}>
+              Con ajustes <b>{conAjustes}</b>
+            </button>
+          )}
         </div>
         <SearchInput value={q} onChange={setQ} placeholder="Buscar diseño…" />
         {sel.size > 0 && (
@@ -146,6 +176,7 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
                 <th>Recibido</th>
                 <th>Etapa actual</th>
                 <th className="num">Rondas</th>
+                <th className="num">Ajustes</th>
                 <th className="num">En etapa</th>
                 <th className="num">Ciclo total</th>
                 <th></th>
@@ -173,8 +204,13 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
                     </td>
                     <td>{d.nombre || <span className="muted">—</span>}</td>
                     <td className="muted">{formatDate(d.recibidoAt) || '—'}</td>
-                    <td><EtapaChip etapa={info.etapa} etiqueta={info.etiqueta} /></td>
+                    <td><EtapaCelda info={info} /></td>
                     <td className="num">{info.rondas || <span className="muted">—</span>}</td>
+                    <td className="num">
+                      {info.ajustes
+                        ? <span className="dis-ajustes" title="Veces que volvió después de despacharse">{info.ajustes}</span>
+                        : <span className="muted">—</span>}
+                    </td>
                     <td className={'num' + (alerta ? ' dis-alerta' : '')}>
                       {info.terminado || info.dias == null ? <span className="muted">—</span> : `${info.dias} d`}
                     </td>
@@ -775,9 +811,7 @@ function DisenoModal({ meta, disenos = [], onClose, onSaved, onRenombrado, onVie
                               variante: ev.def.formatoCorreccion ? 'correccion' : 'strikeoff',
                               titulo: ev.def.hoja,
                             })}>
-                            📋 {ev.def.formatoCorreccion
-                              ? 'Ver corrección para la diseñadora'
-                              : 'Ver formato para la diseñadora'}
+                            📋 {ev.def.boton || 'Ver formato para la diseñadora'}
                           </button>
                         )}
                       </div>

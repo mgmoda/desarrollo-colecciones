@@ -3929,6 +3929,17 @@ img.ship-ref-photo {
 .dis-resumen b { font-size: 14px; font-weight: 700; color: var(--ink); }
 .data-table td.dis-total { line-height: 1.25; }
 .dis-total-sub { display: block; font-size: 10px; color: var(--muted); font-weight: 400; }
+/* Que ya se despachó, debajo de la etapa en que anda ahora. */
+.dis-desp-sub {
+  display: block; margin-top: 3px;
+  font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+/* Cuántas veces volvió después de despacharse: es un aviso, no un dato más. */
+.dis-ajustes {
+  display: inline-block; min-width: 18px; padding: 1px 6px;
+  border-radius: 999px; background: #faeeda; color: #633806;
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
 .dis-fase-dias {
   font-size: 10px; font-weight: 700; color: var(--ink-soft);
   background: #efece4; border-radius: 4px; padding: 2px 6px; white-space: nowrap;

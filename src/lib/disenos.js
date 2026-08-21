@@ -51,12 +51,12 @@ export const EVENTOS = {
   // siempre el arte y siempre lo hace la diseñadora gráfica. Por eso lleva
   // fotos —el cliente marca sobre la tela el tono o el tamaño que quiere— y
   // saca su propia hoja para mandársela a ella.
-  correccion: { label: 'Corrección gráfica', etapa: 'correccion', fase: 'sigue', nota: true, vuelta: true, img: 'varias', formatoCorreccion: true },
+  correccion: { label: 'Corrección gráfica', etapa: 'correccion', fase: 'sigue', enFases: ['grafico', 'strikeoff'], nota: true, vuelta: true, img: 'varias', formatoCorreccion: true, hoja: 'CORRECCIÓN GRÁFICA', boton: 'Ver corrección para la diseñadora' },
   aprobado: { label: 'Diseño aprobado', etapa: 'aprobado', fase: 'grafico', codigoCliente: true, hito: true },
   strikeoff: { label: 'Strike off', etapa: 'strikeoff', fase: 'strikeoff', img: 'una', ronda: true, formato: true, hoja: 'STRIKE OFF' },
   // Quedó de cuando había dos correcciones distintas. Ya no se ofrece, pero
   // sigue definida para que los diseños viejos se sigan leyendo bien.
-  strikeoffCorreccion: { label: 'Corrección gráfica', etapa: 'correccion', fase: 'sigue', nota: true, vuelta: true, img: 'varias', formatoCorreccion: true, oculto: true },
+  strikeoffCorreccion: { label: 'Corrección gráfica', etapa: 'correccion', fase: 'sigue', enFases: ['grafico', 'strikeoff'], nota: true, vuelta: true, img: 'varias', formatoCorreccion: true, hoja: 'CORRECCIÓN GRÁFICA', boton: 'Ver corrección para la diseñadora', oculto: true },
   strikeoffAprobado: { label: 'Strike off aprobado', etapa: 'muestraPendiente', fase: 'strikeoff', hito: true },
   // Aprobado el strike off se manda a imprimir tela de verdad, en metros, y
   // solo con esa se confecciona la prenda. Son dos cosas distintas y antes
@@ -66,6 +66,12 @@ export const EVENTOS = {
   telaMuestra: { label: 'Tela de muestra impresa', etapa: 'telaMuestra', fase: 'muestra', img: 'una', tela: true, formato: true, hoja: 'TELA DE MUESTRA' },
   muestra: { label: 'Muestra de prenda confeccionada', etapa: 'muestra', fase: 'muestra', img: 'una' },
   despachado: { label: 'Despachado a Geodésica', etapa: 'despachado', fase: 'muestra', hito: true },
+  // Despachar ya no es el final. Geodésica recibe la prenda y a veces pide
+  // ajustes —cambio de moldes, sobre todo—, y ahí el diseño se reabre y vuelve
+  // a pasar por los procesos que haga falta hasta despacharse otra vez.
+  // Se separa de la corrección gráfica a propósito: aquella es del arte y la
+  // hace la diseñadora; esta suele ser de patronaje y la hace otra persona.
+  ajuste: { label: 'Ajuste pedido por Geodésica', etapa: 'ajuste', fase: 'sigue', enFases: ['muestra'], trasHito: true, nota: true, vuelta: true, img: 'varias', formatoCorreccion: true, hoja: 'AJUSTE PEDIDO', boton: 'Ver hoja del ajuste' },
 }
 
 // Agrupa la bitácora por fase, numerando las rondas dentro de cada una.
@@ -97,7 +103,7 @@ export function agruparPorFase(eventos = [], etapaActual) {
     .filter((f) => porFase.has(f.key))
     .map((f) => {
       const eventos = porFase.get(f.key)
-      const cerrada = eventos.some((ev) => (EVENTOS[ev.tipo] || {}).hito)
+      const cerrada = !!(EVENTOS[eventos[eventos.length - 1].tipo] || {}).hito
       const pasada = orden.indexOf(f.key) < idxActual || etapaActual === 'despachado'
       return {
         ...f,
@@ -119,6 +125,7 @@ export const ETAPAS = [
   { key: 'telaMuestra', label: 'Tela de muestra', tono: 'coral' },
   { key: 'muestra', label: 'Muestra de prenda', tono: 'coral' },
   { key: 'despachado', label: 'Despachado', tono: 'green' },
+  { key: 'ajuste', label: 'Ajuste pedido', tono: 'amber' },
 ]
 export const ETAPA_LABEL = Object.fromEntries(ETAPAS.map((e) => [e.key, e.label]))
 export const ETAPA_TONO = Object.fromEntries(ETAPAS.map((e) => [e.key, e.tono]))
@@ -147,6 +154,13 @@ export function disenoInfo(diseno) {
   const strikeOffs = evs.filter((e) => e.tipo === 'strikeoff').length
   const etapa = def.etapa || 'grafico'
   const terminado = etapa === 'despachado'
+  // Un diseño despachado que vuelve con ajustes sigue vivo. Se guarda la fecha
+  // del último despacho para que la lista pueda mostrar las dos cosas: que ya
+  // se entregó y en qué anda ahora.
+  const ajustes = evs.filter((e) => e.tipo === 'ajuste').length
+  const ultimoDespacho = [...evs].reverse().find((e) => e.tipo === 'despachado')
+  const despachadoAt = (ultimoDespacho && ultimoDespacho.fecha) || ''
+  const reabierto = !!despachadoAt && !terminado
   // Ciclo total: desde que entró el diseño hasta hoy (o hasta el despacho).
   const inicio = evs[0].fecha
   const diasTotal = terminado ? diasEntre(inicio, ultimo.fecha) : diasDesde(inicio)
@@ -165,6 +179,9 @@ export function disenoInfo(diseno) {
     strikeOffs,
     ultimo,
     terminado,
+    ajustes,
+    despachadoAt,
+    reabierto,
   }
 }
 
@@ -189,14 +206,19 @@ function tiposDeFase(fase) {
     const d = EVENTOS[k]
     return !d.oculto && (d.fase || 'grafico') === fase
   })
-  const sueltos = fase === 'muestra' ? [] : Object.keys(EVENTOS).filter((k) => {
+  const sueltos = Object.keys(EVENTOS).filter((k) => {
     const d = EVENTOS[k]
-    return !d.oculto && d.fase === 'sigue'
+    return !d.oculto && d.fase === 'sigue' && (d.enFases || []).includes(fase)
   })
   if (!sueltos.length) return propios
   const iHito = propios.findIndex((k) => EVENTOS[k].hito)
+  // Antes del cierre van los que se piden mientras la fase está viva —una
+  // corrección se pide antes de aprobar—. El ajuste va después, porque llega
+  // cuando la prenda ya se despachó.
+  const antes = sueltos.filter((k) => !EVENTOS[k].trasHito)
+  const despues = sueltos.filter((k) => EVENTOS[k].trasHito)
   const corte = iHito === -1 ? propios.length : iHito
-  return [...propios.slice(0, corte), ...sueltos, ...propios.slice(corte)]
+  return [...propios.slice(0, corte), ...antes, ...propios.slice(corte), ...despues]
 }
 
 // Los eventos de cada fase, para poder elegir cualquiera y no solo el
@@ -230,6 +252,12 @@ export function accionesDisponibles(etapa) {
       return ['muestra']
     case 'muestra':
       return ['despachado']
+    case 'despachado':
+      return ['ajuste']
+    // Un ajuste puede tocar los moldes o el arte, así que se abren los dos
+    // caminos y quien registra elige.
+    case 'ajuste':
+      return ['correccion', 'strikeoff', 'telaMuestra', 'muestra']
     default:
       return []
   }

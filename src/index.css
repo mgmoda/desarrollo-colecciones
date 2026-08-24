@@ -6268,3 +6268,16 @@ select.filtro-taller { flex: none; width: 215px; }
   border-top: 1px solid var(--hairline-strong);
   font-weight: 600;
 }
+
+/* Nota de la referencia dentro de la tabla del área: por qué está frenada.
+   Vacía es un enlace discreto; con texto se ve como aviso. */
+.nota-btn {
+  display: block; margin-top: 3px; max-width: 260px;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; font-size: 11px; font-weight: 400; text-align: left;
+  color: var(--muted); line-height: 1.35;
+}
+.nota-btn:hover { text-decoration: underline; }
+.nota-btn.con { color: #8c2f28; }
+.nota-btn.con::before { content: '⚠ '; }
+.nota-ta { resize: vertical; min-height: 62px; font-family: inherit; }

@@ -11,6 +11,7 @@ import AreaKpis from './AreaKpis.jsx'
 import ProcesosTags from './ProcesosTags.jsx'
 import ConjuntoModal from './ConjuntoModal.jsx'
 import CurvaModal, { MEDIDA_DE_AREA } from './CurvaModal.jsx'
+import NotaRefModal from './NotaRefModal.jsx'
 
 const tallerDe = (o) => (o.stages && o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || ''
 
@@ -74,10 +75,11 @@ function TopCell({ orden, refRow, topLinks, onAbrir }) {
   )
 }
 
-export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, fasesOcultas, onToggleFase, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes }) {
+export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, onSetFields, fasesOcultas, onToggleFase, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes }) {
   const [topDe, setTopDe] = useState(null) // orden cuyo vínculo de top se está viendo
   const [conjuntoDe, setConjuntoDe] = useState(null) // orden cuyo conjunto se está viendo
   const [curvaDe, setCurvaDe] = useState(null) // orden cuya curva de tallas se está viendo
+  const [notaDe, setNotaDe] = useState(null)   // orden cuya nota se está escribiendo
   const ocultas = fasesOcultas || new Set()
   const area = AREAS[areaKey]
   const [q, setQ] = useState('')
@@ -106,6 +108,10 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   // despacho, que es cuando el dato sirve para algo.
   const showValorTaller = areaKey === 'alistamiento'
   const showAtraso = areaKey !== 'entrega' // en entrega ya ingresó: no hay atraso
+  // Entre el trazo y el corte, Factory registra el doblado y alistamiento de la
+  // tela. Sin eso, Corte muestra iguales dos cosas distintas: lo que espera que
+  // doblen la tela y lo que ya está doblado esperando la tijera.
+  const showDoblado = areaKey === 'corte'
   const limiteDias = limiteDiasArea(areaKey)
   const pendienteLabel = area.next ? STAGE_LABEL[area.next] : 'Recibido'
 
@@ -149,6 +155,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       atraso: (o) => diasDesde((o.stages[baseStage] || {}).fecha),
       diasTaller: (o) => diasEnTaller(o),
       valorTaller: (o) => Number(o.valorTaller) || 0,
+      doblado: (o) => ((o.stages.doblado || {}).fecha) || '',
     }
     return sortRows(list, accessors[sortKey], sortDir)
   }, [enEtapa, q, tallerSel, sortKey, sortDir, baseStage, refMap])
@@ -252,6 +259,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 {showTaller && <SortTh label="Taller" col="taller" {...thProps} />}
                 {showValorTaller && <SortTh label="Valor taller" col="valorTaller" className="num" {...thProps} />}
                 <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />
+                {showDoblado && <SortTh label="Doblado" col="doblado" {...thProps} />}
                 <SortTh label="Cant" col="cant" className="num" {...thProps} />
                 {showAtraso && <SortTh label="Días" col="atraso" className="num" {...thProps} />}
                 {showDiasTaller && <SortTh label="Días en taller" col="diasTaller" className="num" {...thProps} />}
@@ -300,6 +308,16 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                           </button>
                         )
                       })()}
+                      {/* Nota de la referencia: por qué está frenada. Se
+                          escribe desde aquí, que es donde se ve el problema. */}
+                      {onSetFields && (
+                        <button type="button"
+                          className={'nota-btn' + (ref && ref.pendienteNota ? ' con' : '')}
+                          onClick={(e) => { e.stopPropagation(); setNotaDe(o) }}
+                          title={ref && ref.pendienteNota ? 'Editar la nota' : 'Escribir por qué está frenada'}>
+                          {ref && ref.pendienteNota ? ref.pendienteNota : '+ nota'}
+                        </button>
+                      )}
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <ProductoCell orden={o} vinculo={conjuntoLinks.get(claveOrden(o))}
@@ -318,6 +336,13 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                       </td>
                     )}
                     <td>{formatDate(base.fecha)}</td>
+                    {showDoblado && (
+                      <td>
+                        {(o.stages.doblado || {}).fecha
+                          ? formatDate(o.stages.doblado.fecha)
+                          : <span className="tag tag-warn" title="La tela todavía no se ha doblado y alistado para corte">Sin doblar</span>}
+                      </td>
+                    )}
                     <td className="num">{base.cant}</td>
                     {showAtraso && (
                       <td className="num">
@@ -350,6 +375,12 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
             </tbody>
           </table>
         </div>
+      )}
+
+      {notaDe && (
+        <NotaRefModal orden={notaDe} refRow={refMap.get(notaDe.referencia)}
+          onGuardar={(campos) => onSetFields && onSetFields(notaDe.referencia, campos)}
+          onClose={() => setNotaDe(null)} />
       )}
 
       {curvaDe && (

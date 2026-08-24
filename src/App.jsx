@@ -827,7 +827,7 @@ export default function App() {
             faltantesPorRef={faltantesPorRef} onIrAFaltantes={() => setTab('faltantes')}
             fasesOcultas={fasesOcultas} onToggleFase={toggleFase}
             topLinks={topLinks} onVincularTop={vincularTop} conjuntoLinks={conjuntoLinks}
-            onViewImage={setLightbox} onOpenRef={openEdit} />
+            onViewImage={setLightbox} onOpenRef={openEdit} onSetFields={handleSetFields} />
         )}
         {tab === 'ensamble' && (
           <SeguimientoView orders={orders} refMap={refMap} onViewImage={setLightbox} onOpenRef={openEdit} />

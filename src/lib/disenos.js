@@ -129,14 +129,14 @@ export const ETAPAS = [
   { key: 'grafico', label: 'Desarrollo gráfico', tono: 'purple' },
   { key: 'enviado', label: 'Con el cliente', tono: 'blue' },
   { key: 'correccion', label: 'Corrección', tono: 'amber' },
-  { key: 'aprobado', label: 'Aprobado', tono: 'teal' },
+  { key: 'aprobado', label: 'Arte aprobado', tono: 'teal' },
   { key: 'strikeoff', label: 'Strike off', tono: 'pink' },
   { key: 'muestraPendiente', label: 'Muestra pendiente', tono: 'coral' },
   { key: 'telaMuestra', label: 'Tela de muestra', tono: 'coral' },
   { key: 'muestra', label: 'Muestra de prenda', tono: 'coral' },
   { key: 'despachado', label: 'Despachado', tono: 'green' },
   { key: 'ajuste', label: 'Ajuste pedido', tono: 'amber' },
-  { key: 'aprobadoCliente', label: 'Aprobado', tono: 'teal' },
+  { key: 'aprobadoCliente', label: 'Aprobado', tono: 'green' },
   { key: 'rechazado', label: 'Rechazado', tono: 'gray' },
 ]
 export const ETAPA_LABEL = Object.fromEntries(ETAPAS.map((e) => [e.key, e.label]))

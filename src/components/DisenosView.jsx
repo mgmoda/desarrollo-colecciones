@@ -118,15 +118,21 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage, r
     () => disenos.filter((d) => disenoInfo(d).ajustes > 0).length,
     [disenos],
   )
-  const rechazados = useMemo(
-    () => disenos.filter((d) => disenoInfo(d).rechazado).length,
-    [disenos],
-  )
+  // Aprobado y rechazado son el final del camino: el diseño ya no se trabaja
+  // más. Salen de la lista para que "Todos" sea lo que hay vivo, y se ven
+  // entrando por su propio chip de etapa.
+  const cerrados = useMemo(() => {
+    const info = (d) => disenoInfo(d)
+    return disenos.filter((d) => { const i = info(d); return i.aprobado || i.rechazado }).length
+  }, [disenos])
   const rows = useMemo(() => {
     let list = disenos
-    // Un diseño rechazado ya no tiene nada que hacer: estorba en la lista.
-    // Sigue guardado y se ve entrando por su propio chip de etapa.
-    if (etapaF !== 'rechazado') list = list.filter((d) => !disenoInfo(d).rechazado)
+    if (!etapaF) {
+      list = list.filter((d) => {
+        const i = disenoInfo(d)
+        return !i.aprobado && !i.rechazado
+      })
+    }
     if (etapaF) list = list.filter((d) => disenoInfo(d).etapa === etapaF)
     if (soloAjustes) list = list.filter((d) => disenoInfo(d).ajustes > 0)
     const term = q.trim().toLowerCase()
@@ -193,7 +199,7 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage, r
       <div className="view-actions" style={{ marginBottom: 14 }}>
         <div className="dis-filtros">
           <button type="button" className={'proc-f-btn' + (!etapaF ? ' on' : '')}
-            onClick={() => setEtapaF('')}>Todos <b>{disenos.length - rechazados}</b></button>
+            onClick={() => setEtapaF('')}>Todos <b>{disenos.length - cerrados}</b></button>
           {ETAPAS.filter((e) => conteo.get(e.key)).map((e) => {
             const c = etapaColor(e.key)
             const on = etapaF === e.key

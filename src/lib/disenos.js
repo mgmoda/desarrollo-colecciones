@@ -72,10 +72,20 @@ export const EVENTOS = {
   // Se separa de la corrección gráfica a propósito: aquella es del arte y la
   // hace la diseñadora; esta suele ser de patronaje y la hace otra persona.
   ajuste: { label: 'Ajuste pedido por Geodésica', etapa: 'ajuste', fase: 'sigue', enFases: ['muestra'], trasHito: true, nota: true, vuelta: true, img: 'varias', formatoCorreccion: true, hoja: 'AJUSTE PEDIDO', boton: 'Ver hoja del ajuste' },
+  // Los dos finales del diseño, después de que Geodésica ve la prenda. El
+  // aprobado se registra solo al pasarlo a producción; el rechazado se marca a
+  // mano y saca el diseño de la lista, porque ya no hay nada que hacerle.
+  aprobadoCliente: { label: 'Aprobado por Geodésica', etapa: 'aprobadoCliente', fase: 'sigue', enFases: ['muestra'], trasHito: true, hito: true },
+  rechazado: { label: 'Rechazado por Geodésica', etapa: 'rechazado', fase: 'sigue', enFases: ['muestra'], trasHito: true, nota: true, hito: true },
 }
 
+// Etapas en las que el diseño ya no se mueve más.
+export const terminadoEtapa = (e) => (
+  e === 'despachado' || e === 'aprobadoCliente' || e === 'rechazado'
+)
+
 // Agrupa la bitácora por fase, numerando las rondas dentro de cada una.
-// Devuelve [{ fase, label, num, estado: 'hecha'|'curso', eventos: [{ ...ev, i, ronda }] }]
+// Devuelve [{ fase, label, num, estado, eventos: [{ ...ev, i, ronda }] }]
 export function agruparPorFase(eventos = [], etapaActual) {
   const porFase = new Map()
   let rondaGrafico = 0
@@ -104,7 +114,7 @@ export function agruparPorFase(eventos = [], etapaActual) {
     .map((f) => {
       const eventos = porFase.get(f.key)
       const cerrada = !!(EVENTOS[eventos[eventos.length - 1].tipo] || {}).hito
-      const pasada = orden.indexOf(f.key) < idxActual || etapaActual === 'despachado'
+      const pasada = orden.indexOf(f.key) < idxActual || terminadoEtapa(etapaActual)
       return {
         ...f,
         eventos,
@@ -126,6 +136,8 @@ export const ETAPAS = [
   { key: 'muestra', label: 'Muestra de prenda', tono: 'coral' },
   { key: 'despachado', label: 'Despachado', tono: 'green' },
   { key: 'ajuste', label: 'Ajuste pedido', tono: 'amber' },
+  { key: 'aprobadoCliente', label: 'Aprobado', tono: 'teal' },
+  { key: 'rechazado', label: 'Rechazado', tono: 'gray' },
 ]
 export const ETAPA_LABEL = Object.fromEntries(ETAPAS.map((e) => [e.key, e.label]))
 export const ETAPA_TONO = Object.fromEntries(ETAPAS.map((e) => [e.key, e.tono]))
@@ -153,7 +165,7 @@ export function disenoInfo(diseno) {
   const rondas = evs.filter((e) => e.tipo === 'propuesta').length
   const strikeOffs = evs.filter((e) => e.tipo === 'strikeoff').length
   const etapa = def.etapa || 'grafico'
-  const terminado = etapa === 'despachado'
+  const terminado = etapa === 'despachado' || etapa === 'aprobadoCliente' || etapa === 'rechazado'
   // Un diseño despachado que vuelve con ajustes sigue vivo. Se guarda la fecha
   // del último despacho para que la lista pueda mostrar las dos cosas: que ya
   // se entregó y en qué anda ahora.
@@ -182,6 +194,8 @@ export function disenoInfo(diseno) {
     ajustes,
     despachadoAt,
     reabierto,
+    aprobado: etapa === 'aprobadoCliente',
+    rechazado: etapa === 'rechazado',
   }
 }
 
@@ -253,11 +267,15 @@ export function accionesDisponibles(etapa) {
     case 'muestra':
       return ['despachado']
     case 'despachado':
-      return ['ajuste']
+      return ['ajuste', 'rechazado']
     // Un ajuste puede tocar los moldes o el arte, así que se abren los dos
     // caminos y quien registra elige.
     case 'ajuste':
       return ['correccion', 'strikeoff', 'telaMuestra', 'muestra']
+    // Aprobado y rechazado son el final del camino: no hay paso siguiente.
+    case 'aprobadoCliente':
+    case 'rechazado':
+      return []
     default:
       return []
   }

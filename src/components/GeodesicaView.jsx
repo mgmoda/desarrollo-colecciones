@@ -306,7 +306,22 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
           disenos={disenos}
           loading={disenosCargando}
           onReload={cargarDisenos}
-          onViewImage={onViewImage} />
+          onViewImage={onViewImage}
+          refsExistentes={refs}
+          onPasarAProduccion={(items) => {
+            // Cada diseño aprobado entra como preorden con su foto. El precio,
+            // la cantidad y la fecha se completan en Por programar.
+            items.forEach((it) => {
+              onSetFields && onSetFields(it.referencia, {
+                geodesicaPreOrder: true,
+                geodesicaPreOrderAt: Date.now(),
+                geodesicaProducto: it.producto,
+                geodesicaDiseno: it.codigo,
+                image: it.image || '',
+              })
+            })
+            setEstado('porProgramar')
+          }} />
       ) : estado === 'porProgramar' ? (
         <PorProgramarView
           preOrders={preOrders}

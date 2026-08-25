@@ -8,6 +8,7 @@ import {
   disenoInfo, duracionFases, emptyDiseno, etapaColor, siguienteNumero,
 } from '../lib/disenos.js'
 import FormatoDisenadora from './FormatoDisenadora.jsx'
+import PasarAProduccionModal from './PasarAProduccionModal.jsx'
 import { dbLoadDisenoImgs, dbUpsertDiseno, dbDeleteDiseno, dbLog } from '../lib/db.js'
 import { generateDisenosPDF } from '../lib/disenosPdf.js'
 
@@ -56,10 +57,50 @@ function EtapaCelda({ info }) {
   )
 }
 
-export default function DisenosView({ disenos, loading, onReload, onViewImage }) {
+// Rechazo en lote. El motivo es opcional pero se pide, porque dentro de un mes
+// nadie se acuerda de por qué se cayó un diseño.
+function RechazarModal({ disenos, onConfirmar, onClose }) {
+  const [motivo, setMotivo] = useState('')
+  return (
+    <Modal open onClose={onClose} size="sm">
+      <div className="modal-head">
+        <h2 className="modal-title">
+          Rechazar {disenos.length} {disenos.length === 1 ? 'diseño' : 'diseños'}
+        </h2>
+        <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
+      </div>
+      <div className="modal-body">
+        <p className="field-hint" style={{ marginTop: 0 }}>
+          {disenos.map((d) => d.codigo).join(', ')}
+        </p>
+        <div className="field">
+          <label className="field-label">¿Por qué lo rechazaron? (opcional)</label>
+          <input className="input" value={motivo} autoFocus
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Ej. no les gustó el tono" />
+        </div>
+        <p className="field-hint">
+          Salen de la lista, pero quedan guardados con toda su bitácora y se
+          pueden volver a ver con el filtro <b>Rechazados</b>.
+        </p>
+      </div>
+      <div className="modal-foot">
+        <button className="btn" onClick={onClose}>Cancelar</button>
+        <button className="btn btn-danger" onClick={() => onConfirmar(motivo.trim())}>
+          Rechazar
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
+export default function DisenosView({ disenos, loading, onReload, onViewImage, refsExistentes, onPasarAProduccion }) {
   const [q, setQ] = useState('')
   const [etapaF, setEtapaF] = useState('')
   const [soloAjustes, setSoloAjustes] = useState(false)
+  const [pasarDe, setPasarDe] = useState(null)     // diseños que van a producción
+  const [rechazarDe, setRechazarDe] = useState(null) // diseños que se van a rechazar
+  const [ocupado, setOcupado] = useState(false)
   const [abierto, setAbierto] = useState(null)   // código del diseño abierto
   const [nuevo, setNuevo] = useState(false)
   const [sel, setSel] = useState(() => new Set())
@@ -77,9 +118,15 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
     () => disenos.filter((d) => disenoInfo(d).ajustes > 0).length,
     [disenos],
   )
-
+  const rechazados = useMemo(
+    () => disenos.filter((d) => disenoInfo(d).rechazado).length,
+    [disenos],
+  )
   const rows = useMemo(() => {
     let list = disenos
+    // Un diseño rechazado ya no tiene nada que hacer: estorba en la lista.
+    // Sigue guardado y se ve entrando por su propio chip de etapa.
+    if (etapaF !== 'rechazado') list = list.filter((d) => !disenoInfo(d).rechazado)
     if (etapaF) list = list.filter((d) => disenoInfo(d).etapa === etapaF)
     if (soloAjustes) list = list.filter((d) => disenoInfo(d).ajustes > 0)
     const term = q.trim().toLowerCase()
@@ -90,12 +137,33 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
     return list
   }, [disenos, etapaF, q, soloAjustes])
 
+  const elegidos = useMemo(() => rows.filter((d) => sel.has(d.codigo)), [rows, sel])
+
   const todos = rows.length > 0 && rows.every((d) => sel.has(d.codigo))
   function alternar(codigo) {
     setSel((s) => { const n = new Set(s); n.has(codigo) ? n.delete(codigo) : n.add(codigo); return n })
   }
   function alternarTodos() {
     setSel(todos ? new Set() : new Set(rows.map((d) => d.codigo)))
+  }
+
+  // Agrega un evento a varios diseños. Las imágenes se releen antes de guardar:
+  // el listado no las trae y escribir sin ellas las borraría.
+  async function marcarVarios(lista, evento) {
+    setOcupado(true)
+    try {
+      for (const d of lista) {
+        const imgs = await dbLoadDisenoImgs(d.codigo).catch(() => ({}))
+        const eventos = [...(d.eventos || []), evento]
+        await dbUpsertDiseno({ ...d, eventos, updatedAt: Date.now() }, imgs || {})
+        dbLog('registrar', 'diseño', d.codigo, { proceso: EVENTOS[evento.tipo].label })
+      }
+      setSel(new Set())
+      onReload()
+    } catch (e) {
+      console.error(e)
+      alert('No se pudo guardar: ' + (e.message || e))
+    } finally { setOcupado(false) }
   }
 
   function generarPdf() {
@@ -125,7 +193,7 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
       <div className="view-actions" style={{ marginBottom: 14 }}>
         <div className="dis-filtros">
           <button type="button" className={'proc-f-btn' + (!etapaF ? ' on' : '')}
-            onClick={() => setEtapaF('')}>Todos <b>{disenos.length}</b></button>
+            onClick={() => setEtapaF('')}>Todos <b>{disenos.length - rechazados}</b></button>
           {ETAPAS.filter((e) => conteo.get(e.key)).map((e) => {
             const c = etapaColor(e.key)
             const on = etapaF === e.key
@@ -147,9 +215,17 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
         </div>
         <SearchInput value={q} onChange={setQ} placeholder="Buscar diseño…" />
         {sel.size > 0 && (
-          <button className="btn btn-primary" onClick={generarPdf}>
-            Generar PDF ({sel.size})
-          </button>
+          <>
+            <button className="btn" onClick={generarPdf}>PDF ({sel.size})</button>
+            <button className="btn btn-primary" disabled={ocupado}
+              onClick={() => setPasarDe(elegidos)}>
+              Pasar a producción ({sel.size})
+            </button>
+            <button className="btn btn-danger" disabled={ocupado}
+              onClick={() => setRechazarDe(elegidos)}>
+              Rechazar ({sel.size})
+            </button>
+          </>
         )}
         <button className="btn btn-primary" onClick={() => setNuevo(true)}>+ Diseño</button>
       </div>
@@ -229,6 +305,29 @@ export default function DisenosView({ disenos, loading, onReload, onViewImage })
             </tbody>
           </table>
         </div>
+      )}
+
+      {pasarDe && (
+        <PasarAProduccionModal disenos={pasarDe} refsExistentes={refsExistentes}
+          onClose={() => setPasarDe(null)}
+          onConfirmar={async (items) => {
+            const lista = pasarDe
+            setPasarDe(null)
+            onPasarAProduccion && onPasarAProduccion(items)
+            await marcarVarios(lista, { tipo: 'aprobadoCliente', fecha: hoyISO() })
+          }} />
+      )}
+
+      {rechazarDe && (
+        <RechazarModal disenos={rechazarDe}
+          onClose={() => setRechazarDe(null)}
+          onConfirmar={async (motivo) => {
+            const lista = rechazarDe
+            setRechazarDe(null)
+            await marcarVarios(lista, {
+              tipo: 'rechazado', fecha: hoyISO(), ...(motivo ? { nota: motivo } : {}),
+            })
+          }} />
       )}
 
       {nuevo && (

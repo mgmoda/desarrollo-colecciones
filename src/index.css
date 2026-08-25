@@ -6281,3 +6281,16 @@ select.filtro-taller { flex: none; width: 215px; }
 .nota-btn.con { color: #8c2f28; }
 .nota-btn.con::before { content: '⚠ '; }
 .nota-ta { resize: vertical; min-height: 62px; font-family: inherit; }
+
+/* Lista de diseños que pasan a producción: foto, quién es, y el código nuevo. */
+.pasar-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pasar-item {
+  display: grid; grid-template-columns: 44px 1fr 150px; align-items: center; gap: 12px;
+  padding: 8px; border: 1px solid var(--hairline); border-radius: var(--radius-sm);
+}
+.pasar-id { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.pasar-id .muted { font-size: 12px; }
+@media (max-width: 520px) {
+  .pasar-item { grid-template-columns: 44px 1fr; }
+  .pasar-item .input { grid-column: 2; }
+}

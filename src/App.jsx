@@ -8,6 +8,7 @@ import OrdenCorteView from './components/OrdenCorteView.jsx'
 import CostosView from './components/CostosView.jsx'
 import SeguimientoView from './components/SeguimientoView.jsx'
 import GeodesicaView from './components/GeodesicaView.jsx'
+import ProgramacionesView from './components/ProgramacionesView.jsx'
 import FotosView from './components/FotosView.jsx'
 import FaltantesView from './components/FaltantesView.jsx'
 import SyncIndicator from './components/SyncIndicator.jsx'
@@ -30,6 +31,7 @@ import {
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings, dbLog,
   dbLoadFaltantes, dbUpsertFaltante, dbDeleteFaltante,
   dbLoadPreordenes, dbUpsertPreorden, dbDeletePreorden,
+  dbLoadProgramaciones, dbUpsertProgramacion, dbUpsertProgramaciones, dbDeleteProgramacion,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice, normRef } from './lib/constants.js'
@@ -52,6 +54,7 @@ const TABS = [
   { key: 'autorizaciones', label: 'Autorizaciones' },
   { key: 'costos', label: 'Costos' },
   { key: 'geodesica', label: 'Geodésica' },
+  { key: 'programaciones', label: 'Programaciones' },
 ]
 const AREA_KEYS = ['trazos', 'corte', 'enviar', 'alistamiento', 'talleres', 'entrega']
 // Lo que ve quien no es admin: el recorrido de producción y los faltantes.
@@ -69,6 +72,7 @@ export default function App() {
   const [orders, setOrders] = useState([])
   const [faltantes, setFaltantes] = useState([])
   const [preordenes, setPreordenes] = useState([])
+  const [programaciones, setProgramaciones] = useState([])
   const [refs, setRefs] = useState([])
   const [settings, setSettings] = useState({ telas: normalizeTelas(DEFAULT_TELAS), colors: DEFAULT_COLORS, proveedores: [], decorados: ['Flor'], marcas: DEFAULT_MARCAS, procesos: DEFAULT_PROCESOS })
 
@@ -111,14 +115,15 @@ export default function App() {
     let cancelled = false
     Promise.all([
       dbLoadOrders(), dbLoadRefs(), dbLoadSettings(), dbLoadFaltantes(), dbLoadRefsMeta(),
-      dbLoadOrdersStamp(), dbLoadPreordenes(),
+      dbLoadOrdersStamp(), dbLoadPreordenes(), dbLoadProgramaciones(),
     ])
-      .then(([o, r, s, fl, meta, stamp, po]) => {
+      .then(([o, r, s, fl, meta, stamp, po, pr]) => {
         if (cancelled) return
         refsMeta.current = new Map(meta.map((m) => [m.id, m.updated_at]))
         ordersStamp.current = stamp
         setFaltantes(fl)
         setPreordenes(po)
+        setProgramaciones(pr)
         setOrders(o)
         // Migración silenciosa: corregir "Maricet" → "Mariset" Y eliminar
         // cualquier campo "_stub" que se haya persistido por error.
@@ -400,6 +405,29 @@ export default function App() {
       const n = [...list]; n[i] = p; return n
     })
     dbUpsertPreorden(p).catch((e) => { console.error(e); alert('No se pudo guardar la preorden: ' + e.message) })
+  }
+
+  function guardarProgramacion(p) {
+    setProgramaciones((l) => {
+      const i = l.findIndex((x) => x.id === p.id)
+      if (i < 0) return [...l, p]
+      const n = [...l]; n[i] = p; return n
+    })
+    dbUpsertProgramacion(p).catch((e) => { console.error(e); alert('No se pudo guardar: ' + e.message) })
+  }
+
+  function guardarProgramaciones(lista) {
+    setProgramaciones((l) => {
+      const m = new Map(l.map((x) => [x.id, x]))
+      lista.forEach((p) => m.set(p.id, p))
+      return [...m.values()]
+    })
+    dbUpsertProgramaciones(lista).catch((e) => { console.error(e); alert('No se pudo cargar: ' + e.message) })
+  }
+
+  function borrarProgramacion(id) {
+    setProgramaciones((l) => l.filter((x) => x.id !== id))
+    dbDeleteProgramacion(id).catch((e) => console.error(e))
   }
 
   function borrarPreorden(id) {
@@ -872,6 +900,14 @@ export default function App() {
             preordenes={preordenes} onGuardarPreorden={guardarPreorden} onBorrarPreorden={borrarPreorden}
             onViewImage={setLightbox} onOpenRef={openEdit}
             onSetField={handleSetField} onSetFields={handleSetFields} />
+        )}
+        {tab === 'programaciones' && (
+          <ProgramacionesView
+            programaciones={programaciones} orders={orders} refMap={refMap}
+            usuario={emailSesion}
+            onGuardar={guardarProgramacion} onGuardarVarias={guardarProgramaciones}
+            onBorrar={borrarProgramacion}
+            onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
       </main>
 

@@ -209,3 +209,27 @@ export async function dbDeletePreorden(id) {
   const { error } = await supabase.from('dev_preordenes').delete().eq('id', id)
   if (error) throw error
 }
+
+// Programaciones: lo que el cliente pidió de cada referencia, contra lo que ya
+// se programó. El pedido se digita; lo programado lo saca el sistema de las
+// órdenes de corte.
+export async function dbLoadProgramaciones() {
+  return loadTable('dev_programaciones')
+}
+
+export async function dbUpsertProgramacion(p) {
+  const { error } = await supabase.from('dev_programaciones').upsert({ id: p.id, data: p })
+  if (error) throw error
+}
+
+export async function dbUpsertProgramaciones(lista) {
+  if (!lista.length) return
+  const { error } = await supabase.from('dev_programaciones')
+    .upsert(lista.map((p) => ({ id: p.id, data: p })))
+  if (error) throw error
+}
+
+export async function dbDeleteProgramacion(id) {
+  const { error } = await supabase.from('dev_programaciones').delete().eq('id', id)
+  if (error) throw error
+}

@@ -3,8 +3,7 @@ import Modal from './Modal.jsx'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { formatDate } from '../lib/constants.js'
-import { agruparOrdenes, esConjunto, leerArchivo, leerPegado, programadoDe } from '../lib/programaciones.js'
+import { esConjunto, indiceConjuntos, leerArchivo, leerPegado } from '../lib/programaciones.js'
 
 const MARCAS = ['Casania', 'Mariset']
 
@@ -24,7 +23,7 @@ const nombreCorto = (email) => {
 // Lo que dijo el encargado de por qué una referencia no se ha programado.
 // Es una bitácora, no un campo: la respuesta de la semana pasada importa tanto
 // como la de hoy para saber si el problema se está moviendo.
-function ObservacionesModal({ fila, usuario, onGuardar, onClose }) {
+function SeguimientoModal({ fila, usuario, onGuardar, onClose }) {
   const [texto, setTexto] = useState('')
   if (!fila) return null
   const historial = [...(fila.observaciones || [])].sort((a, b) => (b.at || 0) - (a.at || 0))
@@ -109,8 +108,7 @@ function CargarModal({ marca, onConfirmar, onClose }) {
       <div className="modal-body">
         <p className="field-hint" style={{ marginTop: 0 }}>
           El reporte <b>Pedidos y Cortes por Referencia</b> de Factory, tal como lo
-          exportas. Se toma la referencia, la descripción y el pedido; lo programado
-          lo calcula el sistema.
+          exportas. Se toman la referencia, la descripción, el pedido y lo cortado.
         </p>
 
         <label className="import-drop"
@@ -138,8 +136,7 @@ function CargarModal({ marca, onConfirmar, onClose }) {
         {filas.length > 0 && (
           <p className="field-hint">
             Se van a cargar <b>{filas.length}</b> referencias de <b>{marcaFinal}</b>.
-            Las que ya existan actualizan su pedido; el seguimiento y las piezas
-            de los conjuntos no se pierden.
+            Las que ya existan actualizan sus cifras; el seguimiento no se pierde.
           </p>
         )}
       </div>
@@ -154,73 +151,41 @@ function CargarModal({ marca, onConfirmar, onClose }) {
   )
 }
 
-// Enlace de un conjunto con las prendas que lo arman.
-function PiezasModal({ fila, onGuardar, onClose }) {
-  const [texto, setTexto] = useState((fila.piezas || []).join(', '))
-  if (!fila) return null
-  return (
-    <Modal open onClose={onClose} size="sm">
-      <div className="modal-head">
-        <h2 className="modal-title">{fila.id} · piezas del conjunto</h2>
-        <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
-      </div>
-      <div className="modal-body">
-        <p className="field-hint" style={{ marginTop: 0 }}>
-          El conjunto no tiene órdenes propias: se arma con las de sus prendas.
-          Escribe las referencias separadas por coma.
-        </p>
-        <input className="input" value={texto} autoFocus
-          onChange={(e) => setTexto(e.target.value)} placeholder="Ej. C6866, C6867" />
-        <p className="field-hint">
-          Se cuentan solo las órdenes marcadas CONJUNTO, y se toma una prenda:
-          30 blusas y 30 shorts son 30 conjuntos, no 60.
-        </p>
-      </div>
-      <div className="modal-foot">
-        <button className="btn" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-primary" onClick={() => {
-          const piezas = texto.split(/[,;]/).map((s) => s.trim().toUpperCase()).filter(Boolean)
-          onGuardar({ ...fila, piezas })
-          onClose()
-        }}>Guardar</button>
-      </div>
-    </Modal>
-  )
-}
-
 export default function ProgramacionesView({
-  programaciones, orders, refMap, usuario,
+  programaciones, refMap, refs, usuario,
   onGuardar, onGuardarVarias, onBorrar, onViewImage, onOpenRef,
 }) {
   const [marca, setMarca] = useState('Casania')
   const [q, setQ] = useState('')
   const [soloPendientes, setSoloPendientes] = useState(false)
-  const [pegar, setPegar] = useState(false)
+  const [cargar, setCargar] = useState(false)
   const [obsDe, setObsDe] = useState(null)
-  const [piezasDe, setPiezasDe] = useState(null)
   const { sortKey, sortDir, toggle } = useSort('pendiente', 'desc')
 
-  const ordenesPorRef = useMemo(() => agruparOrdenes(orders), [orders])
+  // Los conjuntos ya están armados en Costos: de ahí sale su foto, que es la de
+  // las dos prendas puestas y no la de la blusa sola.
+  const conjuntos = useMemo(() => indiceConjuntos(refs), [refs])
 
   const filas = useMemo(() => (programaciones || [])
     .filter((p) => p.marca === marca)
     .map((p) => {
-      const programado = programadoDe(p, ordenesPorRef)
-      const pedido = Number(p.pedido) || 0
+      const delCatalogo = conjuntos.get(String(p.id).toUpperCase())
       const ficha = refMap.get(p.id)
-      const conj = esConjunto(p)
+      const pedido = Number(p.pedido) || 0
+      const cortado = Number(p.cortado) || 0
       return {
         ...p,
-        programado,
-        pendiente: pedido - programado,
-        image: (ficha && ficha.image) || '',
+        pedido,
+        cortado,
+        pendiente: pedido - cortado,
+        image: (delCatalogo && delCatalogo.image) || (ficha && ficha.image) || '',
         tipoFicha: (ficha && ficha.tipo) || '',
-        conj,
-        sinEnlazar: conj && !(p.piezas || []).length,
+        conj: esConjunto(p) || !!delCatalogo,
+        piezas: delCatalogo ? delCatalogo.piezas : [],
         obs: (p.observaciones || []).length,
         ultimaObs: (p.observaciones || []).slice(-1)[0] || null,
       }
-    }), [programaciones, marca, ordenesPorRef, refMap])
+    }), [programaciones, marca, refMap, conjuntos])
 
   const rows = useMemo(() => {
     let list = filas
@@ -232,8 +197,8 @@ export default function ProgramacionesView({
     const accessors = {
       referencia: (f) => f.id,
       descripcion: (f) => f.descripcion || '',
-      pedido: (f) => Number(f.pedido) || 0,
-      programado: (f) => f.programado,
+      pedido: (f) => f.pedido,
+      cortado: (f) => f.cortado,
       pendiente: (f) => f.pendiente,
       obs: (f) => f.obs,
     }
@@ -241,10 +206,10 @@ export default function ProgramacionesView({
   }, [filas, q, soloPendientes, sortKey, sortDir])
 
   const tot = useMemo(() => rows.reduce((a, f) => ({
-    pedido: a.pedido + (Number(f.pedido) || 0),
-    programado: a.programado + f.programado,
+    pedido: a.pedido + f.pedido,
+    cortado: a.cortado + f.cortado,
     pendiente: a.pendiente + Math.max(0, f.pendiente),
-  }), { pedido: 0, programado: 0, pendiente: 0 }), [rows])
+  }), { pedido: 0, cortado: 0, pendiente: 0 }), [rows])
 
   const thProps = { sortKey, sortDir, onSort: toggle }
   const num = (n) => n.toLocaleString('es-CO')
@@ -265,12 +230,12 @@ export default function ProgramacionesView({
           </button>
         </div>
         <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia…" />
-        <button className="btn btn-primary" onClick={() => setPegar(true)}>Cargar pedidos</button>
+        <button className="btn btn-primary" onClick={() => setCargar(true)}>Cargar pedidos</button>
       </div>
 
       <div className="prog-kpis">
         <div className="prog-kpi"><span>Pedido</span><b>{num(tot.pedido)}</b></div>
-        <div className="prog-kpi"><span>Programado</span><b>{num(tot.programado)}</b></div>
+        <div className="prog-kpi"><span>Cortado</span><b>{num(tot.cortado)}</b></div>
         <div className="prog-kpi alerta"><span>Falta por programar</span><b>{num(tot.pendiente)}</b></div>
         <div className="prog-kpi"><span>Referencias</span><b>{rows.length}</b></div>
       </div>
@@ -280,7 +245,7 @@ export default function ProgramacionesView({
           <p>{(programaciones || []).length === 0
             ? 'Todavía no hay pedidos cargados.'
             : 'Sin referencias en este filtro.'}</p>
-          <p className="muted">Pega el reporte de Factory con “Cargar pedidos”.</p>
+          <p className="muted">Carga el reporte de Factory con “Cargar pedidos”.</p>
         </div>
       ) : (
         <div className="table-wrap">
@@ -291,7 +256,7 @@ export default function ProgramacionesView({
                 <SortTh label="Referencia" col="referencia" {...thProps} />
                 <SortTh label="Descripción" col="descripcion" {...thProps} />
                 <SortTh label="Pedido" col="pedido" className="num" {...thProps} />
-                <SortTh label="Programado" col="programado" className="num" {...thProps} />
+                <SortTh label="Cortado" col="cortado" className="num" {...thProps} />
                 <SortTh label="Falta" col="pendiente" className="num" {...thProps} />
                 <SortTh label="Seguimiento" col="obs" {...thProps} />
                 <th></th>
@@ -311,22 +276,19 @@ export default function ProgramacionesView({
                     <td className="strong" style={{ cursor: ficha && onOpenRef ? 'pointer' : 'default' }}
                       onClick={() => ficha && onOpenRef && onOpenRef(ficha)}>
                       {f.id}
-                      {f.conj && <span className="tag conj-tag">Conjunto</span>}
+                      {f.conj && (
+                        <span className="tag conj-tag"
+                          title={f.piezas.length ? `Se arma con ${f.piezas.join(' + ')}` : 'Conjunto'}>
+                          Conjunto
+                        </span>
+                      )}
                     </td>
                     <td className="muted">
                       {f.descripcion || '—'}
                       {f.tipoFicha && <span className="prog-tipo">{f.tipoFicha}</span>}
                     </td>
-                    <td className="num strong">{num(Number(f.pedido) || 0)}</td>
-                    <td className="num">
-                      {f.sinEnlazar ? (
-                        <button type="button" className="tag tag-warn"
-                          onClick={() => setPiezasDe(f)}
-                          title="El conjunto no tiene órdenes propias: hay que decir con qué prendas se arma">
-                          Sin enlazar
-                        </button>
-                      ) : num(f.programado)}
-                    </td>
+                    <td className="num strong">{num(f.pedido)}</td>
+                    <td className="num">{num(f.cortado)}</td>
                     <td className={'num strong' + (f.pendiente > 0 ? ' prog-falta' : '')}>
                       {f.pendiente > 0 ? num(f.pendiente) : <span className="muted">—</span>}
                     </td>
@@ -343,15 +305,10 @@ export default function ProgramacionesView({
                       )}
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        {f.conj && (
-                          <button className="btn btn-ghost" onClick={() => setPiezasDe(f)}>Piezas</button>
-                        )}
-                        <button className="btn btn-ghost" style={{ color: '#b23121' }}
-                          onClick={() => {
-                            if (window.confirm(`¿Quitar ${f.id} de programaciones?`)) onBorrar(f.id)
-                          }}>Quitar</button>
-                      </div>
+                      <button className="btn btn-ghost" style={{ color: '#b23121' }}
+                        onClick={() => {
+                          if (window.confirm(`¿Quitar ${f.id} de programaciones?`)) onBorrar(f.id)
+                        }}>Quitar</button>
                     </td>
                   </tr>
                 )
@@ -361,32 +318,26 @@ export default function ProgramacionesView({
         </div>
       )}
 
-      {pegar && (
-        <CargarModal marca={marca} onClose={() => setPegar(false)}
+      {cargar && (
+        <CargarModal marca={marca} onClose={() => setCargar(false)}
           onConfirmar={(nuevas, marcaCargada) => {
-            // Lo que ya existe conserva su seguimiento y sus piezas: del reporte
-            // solo llega el pedido y la descripción.
+            // Del reporte solo llegan las cifras y la descripción: el
+            // seguimiento que ya tenga la referencia se conserva.
             const previas = new Map((programaciones || []).map((p) => [p.id, p]))
             onGuardarVarias(nuevas.map((n) => ({
               ...(previas.get(n.id) || {}),
               ...n,
               observaciones: (previas.get(n.id) || {}).observaciones || [],
-              piezas: (previas.get(n.id) || {}).piezas || [],
               actualizadoAt: Date.now(),
             })))
             if (marcaCargada) setMarca(marcaCargada)
-            setPegar(false)
+            setCargar(false)
           }} />
       )}
 
       {obsDe && (
-        <ObservacionesModal fila={(programaciones || []).find((p) => p.id === obsDe.id) || obsDe}
+        <SeguimientoModal fila={(programaciones || []).find((p) => p.id === obsDe.id) || obsDe}
           usuario={usuario} onGuardar={onGuardar} onClose={() => setObsDe(null)} />
-      )}
-
-      {piezasDe && (
-        <PiezasModal fila={(programaciones || []).find((p) => p.id === piezasDe.id) || piezasDe}
-          onGuardar={onGuardar} onClose={() => setPiezasDe(null)} />
       )}
     </>
   )

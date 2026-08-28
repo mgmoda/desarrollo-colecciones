@@ -1,83 +1,75 @@
 // Programaciones: lo que el cliente pidió de cada referencia contra lo que ya
 // se mandó a cortar.
 //
-// El pedido se digita —por ahora sale del reporte de Factory que se saca a
-// mano—. Lo programado NO se digita: se cuenta de las órdenes de corte que ya
-// están en el sistema, así que no hay dos números que puedan contradecirse.
-
-// Una orden es de conjunto cuando su producto termina en esa palabra. Va en el
-// producto (MG-B951 CONJUNTO), no en la referencia, y a veces la escriben
-// pegada al código (MG-P995CONJUNTO), así que no se exige el espacio.
-export const esOrdenConjunto = (o) => /CONJUNTO\s*$/i.test(String(o.producto || '').trim())
-
-// Lo programado de una fila.
+// Las tres cifras —pedido, cortado y lo que falta— salen del mismo reporte de
+// Factory. Se intentó calcular lo cortado con las órdenes que ya tiene el
+// sistema y no da: Factory reparte entre la prenda suelta y el conjunto con un
+// criterio que no está en lo que sincronizamos. C6856 y C6857 tienen 40
+// unidades cada una en el sistema y el reporte les pone cero, porque se las
+// abona al conjunto C6858. Dos números que se contradicen son peores que uno
+// solo, así que manda el reporte.
 //
-// Una prenda que se vende suelta y también en conjunto tiene órdenes de las dos
-// clases, y en el reporte son renglones distintos: la blusa por su lado y el
-// conjunto por el suyo. Por eso una fila normal cuenta solo lo suelto.
-//
-// El conjunto no tiene órdenes propias: se arma con las de sus piezas. Y cuenta
-// UNA pieza, no la suma —30 blusas y 30 shorts son 30 conjuntos, no 60—, así
-// que se toma la mayor de las piezas.
-export function programadoDe(fila, ordenesPorRef) {
-  const suma = (lista) => lista.reduce(
-    (n, o) => n + (Number((o.stages.ordenCorte || {}).cant) || 0), 0,
-  )
-  const piezas = (fila.piezas || []).filter(Boolean)
-  if (piezas.length) {
-    const porPieza = piezas.map(
-      (ref) => suma((ordenesPorRef.get(ref) || []).filter(esOrdenConjunto)),
-    )
-    return porPieza.length ? Math.max(...porPieza) : 0
-  }
-  const propias = ordenesPorRef.get(fila.id) || []
-  return suma(propias.filter((o) => !esOrdenConjunto(o)))
-}
+// Lo que sí pone el sistema, y el Excel no tiene: la foto —la del conjunto es
+// la de las dos prendas puestas, no la de la blusa sola—, y el seguimiento de
+// por qué algo lleva sin programarse.
 
-// Órdenes agrupadas por referencia, para no recorrerlas por cada fila.
-export function agruparOrdenes(orders) {
+// Los conjuntos ya están armados en Costos: la prenda ancla guarda con cuál
+// otra va, qué código le da el catálogo al conjunto —el mismo que trae el
+// reporte— y su foto propia. Aquí solo se le da la vuelta al índice para poder
+// ir del código del conjunto a su foto y su descripción.
+export function indiceConjuntos(refs) {
+  const finalDe = (r) => (r && ((r.nuevaRef || '').trim() || r.id)) || ''
+  const porId = new Map((refs || []).map((r) => [r.id, r]))
   const m = new Map()
-  orders.forEach((o) => {
-    if (!m.has(o.referencia)) m.set(o.referencia, [])
-    m.get(o.referencia).push(o)
+  ;(refs || []).forEach((r) => {
+    const codigo = (r.conjuntoNuevaRef || '').trim().toUpperCase()
+    if (!codigo) return
+    const pareja = porId.get(r.conjuntoRef)
+    m.set(codigo, {
+      piezas: [finalDe(r), finalDe(pareja)].filter(Boolean),
+      image: r.conjuntoImage || r.image || '',
+      descripcion: r.conjuntoDescripcion || '',
+    })
   })
   return m
 }
 
 export const esConjunto = (fila) => /CONJUNTO/i.test(fila.descripcion || '')
 
-// Lectura del reporte de Factory pegado desde el Excel. Cada renglón trae
-// referencia, descripción y varios números; de esos solo interesa el pedido,
-// que es la cuarta columna (después de Nro. Cortes).
+const aNumero = (v) => Math.round(Number(String(v).replace(/\./g, '').replace(',', '.')) || 0)
+
+// Lectura de las filas pegadas a mano, por si el archivo no abre. Las columnas
+// del reporte van: referencia, descripción, nro. cortes, pedido, cortado,
+// por cortar, %.
 export function leerPegado(texto, marca) {
   const filas = []
-  const errores = []
-  String(texto || '').split(/\r?\n/).forEach((linea, i) => {
+  String(texto || '').split(/\r?\n/).forEach((linea) => {
     const t = linea.trim()
     if (!t) return
     const celdas = t.split(/\t|\s{2,}|;/).map((c) => c.trim()).filter(Boolean)
     if (celdas.length < 3) return
     const ref = celdas[0].toUpperCase()
-    // El encabezado del reporte y los títulos se cuelan al copiar: se ignoran.
     if (!/^[A-Z0-9-]{3,}$/i.test(ref) || /^REFERENCIA$/i.test(ref)) return
     const numeros = celdas.slice(1).filter((c) => /^-?[\d.,]+$/.test(c))
-    if (!numeros.length) { errores.push(`Línea ${i + 1}: sin cantidades`); return }
-    // Pedido = el segundo número (el primero es Nro. Cortes). Si solo hay uno,
-    // se toma ese: alguien pegó únicamente referencia y pedido.
-    const crudo = numeros.length > 1 ? numeros[1] : numeros[0]
-    const pedido = Math.round(Number(String(crudo).replace(/\./g, '').replace(',', '.')) || 0)
+    if (numeros.length < 2) return
     const desc = celdas.slice(1).find((c) => !/^-?[\d.,]+$/.test(c)) || ''
-    filas.push({ id: ref, marca, descripcion: desc, pedido })
+    filas.push({
+      id: ref,
+      marca,
+      descripcion: desc,
+      pedido: aNumero(numeros[1]),
+      cortado: numeros.length > 2 ? aNumero(numeros[2]) : 0,
+    })
   })
-  return { filas, errores }
+  return { filas }
 }
 
-// Lectura del archivo del reporte tal como sale de Factory (.xls o .xlsx).
+// Lectura del archivo tal como sale de Factory (.xls o .xlsx).
 //
-// El reporte trae dos filas de título antes del encabezado y una fila en blanco
+// El reporte trae dos filas de título antes del encabezado y una en blanco
 // después, así que las columnas se buscan por nombre y no por posición. La
-// marca sale del propio título —"(C)" es Casania, "(M)" Mariset— para que no
-// se pueda cargar el archivo de una en la pestaña de la otra.
+// marca sale del propio título —"(C)" es Casania, "(M)" Mariset— para que no se
+// pueda cargar el archivo de una en la pestaña de la otra.
 export async function leerArchivo(file) {
   const XLSX = await import('xlsx')
   const buf = await file.arrayBuffer()
@@ -95,9 +87,9 @@ export async function leerArchivo(file) {
   const cRef = col(/^referencia$/i)
   const cDesc = col(/descripci/i)
   const cPed = col(/^pedido$/i)
+  const cCort = col(/^cortado$/i)
   if (cPed < 0) throw new Error('El reporte no trae la columna Pedido.')
 
-  // La marca la dice el título: "… Dic 31/2026    (C)".
   let marca = ''
   filas.slice(0, iCab).forEach((f) => {
     const t = (f || []).map(norm).join(' ')
@@ -115,8 +107,13 @@ export async function leerArchivo(file) {
     const f = filas[i] || []
     const ref = norm(f[cRef]).toUpperCase()
     if (!ref || /^referencia$/i.test(ref)) continue
-    const pedido = Math.round(Number(f[cPed]) || 0)
-    out.push({ id: ref, marca, descripcion: cDesc >= 0 ? norm(f[cDesc]) : '', pedido })
+    out.push({
+      id: ref,
+      marca,
+      descripcion: cDesc >= 0 ? norm(f[cDesc]) : '',
+      pedido: Math.round(Number(f[cPed]) || 0),
+      cortado: cCort >= 0 ? Math.round(Number(f[cCort]) || 0) : 0,
+    })
   }
   if (!out.length) throw new Error('El reporte no trae referencias.')
   return { filas: out, marca }

@@ -36,6 +36,32 @@ export function indiceConjuntos(refs) {
 
 export const esConjunto = (fila) => /CONJUNTO/i.test(fila.descripcion || '')
 
+// Una orden es de conjunto cuando su producto termina en esa palabra. Va en el
+// producto (MG-B892 CONJUNTO), no en la referencia, y a veces la escriben
+// pegada al código (MG-P995CONJUNTO), así que no se exige el espacio.
+export const esOrdenConjunto = (o) => /CONJUNTO\s*$/i.test(String(o.producto || '').trim())
+
+// Un conjunto se programa en dos órdenes, una por prenda, con la misma
+// cantidad: 61 blusas y 61 pantalones son 61 conjuntos. Si una de las dos no se
+// programó, la tela de la otra se queda esperando. Esto devuelve cuál falta.
+export function piezaQueFalta(piezas, ordenesPorRef, refMap) {
+  if (!piezas || piezas.length < 2) return null
+  const cuenta = (ref) => (ordenesPorRef.get(ref) || [])
+    .filter(esOrdenConjunto)
+    .reduce((n, o) => n + (Number((o.stages.ordenCorte || {}).cant) || 0), 0)
+  const conteos = piezas.map((ref) => ({ ref, n: cuenta(ref) }))
+  const hechas = conteos.filter((c) => c.n > 0)
+  // Si ninguna se programó todavía no falta nada: el conjunto no ha arrancado.
+  if (!hechas.length || hechas.length === conteos.length) return null
+  const falta = conteos.find((c) => c.n === 0)
+  const ficha = refMap && refMap.get(falta.ref)
+  return {
+    ref: falta.ref,
+    tipo: ((ficha && ficha.tipo) || 'la otra prenda').toLowerCase(),
+    hechas: hechas[0].n,
+  }
+}
+
 const aNumero = (v) => Math.round(Number(String(v).replace(/\./g, '').replace(',', '.')) || 0)
 
 // Lectura de las filas pegadas a mano, por si el archivo no abre. Las columnas

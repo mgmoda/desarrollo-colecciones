@@ -903,7 +903,7 @@ export default function App() {
         )}
         {tab === 'programaciones' && (
           <ProgramacionesView
-            programaciones={programaciones} refMap={refMap} refs={refIndex}
+            programaciones={programaciones} orders={orders} refMap={refMap} refs={refIndex}
             usuario={emailSesion}
             onGuardar={guardarProgramacion} onGuardarVarias={guardarProgramaciones}
             onBorrar={borrarProgramacion}

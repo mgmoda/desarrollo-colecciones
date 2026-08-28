@@ -6334,3 +6334,17 @@ select.filtro-taller { flex: none; width: 215px; }
 /* Fases que el usuario no puede cambiar: se ven, pero no invitan al clic. */
 .fase-toggle.fijo { cursor: default; }
 .fase-toggle.fijo:hover { background: inherit; border-color: var(--hairline); }
+/* Conjunto al que le falta programar una de sus dos prendas. */
+.prog-falta-pieza {
+  display: block; margin-top: 2px;
+  font-size: 10px; color: #8c2f28; white-space: nowrap;
+}
+.prog-falta-pieza::before { content: '⚠ '; }
+/* Aviso de que las cifras vienen de una carga incompleta. */
+.prog-aviso {
+  margin-bottom: 14px; padding: 11px 16px;
+  border-left: 3px solid var(--accent); background: #faf2e4;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 13.5px; color: var(--ink-soft);
+}
+.prog-aviso b { color: var(--ink); }

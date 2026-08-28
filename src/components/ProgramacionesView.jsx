@@ -3,7 +3,7 @@ import Modal from './Modal.jsx'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { esConjunto, indiceConjuntos, leerArchivo, leerPegado } from '../lib/programaciones.js'
+import { esConjunto, indiceConjuntos, leerArchivo, leerPegado, piezaQueFalta } from '../lib/programaciones.js'
 
 const MARCAS = ['Casania', 'Mariset']
 
@@ -152,7 +152,7 @@ function CargarModal({ marca, onConfirmar, onClose }) {
 }
 
 export default function ProgramacionesView({
-  programaciones, refMap, refs, usuario,
+  programaciones, orders, refMap, refs, usuario,
   onGuardar, onGuardarVarias, onBorrar, onViewImage, onOpenRef,
 }) {
   const [marca, setMarca] = useState('Casania')
@@ -165,6 +165,14 @@ export default function ProgramacionesView({
   // Los conjuntos ya están armados en Costos: de ahí sale su foto, que es la de
   // las dos prendas puestas y no la de la blusa sola.
   const conjuntos = useMemo(() => indiceConjuntos(refs), [refs])
+  const ordenesPorRef = useMemo(() => {
+    const m = new Map()
+    ;(orders || []).forEach((o) => {
+      if (!m.has(o.referencia)) m.set(o.referencia, [])
+      m.get(o.referencia).push(o)
+    })
+    return m
+  }, [orders])
 
   const filas = useMemo(() => (programaciones || [])
     .filter((p) => p.marca === marca)
@@ -172,24 +180,28 @@ export default function ProgramacionesView({
       const delCatalogo = conjuntos.get(String(p.id).toUpperCase())
       const ficha = refMap.get(p.id)
       const pedido = Number(p.pedido) || 0
-      const cortado = Number(p.cortado) || 0
+      // Sin la clave, la fila viene de una carga vieja: no es un cero, es que
+      // no se trajo. Se distingue para no hacer creer que no se ha cortado nada.
+      const cortado = p.cortado == null ? null : (Number(p.cortado) || 0)
+      const piezas = delCatalogo ? delCatalogo.piezas : []
       return {
         ...p,
         pedido,
         cortado,
-        pendiente: pedido - cortado,
+        falta: piezaQueFalta(piezas, ordenesPorRef, refMap),
+        pendiente: cortado == null ? null : pedido - cortado,
         image: (delCatalogo && delCatalogo.image) || (ficha && ficha.image) || '',
         tipoFicha: (ficha && ficha.tipo) || '',
         conj: esConjunto(p) || !!delCatalogo,
-        piezas: delCatalogo ? delCatalogo.piezas : [],
+        piezas,
         obs: (p.observaciones || []).length,
         ultimaObs: (p.observaciones || []).slice(-1)[0] || null,
       }
-    }), [programaciones, marca, refMap, conjuntos])
+    }), [programaciones, marca, refMap, conjuntos, ordenesPorRef])
 
   const rows = useMemo(() => {
     let list = filas
-    if (soloPendientes) list = list.filter((f) => f.pendiente > 0)
+    if (soloPendientes) list = list.filter((f) => (f.pendiente || 0) > 0)
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((f) => (f.id + ' ' + (f.descripcion || '')).toLowerCase().includes(term))
@@ -198,8 +210,8 @@ export default function ProgramacionesView({
       referencia: (f) => f.id,
       descripcion: (f) => f.descripcion || '',
       pedido: (f) => f.pedido,
-      cortado: (f) => f.cortado,
-      pendiente: (f) => f.pendiente,
+      cortado: (f) => f.cortado || 0,
+      pendiente: (f) => f.pendiente || 0,
       obs: (f) => f.obs,
     }
     return sortRows(list, accessors[sortKey], sortDir)
@@ -207,8 +219,8 @@ export default function ProgramacionesView({
 
   const tot = useMemo(() => rows.reduce((a, f) => ({
     pedido: a.pedido + f.pedido,
-    cortado: a.cortado + f.cortado,
-    pendiente: a.pendiente + Math.max(0, f.pendiente),
+    cortado: a.cortado + (f.cortado || 0),
+    pendiente: a.pendiente + Math.max(0, f.pendiente || 0),
   }), { pedido: 0, cortado: 0, pendiente: 0 }), [rows])
 
   const thProps = { sortKey, sortDir, onSort: toggle }
@@ -239,6 +251,13 @@ export default function ProgramacionesView({
         <div className="prog-kpi alerta"><span>Falta por programar</span><b>{num(tot.pendiente)}</b></div>
         <div className="prog-kpi"><span>Referencias</span><b>{rows.length}</b></div>
       </div>
+
+      {filas.some((f) => f.cortado == null) && (
+        <div className="prog-aviso">
+          Estas cifras se cargaron antes de que existiera la columna <b>Cortado</b>,
+          por eso sale vacía. Vuelve a cargar el reporte y queda completa.
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <div className="empty-state">
@@ -288,7 +307,15 @@ export default function ProgramacionesView({
                       {f.tipoFicha && <span className="prog-tipo">{f.tipoFicha}</span>}
                     </td>
                     <td className="num strong">{num(f.pedido)}</td>
-                    <td className="num">{num(f.cortado)}</td>
+                    <td className="num">
+                      {f.cortado == null ? <span className="muted">—</span> : num(f.cortado)}
+                      {f.falta && (
+                        <span className="prog-falta-pieza"
+                          title={`La otra prenda va programada en ${f.falta.hechas} y esta en ninguna`}>
+                          falta {f.falta.tipo}
+                        </span>
+                      )}
+                    </td>
                     <td className={'num strong' + (f.pendiente > 0 ? ' prog-falta' : '')}>
                       {f.pendiente > 0 ? num(f.pendiente) : <span className="muted">—</span>}
                     </td>

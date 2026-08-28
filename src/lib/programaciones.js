@@ -1,17 +1,15 @@
 // Programaciones: lo que el cliente pidió de cada referencia contra lo que ya
 // se mandó a cortar.
 //
-// Las tres cifras —pedido, cortado y lo que falta— salen del mismo reporte de
-// Factory. Se intentó calcular lo cortado con las órdenes que ya tiene el
-// sistema y no da: Factory reparte entre la prenda suelta y el conjunto con un
-// criterio que no está en lo que sincronizamos. C6856 y C6857 tienen 40
-// unidades cada una en el sistema y el reporte les pone cero, porque se las
-// abona al conjunto C6858. Dos números que se contradicen son peores que uno
-// solo, así que manda el reporte.
+// El pedido sale del reporte de Factory. Lo programado lo cuenta el sistema de
+// sus propias órdenes de corte, que es la pregunta real: de lo que el cliente
+// pidió, ¿cuánto ya se mandó a cortar?
 //
-// Lo que sí pone el sistema, y el Excel no tiene: la foto —la del conjunto es
-// la de las dos prendas puestas, no la de la blusa sola—, y el seguimiento de
-// por qué algo lleva sin programarse.
+// El detalle que hacía fallar la cuenta: cada prenda tiene DOS códigos, el
+// interno con el que nace (MG-B744) y el final que le da el catálogo (C6864),
+// y las órdenes quedan repartidas entre los dos —155 de 156 referencias tienen
+// órdenes bajo el interno—. Buscando solo por el código del reporte se perdía
+// más de la mitad. Hay que sumar por los dos.
 
 // Los conjuntos ya están armados en Costos: la prenda ancla guarda con cuál
 // otra va, qué código le da el catálogo al conjunto —el mismo que trae el
@@ -44,11 +42,16 @@ export const esOrdenConjunto = (o) => /CONJUNTO\s*$/i.test(String(o.producto || 
 // Un conjunto se programa en dos órdenes, una por prenda, con la misma
 // cantidad: 61 blusas y 61 pantalones son 61 conjuntos. Si una de las dos no se
 // programó, la tela de la otra se queda esperando. Esto devuelve cuál falta.
-export function piezaQueFalta(piezas, ordenesPorRef, refMap) {
+export function piezaQueFalta(piezas, ordenesPorRef, refMap, codigos) {
   if (!piezas || piezas.length < 2) return null
-  const cuenta = (ref) => (ordenesPorRef.get(ref) || [])
-    .filter(esOrdenConjunto)
-    .reduce((n, o) => n + (Number((o.stages.ordenCorte || {}).cant) || 0), 0)
+  const cuenta = (ref) => {
+    const cods = (codigos && codigos.get(ref)) || new Set([ref])
+    let n = 0
+    cods.forEach((c) => (ordenesPorRef.get(c) || [])
+      .filter(esOrdenConjunto)
+      .forEach((o) => { n += Number((o.stages.ordenCorte || {}).cant) || 0 }))
+    return n
+  }
   const conteos = piezas.map((ref) => ({ ref, n: cuenta(ref) }))
   const hechas = conteos.filter((c) => c.n > 0)
   // Si ninguna se programó todavía no falta nada: el conjunto no ha arrancado.
@@ -60,6 +63,42 @@ export function piezaQueFalta(piezas, ordenesPorRef, refMap) {
     tipo: ((ficha && ficha.tipo) || 'la otra prenda').toLowerCase(),
     hechas: hechas[0].n,
   }
+}
+
+// Todos los códigos con que una prenda pudo quedar registrada en las órdenes.
+export function indiceCodigos(refs) {
+  const m = new Map()
+  ;(refs || []).forEach((r) => {
+    const final = (r.nuevaRef || '').trim() || r.id
+    if (!m.has(final)) m.set(final, new Set())
+    m.get(final).add(r.id)
+    m.get(final).add(final)
+  })
+  return m
+}
+
+// Unidades ya mandadas a cortar de una referencia.
+//
+// Una prenda que se vende suelta y también en conjunto tiene órdenes de las dos
+// clases, y en el reporte son renglones distintos: la blusa por su lado y el
+// conjunto por el suyo. Por eso una fila normal cuenta solo lo suelto.
+//
+// El conjunto no tiene órdenes propias: se arma con las de sus prendas, y
+// cuenta UNA de ellas —61 blusas y 61 pantalones son 61 conjuntos, no 122—,
+// así que se toma la mayor.
+export function programadoDe(fila, ordenesPorRef, codigos) {
+  const sumar = (ref, deConjunto) => {
+    const cods = (codigos && codigos.get(ref)) || new Set([ref])
+    let n = 0
+    cods.forEach((c) => (ordenesPorRef.get(c) || []).forEach((o) => {
+      if (esOrdenConjunto(o) !== deConjunto) return
+      n += Number((o.stages.ordenCorte || {}).cant) || 0
+    }))
+    return n
+  }
+  const piezas = (fila.piezas || []).filter(Boolean)
+  if (piezas.length) return Math.max(...piezas.map((r) => sumar(r, true)), 0)
+  return sumar(fila.id, false)
 }
 
 const aNumero = (v) => Math.round(Number(String(v).replace(/\./g, '').replace(',', '.')) || 0)

@@ -865,13 +865,13 @@ export default function App() {
         )}
         {tab === 'ordencorte' && (
           <OrdenCorteView orders={orders} refMap={refMap}
-            fasesOcultas={fasesOcultas} onToggleFase={toggleFase}
+            fasesOcultas={fasesOcultas} onToggleFase={toggleFase} puedeFiltrar={esAdmin}
             onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
         {AREA_KEYS.includes(tab) && (
           <AreaView key={tab} areaKey={tab} orders={orders} refMap={refMap}
             faltantesPorRef={faltantesPorRef} onIrAFaltantes={() => setTab('faltantes')}
-            fasesOcultas={fasesOcultas} onToggleFase={toggleFase}
+            fasesOcultas={fasesOcultas} onToggleFase={toggleFase} puedeFiltrar={esAdmin}
             topLinks={topLinks} onVincularTop={vincularTop} conjuntoLinks={conjuntoLinks}
             onViewImage={setLightbox} onOpenRef={openEdit} onSetFields={handleSetFields} />
         )}

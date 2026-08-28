@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { AREAS, formatDate, formatPrice, limiteDiasArea, normRef, ORIGENES, ORIGEN_ABBR, TOP_LABEL } from '../lib/constants.js'
+import { AREAS, formatDate, formatPrice, limiteDiasArea, normRef, ORIGEN_ABBR, TOP_LABEL } from '../lib/constants.js'
 import { ordersForArea, refProcesos, claveOrden, esOrdenTop, orderArea } from '../lib/domain.js'
 import { diasDesde, diasEntre } from '../lib/dates.js'
 import { generateAreaPDF } from '../lib/areaPdf.js'
@@ -12,6 +12,7 @@ import ProcesosTags from './ProcesosTags.jsx'
 import ConjuntoModal from './ConjuntoModal.jsx'
 import CurvaModal, { MEDIDA_DE_AREA } from './CurvaModal.jsx'
 import NotaRefModal from './NotaRefModal.jsx'
+import FaseToggles from './FaseToggles.jsx'
 
 const tallerDe = (o) => (o.stages && o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || ''
 
@@ -75,7 +76,7 @@ function TopCell({ orden, refRow, topLinks, onAbrir }) {
   )
 }
 
-export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, onSetFields, fasesOcultas, onToggleFase, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes }) {
+export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, onSetFields, fasesOcultas, onToggleFase, puedeFiltrar, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes }) {
   const [topDe, setTopDe] = useState(null) // orden cuyo vínculo de top se está viendo
   const [conjuntoDe, setConjuntoDe] = useState(null) // orden cuyo conjunto se está viendo
   const [curvaDe, setCurvaDe] = useState(null) // orden cuya curva de tallas se está viendo
@@ -199,20 +200,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
           </p>
         </div>
         <div className="view-actions">
-          <div className="fase-toggles" title="Apaga una fase para que deje de aparecer en todas las etapas">
-            {Object.entries(ORIGENES).map(([key, label]) => {
-              const apagada = ocultas.has(key)
-              return (
-                <button key={key} type="button"
-                  className={'fase-toggle' + (apagada ? ' off' : '')}
-                  onClick={() => onToggleFase && onToggleFase(key, !apagada)}
-                  title={apagada ? `Volver a mostrar ${label}` : `Ocultar ${label} en todas las etapas`}>
-                  <span className="fase-toggle-luz" aria-hidden="true" />
-                  {label}
-                </button>
-              )
-            })}
-          </div>
+          <FaseToggles ocultas={ocultas} onToggle={onToggleFase} puedeCambiar={puedeFiltrar} />
           {selected.size > 0 && (
             <button className="btn btn-primary" onClick={generatePdf}>
               Generar PDF ({selected.size})

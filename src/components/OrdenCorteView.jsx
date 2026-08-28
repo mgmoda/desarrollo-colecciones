@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
+import FaseToggles from './FaseToggles.jsx'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import AreaKpis from './AreaKpis.jsx'
 import ProcesosTags from './ProcesosTags.jsx'
 import CurvaModal, { MEDIDA_DE_AREA } from './CurvaModal.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { AREAS, ORIGENES, ORIGEN_ABBR, TOP_LABEL, formatDate } from '../lib/constants.js'
+import { AREAS, ORIGEN_ABBR, TOP_LABEL, formatDate } from '../lib/constants.js'
 import { desglosePorMarca, orderArea, ordenesEnRango, refProcesos } from '../lib/domain.js'
 import { isoLocal, mesDe, nombreMes, rangoSemana, semanaDe } from '../lib/dates.js'
 
@@ -20,7 +21,7 @@ const PERIODOS = [
 ]
 
 export default function OrdenCorteView({
-  orders, refMap, fasesOcultas, onToggleFase, onViewImage, onOpenRef,
+  orders, refMap, fasesOcultas, onToggleFase, puedeFiltrar, onViewImage, onOpenRef,
 }) {
   const ocultas = fasesOcultas || new Set()
   const [q, setQ] = useState('')
@@ -87,20 +88,7 @@ export default function OrdenCorteView({
           </p>
         </div>
         <div className="view-actions">
-          <div className="fase-toggles" title="Apaga una fase para que deje de aparecer en todas las etapas">
-            {Object.entries(ORIGENES).map(([key, label]) => {
-              const apagada = ocultas.has(key)
-              return (
-                <button key={key} type="button"
-                  className={'fase-toggle' + (apagada ? ' off' : '')}
-                  onClick={() => onToggleFase && onToggleFase(key, !apagada)}
-                  title={apagada ? `Volver a mostrar ${label}` : `Ocultar ${label} en todas las etapas`}>
-                  <span className="fase-toggle-luz" aria-hidden="true" />
-                  {label}
-                </button>
-              )
-            })}
-          </div>
+          <FaseToggles ocultas={ocultas} onToggle={onToggleFase} puedeCambiar={puedeFiltrar} />
           <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia, producto…" />
         </div>
       </div>

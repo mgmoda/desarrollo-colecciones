@@ -4,7 +4,7 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { formatDate } from '../lib/constants.js'
-import { agruparOrdenes, esConjunto, leerPegado, programadoDe } from '../lib/programaciones.js'
+import { agruparOrdenes, esConjunto, leerArchivo, leerPegado, programadoDe } from '../lib/programaciones.js'
 
 const MARCAS = ['Casania', 'Mariset']
 
@@ -77,38 +77,77 @@ function ObservacionesModal({ fila, usuario, onGuardar, onClose }) {
   )
 }
 
-// Carga del reporte de Factory pegado desde el Excel.
-function PegarModal({ marca, onConfirmar, onClose }) {
+// Carga del reporte de Factory. Lo normal es soltar el archivo tal como sale;
+// pegar las filas queda como salida por si algún día el archivo no abre.
+function CargarModal({ marca, onConfirmar, onClose }) {
   const [texto, setTexto] = useState('')
-  const previa = useMemo(() => leerPegado(texto, marca), [texto, marca])
+  const [leyendo, setLeyendo] = useState(false)
+  const [err, setErr] = useState('')
+  const [delArchivo, setDelArchivo] = useState(null) // { filas, marca, nombre }
+  const pegado = useMemo(() => leerPegado(texto, marca), [texto, marca])
+  const filas = delArchivo ? delArchivo.filas : pegado.filas
+  const marcaFinal = delArchivo ? delArchivo.marca : marca
+
+  async function tomar(file) {
+    if (!file) return
+    setErr(''); setLeyendo(true); setDelArchivo(null)
+    try {
+      const { filas: fs, marca: m } = await leerArchivo(file)
+      if (!m) { setErr('No pude saber si es de Casania o de Mariset. Renombra el archivo o pega las filas.'); return }
+      setDelArchivo({ filas: fs, marca: m, nombre: file.name })
+    } catch (e) {
+      setErr(e.message || 'No pude leer el archivo.')
+    } finally { setLeyendo(false) }
+  }
 
   return (
     <Modal open onClose={onClose} size="md">
       <div className="modal-head">
-        <h2 className="modal-title">Cargar pedidos de {marca}</h2>
+        <h2 className="modal-title">Cargar pedidos</h2>
         <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
       </div>
       <div className="modal-body">
         <p className="field-hint" style={{ marginTop: 0 }}>
-          Copia las filas del reporte <b>Pedidos y Cortes por Referencia</b> y pégalas
-          aquí. Se toma la referencia, la descripción y el pedido; lo cortado lo
-          calcula el sistema.
+          El reporte <b>Pedidos y Cortes por Referencia</b> de Factory, tal como lo
+          exportas. Se toma la referencia, la descripción y el pedido; lo programado
+          lo calcula el sistema.
         </p>
-        <textarea className="input prog-ta" rows={8} value={texto} autoFocus
-          onChange={(e) => setTexto(e.target.value)}
-          placeholder="C6848&#9;VESTIDO ALGODON CON CINTURON&#9;3&#9;121&#9;61&#9;60" />
-        {texto.trim() && (
+
+        <label className="import-drop"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => { e.preventDefault(); tomar(e.dataTransfer.files && e.dataTransfer.files[0]) }}>
+          <input type="file" hidden
+            accept=".xls,.xlsx,.xlsm,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            onChange={(e) => tomar(e.target.files && e.target.files[0])} />
+          <span>
+            {leyendo ? 'Leyendo…'
+              : delArchivo ? `${delArchivo.nombre} · ${delArchivo.marca}`
+                : 'Arrastra el archivo aquí o haz clic para buscarlo'}
+          </span>
+        </label>
+
+        {err && <p className="form-err">{err}</p>}
+
+        <details className="prog-pegar">
+          <summary>O pegar las filas a mano</summary>
+          <textarea className="input prog-ta" rows={6} value={texto}
+            onChange={(e) => { setTexto(e.target.value); setDelArchivo(null) }}
+            placeholder="C6848&#9;VESTIDO ALGODON CON CINTURON&#9;3&#9;121&#9;61&#9;60" />
+        </details>
+
+        {filas.length > 0 && (
           <p className="field-hint">
-            Se van a cargar <b>{previa.filas.length}</b> referencias.
-            {previa.filas.length > 0 && ' Las que ya existan actualizan su pedido; el seguimiento no se pierde.'}
+            Se van a cargar <b>{filas.length}</b> referencias de <b>{marcaFinal}</b>.
+            Las que ya existan actualizan su pedido; el seguimiento y las piezas
+            de los conjuntos no se pierden.
           </p>
         )}
       </div>
       <div className="modal-foot">
         <button className="btn" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-primary" disabled={!previa.filas.length}
-          onClick={() => onConfirmar(previa.filas)}>
-          Cargar {previa.filas.length || ''}
+        <button className="btn btn-primary" disabled={!filas.length || leyendo}
+          onClick={() => onConfirmar(filas.map((f) => ({ ...f, marca: marcaFinal })), marcaFinal)}>
+          Cargar {filas.length || ''}
         </button>
       </div>
     </Modal>
@@ -323,8 +362,8 @@ export default function ProgramacionesView({
       )}
 
       {pegar && (
-        <PegarModal marca={marca} onClose={() => setPegar(false)}
-          onConfirmar={(nuevas) => {
+        <CargarModal marca={marca} onClose={() => setPegar(false)}
+          onConfirmar={(nuevas, marcaCargada) => {
             // Lo que ya existe conserva su seguimiento y sus piezas: del reporte
             // solo llega el pedido y la descripción.
             const previas = new Map((programaciones || []).map((p) => [p.id, p]))
@@ -335,6 +374,7 @@ export default function ProgramacionesView({
               piezas: (previas.get(n.id) || {}).piezas || [],
               actualizadoAt: Date.now(),
             })))
+            if (marcaCargada) setMarca(marcaCargada)
             setPegar(false)
           }} />
       )}

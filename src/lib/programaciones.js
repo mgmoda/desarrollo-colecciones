@@ -71,3 +71,53 @@ export function leerPegado(texto, marca) {
   })
   return { filas, errores }
 }
+
+// Lectura del archivo del reporte tal como sale de Factory (.xls o .xlsx).
+//
+// El reporte trae dos filas de título antes del encabezado y una fila en blanco
+// después, así que las columnas se buscan por nombre y no por posición. La
+// marca sale del propio título —"(C)" es Casania, "(M)" Mariset— para que no
+// se pueda cargar el archivo de una en la pestaña de la otra.
+export async function leerArchivo(file) {
+  const XLSX = await import('xlsx')
+  const buf = await file.arrayBuffer()
+  const wb = XLSX.read(buf, { type: 'array' })
+  const hoja = wb.Sheets[wb.SheetNames[0]]
+  if (!hoja) throw new Error('El archivo no tiene hojas.')
+  const filas = XLSX.utils.sheet_to_json(hoja, { header: 1, raw: true, blankrows: true })
+
+  const norm = (v) => String(v == null ? '' : v).trim()
+  const iCab = filas.findIndex((f) => (f || []).some((c) => /^referencia$/i.test(norm(c))))
+  if (iCab < 0) throw new Error('No encontré la fila de encabezados. ¿Es el reporte de Pedidos y Cortes?')
+
+  const cab = (filas[iCab] || []).map(norm)
+  const col = (re) => cab.findIndex((c) => re.test(c))
+  const cRef = col(/^referencia$/i)
+  const cDesc = col(/descripci/i)
+  const cPed = col(/^pedido$/i)
+  if (cPed < 0) throw new Error('El reporte no trae la columna Pedido.')
+
+  // La marca la dice el título: "… Dic 31/2026    (C)".
+  let marca = ''
+  filas.slice(0, iCab).forEach((f) => {
+    const t = (f || []).map(norm).join(' ')
+    if (/\(\s*C\s*\)/.test(t)) marca = 'Casania'
+    else if (/\(\s*M\s*\)/.test(t)) marca = 'Mariset'
+  })
+  if (!marca) {
+    const n = String(file.name || '').toUpperCase()
+    if (n.includes('CASANIA')) marca = 'Casania'
+    else if (n.includes('MARISET')) marca = 'Mariset'
+  }
+
+  const out = []
+  for (let i = iCab + 1; i < filas.length; i++) {
+    const f = filas[i] || []
+    const ref = norm(f[cRef]).toUpperCase()
+    if (!ref || /^referencia$/i.test(ref)) continue
+    const pedido = Math.round(Number(f[cPed]) || 0)
+    out.push({ id: ref, marca, descripcion: cDesc >= 0 ? norm(f[cDesc]) : '', pedido })
+  }
+  if (!out.length) throw new Error('El reporte no trae referencias.')
+  return { filas: out, marca }
+}

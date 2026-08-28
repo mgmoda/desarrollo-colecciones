@@ -6325,3 +6325,8 @@ select.filtro-taller { flex: none; width: 215px; }
 }
 .prog-obs-cab b { color: var(--ink); font-size: 12.5px; }
 .prog-obs p { margin: 2px 0 0; font-size: 14px; color: var(--ink-soft); }
+.prog-pegar { margin-top: 14px; }
+.prog-pegar summary {
+  cursor: pointer; font-size: 12.5px; color: var(--muted); margin-bottom: 8px;
+}
+.prog-pegar summary:hover { color: var(--ink-soft); }

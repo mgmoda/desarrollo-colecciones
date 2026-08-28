@@ -29,6 +29,7 @@ import {
   dbLoadRefsByIds, dbLoadRefs, dbLoadSettings,
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings, dbLog,
   dbLoadFaltantes, dbUpsertFaltante, dbDeleteFaltante,
+  dbLoadPreordenes, dbUpsertPreorden, dbDeletePreorden,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice, normRef } from './lib/constants.js'
@@ -67,6 +68,7 @@ export default function App() {
 
   const [orders, setOrders] = useState([])
   const [faltantes, setFaltantes] = useState([])
+  const [preordenes, setPreordenes] = useState([])
   const [refs, setRefs] = useState([])
   const [settings, setSettings] = useState({ telas: normalizeTelas(DEFAULT_TELAS), colors: DEFAULT_COLORS, proveedores: [], decorados: ['Flor'], marcas: DEFAULT_MARCAS, procesos: DEFAULT_PROCESOS })
 
@@ -109,13 +111,14 @@ export default function App() {
     let cancelled = false
     Promise.all([
       dbLoadOrders(), dbLoadRefs(), dbLoadSettings(), dbLoadFaltantes(), dbLoadRefsMeta(),
-      dbLoadOrdersStamp(),
+      dbLoadOrdersStamp(), dbLoadPreordenes(),
     ])
-      .then(([o, r, s, fl, meta, stamp]) => {
+      .then(([o, r, s, fl, meta, stamp, po]) => {
         if (cancelled) return
         refsMeta.current = new Map(meta.map((m) => [m.id, m.updated_at]))
         ordersStamp.current = stamp
         setFaltantes(fl)
+        setPreordenes(po)
         setOrders(o)
         // Migración silenciosa: corregir "Maricet" → "Mariset" Y eliminar
         // cualquier campo "_stub" que se haya persistido por error.
@@ -171,10 +174,11 @@ export default function App() {
     enVuelo.current = true
     setSyncing(true)
     try {
-      const [fl, meta, stamp] = await Promise.all([
-        dbLoadFaltantes(), dbLoadRefsMeta(), dbLoadOrdersStamp(),
+      const [fl, meta, stamp, po] = await Promise.all([
+        dbLoadFaltantes(), dbLoadRefsMeta(), dbLoadOrdersStamp(), dbLoadPreordenes(),
       ])
       setFaltantes(fl)
+      setPreordenes(po)
 
       // Las órdenes solo se bajan si la marca se movió. Si no hay marca (algo
       // raro pasó), se bajan igual: más vale gastar datos que quedar viejo.
@@ -387,6 +391,20 @@ export default function App() {
     const limpio = paraGuardar(updated)
     upsertRefState(limpio)
     dbUpsertRef(limpio).catch((e) => console.error(e))
+  }
+
+  function guardarPreorden(p) {
+    setPreordenes((list) => {
+      const i = list.findIndex((x) => x.id === p.id)
+      if (i < 0) return [p, ...list]
+      const n = [...list]; n[i] = p; return n
+    })
+    dbUpsertPreorden(p).catch((e) => { console.error(e); alert('No se pudo guardar la preorden: ' + e.message) })
+  }
+
+  function borrarPreorden(id) {
+    setPreordenes((list) => list.filter((x) => x.id !== id))
+    dbDeletePreorden(id).catch((e) => console.error(e))
   }
 
   // Alterna el flag "Producción extra" desde el Resumen (un solo clic).
@@ -851,6 +869,7 @@ export default function App() {
         )}
         {tab === 'geodesica' && (
           <GeodesicaView refs={refIndex} orders={orders} refMap={refMap}
+            preordenes={preordenes} onGuardarPreorden={guardarPreorden} onBorrarPreorden={borrarPreorden}
             onViewImage={setLightbox} onOpenRef={openEdit}
             onSetField={handleSetField} onSetFields={handleSetFields} />
         )}

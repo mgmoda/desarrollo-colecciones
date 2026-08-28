@@ -22,7 +22,7 @@ function diasHasta(fechaStr) {
 // Vista dedicada a Geodésica: agrupa las órdenes por referencia, muestra
 // la etapa actual, permite editar precio, marcar como despachada y
 // exportar a PDF las seleccionadas.
-export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpenRef, onSetField, onSetFields }) {
+export default function GeodesicaView({ refs, orders, refMap, preordenes, onGuardarPreorden, onBorrarPreorden, onViewImage, onOpenRef, onSetField, onSetFields }) {
   const [q, setQ] = useState('')
   const [areaF, setAreaF] = useState('')
   // 'porProgramar' | 'pendientes' | 'despachadas' | 'todas'
@@ -34,18 +34,49 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
   const [preOrderOpen, setPreOrderOpen] = useState(false)
   const [editingPre, setEditingPre] = useState(null) // ref existente o null si es nueva
 
-  // Set de refIds que YA tienen órdenes Geodésica importadas (para excluir del "Por programar").
-  const importedRefIds = useMemo(() => {
-    const s = new Set()
-    orders.forEach((o) => { if (o.origen === 'geodesica') s.add(o.referencia) })
-    return s
+  // Órdenes de Factory por referencia, para saber cuáles llegaron después de
+  // que se anotó cada preorden.
+  const ordenesPorRef = useMemo(() => {
+    const m = new Map()
+    orders.forEach((o) => {
+      if (o.origen !== 'geodesica') return
+      if (!m.has(o.referencia)) m.set(o.referencia, [])
+      m.get(o.referencia).push(String(o.orden))
+    })
+    return m
   }, [orders])
 
-  // Preórdenes: refs con geodesicaPreOrder=true y aún NO importadas.
+  // Una preorden se cumple cuando llega a Factory una orden de esa referencia
+  // que no existía al anotarla. Si hay varias preórdenes de la misma referencia
+  // —Geodésica repite pedidos— las órdenes nuevas se reparten por antigüedad:
+  // la primera que se anotó se lleva la primera que llega.
   const preOrders = useMemo(() => {
-    return (refs || []).filter((r) => r.geodesicaPreOrder && !importedRefIds.has(r.id))
-      .sort((a, b) => (Number(b.geodesicaPreOrderAt) || 0) - (Number(a.geodesicaPreOrderAt) || 0))
-  }, [refs, importedRefIds])
+    const porRef = new Map()
+    ;(preordenes || []).forEach((p) => {
+      if (!porRef.has(p.referencia)) porRef.set(p.referencia, [])
+      porRef.get(p.referencia).push(p)
+    })
+    const vivas = []
+    porRef.forEach((lista, ref) => {
+      const enOrden = [...lista].sort(
+        (a, b) => (Number(a.geodesicaPreOrderAt) || 0) - (Number(b.geodesicaPreOrderAt) || 0),
+      )
+      enOrden.forEach((p) => {
+        const previas = new Set((p.ordenesAlCrear || []).map(String))
+        const nuevas = (ordenesPorRef.get(ref) || []).filter((n) => !previas.has(n))
+        // Las que ya se llevó una preorden más vieja no cuentan para esta.
+        const yaTomadas = enOrden
+          .slice(0, enOrden.indexOf(p))
+          .filter((q) => !q._cumplida).length
+        if (nuevas.length > yaTomadas) { p._cumplida = true; return }
+        p._cumplida = false
+        vivas.push(p)
+      })
+    })
+    return vivas.sort(
+      (a, b) => (Number(b.geodesicaPreOrderAt) || 0) - (Number(a.geodesicaPreOrderAt) || 0),
+    )
+  }, [preordenes, ordenesPorRef])
 
   const items = useMemo(() => {
     const AREA_RANK = { trazos: 0, corte: 1, enviar: 2, talleres: 3, entrega: 4 }
@@ -307,17 +338,22 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
           loading={disenosCargando}
           onReload={cargarDisenos}
           onViewImage={onViewImage}
-          refsExistentes={refs}
+          refsExistentes={preOrders.map((p) => ({ id: p.referencia }))}
           onPasarAProduccion={(items) => {
             // Cada diseño aprobado entra como preorden con su foto. El precio,
             // la cantidad y la fecha se completan en Por programar.
-            items.forEach((it) => {
-              onSetFields && onSetFields(it.referencia, {
-                geodesicaPreOrder: true,
-                geodesicaPreOrderAt: Date.now(),
+            items.forEach((it, i) => {
+              const at = Date.now() + i
+              onGuardarPreorden && onGuardarPreorden({
+                id: `po-${it.referencia}-${at}`,
+                referencia: it.referencia,
+                geodesicaPreOrderAt: at,
                 geodesicaProducto: it.producto,
                 geodesicaDiseno: it.codigo,
                 image: it.image || '',
+                cantidad: '', costo: '',
+                geodesicaFechaEntrega: '', geodesicaMaquila: false,
+                ordenesAlCrear: ordenesPorRef.get(it.referencia) || [],
               })
             })
             setEstado('porProgramar')
@@ -332,13 +368,7 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
           onEditar={(r) => { setEditingPre(r); setPreOrderOpen(true) }}
           onEliminar={(r) => {
             if (!window.confirm(`¿Eliminar la preorden ${r.referencia}?`)) return
-            onSetFields && onSetFields(r.id, {
-              geodesicaPreOrder: false,
-              geodesicaPreOrderAt: '',
-              geodesicaProducto: '',
-              geodesicaFechaEntrega: '',
-              geodesicaMaquila: false,
-            })
+            onBorrarPreorden && onBorrarPreorden(r.id)
           }}
           onViewImage={onViewImage} />
       ) : (
@@ -480,23 +510,29 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
         onClose={() => { setPreOrderOpen(false); setEditingPre(null) }}
         editing={editingPre}
         validar={(id) => {
-          const ref = (refs || []).find((r) => String(r.id || '').toUpperCase() === id)
-          if (!ref) return ''
-          const suyas = orders.filter((o) => o.origen === 'geodesica' && o.referencia === ref.id)
-          if (suyas.length) {
-            const ns = suyas.map((o) => o.orden).join(', ')
-            return `${id} ya está en producción (orden ${ns}). Por ahora el sistema no maneja pedidos repetidos de la misma referencia.`
-          }
-          if (ref.geodesicaPreOrder) return `Ya hay una preorden con la referencia ${id}`
-          return `${id} ya existe como referencia en el sistema`
+          // Que la referencia ya exista o ya esté en producción no es un error:
+          // Geodésica vuelve a pedir lo mismo. Lo que no tiene sentido es
+          // anotar dos veces el mismo pedido sin que haya llegado el primero.
+          const viva = preOrders.find((p) => String(p.referencia || '').toUpperCase() === id)
+          if (viva) return `Ya hay una preorden pendiente de ${id}. Edítala o espera a que llegue.`
+          return ''
         }}
         onSave={(payload) => {
-          const { id, ...rest } = payload
-          onSetFields && onSetFields(id, {
-            geodesicaPreOrder: true,
-            geodesicaPreOrderAt: Date.now(),
-            ...rest,
-          })
+          const { id: referencia, ...rest } = payload
+          if (editingPre) {
+            onGuardarPreorden && onGuardarPreorden({ ...editingPre, referencia, ...rest })
+          } else {
+            const at = Date.now()
+            onGuardarPreorden && onGuardarPreorden({
+              id: `po-${referencia}-${at}`,
+              referencia,
+              geodesicaPreOrderAt: at,
+              // Se guardan las órdenes que ya existían para poder saber después
+              // cuál llegó por este pedido y no por uno anterior.
+              ordenesAlCrear: ordenesPorRef.get(referencia) || [],
+              ...rest,
+            })
+          }
           setPreOrderOpen(false); setEditingPre(null)
         }} />
     </div>

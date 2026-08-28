@@ -190,3 +190,22 @@ export async function dbDeleteFaltante(id) {
   const { error } = await supabase.from('dev_faltantes').delete().eq('id', id)
   if (error) throw error
 }
+
+// Preórdenes de Geodésica: lo que el cliente pidió y todavía no llega en el
+// archivo de Factory. Viven en su propia tabla y no en la referencia, porque
+// Geodésica vuelve a pedir la misma referencia y una marca sobre la ficha solo
+// aguanta un pedido.
+export async function dbLoadPreordenes() {
+  const list = await loadTable('dev_preordenes')
+  return list.sort((a, b) => (b.geodesicaPreOrderAt || 0) - (a.geodesicaPreOrderAt || 0))
+}
+
+export async function dbUpsertPreorden(p) {
+  const { error } = await supabase.from('dev_preordenes').upsert({ id: p.id, data: p })
+  if (error) throw error
+}
+
+export async function dbDeletePreorden(id) {
+  const { error } = await supabase.from('dev_preordenes').delete().eq('id', id)
+  if (error) throw error
+}

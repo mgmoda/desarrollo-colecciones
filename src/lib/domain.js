@@ -527,14 +527,9 @@ export function emptyRef(id) {
     enFotosAt: '',
     fotografiada: false,
     fotografiadaAt: '',
-    // Preorden de Geodésica: ref ingresada manualmente antes de que llegue
-    // en el Excel. Cuando el Excel trae órdenes con esa referencia, la
-    // preorden "se gradúa" (deja de aparecer en Por programar y entra al
-    // flujo normal de Geodésica).
-    geodesicaPreOrder: false,
-    geodesicaPreOrderAt: '',
-    geodesicaProducto: '',
-    geodesicaFechaEntrega: '',
+    // Las preórdenes de Geodésica ya no viven aquí: son registros aparte, en
+    // dev_preordenes, porque Geodésica vuelve a pedir la misma referencia y una
+    // marca sobre la ficha solo aguantaba un pedido.
     geodesicaMaquila: false,
     // Cada tela: { nombre, disponible, metros, nota }. Una prenda puede llevar varias.
     telas: [],

@@ -479,7 +479,17 @@ export default function GeodesicaView({ refs, orders, refMap, onViewImage, onOpe
         open={preOrderOpen}
         onClose={() => { setPreOrderOpen(false); setEditingPre(null) }}
         editing={editingPre}
-        existing={preOrders}
+        validar={(id) => {
+          const ref = (refs || []).find((r) => String(r.id || '').toUpperCase() === id)
+          if (!ref) return ''
+          const suyas = orders.filter((o) => o.origen === 'geodesica' && o.referencia === ref.id)
+          if (suyas.length) {
+            const ns = suyas.map((o) => o.orden).join(', ')
+            return `${id} ya está en producción (orden ${ns}). Por ahora el sistema no maneja pedidos repetidos de la misma referencia.`
+          }
+          if (ref.geodesicaPreOrder) return `Ya hay una preorden con la referencia ${id}`
+          return `${id} ya existe como referencia en el sistema`
+        }}
         onSave={(payload) => {
           const { id, ...rest } = payload
           onSetFields && onSetFields(id, {
@@ -650,7 +660,7 @@ function PorProgramarView({ preOrders, q, onNueva, onEditar, onEliminar, onViewI
 }
 
 // Modal para crear/editar preorden Geodésica.
-function PreOrderModal({ open, onClose, editing, existing, onSave }) {
+function PreOrderModal({ open, onClose, editing, validar, onSave }) {
   const [refCode, setRefCode] = useState('')
   const [producto, setProducto] = useState('')
   const [precio, setPrecio] = useState('')
@@ -682,8 +692,13 @@ function PreOrderModal({ open, onClose, editing, existing, onSave }) {
   function save() {
     const id = refCode.trim().toUpperCase()
     if (!id) { setErr('La referencia es obligatoria'); return }
-    if (!editing && existing.some((r) => r.id === id)) {
-      setErr(`Ya existe una preorden con referencia ${id}`); return
+    // La comprobación mira TODAS las referencias, no solo las preórdenes
+    // pendientes. Antes solo miraba esas, así que una referencia que ya estaba
+    // en producción pasaba el filtro, se guardaba encima de la ficha real y no
+    // aparecía en ninguna parte: desde afuera parecía que el botón no hacía nada.
+    if (!editing) {
+      const problema = validar && validar(id)
+      if (problema) { setErr(problema); return }
     }
     const precioNum = Number(precio.replace(/\D/g, '')) || 0
     const cantidadNum = Number(cantidad.replace(/\D/g, '')) || 0

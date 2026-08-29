@@ -6369,3 +6369,16 @@ select.filtro-taller { flex: none; width: 215px; }
 .prog-seg:hover .prog-seg-vacio { text-decoration: underline; }
 .prog-seg-txt { font-size: 11px; color: var(--muted); line-height: 1.35; }
 .prog-obs .est-chip.sm { margin-bottom: 3px; }
+
+/* El número de pedido con desglose se abre; que se note. */
+.prog-ped {
+  background: none; border: 0; padding: 0; font: inherit; font-weight: inherit;
+  cursor: pointer; color: inherit;
+  text-decoration: underline dotted var(--hairline-strong);
+  text-underline-offset: 3px;
+}
+.prog-ped:hover { text-decoration-color: var(--ink); }
+.desg-table td.num, .desg-table th.num { font-variant-numeric: tabular-nums; }
+.desg-table .desg-total td {
+  border-top: 2px solid var(--ink); font-weight: 600;
+}

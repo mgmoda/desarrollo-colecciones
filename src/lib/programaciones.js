@@ -159,6 +159,12 @@ export async function leerArchivo(file) {
   const filas = XLSX.utils.sheet_to_json(hoja, { header: 1, raw: true, blankrows: true })
 
   const norm = (v) => String(v == null ? '' : v).trim()
+  // El mismo botón recibe los dos reportes: el de pedidos y cortes, y el de
+  // separados por cliente. Se distinguen por la columna Combin, que solo
+  // existe en el segundo.
+  if (filas.slice(0, 12).some((f) => (f || []).some((c) => /combin/i.test(norm(c))))) {
+    return leerSeparadosDeFilas(filas, norm)
+  }
   const iCab = filas.findIndex((f) => (f || []).some((c) => /^referencia$/i.test(norm(c))))
   if (iCab < 0) throw new Error('No encontré la fila de encabezados. ¿Es el reporte de Pedidos y Cortes?')
 
@@ -196,5 +202,79 @@ export async function leerArchivo(file) {
     })
   }
   if (!out.length) throw new Error('El reporte no trae referencias.')
-  return { filas: out, marca }
+  return { tipo: 'pedidos', filas: out, marca }
+}
+
+// El reporte de separados: los pedidos de los clientes, renglón por color con
+// sus tallas. De aquí sale el desglose que se ve al tocar el número de pedido.
+//
+// Cada cliente trae sus renglones de color y debajo un subtotal cuya columna
+// Combin dice PENDIENTE: ese se salta, igual que los renglones sin número de
+// pedido, para no contar dos veces.
+function leerSeparadosDeFilas(filas, norm) {
+  const iCab = filas.findIndex((f) => (f || []).some((c) => /^referencia$/i.test(norm(c)))
+    && (f || []).some((c) => /combin/i.test(norm(c))))
+  if (iCab < 0) throw new Error('El reporte de separados no trae encabezados.')
+  const cab = (filas[iCab] || []).map(norm)
+  const col = (re) => cab.findIndex((c) => re.test(c))
+  const iRef = col(/^referencia$/i)
+  const iComb = col(/combin/i)
+  const iPed = col(/^pedido/i)
+  const iUnid = col(/^unid/i)
+  const iCli = col(/nombre/i)
+
+  // Las tallas van en su propia fila: la primera que traiga cinco o más
+  // números chicos (6, 8, 10…).
+  let tallaCols = []
+  for (const f of filas.slice(0, iCab + 4)) {
+    const cols = []
+    ;(f || []).forEach((c, j) => {
+      const t = norm(c)
+      const v = Number(t)
+      if (t !== '' && Number.isInteger(v) && v >= 2 && v <= 30) cols.push([j, String(v)])
+    })
+    if (cols.length >= 5) { tallaCols = cols; break }
+  }
+  if (!tallaCols.length) throw new Error('No encontré las columnas de tallas.')
+
+  const porRef = new Map()
+  const clientes = new Map()
+  for (let i = iCab + 1; i < filas.length; i++) {
+    const f = filas[i] || []
+    const ref = norm(f[iRef]).toUpperCase()
+    const combin = norm(f[iComb]).toUpperCase()
+    if (!ref || !combin || combin === 'PENDIENTE') continue
+    if (iPed >= 0 && !norm(f[iPed])) continue
+    if (!porRef.has(ref)) porRef.set(ref, new Map())
+    const colores = porRef.get(ref)
+    if (!colores.has(combin)) colores.set(combin, { tallas: {}, unid: 0 })
+    const d = colores.get(combin)
+    let suma = 0
+    tallaCols.forEach(([j, talla]) => {
+      const n = Math.round(Number(f[j]) || 0)
+      if (!n) return
+      d.tallas[talla] = (d.tallas[talla] || 0) + n
+      suma += n
+    })
+    d.unid += iUnid >= 0 ? (Math.round(Number(f[iUnid]) || 0) || suma) : suma
+    if (iCli >= 0 && norm(f[iCli])) {
+      if (!clientes.has(ref)) clientes.set(ref, new Set())
+      clientes.get(ref).add(norm(f[iCli]))
+    }
+  }
+  if (!porRef.size) throw new Error('El reporte de separados no trae renglones.')
+
+  const desglose = {}
+  porRef.forEach((colores, ref) => {
+    const lista = [...colores.entries()]
+      .map(([color, d]) => ({ color, tallas: d.tallas, unid: d.unid }))
+      .sort((a, b) => b.unid - a.unid)
+    desglose[ref] = {
+      colores: lista,
+      total: lista.reduce((n, c) => n + c.unid, 0),
+      clientes: (clientes.get(ref) || new Set()).size,
+      tallas: tallaCols.map(([, t]) => t),
+    }
+  })
+  return { tipo: 'separados', desglose, refs: porRef.size }
 }

@@ -150,24 +150,92 @@ function SeguimientoModal({ fila, ficha, usuario, onGuardar, onClose }) {
   )
 }
 
+// El desglose del pedido: qué colores y qué tallas piden los clientes. Sale
+// del reporte de separados y se abre tocando el número de pedido.
+function DesgloseModal({ fila, onClose }) {
+  if (!fila || !fila.desglose) return null
+  const d = fila.desglose
+  // Solo las tallas que traen algo, en el orden del reporte.
+  const tallas = (d.tallas || []).filter((t) => d.colores.some((c) => (c.tallas[t] || 0) > 0))
+  const totalPorTalla = (t) => d.colores.reduce((n, c) => n + (c.tallas[t] || 0), 0)
+  const cuadra = d.total === fila.pedido
+  const num = (n) => n.toLocaleString('es-CO')
+  return (
+    <Modal open onClose={onClose} size="md">
+      <div className="modal-head">
+        <h2 className="modal-title">{fila.id} · pedido por color y talla</h2>
+        <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
+      </div>
+      <div className="modal-body">
+        <p className="field-hint" style={{ marginTop: 0 }}>
+          {fila.descripcion || '—'} · {d.clientes} {d.clientes === 1 ? 'cliente' : 'clientes'}
+        </p>
+        <div className="table-wrap">
+          <table className="data-table desg-table">
+            <thead>
+              <tr>
+                <th>Color</th>
+                {tallas.map((t) => <th key={t} className="num">{t}</th>)}
+                <th className="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {d.colores.map((c) => (
+                <tr key={c.color}>
+                  <td className="strong">{c.color}</td>
+                  {tallas.map((t) => (
+                    <td key={t} className="num">
+                      {c.tallas[t] ? num(c.tallas[t]) : <span className="muted">·</span>}
+                    </td>
+                  ))}
+                  <td className="num strong">{num(c.unid)}</td>
+                </tr>
+              ))}
+              <tr className="desg-total">
+                <td>Total</td>
+                {tallas.map((t) => <td key={t} className="num">{num(totalPorTalla(t))}</td>)}
+                <td className="num strong">{num(d.total)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {!cuadra && (
+          <p className="form-err" style={{ marginTop: 10 }}>
+            El desglose suma {num(d.total)} y el pedido cargado dice {num(fila.pedido)}.
+            Los dos reportes son de días distintos: vuelve a cargarlos juntos.
+          </p>
+        )}
+      </div>
+      <div className="modal-foot">
+        {cuadra && <span className="muted" style={{ fontSize: 12.5, marginRight: 'auto' }}>✓ Cuadra con el pedido</span>}
+        <button className="btn" onClick={onClose}>Cerrar</button>
+      </div>
+    </Modal>
+  )
+}
+
 // Carga del reporte de Factory. Lo normal es soltar el archivo tal como sale;
 // pegar las filas queda como salida por si algún día el archivo no abre.
-function CargarModal({ marca, onConfirmar, onClose }) {
+function CargarModal({ marca, onConfirmar, onSeparados, onClose }) {
   const [texto, setTexto] = useState('')
   const [leyendo, setLeyendo] = useState(false)
   const [err, setErr] = useState('')
   const [delArchivo, setDelArchivo] = useState(null) // { filas, marca, nombre }
   const pegado = useMemo(() => leerPegado(texto, marca), [texto, marca])
-  const filas = delArchivo ? delArchivo.filas : pegado.filas
+  const filas = delArchivo ? (delArchivo.filas || []) : pegado.filas
   const marcaFinal = delArchivo ? delArchivo.marca : marca
 
   async function tomar(file) {
     if (!file) return
     setErr(''); setLeyendo(true); setDelArchivo(null)
     try {
-      const { filas: fs, marca: m } = await leerArchivo(file)
-      if (!m) { setErr('No pude saber si es de Casania o de Mariset. Renombra el archivo o pega las filas.'); return }
-      setDelArchivo({ filas: fs, marca: m, nombre: file.name })
+      const r = await leerArchivo(file)
+      if (r.tipo === 'separados') {
+        setDelArchivo({ sep: r.desglose, refs: r.refs, nombre: file.name })
+        return
+      }
+      if (!r.marca) { setErr('No pude saber si es de Casania o de Mariset. Renombra el archivo o pega las filas.'); return }
+      setDelArchivo({ filas: r.filas, marca: r.marca, nombre: file.name })
     } catch (e) {
       setErr(e.message || 'No pude leer el archivo.')
     } finally { setLeyendo(false) }
@@ -194,7 +262,7 @@ function CargarModal({ marca, onConfirmar, onClose }) {
             onChange={(e) => tomar(e.target.files && e.target.files[0])} />
           <span>
             {leyendo ? 'Leyendo…'
-              : delArchivo ? `${delArchivo.nombre} · ${delArchivo.marca}`
+              : delArchivo ? `${delArchivo.nombre} · ${delArchivo.sep ? 'Separados' : delArchivo.marca}`
                 : 'Arrastra el archivo aquí o haz clic para buscarlo'}
           </span>
         </label>
@@ -208,7 +276,13 @@ function CargarModal({ marca, onConfirmar, onClose }) {
             placeholder="C6848&#9;VESTIDO ALGODON CON CINTURON&#9;3&#9;121&#9;61&#9;60" />
         </details>
 
-        {filas.length > 0 && (
+        {delArchivo && delArchivo.sep ? (
+          <p className="field-hint">
+            Desglose por color y talla para <b>{delArchivo.refs}</b> referencias.
+            Se pega a las que ya están cargadas; el número de pedido queda
+            clickeable para verlo.
+          </p>
+        ) : filas.length > 0 && (
           <p className="field-hint">
             Se van a cargar <b>{filas.length}</b> referencias de <b>{marcaFinal}</b>.
             Las que ya existan actualizan sus cifras; el seguimiento no se pierde.
@@ -217,9 +291,13 @@ function CargarModal({ marca, onConfirmar, onClose }) {
       </div>
       <div className="modal-foot">
         <button className="btn" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-primary" disabled={!filas.length || leyendo}
-          onClick={() => onConfirmar(filas.map((f) => ({ ...f, marca: marcaFinal })), marcaFinal)}>
-          Cargar {filas.length || ''}
+        <button className="btn btn-primary"
+          disabled={leyendo || (delArchivo && delArchivo.sep ? false : !filas.length)}
+          onClick={() => {
+            if (delArchivo && delArchivo.sep) onSeparados(delArchivo.sep)
+            else onConfirmar(filas.map((f) => ({ ...f, marca: marcaFinal })), marcaFinal)
+          }}>
+          Cargar {delArchivo && delArchivo.sep ? delArchivo.refs : (filas.length || '')}
         </button>
       </div>
     </Modal>
@@ -236,6 +314,7 @@ export default function ProgramacionesView({
   const [estadoF, setEstadoF] = useState('')
   const [cargar, setCargar] = useState(false)
   const [obsDe, setObsDe] = useState(null)
+  const [desgDe, setDesgDe] = useState(null)
   const { sortKey, sortDir, toggle } = useSort('pendiente', 'desc')
 
   // Los conjuntos ya están armados en Costos: de ahí sale su foto, que es la de
@@ -390,7 +469,15 @@ export default function ProgramacionesView({
                       {f.descripcion || '—'}
                       {f.tipoFicha && <span className="prog-tipo">{f.tipoFicha}</span>}
                     </td>
-                    <td className="num strong">{num(f.pedido)}</td>
+                    <td className="num strong">
+                      {f.desglose ? (
+                        <button type="button" className="prog-ped"
+                          onClick={() => setDesgDe(f)}
+                          title="Ver el pedido por color y talla">
+                          {num(f.pedido)}
+                        </button>
+                      ) : num(f.pedido)}
+                    </td>
                     <td className="num">
                       {num(f.programado)}
                       {f.falta && (
@@ -434,8 +521,23 @@ export default function ProgramacionesView({
         </div>
       )}
 
+      {desgDe && <DesgloseModal fila={desgDe} onClose={() => setDesgDe(null)} />}
+
       {cargar && (
         <CargarModal marca={marca} onClose={() => setCargar(false)}
+          onSeparados={(desglose) => {
+            // El desglose se pega a las referencias ya cargadas, de las dos
+            // marcas a la vez: el reporte de separados viene junto.
+            const cambiadas = (programaciones || [])
+              .filter((p) => desglose[String(p.id).toUpperCase()])
+              .map((p) => ({
+                ...p,
+                desglose: desglose[String(p.id).toUpperCase()],
+                desgloseAt: Date.now(),
+              }))
+            onGuardarVarias(cambiadas)
+            setCargar(false)
+          }}
           onConfirmar={(nuevas, marcaCargada) => {
             // Del reporte solo llegan las cifras y la descripción: el
             // seguimiento que ya tenga la referencia se conserva.

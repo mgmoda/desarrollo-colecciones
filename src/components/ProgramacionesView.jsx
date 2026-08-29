@@ -4,8 +4,8 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import {
-  esConjunto, indiceCodigos, indiceConjuntos, leerArchivo, leerPegado,
-  piezaQueFalta, programadoDe,
+  ESTADOS_PROG, esConjunto, estadoProg, indiceCodigos, indiceConjuntos,
+  leerArchivo, leerPegado, piezaQueFalta, programadoDe,
 } from '../lib/programaciones.js'
 
 const MARCAS = ['Casania', 'Mariset']
@@ -23,22 +23,54 @@ const nombreCorto = (email) => {
   return s.split(/\s+/)[0].replace(/^\w/, (c) => c.toUpperCase())
 }
 
-// Lo que dijo el encargado de por qué una referencia no se ha programado.
-// Es una bitácora, no un campo: la respuesta de la semana pasada importa tanto
-// como la de hoy para saber si el problema se está moviendo.
-function SeguimientoModal({ fila, usuario, onGuardar, onClose }) {
+// Chip de estado, con el color que le corresponde.
+function EstadoChip({ estado, color, chico, flecha }) {
+  const e = estadoProg(estado)
+  if (!e) return null
+  return (
+    <span className={'est-chip fijo' + (chico ? ' sm' : '')}
+      style={{ background: e.bg, color: e.fg, borderColor: e.bd }}>
+      {flecha ? '→ ' : ''}{e.label}{color ? ` · ${color}` : ''}
+    </span>
+  )
+}
+
+// El seguimiento de una referencia: en qué estado está y qué han dicho.
+//
+// Un solo gesto: se toca el estado, si es "Sin tela" se toca el color que
+// falta -salen de la ficha-, se escribe la nota si hay algo que decir, y
+// Guardar. Todo queda en la misma bitácora: los cambios de estado se anotan
+// solos, y en la reunión se ve si la respuesta de hoy es la misma de hace ocho
+// días, que es la señal de que el problema no se mueve.
+function SeguimientoModal({ fila, ficha, usuario, onGuardar, onClose }) {
   const [texto, setTexto] = useState('')
+  const [estado, setEstado] = useState((fila && fila.estado) || '')
+  const [color, setColor] = useState((fila && fila.estadoColor) || '')
+  const [otroColor, setOtroColor] = useState('')
   if (!fila) return null
   const historial = [...(fila.observaciones || [])].sort((a, b) => (b.at || 0) - (a.at || 0))
+  const colores = ((ficha && ficha.colores) || []).map((c) => c && c.name).filter(Boolean)
+  const colorFinal = estado === 'sinTela' ? (color || otroColor.trim()) : ''
+  const cambio = estado !== (fila.estado || '')
+    || colorFinal !== (fila.estadoColor || '')
+    || !!texto.trim()
 
-  function agregar() {
-    const t = texto.trim()
-    if (!t) return
+  function guardar() {
+    if (!cambio) return
+    const entrada = { usuario, at: Date.now() }
+    if (texto.trim()) entrada.texto = texto.trim()
+    if (estado !== (fila.estado || '') || colorFinal !== (fila.estadoColor || '')) {
+      entrada.estado = estado
+      if (colorFinal) entrada.color = colorFinal
+    }
     onGuardar({
       ...fila,
-      observaciones: [...(fila.observaciones || []), { texto: t, usuario, at: Date.now() }],
+      estado,
+      estadoColor: colorFinal,
+      observaciones: [...(fila.observaciones || []), entrada],
     })
     setTexto('')
+    setOtroColor('')
   }
 
   return (
@@ -49,12 +81,50 @@ function SeguimientoModal({ fila, usuario, onGuardar, onClose }) {
       </div>
       <div className="modal-body">
         <p className="field-hint" style={{ marginTop: 0 }}>{fila.descripcion || '—'}</p>
+
         <div className="field">
-          <label className="field-label">¿Qué dijeron?</label>
-          <textarea className="input prog-ta" rows={3} value={texto} autoFocus
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder="Ej. no hay tela, se está buscando con otros proveedores" />
+          <label className="field-label">¿En qué va?</label>
+          <div className="est-chips">
+            {ESTADOS_PROG.map((e) => (
+              <button key={e.key} type="button"
+                className={'est-chip' + (estado === e.key ? ' on' : '')}
+                style={estado === e.key
+                  ? { background: e.bg, color: e.fg, borderColor: e.bd }
+                  : undefined}
+                onClick={() => { setEstado(estado === e.key ? '' : e.key); setColor('') }}>
+                {e.label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {estado === 'sinTela' && (
+          <div className="field">
+            <label className="field-label">¿Cuál color falta?</label>
+            {colores.length > 0 ? (
+              <div className="est-chips">
+                {colores.map((c) => (
+                  <button key={c} type="button"
+                    className={'est-chip' + (color === c ? ' on color' : '')}
+                    onClick={() => setColor(color === c ? '' : c)}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <input className="input" value={otroColor} placeholder="Ej. verde"
+                onChange={(e) => setOtroColor(e.target.value)} />
+            )}
+          </div>
+        )}
+
+        <div className="field">
+          <label className="field-label">Nota (opcional)</label>
+          <textarea className="input prog-ta" rows={2} value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder="Ej. se está buscando reemplazo con otros proveedores" />
+        </div>
+
         <div className="prog-hist">
           {historial.length === 0 ? (
             <p className="muted" style={{ fontSize: 13 }}>Todavía no hay anotaciones.</p>
@@ -64,15 +134,16 @@ function SeguimientoModal({ fila, usuario, onGuardar, onClose }) {
                 <b>{nombreCorto(o.usuario)}</b>
                 <span>{fechaHora(o.at)}</span>
               </div>
-              <p>{o.texto}</p>
+              {o.estado && <EstadoChip estado={o.estado} color={o.color} chico flecha />}
+              {o.texto && <p>{o.texto}</p>}
             </div>
           ))}
         </div>
       </div>
       <div className="modal-foot">
         <button className="btn" onClick={onClose}>Cerrar</button>
-        <button className="btn btn-primary" onClick={agregar} disabled={!texto.trim()}>
-          Anotar
+        <button className="btn btn-primary" onClick={guardar} disabled={!cambio}>
+          Guardar
         </button>
       </div>
     </Modal>
@@ -162,6 +233,7 @@ export default function ProgramacionesView({
   const [marca, setMarca] = useState('Casania')
   const [q, setQ] = useState('')
   const [soloPendientes, setSoloPendientes] = useState(false)
+  const [estadoF, setEstadoF] = useState('')
   const [cargar, setCargar] = useState(false)
   const [obsDe, setObsDe] = useState(null)
   const { sortKey, sortDir, toggle } = useSort('pendiente', 'desc')
@@ -198,6 +270,8 @@ export default function ProgramacionesView({
         tipoFicha: (ficha && ficha.tipo) || '',
         conj: esConjunto(p) || !!delCatalogo,
         piezas,
+        estado: p.estado || '',
+        estadoColor: p.estadoColor || '',
         obs: (p.observaciones || []).length,
         ultimaObs: (p.observaciones || []).slice(-1)[0] || null,
       }
@@ -206,6 +280,7 @@ export default function ProgramacionesView({
   const rows = useMemo(() => {
     let list = filas
     if (soloPendientes) list = list.filter((f) => f.pendiente > 0)
+    if (estadoF) list = list.filter((f) => f.estado === estadoF)
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((f) => (f.id + ' ' + (f.descripcion || '')).toLowerCase().includes(term))
@@ -219,7 +294,7 @@ export default function ProgramacionesView({
       obs: (f) => f.obs,
     }
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [filas, q, soloPendientes, sortKey, sortDir])
+  }, [filas, q, soloPendientes, estadoF, sortKey, sortDir])
 
   const tot = useMemo(() => rows.reduce((a, f) => ({
     pedido: a.pedido + f.pedido,
@@ -244,6 +319,18 @@ export default function ProgramacionesView({
             onClick={() => setSoloPendientes(!soloPendientes)}>
             Solo con pendiente
           </button>
+          {ESTADOS_PROG.map((e) => {
+            const n = filas.filter((f) => f.estado === e.key).length
+            if (!n && estadoF !== e.key) return null
+            const on = estadoF === e.key
+            return (
+              <button key={e.key} type="button" className={'proc-f-btn' + (on ? ' on' : '')}
+                style={on ? { background: e.bg, color: e.fg, borderColor: e.bd } : undefined}
+                onClick={() => setEstadoF(on ? '' : e.key)}>
+                {e.label} <b>{n}</b>
+              </button>
+            )
+          })}
         </div>
         <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia…" />
         <button className="btn btn-primary" onClick={() => setCargar(true)}>Cargar pedidos</button>
@@ -317,16 +404,21 @@ export default function ProgramacionesView({
                       {f.pendiente > 0 ? num(f.pendiente) : <span className="muted">—</span>}
                     </td>
                     <td>
-                      <button type="button" className={'nota-btn' + (f.obs ? ' con' : '')}
+                      <button type="button" className="prog-seg"
                         onClick={() => setObsDe(f)}
-                        title={f.obs ? `${f.obs} anotaciones` : 'Anotar por qué no se ha programado'}>
-                        {f.ultimaObs ? f.ultimaObs.texto : '+ anotar'}
+                        title={f.obs ? `${f.obs} anotaciones — clic para ver o cambiar` : 'Marcar en qué va'}>
+                        {f.estado
+                          ? <EstadoChip estado={f.estado} color={f.estadoColor} chico />
+                          : <span className="prog-seg-vacio">+ anotar</span>}
+                        {f.ultimaObs && f.ultimaObs.texto && (
+                          <span className="prog-seg-txt">{f.ultimaObs.texto}</span>
+                        )}
+                        {f.ultimaObs && (
+                          <span className="prog-obs-fecha">
+                            {nombreCorto(f.ultimaObs.usuario)} · {fechaHora(f.ultimaObs.at)}
+                          </span>
+                        )}
                       </button>
-                      {f.ultimaObs && (
-                        <span className="prog-obs-fecha">
-                          {nombreCorto(f.ultimaObs.usuario)} · {fechaHora(f.ultimaObs.at)}
-                        </span>
-                      )}
                     </td>
                     <td>
                       <button className="btn btn-ghost" style={{ color: '#b23121' }}
@@ -361,6 +453,7 @@ export default function ProgramacionesView({
 
       {obsDe && (
         <SeguimientoModal fila={(programaciones || []).find((p) => p.id === obsDe.id) || obsDe}
+          ficha={refMap.get(obsDe.id)}
           usuario={usuario} onGuardar={onGuardar} onClose={() => setObsDe(null)} />
       )}
     </>

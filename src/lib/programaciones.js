@@ -34,6 +34,21 @@ export function indiceConjuntos(refs) {
 
 export const esConjunto = (fila) => /CONJUNTO/i.test(fila.descripcion || '')
 
+// Estados del seguimiento. No son texto libre porque las respuestas de la
+// reunión se repiten: o falta tela, o ya se pidió, o la referencia anda en
+// estampación. Con estados la tabla se filtra y se cuenta; el detalle -qué
+// color, con qué proveedor- va en la nota.
+//
+// "En estampación" y "Tela pedida" significan que la referencia VA ANDANDO
+// aunque la columna Falta esté en rojo: el rojo sin estado es el que preocupa.
+export const ESTADOS_PROG = [
+  { key: 'sinTela', label: 'Sin tela', bg: '#fbeceb', fg: '#8c2f28', bd: '#f0c4c0' },
+  { key: 'telaPedida', label: 'Tela pedida', bg: '#faeeda', fg: '#633806', bd: '#fac775' },
+  { key: 'estampacion', label: 'En estampación', bg: '#eeedfe', fg: '#3c3489', bd: '#cecbf6' },
+  { key: 'lista', label: 'Lista para programar', bg: '#eaf3de', fg: '#27500a', bd: '#c0dd97' },
+]
+export const estadoProg = (key) => ESTADOS_PROG.find((e) => e.key === key) || null
+
 // Una orden es de conjunto cuando su producto termina en esa palabra. Va en el
 // producto (MG-B892 CONJUNTO), no en la referencia, y a veces la escriben
 // pegada al código (MG-P995CONJUNTO), así que no se exige el espacio.

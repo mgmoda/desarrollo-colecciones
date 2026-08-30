@@ -5,7 +5,7 @@ import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import {
   ESTADOS_PROG, cortesDe, esConjunto, estadoProg, faltaPorColor, indiceCodigos,
-  indiceConjuntos, leerArchivo, leerPegado, piezaQueFalta, programadoDe,
+  indiceConjuntos, leerArchivo, leerPegado, piezaQueFalta, programadoDe, telasDe,
 } from '../lib/programaciones.js'
 import { formatDate } from '../lib/constants.js'
 
@@ -400,13 +400,17 @@ function CargarModal({ marca, onConfirmar, onSeparados, onClose }) {
 }
 
 export default function ProgramacionesView({
-  programaciones, orders, refMap, refs, usuario,
+  programaciones, orders, refMap, refs, telas, usuario,
   onGuardar, onGuardarVarias, onBorrar, onViewImage, onOpenRef,
 }) {
   const [marca, setMarca] = useState('Casania')
   const [q, setQ] = useState('')
   const [soloPendientes, setSoloPendientes] = useState(false)
   const [estadoF, setEstadoF] = useState('')
+  // Dos formas de mirar lo mismo: por referencia (la tabla) o por tela,
+  // agrupando las referencias que usan cada una y los metros que necesitan.
+  const [vista, setVista] = useState('ref')
+  const [telaF, setTelaF] = useState('')
   const [cargar, setCargar] = useState(false)
   const [obsDe, setObsDe] = useState(null)
   const [desgDe, setDesgDe] = useState(null)
@@ -436,12 +440,19 @@ export default function ProgramacionesView({
       const pedido = Number(p.pedido) || 0
       const piezas = delCatalogo ? delCatalogo.piezas : []
       const programado = programadoDe({ id: p.id, piezas }, ordenesPorRef, codigos)
+      const pendiente = pedido - programado
+      // La tela y su promedio vienen de la ficha técnica de Factory. Los
+      // metros son promedio × lo que falta por programar: la cuenta que se
+      // hace a mano antes de pedir tela.
+      const telasRef = telasDe({ id: p.id, piezas }, telas, codigos)
+        .map((t) => ({ ...t, metros: t.prom * Math.max(0, pendiente) }))
       return {
         ...p,
         pedido,
         programado,
+        telasRef,
         falta: piezaQueFalta(piezas, ordenesPorRef, refMap, codigos),
-        pendiente: pedido - programado,
+        pendiente,
         image: (delCatalogo && delCatalogo.image) || (ficha && ficha.image) || '',
         tipoFicha: (ficha && ficha.tipo) || '',
         conj: esConjunto(p) || !!delCatalogo,
@@ -451,7 +462,7 @@ export default function ProgramacionesView({
         obs: (p.observaciones || []).length,
         ultimaObs: (p.observaciones || []).slice(-1)[0] || null,
       }
-    }), [programaciones, marca, refMap, conjuntos, ordenesPorRef, codigos])
+    }), [programaciones, marca, refMap, conjuntos, ordenesPorRef, codigos, telas])
 
   const rows = useMemo(() => {
     let list = filas
@@ -459,7 +470,10 @@ export default function ProgramacionesView({
     if (estadoF) list = list.filter((f) => f.estado === estadoF)
     const term = q.trim().toLowerCase()
     if (term) {
-      list = list.filter((f) => (f.id + ' ' + (f.descripcion || '')).toLowerCase().includes(term))
+      list = list.filter((f) => (
+        f.id + ' ' + (f.descripcion || '') + ' '
+        + (f.telasRef || []).map((t) => t.tela).join(' ')
+      ).toLowerCase().includes(term))
     }
     const accessors = {
       referencia: (f) => f.id,
@@ -478,12 +492,52 @@ export default function ProgramacionesView({
     pendiente: a.pendiente + Math.max(0, f.pendiente),
   }), { pedido: 0, programado: 0, pendiente: 0 }), [rows])
 
+  // La otra vista: cada tela con las referencias que la usan, los metros que
+  // necesita (promedio × falta) y el estado más atrasado del seguimiento de
+  // sus referencias, que es el que manda: la tela está tan lista como la
+  // referencia que menos ha avanzado.
+  const grupos = useMemo(() => {
+    const m = new Map()
+    rows.forEach((f) => (f.telasRef || []).forEach((t) => {
+      const k = String(t.tela).toUpperCase()
+      if (!m.has(k)) m.set(k, { key: k, tela: t.tela, grupo: t.grupo, filas: [], metros: 0 })
+      const g = m.get(k)
+      g.filas.push({ ...f, prom: t.prom, metros: t.metros })
+      g.metros += t.metros
+    }))
+    const orden = (e) => {
+      const i = ESTADOS_PROG.findIndex((x) => x.key === e)
+      return i < 0 ? 99 : i
+    }
+    return [...m.values()].map((g) => {
+      const conEstado = g.filas.filter((f) => f.estado)
+      return {
+        ...g,
+        filas: g.filas.sort((a, b) => b.metros - a.metros),
+        estado: conEstado.length
+          ? conEstado.reduce((a, f) => (orden(f.estado) < orden(a) ? f.estado : a), conEstado[0].estado)
+          : '',
+      }
+    }).sort((a, b) => b.metros - a.metros)
+  }, [rows])
+
+  const sinFichaTela = useMemo(() => rows.filter((f) => !(f.telasRef || []).length), [rows])
+  const totMetros = useMemo(() => grupos.reduce((n, g) => n + g.metros, 0), [grupos])
+
   const thProps = { sortKey, sortDir, onSort: toggle }
   const num = (n) => n.toLocaleString('es-CO')
+  const dec = (n) => n.toLocaleString('es-CO', { maximumFractionDigits: 2 })
+  const mts = (n) => n.toLocaleString('es-CO', { maximumFractionDigits: 1 }) + ' m'
 
   return (
     <>
       <div className="view-actions" style={{ marginBottom: 14 }}>
+        <div className="dis-filtros">
+          <button type="button" className={'proc-f-btn' + (vista === 'ref' ? ' on' : '')}
+            onClick={() => setVista('ref')}>Por referencia</button>
+          <button type="button" className={'proc-f-btn' + (vista === 'tela' ? ' on' : '')}
+            onClick={() => setVista('tela')}>Por tela</button>
+        </div>
         <div className="dis-filtros">
           {MARCAS.map((m) => (
             <button key={m} type="button" className={'proc-f-btn' + (marca === m ? ' on' : '')}
@@ -512,12 +566,21 @@ export default function ProgramacionesView({
         <button className="btn btn-primary" onClick={() => setCargar(true)}>Cargar pedidos</button>
       </div>
 
-      <div className="prog-kpis">
-        <div className="prog-kpi"><span>Pedido</span><b>{num(tot.pedido)}</b></div>
-        <div className="prog-kpi"><span>Programado</span><b>{num(tot.programado)}</b></div>
-        <div className="prog-kpi alerta"><span>Falta por programar</span><b>{num(tot.pendiente)}</b></div>
-        <div className="prog-kpi"><span>Referencias</span><b>{rows.length}</b></div>
-      </div>
+      {vista === 'tela' ? (
+        <div className="prog-kpis">
+          <div className="prog-kpi"><span>Telas</span><b>{num(grupos.length)}</b></div>
+          <div className="prog-kpi alerta"><span>Metros necesarios</span><b>{mts(totMetros)}</b></div>
+          <div className="prog-kpi"><span>Falta por programar</span><b>{num(tot.pendiente)}</b></div>
+          <div className="prog-kpi"><span>Referencias</span><b>{rows.length}</b></div>
+        </div>
+      ) : (
+        <div className="prog-kpis">
+          <div className="prog-kpi"><span>Pedido</span><b>{num(tot.pedido)}</b></div>
+          <div className="prog-kpi"><span>Programado</span><b>{num(tot.programado)}</b></div>
+          <div className="prog-kpi alerta"><span>Falta por programar</span><b>{num(tot.pendiente)}</b></div>
+          <div className="prog-kpi"><span>Referencias</span><b>{rows.length}</b></div>
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <div className="empty-state">
@@ -526,6 +589,96 @@ export default function ProgramacionesView({
             : 'Sin referencias en este filtro.'}</p>
           <p className="muted">Carga el reporte de Factory con “Cargar pedidos”.</p>
         </div>
+      ) : vista === 'tela' ? (
+        <>
+          <div className="dis-filtros" style={{ marginBottom: 14 }}>
+            <button type="button" className={'proc-f-btn' + (!telaF ? ' on' : '')}
+              onClick={() => setTelaF('')}>Todas <b>{grupos.length}</b></button>
+            {/* Chips solo de las telas que más metros necesitan: son las que
+                se vienen a revisar. Las demás igual aparecen abajo en su
+                tarjeta, y el buscador también encuentra por nombre de tela. */}
+            {grupos.filter((g, i) => (g.metros > 0 && i < 15) || telaF === g.key).map((g) => (
+              <button key={g.key} type="button"
+                className={'proc-f-btn' + (telaF === g.key ? ' on' : '')}
+                onClick={() => setTelaF(telaF === g.key ? '' : g.key)}>
+                {g.tela} <b>{g.filas.length}</b>
+              </button>
+            ))}
+          </div>
+
+          {grupos.filter((g) => !telaF || g.key === telaF).map((g) => (
+            <div key={g.key} className="tela-card">
+              <div className="tela-card-head">
+                <span className="tela-nombre">{g.tela}</span>
+                {g.grupo && <span className="tela-grupo">{g.grupo}</span>}
+                {g.estado && <EstadoChip estado={g.estado} chico />}
+                <div className="tela-total">
+                  <b>{mts(g.metros)}</b>
+                  <span>necesarios · {g.filas.length} {g.filas.length === 1 ? 'referencia' : 'referencias'}</span>
+                </div>
+              </div>
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Foto</th>
+                      <th>Referencia</th>
+                      <th>Descripción</th>
+                      <th className="num">Promedio</th>
+                      <th className="num">Falta</th>
+                      <th className="num">Metros</th>
+                      <th>Seguimiento</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {g.filas.map((f) => {
+                      const ficha = refMap.get(f.id)
+                      return (
+                        <tr key={f.id}>
+                          <td className="cell-photo">
+                            {f.image
+                              ? <img src={f.image} alt={f.id} className="thumb" title="Ampliar foto"
+                                onClick={() => onViewImage && onViewImage(f.image)} />
+                              : <span className="thumb empty" title="Sin foto en la ficha">—</span>}
+                          </td>
+                          <td className="strong" style={{ cursor: ficha && onOpenRef ? 'pointer' : 'default' }}
+                            onClick={() => ficha && onOpenRef && onOpenRef(ficha)}>
+                            {f.id}
+                            {f.conj && <span className="tag conj-tag">Conjunto</span>}
+                          </td>
+                          <td className="muted">{f.descripcion || '—'}</td>
+                          <td className="num muted">{dec(f.prom)} m/{f.conj ? 'conj' : 'und'}</td>
+                          <td className={'num strong' + (f.pendiente > 0 ? ' prog-falta' : '')}>
+                            {f.pendiente > 0 ? num(f.pendiente) : <span className="muted">—</span>}
+                          </td>
+                          <td className="num strong">
+                            {f.metros > 0 ? mts(f.metros) : <span className="muted">—</span>}
+                          </td>
+                          <td>
+                            <button type="button" className="prog-seg"
+                              onClick={() => setObsDe(f)}
+                              title={f.obs ? `${f.obs} anotaciones — clic para ver o cambiar` : 'Marcar en qué va'}>
+                              {f.estado
+                                ? <EstadoChip estado={f.estado} color={f.estadoColor} chico />
+                                : <span className="prog-seg-vacio">+ anotar</span>}
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+
+          {sinFichaTela.length > 0 && (
+            <p className="field-hint">
+              Sin tela en la ficha técnica de Factory:{' '}
+              {sinFichaTela.map((f) => f.id).join(', ')}.
+            </p>
+          )}
+        </>
       ) : (
         <div className="table-wrap">
           <table className="data-table">
@@ -537,6 +690,7 @@ export default function ProgramacionesView({
                 <SortTh label="Pedido" col="pedido" className="num" {...thProps} />
                 <SortTh label="Programado" col="programado" className="num" {...thProps} />
                 <SortTh label="Falta" col="pendiente" className="num" {...thProps} />
+                <th>Tela</th>
                 <SortTh label="Seguimiento" col="obs" {...thProps} />
                 <th></th>
               </tr>
@@ -598,6 +752,19 @@ export default function ProgramacionesView({
                           {num(f.pendiente)}
                         </button>
                       ) : f.pendiente > 0 ? num(f.pendiente) : <span className="muted">—</span>}
+                    </td>
+                    <td>
+                      {(f.telasRef || []).length ? (
+                        <div className="tela-stack">
+                          {f.telasRef.map((t) => (
+                            <span key={t.tela} className="tela-chip"
+                              title={`${t.grupo ? t.grupo + ' · ' : ''}${dec(t.prom)} m por ${f.conj ? 'conjunto' : 'unidad'}${f.pendiente > 0 ? ` — faltan ${mts(t.metros)}` : ''}`}>
+                              <b>{t.tela}</b>
+                              <span>{dec(t.prom)} m/{f.conj ? 'conj' : 'und'}{f.pendiente > 0 ? ` · ${mts(t.metros)}` : ''}</span>
+                            </span>
+                          ))}
+                        </div>
+                      ) : <span className="muted">—</span>}
                     </td>
                     <td>
                       <button type="button" className="prog-seg"

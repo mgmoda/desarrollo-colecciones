@@ -233,3 +233,14 @@ export async function dbDeleteProgramacion(id) {
   const { error } = await supabase.from('dev_programaciones').delete().eq('id', id)
   if (error) throw error
 }
+
+// Telas por referencia, desde la ficha técnica de Factory: las sube el sync
+// del servidor a dev_telas (tela, grupo y promedio de consumo por prenda, sin
+// entretela). Cambian poco, así que se cargan una vez al entrar.
+export async function dbLoadTelas() {
+  const { data, error } = await supabase.from('dev_telas').select('id, data')
+  if (error) throw error
+  const m = {}
+  ;(data || []).forEach((r) => { m[r.id] = (r.data && r.data.telas) || [] })
+  return m
+}

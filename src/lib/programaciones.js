@@ -116,6 +116,31 @@ export function programadoDe(fila, ordenesPorRef, codigos) {
   return sumar(fila.id, false)
 }
 
+// Las telas de una fila, desde la ficha técnica de Factory. La ficha puede
+// estar bajo el código final o bajo el interno, así que se busca por los dos.
+// El conjunto no tiene ficha propia: se arma sumando las telas de sus dos
+// prendas —2,58 m por conjunto es la blusa más el pantalón—, y si las dos
+// llevan la misma tela, se junta en un solo renglón.
+export function telasDe(fila, telasIdx, codigos) {
+  if (!telasIdx) return []
+  const de = (ref) => {
+    if (telasIdx[ref] && telasIdx[ref].length) return telasIdx[ref]
+    const cods = (codigos && codigos.get(ref)) || new Set()
+    for (const c of cods) if (telasIdx[c] && telasIdx[c].length) return telasIdx[c]
+    return []
+  }
+  const piezas = (fila.piezas || []).filter(Boolean)
+  const fuentes = piezas.length ? piezas : [fila.id]
+  const m = new Map()
+  fuentes.forEach((r) => de(r).forEach((t) => {
+    const k = String(t.tela || '').toUpperCase()
+    if (!k) return
+    if (!m.has(k)) m.set(k, { tela: t.tela, grupo: t.grupo || '', prom: 0 })
+    m.get(k).prom = Math.round((m.get(k).prom + (Number(t.prom) || 0)) * 10000) / 10000
+  }))
+  return [...m.values()].sort((a, b) => b.prom - a.prom)
+}
+
 const aNumero = (v) => Math.round(Number(String(v).replace(/\./g, '').replace(',', '.')) || 0)
 
 // Lectura de las filas pegadas a mano, por si el archivo no abre. Las columnas

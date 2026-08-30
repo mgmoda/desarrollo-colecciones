@@ -6389,3 +6389,36 @@ select.filtro-taller { flex: none; width: 215px; }
 }
 .desg-corte-cab b { color: var(--ink); }
 .desg-otro { color: #8c2f28; }
+
+/* ---------- Telas en programaciones ---------- */
+/* La vista por tela: una tarjeta por tela con sus referencias y los metros
+   que necesita. El chip compacto es el mismo dato en la tabla por referencia. */
+.tela-card {
+  background: var(--surface); border: 1px solid var(--hairline);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  margin-bottom: 16px; overflow: hidden;
+}
+.tela-card-head {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  padding: 13px 18px 11px; border-bottom: 1px solid var(--hairline);
+}
+.tela-nombre { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; }
+.tela-grupo {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--muted); border: 1px solid var(--hairline-strong);
+  border-radius: 6px; padding: 1px 7px;
+}
+.tela-total { margin-left: auto; text-align: right; display: flex; flex-direction: column; }
+.tela-total b {
+  font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.tela-total span { font-size: 11.5px; color: var(--muted); }
+.tela-stack { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.tela-chip {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  border: 1px solid var(--hairline-strong); border-radius: 8px;
+  padding: 2px 8px; font-size: 12px; background: #faf9f5; white-space: nowrap;
+}
+.tela-chip b { font-weight: 600; }
+.tela-chip span { color: var(--ink-soft); font-variant-numeric: tabular-nums; font-size: 11.5px; }

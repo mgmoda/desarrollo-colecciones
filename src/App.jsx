@@ -32,6 +32,7 @@ import {
   dbLoadFaltantes, dbUpsertFaltante, dbDeleteFaltante,
   dbLoadPreordenes, dbUpsertPreorden, dbDeletePreorden,
   dbLoadProgramaciones, dbUpsertProgramacion, dbUpsertProgramaciones, dbDeleteProgramacion,
+  dbLoadTelas,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice, normRef } from './lib/constants.js'
@@ -73,6 +74,8 @@ export default function App() {
   const [faltantes, setFaltantes] = useState([])
   const [preordenes, setPreordenes] = useState([])
   const [programaciones, setProgramaciones] = useState([])
+  // Telas por referencia (ficha de Factory): { C6892: [{tela, grupo, prom}] }.
+  const [telasFicha, setTelasFicha] = useState({})
   const [refs, setRefs] = useState([])
   const [settings, setSettings] = useState({ telas: normalizeTelas(DEFAULT_TELAS), colors: DEFAULT_COLORS, proveedores: [], decorados: ['Flor'], marcas: DEFAULT_MARCAS, procesos: DEFAULT_PROCESOS })
 
@@ -115,15 +118,16 @@ export default function App() {
     let cancelled = false
     Promise.all([
       dbLoadOrders(), dbLoadRefs(), dbLoadSettings(), dbLoadFaltantes(), dbLoadRefsMeta(),
-      dbLoadOrdersStamp(), dbLoadPreordenes(), dbLoadProgramaciones(),
+      dbLoadOrdersStamp(), dbLoadPreordenes(), dbLoadProgramaciones(), dbLoadTelas(),
     ])
-      .then(([o, r, s, fl, meta, stamp, po, pr]) => {
+      .then(([o, r, s, fl, meta, stamp, po, pr, tf]) => {
         if (cancelled) return
         refsMeta.current = new Map(meta.map((m) => [m.id, m.updated_at]))
         ordersStamp.current = stamp
         setFaltantes(fl)
         setPreordenes(po)
         setProgramaciones(pr)
+        setTelasFicha(tf)
         setOrders(o)
         // Migración silenciosa: corregir "Maricet" → "Mariset" Y eliminar
         // cualquier campo "_stub" que se haya persistido por error.
@@ -904,7 +908,7 @@ export default function App() {
         {tab === 'programaciones' && (
           <ProgramacionesView
             programaciones={programaciones} orders={orders} refMap={refMap} refs={refIndex}
-            usuario={emailSesion}
+            telas={telasFicha} usuario={emailSesion}
             onGuardar={guardarProgramacion} onGuardarVarias={guardarProgramaciones}
             onBorrar={borrarProgramacion}
             onViewImage={setLightbox} onOpenRef={openEdit} />

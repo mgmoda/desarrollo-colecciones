@@ -355,3 +355,47 @@ export function cortesDe(fila, ordenesPorRef, codigos, coloresPedido) {
     : juntar(fila.id, false, '')
   return cortes.sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''))
 }
+
+// Lo que falta, color por color: el pedido menos lo ya programado, casando los
+// colores por su nombre del pedido. Lo programado en un color que el pedido no
+// tiene queda como fila propia en negativo, y los cortes viejos sin curva se
+// restan aparte, sin inventarles color. Así el total del modal es exactamente
+// pedido menos programado, el mismo número de la columna.
+export function faltaPorColor(desglose, cortes) {
+  const filas = new Map()
+  ;(desglose.colores || []).forEach((c) => {
+    filas.set(c.color, { color: c.color, delPedido: true, tallas: { ...c.tallas }, unid: c.unid })
+  })
+  const extras = new Map()
+  let sinDetalle = 0
+  // Las tallas salen de los datos mismos, no de la lista del reporte: un
+  // desglose guardado con otra versión puede no traerla.
+  const tallas = new Set(desglose.tallas || [])
+  ;(desglose.colores || []).forEach((c) => Object.keys(c.tallas || {}).forEach((t) => tallas.add(t)))
+  ;(cortes || []).forEach((corte) => {
+    let enCurva = 0
+    corte.colores.forEach((c) => {
+      enCurva += c.unid
+      let fila
+      if (c.colorPedido && filas.has(c.colorPedido)) fila = filas.get(c.colorPedido)
+      else {
+        if (!extras.has(c.color)) extras.set(c.color, { color: c.color, delPedido: false, tallas: {}, unid: 0 })
+        fila = extras.get(c.color)
+      }
+      Object.entries(c.tallas).forEach(([t, n]) => {
+        tallas.add(t)
+        fila.tallas[t] = (fila.tallas[t] || 0) - n
+      })
+      fila.unid -= c.unid
+    })
+    // Lo que la orden programó por encima de su curva (o sin curva del todo)
+    // no tiene color al que restarse, pero sí cuenta en el total.
+    sinDetalle += Math.max(0, corte.cant - enCurva)
+  })
+  return {
+    colores: [...filas.values(), ...extras.values()],
+    tallas: [...tallas].sort((a, b) => Number(a) - Number(b)),
+    sinDetalle,
+    total: [...filas.values(), ...extras.values()].reduce((n, f) => n + f.unid, 0) - sinDetalle,
+  }
+}

@@ -4,7 +4,7 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import {
-  ESTADOS_PROG, cortesDe, esConjunto, estadoProg, indiceCodigos,
+  ESTADOS_PROG, cortesDe, esConjunto, estadoProg, faltaPorColor, indiceCodigos,
   indiceConjuntos, leerArchivo, leerPegado, piezaQueFalta, programadoDe,
 } from '../lib/programaciones.js'
 import { formatDate } from '../lib/constants.js'
@@ -270,6 +270,45 @@ function ProgramadoModal({ fila, cortes, onClose }) {
   )
 }
 
+// Lo que falta por programar, color por color: el pedido menos los cortes,
+// con los colores casados por su nombre del pedido. Un color programado que el
+// pedido no tiene sale como fila propia en negativo, y los cortes viejos sin
+// detalle se restan aparte: el total del modal es el mismo de la columna.
+function FaltaModal({ fila, cortes, onClose }) {
+  if (!fila || !fila.desglose) return null
+  const f = faltaPorColor(fila.desglose, cortes)
+  const num = (n) => n.toLocaleString('es-CO')
+  const nombreDe = (c) => c.delPedido ? c.color : (
+    <span className="desg-otro" title="Se programó en un color que el pedido no tiene">{c.color} ⚠</span>
+  )
+  return (
+    <Modal open onClose={onClose} size="md">
+      <div className="modal-head">
+        <h2 className="modal-title">{fila.id} · falta por color y talla</h2>
+        <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
+      </div>
+      <div className="modal-body">
+        <p className="field-hint" style={{ marginTop: 0 }}>
+          {fila.descripcion || '—'} · pedido menos programado
+        </p>
+        <TablaColores colores={f.colores} tallas={f.tallas} nombreDe={nombreDe} />
+        {f.sinDetalle > 0 && (
+          <p className="field-hint">
+            Ya se descontaron además <b>{num(f.sinDetalle)}</b> unidades de cortes
+            anteriores al sistema, que no traen detalle de color.
+          </p>
+        )}
+      </div>
+      <div className="modal-foot">
+        <span className="muted" style={{ fontSize: 12.5, marginRight: 'auto' }}>
+          Falta en total: <b>{num(f.total)}</b>
+        </span>
+        <button className="btn" onClick={onClose}>Cerrar</button>
+      </div>
+    </Modal>
+  )
+}
+
 // Carga del reporte de Factory. Lo normal es soltar el archivo tal como sale;
 // pegar las filas queda como salida por si algún día el archivo no abre.
 function CargarModal({ marca, onConfirmar, onSeparados, onClose }) {
@@ -372,6 +411,7 @@ export default function ProgramacionesView({
   const [obsDe, setObsDe] = useState(null)
   const [desgDe, setDesgDe] = useState(null)
   const [progDe, setProgDe] = useState(null)
+  const [faltaDe, setFaltaDe] = useState(null)
   const { sortKey, sortDir, toggle } = useSort('pendiente', 'desc')
 
   // Los conjuntos ya están armados en Costos: de ahí sale su foto, que es la de
@@ -551,7 +591,13 @@ export default function ProgramacionesView({
                       )}
                     </td>
                     <td className={'num strong' + (f.pendiente > 0 ? ' prog-falta' : '')}>
-                      {f.pendiente > 0 ? num(f.pendiente) : <span className="muted">—</span>}
+                      {f.desglose && f.pendiente !== 0 ? (
+                        <button type="button" className="prog-ped"
+                          onClick={() => setFaltaDe(f)}
+                          title="Ver lo que falta por color y talla">
+                          {num(f.pendiente)}
+                        </button>
+                      ) : f.pendiente > 0 ? num(f.pendiente) : <span className="muted">—</span>}
                     </td>
                     <td>
                       <button type="button" className="prog-seg"
@@ -591,6 +637,13 @@ export default function ProgramacionesView({
           cortes={cortesDe(progDe, ordenesPorRef, codigos,
             (progDe.desglose ? progDe.desglose.colores.map((c) => c.color) : []))}
           onClose={() => setProgDe(null)} />
+      )}
+
+      {faltaDe && (
+        <FaltaModal fila={faltaDe}
+          cortes={cortesDe(faltaDe, ordenesPorRef, codigos,
+            faltaDe.desglose.colores.map((c) => c.color))}
+          onClose={() => setFaltaDe(null)} />
       )}
 
       {cargar && (

@@ -222,6 +222,7 @@ function leerSeparadosDeFilas(filas, norm) {
   const iPed = col(/^pedido/i)
   const iUnid = col(/^unid/i)
   const iCli = col(/nombre/i)
+  const iDesc = col(/descripci/i)
 
   // Las tallas van en su propia fila: la primera que traiga cinco o más
   // números chicos (6, 8, 10…).
@@ -239,6 +240,7 @@ function leerSeparadosDeFilas(filas, norm) {
 
   const porRef = new Map()
   const clientes = new Map()
+  const descs = new Map()
   for (let i = iCab + 1; i < filas.length; i++) {
     const f = filas[i] || []
     const ref = norm(f[iRef]).toUpperCase()
@@ -246,6 +248,7 @@ function leerSeparadosDeFilas(filas, norm) {
     if (!ref || !combin || combin === 'PENDIENTE') continue
     if (iPed >= 0 && !norm(f[iPed])) continue
     if (!porRef.has(ref)) porRef.set(ref, new Map())
+    if (iDesc >= 0 && norm(f[iDesc]) && !descs.has(ref)) descs.set(ref, norm(f[iDesc]))
     const colores = porRef.get(ref)
     if (!colores.has(combin)) colores.set(combin, { tallas: {}, unid: 0 })
     const d = colores.get(combin)
@@ -274,7 +277,81 @@ function leerSeparadosDeFilas(filas, norm) {
       total: lista.reduce((n, c) => n + c.unid, 0),
       clientes: (clientes.get(ref) || new Set()).size,
       tallas: tallaCols.map(([, t]) => t),
+      descripcion: descs.get(ref) || '',
     }
   })
   return { tipo: 'separados', desglose, refs: porRef.size }
+}
+
+// ---- Programado por color ----
+
+// Los nombres de color no vienen de la misma mano: el pedido dice VINOTINTO y
+// la orden de corte VINO TINTO 2, o AGUA contra AGUAMARINA. Se iguala
+// quitando tildes, mayúsculas y espacios; si aún así no aparece en el pedido,
+// se deja el nombre de la orden tal cual y marcado, porque una diferencia real
+// —NARANJA donde el pedido dice AMARILLO— es información, no ruido.
+const normColor = (s) => String(s || '')
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .toUpperCase().trim()
+export function empatarColor(color, coloresPedido) {
+  const c = normColor(color)
+  const exacto = coloresPedido.find((p) => normColor(p) === c)
+  if (exacto) return exacto
+  const cc = c.replace(/[^A-Z0-9]/g, '')
+  const parcial = coloresPedido.find((p) => {
+    const pp = normColor(p).replace(/[^A-Z0-9]/g, '')
+    return pp && cc && (cc.includes(pp) || pp.includes(cc))
+  })
+  return parcial || null
+}
+
+// Los cortes (órdenes) de una fila, cada uno con su curva de colores y tallas
+// tal como se programó. Para el conjunto son las órdenes CONJUNTO de sus dos
+// prendas; para una referencia normal, sus órdenes sueltas.
+export function cortesDe(fila, ordenesPorRef, codigos, coloresPedido) {
+  const juntar = (ref, deConjunto, pieza) => {
+    const cods = (codigos && codigos.get(ref)) || new Set([ref])
+    const out = []
+    cods.forEach((c) => (ordenesPorRef.get(c) || []).forEach((o) => {
+      if (esOrdenConjunto(o) !== deConjunto) return
+      const oc = o.stages.ordenCorte || {}
+      // La curva agrupada por color, con la talla sin el cero de relleno
+      // (Factory escribe "08", el pedido "8").
+      const porColor = new Map()
+      const tallas = new Set()
+      ;(o.curva || []).forEach((r) => {
+        const n = Number(r.prog) || 0
+        if (!n) return
+        const color = String(r.color || '').trim() || '—'
+        const talla = String(r.talla || '').replace(/^0+(?=\d)/, '')
+        tallas.add(talla)
+        if (!porColor.has(color)) porColor.set(color, { tallas: {}, unid: 0 })
+        const d = porColor.get(color)
+        d.tallas[talla] = (d.tallas[talla] || 0) + n
+        d.unid += n
+      })
+      const colores = [...porColor.entries()].map(([color, d]) => ({
+        color,
+        // El color real es el del pedido: si el nombre de la orden empata con
+        // uno del pedido, se muestra con ese nombre.
+        colorPedido: coloresPedido ? empatarColor(color, coloresPedido) : null,
+        tallas: d.tallas,
+        unid: d.unid,
+      })).sort((a, b) => b.unid - a.unid)
+      out.push({
+        orden: o.orden,
+        fecha: oc.fecha || '',
+        cant: Number(oc.cant) || 0,
+        pieza: pieza || '',
+        colores,
+        tallas: [...tallas].sort((a, b) => Number(a) - Number(b)),
+      })
+    }))
+    return out
+  }
+  const piezas = (fila.piezas || []).filter(Boolean)
+  const cortes = piezas.length
+    ? piezas.flatMap((r) => juntar(r, true, r))
+    : juntar(fila.id, false, '')
+  return cortes.sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''))
 }

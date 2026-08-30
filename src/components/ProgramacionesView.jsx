@@ -4,9 +4,10 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import {
-  ESTADOS_PROG, esConjunto, estadoProg, indiceCodigos, indiceConjuntos,
-  leerArchivo, leerPegado, piezaQueFalta, programadoDe,
+  ESTADOS_PROG, cortesDe, esConjunto, estadoProg, indiceCodigos,
+  indiceConjuntos, leerArchivo, leerPegado, piezaQueFalta, programadoDe,
 } from '../lib/programaciones.js'
+import { formatDate } from '../lib/constants.js'
 
 const MARCAS = ['Casania', 'Mariset']
 
@@ -155,9 +156,6 @@ function SeguimientoModal({ fila, ficha, usuario, onGuardar, onClose }) {
 function DesgloseModal({ fila, onClose }) {
   if (!fila || !fila.desglose) return null
   const d = fila.desglose
-  // Solo las tallas que traen algo, en el orden del reporte.
-  const tallas = (d.tallas || []).filter((t) => d.colores.some((c) => (c.tallas[t] || 0) > 0))
-  const totalPorTalla = (t) => d.colores.reduce((n, c) => n + (c.tallas[t] || 0), 0)
   const cuadra = d.total === fila.pedido
   const num = (n) => n.toLocaleString('es-CO')
   return (
@@ -170,35 +168,7 @@ function DesgloseModal({ fila, onClose }) {
         <p className="field-hint" style={{ marginTop: 0 }}>
           {fila.descripcion || '—'} · {d.clientes} {d.clientes === 1 ? 'cliente' : 'clientes'}
         </p>
-        <div className="table-wrap">
-          <table className="data-table desg-table">
-            <thead>
-              <tr>
-                <th>Color</th>
-                {tallas.map((t) => <th key={t} className="num">{t}</th>)}
-                <th className="num">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {d.colores.map((c) => (
-                <tr key={c.color}>
-                  <td className="strong">{c.color}</td>
-                  {tallas.map((t) => (
-                    <td key={t} className="num">
-                      {c.tallas[t] ? num(c.tallas[t]) : <span className="muted">·</span>}
-                    </td>
-                  ))}
-                  <td className="num strong">{num(c.unid)}</td>
-                </tr>
-              ))}
-              <tr className="desg-total">
-                <td>Total</td>
-                {tallas.map((t) => <td key={t} className="num">{num(totalPorTalla(t))}</td>)}
-                <td className="num strong">{num(d.total)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <TablaColores colores={d.colores} tallas={d.tallas || []} />
         {!cuadra && (
           <p className="form-err" style={{ marginTop: 10 }}>
             El desglose suma {num(d.total)} y el pedido cargado dice {num(fila.pedido)}.
@@ -208,6 +178,92 @@ function DesgloseModal({ fila, onClose }) {
       </div>
       <div className="modal-foot">
         {cuadra && <span className="muted" style={{ fontSize: 12.5, marginRight: 'auto' }}>✓ Cuadra con el pedido</span>}
+        <button className="btn" onClick={onClose}>Cerrar</button>
+      </div>
+    </Modal>
+  )
+}
+
+// Tabla de color por talla, compartida por el pedido y por cada corte.
+function TablaColores({ colores, tallas, nombreDe }) {
+  const conDato = tallas.filter((t) => colores.some((c) => (c.tallas[t] || 0) > 0))
+  const totalPorTalla = (t) => colores.reduce((n, c) => n + (c.tallas[t] || 0), 0)
+  const total = colores.reduce((n, c) => n + c.unid, 0)
+  const num = (n) => n.toLocaleString('es-CO')
+  return (
+    <div className="table-wrap">
+      <table className="data-table desg-table">
+        <thead>
+          <tr>
+            <th>Color</th>
+            {conDato.map((t) => <th key={t} className="num">{t}</th>)}
+            <th className="num">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {colores.map((c, i) => (
+            <tr key={i}>
+              <td className="strong">{nombreDe ? nombreDe(c) : c.color}</td>
+              {conDato.map((t) => (
+                <td key={t} className="num">
+                  {c.tallas[t] ? num(c.tallas[t]) : <span className="muted">·</span>}
+                </td>
+              ))}
+              <td className="num strong">{num(c.unid)}</td>
+            </tr>
+          ))}
+          {colores.length > 1 && (
+            <tr className="desg-total">
+              <td>Total</td>
+              {conDato.map((t) => <td key={t} className="num">{num(totalPorTalla(t))}</td>)}
+              <td className="num strong">{num(total)}</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// Lo programado de una referencia, corte por corte, con los mismos colores y
+// tallas del pedido. El color real es el del pedido: si el nombre de la orden
+// empata con uno del pedido se muestra ese; si no empata, se deja el de la
+// orden con su aviso, porque esa diferencia es justo lo que hay que ver.
+function ProgramadoModal({ fila, cortes, onClose }) {
+  if (!fila) return null
+  const num = (n) => n.toLocaleString('es-CO')
+  const nombreDe = (c) => c.colorPedido || (
+    <span className="desg-otro" title="Este color no está en el pedido">{c.color} ⚠</span>
+  )
+  return (
+    <Modal open onClose={onClose} size="md">
+      <div className="modal-head">
+        <h2 className="modal-title">{fila.id} · programado por color y talla</h2>
+        <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
+      </div>
+      <div className="modal-body">
+        <p className="field-hint" style={{ marginTop: 0 }}>{fila.descripcion || '—'}</p>
+        {cortes.length === 0 ? (
+          <p className="muted">Todavía no se ha programado ningún corte.</p>
+        ) : cortes.map((c, i) => (
+          <div key={i} className="desg-corte">
+            <p className="desg-corte-cab">
+              <b>Orden {c.orden}</b>
+              {c.pieza && <span className="tag conj-tag">{c.pieza}</span>}
+              <span>{formatDate(c.fecha)}</span>
+              <span>· {num(c.cant)} unidades</span>
+            </p>
+            {c.colores.length ? (
+              <TablaColores colores={c.colores} tallas={c.tallas} nombreDe={nombreDe} />
+            ) : (
+              <p className="muted" style={{ fontSize: 12.5 }}>
+                Esta orden es anterior al sistema y no trae el detalle de colores.
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="modal-foot">
         <button className="btn" onClick={onClose}>Cerrar</button>
       </div>
     </Modal>
@@ -249,9 +305,10 @@ function CargarModal({ marca, onConfirmar, onSeparados, onClose }) {
       </div>
       <div className="modal-body">
         <p className="field-hint" style={{ marginTop: 0 }}>
-          El reporte <b>Pedidos y Cortes por Referencia</b> de Factory, tal como lo
-          exportas. Se toman la referencia, la descripción y el pedido; lo programado
-          lo cuenta el sistema de sus órdenes de corte.
+          El reporte de <b>separados</b> (Pendientes por Clientes y Referencias), tal
+          como sale de Factory. Trae todo: referencias, pedido y el detalle por color
+          y talla de las dos marcas. Lo programado lo cuenta el sistema de sus
+          órdenes de corte.
         </p>
 
         <label className="import-drop"
@@ -278,9 +335,8 @@ function CargarModal({ marca, onConfirmar, onSeparados, onClose }) {
 
         {delArchivo && delArchivo.sep ? (
           <p className="field-hint">
-            Desglose por color y talla para <b>{delArchivo.refs}</b> referencias.
-            Se pega a las que ya están cargadas; el número de pedido queda
-            clickeable para verlo.
+            <b>{delArchivo.refs}</b> referencias con su pedido y su desglose por
+            color y talla. Lo ya cargado conserva su seguimiento.
           </p>
         ) : filas.length > 0 && (
           <p className="field-hint">
@@ -315,6 +371,7 @@ export default function ProgramacionesView({
   const [cargar, setCargar] = useState(false)
   const [obsDe, setObsDe] = useState(null)
   const [desgDe, setDesgDe] = useState(null)
+  const [progDe, setProgDe] = useState(null)
   const { sortKey, sortDir, toggle } = useSort('pendiente', 'desc')
 
   // Los conjuntos ya están armados en Costos: de ahí sale su foto, que es la de
@@ -479,7 +536,13 @@ export default function ProgramacionesView({
                       ) : num(f.pedido)}
                     </td>
                     <td className="num">
-                      {num(f.programado)}
+                      {f.programado > 0 ? (
+                        <button type="button" className="prog-ped"
+                          onClick={() => setProgDe(f)}
+                          title="Ver lo programado por color y talla, corte por corte">
+                          {num(f.programado)}
+                        </button>
+                      ) : num(f.programado)}
                       {f.falta && (
                         <span className="prog-falta-pieza"
                           title={`La otra prenda va programada en ${f.falta.hechas} y esta en ninguna`}>
@@ -523,19 +586,39 @@ export default function ProgramacionesView({
 
       {desgDe && <DesgloseModal fila={desgDe} onClose={() => setDesgDe(null)} />}
 
+      {progDe && (
+        <ProgramadoModal fila={progDe}
+          cortes={cortesDe(progDe, ordenesPorRef, codigos,
+            (progDe.desglose ? progDe.desglose.colores.map((c) => c.color) : []))}
+          onClose={() => setProgDe(null)} />
+      )}
+
       {cargar && (
         <CargarModal marca={marca} onClose={() => setCargar(false)}
           onSeparados={(desglose) => {
-            // El desglose se pega a las referencias ya cargadas, de las dos
-            // marcas a la vez: el reporte de separados viene junto.
-            const cambiadas = (programaciones || [])
-              .filter((p) => desglose[String(p.id).toUpperCase()])
-              .map((p) => ({
-                ...p,
-                desglose: desglose[String(p.id).toUpperCase()],
+            // El reporte de separados trae todo: referencias, descripción,
+            // pedido y desglose, de las dos marcas a la vez. Es el único que
+            // hay que cargar. Lo que ya existía conserva su seguimiento.
+            const previas = new Map((programaciones || []).map((p) => [p.id, p]))
+            const filasNuevas = Object.entries(desglose).map(([id, d]) => {
+              const previa = previas.get(id) || {}
+              const ficha = refMap.get(id)
+              const marca = (ficha && ficha.marca)
+                || previa.marca
+                || (id.startsWith('C') ? 'Casania' : 'Mariset')
+              return {
+                ...previa,
+                id,
+                marca,
+                descripcion: d.descripcion || previa.descripcion || '',
+                pedido: d.total,
+                desglose: d,
                 desgloseAt: Date.now(),
-              }))
-            onGuardarVarias(cambiadas)
+                observaciones: previa.observaciones || [],
+                actualizadoAt: Date.now(),
+              }
+            })
+            onGuardarVarias(filasNuevas)
             setCargar(false)
           }}
           onConfirmar={(nuevas, marcaCargada) => {

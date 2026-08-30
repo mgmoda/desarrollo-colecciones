@@ -6382,3 +6382,10 @@ select.filtro-taller { flex: none; width: 215px; }
 .desg-table .desg-total td {
   border-top: 2px solid var(--ink); font-weight: 600;
 }
+.desg-corte { margin-bottom: 18px; }
+.desg-corte-cab {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  margin: 0 0 6px; font-size: 13px; color: var(--ink-soft);
+}
+.desg-corte-cab b { color: var(--ink); }
+.desg-otro { color: #8c2f28; }

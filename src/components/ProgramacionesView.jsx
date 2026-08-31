@@ -281,6 +281,14 @@ function FaltaModal({ fila, cortes, onClose }) {
   const nombreDe = (c) => c.delPedido ? c.color : (
     <span className="desg-otro" title="Se programó en un color que el pedido no tiene">{c.color} ⚠</span>
   )
+  // La tela que hay que conseguir para lo que falta, color por color: las
+  // unidades pendientes de cada color por el promedio de la ficha. Solo los
+  // colores del pedido que aún deben unidades; la unidad es m/und o m/conj
+  // según sea prenda suelta o conjunto.
+  const telas = fila.telasRef || []
+  const porColor = f.colores.filter((c) => c.delPedido && c.unid > 0)
+  const dec = (n) => n.toLocaleString('es-CO', { maximumFractionDigits: 2 })
+  const mts = (n) => n.toLocaleString('es-CO', { maximumFractionDigits: 1 }) + ' m'
   return (
     <Modal open onClose={onClose} size="md">
       <div className="modal-head">
@@ -297,6 +305,48 @@ function FaltaModal({ fila, cortes, onClose }) {
             Ya se descontaron además <b>{num(f.sinDetalle)}</b> unidades de cortes
             anteriores al sistema, que no traen detalle de color.
           </p>
+        )}
+        {telas.length > 0 && porColor.length > 0 && (
+          <>
+            <p className="field-hint" style={{ marginTop: 14 }}>
+              Tela necesaria para lo que falta, según el promedio de la ficha:
+            </p>
+            <div className="table-wrap">
+              <table className="data-table desg-table">
+                <thead>
+                  <tr>
+                    <th>Color</th>
+                    {telas.map((t) => (
+                      <th key={t.tela} className="num">
+                        {t.tela}{' '}
+                        <span className="muted">· {dec(t.prom)} m/{fila.conj ? 'conj' : 'und'}</span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {porColor.map((c) => (
+                    <tr key={c.color}>
+                      <td className="strong">{c.color}</td>
+                      {telas.map((t) => (
+                        <td key={t.tela} className="num">{mts(c.unid * t.prom)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                  {porColor.length > 1 && (
+                    <tr className="desg-total">
+                      <td>Total</td>
+                      {telas.map((t) => (
+                        <td key={t.tela} className="num">
+                          {mts(porColor.reduce((n, c) => n + c.unid, 0) * t.prom)}
+                        </td>
+                      ))}
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
       <div className="modal-foot">

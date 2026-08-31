@@ -124,6 +124,20 @@ export function cambiarFecha(proc, etapaKey, campo, iso) {
   return { ...proc, [etapaKey]: { ...et, [campo]: nueva.getTime() } }
 }
 
+// Fecha y hora de una etapa. La hora siempre se guardó —el registro es un
+// instante, no un día—; esto es para poder mostrarla.
+export function fechaHoraProc(ts) {
+  const d = new Date(Number(ts) || 0)
+  if (isNaN(d)) return ''
+  const dia = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+  return `${dia} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+export function horaProc(ts) {
+  const d = new Date(Number(ts) || 0)
+  if (isNaN(d)) return ''
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
 // La fecha de una etapa en el formato que entiende el calendario del
 // navegador (aaaa-mm-dd), en hora local.
 export function aIso(ts) {

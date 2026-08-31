@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import {
-  aIso, duracion, estaAndando, estaListo, etapaProc,
+  aIso, duracion, estaAndando, estaListo, etapaProc, fechaHoraProc, horaProc,
   abrir, borrarEtapa, cambiarFecha, cerrar, reabrir,
 } from '../lib/procesos.js'
 
@@ -58,13 +58,19 @@ export default function EtapaProceso({ etapa, proc, usuario, onCambiar }) {
 
   if (estaListo(et)) {
     return (
-      <span className="et-listo" title={`${e.listo} · ${dm(et.desde)} → ${dm(et.hasta)}`}>
-        <Tiempo texto={`✓ ${dur.texto}`} ts={et.hasta} min={aIso(et.desde)} max={aIso(Date.now())}
-          titulo={`Terminó el ${dm(et.hasta)} · clic para corregir`}
-          onCambiar={(iso) => onCambiar(cambiarFecha(proc, etapa, 'hasta', iso))} />
-        <button type="button" className="et-mini" title="Volver a abrirla"
-          aria-label="Volver a abrir" onClick={() => onCambiar(reabrir(proc, etapa))}>↺</button>
-        {equis}
+      // Las horas van en su propia línea: puestas al lado empujaban la tabla
+      // a scroll horizontal, y abajo no cuestan ni un píxel de ancho.
+      <span className="et-celda">
+        <span className="et-listo"
+          title={`${e.listo} · empezó ${fechaHoraProc(et.desde)} · terminó ${fechaHoraProc(et.hasta)}`}>
+          <Tiempo texto={`✓ ${dur.texto}`} ts={et.hasta} min={aIso(et.desde)} max={aIso(Date.now())}
+            titulo={`Terminó el ${dm(et.hasta)} a las ${horaProc(et.hasta)} · clic para corregir el día`}
+            onCambiar={(iso) => onCambiar(cambiarFecha(proc, etapa, 'hasta', iso))} />
+          <button type="button" className="et-mini" title="Volver a abrirla"
+            aria-label="Volver a abrir" onClick={() => onCambiar(reabrir(proc, etapa))}>↺</button>
+          {equis}
+        </span>
+        <span className="et-horas">{horaProc(et.desde)} → {horaProc(et.hasta)}</span>
       </span>
     )
   }
@@ -74,15 +80,16 @@ export default function EtapaProceso({ etapa, proc, usuario, onCambiar }) {
     // cortando alguien de la casa.
     const clase = et.externo ? 'externo' : etapa
     return (
+      <span className="et-celda">
       <span className={'et-vivo ' + clase}
         title={et.externo
-          ? `La tela está donde ${et.quien} desde el ${dm(et.desde)}`
-          : `${e.andando} desde el ${dm(et.desde)}`}>
+          ? `La tela está donde ${et.quien} desde ${fechaHoraProc(et.desde)}`
+          : `${e.andando} desde ${fechaHoraProc(et.desde)}`}>
         <span className="punto" />
         {et.quien && <span className="et-quien">{et.quien}</span>}
         <Tiempo texto={dur.texto} ts={et.desde} max={aIso(Date.now())}
           clase={dur.dias > e.limite ? 'tarde' : ''}
-          titulo={`Empezó el ${dm(et.desde)} · clic para corregir`}
+          titulo={`Empezó el ${dm(et.desde)} a las ${horaProc(et.desde)} · clic para corregir el día`}
           onCambiar={(iso) => onCambiar(cambiarFecha(proc, etapa, 'desde', iso))} />
         <button type="button" className="et-mini ok"
           title={et.externo
@@ -91,6 +98,8 @@ export default function EtapaProceso({ etapa, proc, usuario, onCambiar }) {
           aria-label={et.externo ? 'Volvió' : 'Terminó'}
           onClick={() => onCambiar(cerrar(proc, etapa, usuario))}>✓</button>
         {equis}
+      </span>
+      <span className="et-horas">desde las {horaProc(et.desde)}</span>
       </span>
     )
   }

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { ETAPAS_PROC, duracion, estaListo, etapaProc } from '../lib/procesos.js'
+import { ETAPAS_PROC, duracion, estaListo, fechaHoraProc, horaProc } from '../lib/procesos.js'
 import { periodRange, periodLabel, shiftPeriod } from '../lib/periods.js'
 import { formatDate } from '../lib/constants.js'
 
@@ -126,11 +126,14 @@ export default function RendimientoCorte({ orders, procesos }) {
   const pocos = cortadores.length > 0 && cortadores.some((c) => c.cortes < 5)
 
   function bajarCsv() {
-    const cab = ['Referencia', 'Orden', 'Producto', 'Cantidad', 'Etapa', 'Quien', 'Dias', 'Und por dia', 'Inicio', 'Fin']
+    const cab = ['Referencia', 'Orden', 'Producto', 'Cantidad', 'Etapa', 'Quien', 'Dias',
+      'Und por dia', 'Fecha inicio', 'Hora inicio', 'Fecha fin', 'Hora fin', 'Horas']
     const linea = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`
     const cuerpo = rows.map((c) => [
       c.referencia, c.orden, c.producto, c.unid, c.etapaLabel, c.quien || '',
-      Math.max(1, c.dias), Math.round(c.ritmo), fecha(c.desde), fecha(c.hasta),
+      Math.max(1, c.dias), Math.round(c.ritmo),
+      fecha(c.desde), horaProc(c.desde), fecha(c.hasta), horaProc(c.hasta),
+      Math.round((c.hasta - c.desde) / 3600000),
     ].map(linea).join(';'))
     const csv = '﻿' + [cab.map(linea).join(';'), ...cuerpo].join('\r\n')
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
@@ -291,7 +294,12 @@ export default function RendimientoCorte({ orders, procesos }) {
                   <td>{c.quien || <span className="muted">—</span>}</td>
                   <td className={'num strong' + (c.dias > c.limite ? ' prog-falta' : '')}>{c.tiempo}</td>
                   <td className="num">{c.unid ? num(c.ritmo) : <span className="muted">—</span>}</td>
-                  <td className="muted">{fecha(c.desde)} → {fecha(c.hasta)}</td>
+                  <td className="muted rend-fechas"
+                    title={`Empezó ${fechaHoraProc(c.desde)} · terminó ${fechaHoraProc(c.hasta)}`}>
+                    {fecha(c.desde)} <b>{horaProc(c.desde)}</b>
+                    {' → '}
+                    {fecha(c.hasta)} <b>{horaProc(c.hasta)}</b>
+                  </td>
                 </tr>
               ))}
             </tbody>

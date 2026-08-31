@@ -298,9 +298,15 @@ export default function App() {
   const ADMINS = ['diego_monsalve87@hotmail.com']
   const esAdmin = ADMINS.includes(emailSesion)
   const puedeResolverFaltantes = ['ninfa@mgmoda.local', ...ADMINS].includes(emailSesion)
+  // Programaciones es la mesa de pedidos contra lo programado: la ven solo
+  // Diego y Ninfa. Ninfa no se vuelve admin por esto —no edita fichas, no
+  // importa, no toca los filtros de fase—, solo gana esta pestaña.
+  const veProgramaciones = ['ninfa@mgmoda.local', ...ADMINS].includes(emailSesion)
   const tabsVisibles = useMemo(
-    () => (esAdmin ? TABS : TABS.filter((t) => TABS_OPERACION.includes(t.key))),
-    [esAdmin],
+    () => (esAdmin ? TABS : TABS.filter((t) =>
+      TABS_OPERACION.includes(t.key)
+      || (t.key === 'programaciones' && veProgramaciones))),
+    [esAdmin, veProgramaciones],
   )
 
   // Si quedó guardada una pestaña que este usuario no puede ver, se lo lleva a

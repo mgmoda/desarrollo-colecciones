@@ -28,6 +28,20 @@ const fechaCorta = (ts) => {
 }
 const diasTxt = (n) => `${n} ${n === 1 ? 'día' : 'días'}`
 
+// El estado de la referencia sale de sus movimientos, no se digita: lo que
+// está andando manda —el movimiento más reciente—, si todo lo que se pidió ya
+// llegó queda lista para programar, y sin movimientos no dice nada. Así el
+// estado nunca se queda pegado cuando se borra o llega un movimiento.
+function estadoDeMovs(movimientos) {
+  const movs = movimientos || []
+  const abiertos = movs.filter((m) => !m.llegadaAt)
+  if (abiertos.length) {
+    const ultimo = abiertos.reduce((a, m) => ((m.desde || 0) > (a.desde || 0) ? m : a), abiertos[0])
+    return procesoMov(ultimo.proceso).estado
+  }
+  return movs.length ? 'lista' : ''
+}
+
 // Lo que una referencia tiene andando: unidades en proceso, los días del
 // movimiento más viejo —el que manda para saber cuál lleva más esperando— y
 // lo que de verdad falta por gestionar, que es la falta menos lo que ya se
@@ -130,21 +144,35 @@ function MovimientosModal({ fila, ficha, usuario, onGuardar, onClose }) {
       }))
     // El estado de la referencia se mueve solo con el movimiento; el
     // seguimiento (las notas) no se toca: es texto libre y nada más.
-    onGuardar({
-      ...fila,
-      movimientos: [...movs, ...nuevos],
-      estado: p.estado,
-      estadoColor: '',
-    })
+    guardarMovs([...movs, ...nuevos])
     setCants({})
   }
 
-  function llego(mov) {
+  // Todo cambio de movimientos vuelve a calcular el estado de la referencia.
+  function guardarMovs(lista) {
     onGuardar({
       ...fila,
-      movimientos: movs.map((m) => (m.id === mov.id
-        ? { ...m, llegadaAt: Date.now(), llegadaUsuario: usuario } : m)),
+      movimientos: lista,
+      estado: estadoDeMovs(lista),
+      estadoColor: '',
     })
+  }
+
+  function llego(mov) {
+    guardarMovs(movs.map((m) => (m.id === mov.id
+      ? { ...m, llegadaAt: Date.now(), llegadaUsuario: usuario } : m)))
+  }
+
+  // Borrar un movimiento: para cuando se registró por error o con la cantidad
+  // equivocada. Se va del todo, con su historia de días. Se busca por posición
+  // en la lista guardada, que no es la que se ve (va partida en andando y ya
+  // llegados).
+  function borrar(mov) {
+    const i = movs.indexOf(mov)
+    if (i < 0) return
+    const p = procesoMov(mov.proceso)
+    if (!window.confirm(`¿Borrar este movimiento?\n\n${p.label}: ${mov.color} ×${mov.cant}`)) return
+    guardarMovs(movs.filter((_, j) => j !== i))
   }
 
   return (
@@ -235,6 +263,9 @@ function MovimientosModal({ fila, ficha, usuario, onGuardar, onClose }) {
                 title="Marcar que ya llegó: se cierra el movimiento y queda cuánto tardó"
                 onClick={() => llego(m)}>✓ Llegó</button>
               <span className="mov-quien">{nombreCorto(m.usuario)}</span>
+              <button type="button" className="mov-del"
+                title="Borrar este movimiento" aria-label="Borrar este movimiento"
+                onClick={() => borrar(m)}>✕</button>
             </div>
           ))}
           {cerrados.map((m) => (
@@ -242,6 +273,9 @@ function MovimientosModal({ fila, ficha, usuario, onGuardar, onClose }) {
               <MovFila mov={m} />
               <span className="mov-desde">{fechaCorta(m.desde)} → {fechaCorta(m.llegadaAt)}</span>
               <span className="mov-quien">{nombreCorto(m.usuario)}</span>
+              <button type="button" className="mov-del"
+                title="Borrar este movimiento" aria-label="Borrar este movimiento"
+                onClick={() => borrar(m)}>✕</button>
             </div>
           ))}
         </div>

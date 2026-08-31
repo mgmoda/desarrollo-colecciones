@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import Modal from './Modal.jsx'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
@@ -9,8 +9,40 @@ import {
   programadoDe, telasDe,
 } from '../lib/programaciones.js'
 import { formatDate } from '../lib/constants.js'
+import { diasDesde, diasEntre } from '../lib/dates.js'
 
 const MARCAS = ['Casania', 'Mariset']
+
+// Movimientos: lo que Ninfa manda a pedir o a estampar, color por color y con
+// cantidad total (sin curvas: en ese momento no las sabe). Cada movimiento
+// cuenta sus días desde que se registró, y al llegar queda grabado cuánto
+// tardó ese proceso para esas cantidades.
+const PROCESOS_MOV = [
+  { key: 'tela', label: 'Tela pedida', accion: 'Pedí la tela', estado: 'telaPedida', bg: '#faeeda', fg: '#633806', bd: '#fac775' },
+  { key: 'textampa', label: 'Textampa', accion: 'Textampa', estado: 'estampacion', bg: '#eeedfe', fg: '#3c3489', bd: '#cecbf6' },
+]
+const procesoMov = (k) => PROCESOS_MOV.find((p) => p.key === k) || PROCESOS_MOV[0]
+const fechaCorta = (ts) => {
+  const d = new Date(Number(ts) || 0)
+  return isNaN(d) ? '' : d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' })
+}
+const diasTxt = (n) => `${n} ${n === 1 ? 'día' : 'días'}`
+
+// El chip de un movimiento: proceso, color, cantidad y sus días — corriendo
+// si sigue abierto (rojo pasadas dos semanas), o los que tardó si ya llegó.
+function MovChip({ mov }) {
+  const p = procesoMov(mov.proceso)
+  const cerrado = !!mov.llegadaAt
+  const dias = cerrado ? diasEntre(mov.desde, mov.llegadaAt) : diasDesde(mov.desde)
+  return (
+    <span className="mov-chip" style={{ background: p.bg, color: p.fg, borderColor: p.bd }}>
+      {p.label} <b>{mov.color} ×{mov.cant}</b>
+      <span className={'mov-dias' + (!cerrado && dias > 15 ? ' tarde' : '')}>
+        {cerrado ? `llegó en ${diasTxt(dias)}` : diasTxt(dias)}
+      </span>
+    </span>
+  )
+}
 
 const fechaHora = (ts) => {
   const d = new Date(Number(ts) || 0)
@@ -34,6 +66,170 @@ function EstadoChip({ estado, color, chico, flecha }) {
       style={{ background: e.bg, color: e.fg, borderColor: e.bd }}>
       {flecha ? '→ ' : ''}{e.label}{color ? ` · ${color}` : ''}
     </span>
+  )
+}
+
+// El registro y la lista de movimientos, dentro del modal de seguimiento.
+//
+// Registrar es llenar una tablita tipo Excel: los colores del pedido ya vienen
+// puestos como filas y solo se escriben las cantidades (Enter o flecha baja a
+// la siguiente celda; el color que no va se deja en blanco). Un botón crea un
+// movimiento por cada color con cantidad, con la fecha de hoy y a nombre de
+// quien registra, y el estado de la referencia se mueve solo.
+function MovimientosSeccion({ fila, ficha, usuario, onGuardar, onEstadoAuto }) {
+  const [proceso, setProceso] = useState('tela')
+  const [cants, setCants] = useState({})
+  const celdas = useRef([])
+
+  const colores = useMemo(() => {
+    const delPedido = ((fila.desglose && fila.desglose.colores) || [])
+      .map((c) => c.color).filter(Boolean)
+    if (delPedido.length) return delPedido
+    return ((ficha && ficha.colores) || []).map((c) => c && c.name).filter(Boolean)
+  }, [fila, ficha])
+
+  const movs = fila.movimientos || []
+  const abiertos = movs.filter((m) => !m.llegadaAt)
+  const cerrados = movs.filter((m) => m.llegadaAt)
+    .sort((a, b) => (b.llegadaAt || 0) - (a.llegadaAt || 0))
+  const total = colores.reduce((n, c) => n + (Math.round(Number(cants[c])) || 0), 0)
+  const num = (n) => n.toLocaleString('es-CO')
+
+  function registrar() {
+    if (!total) return
+    const p = procesoMov(proceso)
+    const ahora = Date.now()
+    const nuevos = colores
+      .map((c) => ({ color: c, cant: Math.round(Number(cants[c])) || 0 }))
+      .filter((x) => x.cant > 0)
+      .map((x, i) => ({
+        id: (ahora + i).toString(36) + Math.random().toString(36).slice(2, 6),
+        proceso, color: x.color, cant: x.cant, desde: ahora, usuario,
+      }))
+    const entrada = {
+      usuario, at: ahora,
+      texto: p.label + ': ' + nuevos.map((m) => `${m.color} ×${m.cant}`).join(' · '),
+    }
+    if (p.estado !== (fila.estado || '')) entrada.estado = p.estado
+    onGuardar({
+      ...fila,
+      movimientos: [...movs, ...nuevos],
+      estado: p.estado,
+      estadoColor: '',
+      observaciones: [...(fila.observaciones || []), entrada],
+    })
+    if (onEstadoAuto) onEstadoAuto(p.estado)
+    setCants({})
+  }
+
+  function llego(mov) {
+    const ahora = Date.now()
+    const p = procesoMov(mov.proceso)
+    const dias = diasEntre(mov.desde, ahora)
+    onGuardar({
+      ...fila,
+      movimientos: movs.map((m) => (m.id === mov.id
+        ? { ...m, llegadaAt: ahora, llegadaUsuario: usuario } : m)),
+      observaciones: [...(fila.observaciones || []), {
+        usuario, at: ahora,
+        texto: `Llegó: ${p.label} ${mov.color} ×${mov.cant} (${diasTxt(dias)})`,
+      }],
+    })
+  }
+
+  return (
+    <div className="field">
+      <label className="field-label">Registrar movimiento</label>
+      <div className="est-chips">
+        {PROCESOS_MOV.map((p) => (
+          <button key={p.key} type="button"
+            className={'est-chip' + (proceso === p.key ? ' on' : '')}
+            style={proceso === p.key
+              ? { background: p.bg, color: p.fg, borderColor: p.bd }
+              : undefined}
+            onClick={() => setProceso(p.key)}>
+            {p.accion}
+          </button>
+        ))}
+      </div>
+
+      {colores.length === 0 ? (
+        <p className="field-hint">
+          Carga el pedido (reporte de separados) para tener los colores de esta referencia.
+        </p>
+      ) : (
+        <>
+          <div className="mov-hoja">
+            <table>
+              <thead>
+                <tr><th>Color</th><th className="num">Unidades</th></tr>
+              </thead>
+              <tbody>
+                {colores.map((c, i) => (
+                  <tr key={c}>
+                    <td className="mov-rotulo">{c}</td>
+                    <td className="mov-celda">
+                      <input ref={(el) => { celdas.current[i] = el }}
+                        inputMode="numeric" value={cants[c] || ''} placeholder="·"
+                        onChange={(e) => setCants({ ...cants, [c]: e.target.value.replace(/[^\d]/g, '') })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                            e.preventDefault()
+                            const sig = celdas.current[i + 1]
+                            if (sig) sig.focus()
+                          } else if (e.key === 'ArrowUp') {
+                            e.preventDefault()
+                            const ant = celdas.current[i - 1]
+                            if (ant) ant.focus()
+                          }
+                        }} />
+                    </td>
+                  </tr>
+                ))}
+                {colores.length > 1 && (
+                  <tr className="mov-fila-total">
+                    <td className="mov-rotulo">Total</td>
+                    <td className="num">{total ? num(total) : '·'}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <button type="button" className="btn btn-primary mov-registrar"
+              disabled={!total} onClick={registrar}>
+              Registrar{total > 0 ? ` ${num(total)} unidades` : ''}
+            </button>
+          </div>
+          <p className="field-hint">
+            Un movimiento por cada color con cantidad, con la fecha de hoy y a tu
+            nombre. El color que no va se deja en blanco.
+          </p>
+        </>
+      )}
+
+      {(abiertos.length > 0 || cerrados.length > 0) && (
+        <div className="mov-lista">
+          {abiertos.map((m) => (
+            <div key={m.id} className="mov-item">
+              <MovChip mov={m} />
+              <span className="mov-desde">desde el {fechaCorta(m.desde)}</span>
+              <button type="button" className="btn btn-ghost mov-llego"
+                title="Marcar que ya llegó: se cierra el movimiento y queda cuánto tardó"
+                onClick={() => llego(m)}>✓ Llegó</button>
+              <span className="mov-quien">{nombreCorto(m.usuario)}</span>
+            </div>
+          ))}
+          {cerrados.map((m) => (
+            <div key={m.id} className="mov-item cerrado">
+              <MovChip mov={m} />
+              <span className="mov-desde">{fechaCorta(m.desde)} → {fechaCorta(m.llegadaAt)}</span>
+              <span className="mov-quien">{nombreCorto(m.usuario)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -119,6 +315,10 @@ function SeguimientoModal({ fila, ficha, usuario, onGuardar, onClose }) {
             )}
           </div>
         )}
+
+        <MovimientosSeccion fila={fila} ficha={ficha} usuario={usuario}
+          onGuardar={onGuardar}
+          onEstadoAuto={(e) => { setEstado(e); setColor(''); setOtroColor('') }} />
 
         <div className="field">
           <label className="field-label">Nota (opcional)</label>
@@ -524,6 +724,7 @@ export default function ProgramacionesView({
         estadoColor: p.estadoColor || '',
         obs: (p.observaciones || []).length,
         ultimaObs: (p.observaciones || []).slice(-1)[0] || null,
+        movAbiertos: (p.movimientos || []).filter((m) => !m.llegadaAt),
       }
     }), [programaciones, marca, refMap, conjuntos, ordenesPorRef, codigos, telas])
 
@@ -754,6 +955,7 @@ export default function ProgramacionesView({
                 <SortTh label="Programado" col="programado" className="num" {...thProps} />
                 <SortTh label="Falta" col="pendiente" className="num" {...thProps} />
                 <th>Tela</th>
+                <th>En proceso</th>
                 <SortTh label="Seguimiento" col="obs" {...thProps} />
                 <th></th>
               </tr>
@@ -827,6 +1029,17 @@ export default function ProgramacionesView({
                             </span>
                           ))}
                         </div>
+                      ) : <span className="muted">—</span>}
+                    </td>
+                    <td>
+                      {f.movAbiertos.length ? (
+                        <button type="button" className="prog-seg"
+                          onClick={() => setObsDe(f)}
+                          title="Movimientos andando — clic para ver, agregar o marcar que llegó">
+                          <span className="mov-stack">
+                            {f.movAbiertos.map((m) => <MovChip key={m.id} mov={m} />)}
+                          </span>
+                        </button>
                       ) : <span className="muted">—</span>}
                     </td>
                     <td>

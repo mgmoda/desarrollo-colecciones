@@ -156,8 +156,6 @@ function SeguimientoModal({ fila, ficha, usuario, onGuardar, onClose }) {
 function DesgloseModal({ fila, onClose }) {
   if (!fila || !fila.desglose) return null
   const d = fila.desglose
-  const cuadra = d.total === fila.pedido
-  const num = (n) => n.toLocaleString('es-CO')
   return (
     <Modal open onClose={onClose} size="md">
       <div className="modal-head">
@@ -169,15 +167,8 @@ function DesgloseModal({ fila, onClose }) {
           {fila.descripcion || '—'} · {d.clientes} {d.clientes === 1 ? 'cliente' : 'clientes'}
         </p>
         <TablaColores colores={d.colores} tallas={d.tallas || []} />
-        {!cuadra && (
-          <p className="form-err" style={{ marginTop: 10 }}>
-            El desglose suma {num(d.total)} y el pedido cargado dice {num(fila.pedido)}.
-            Los dos reportes son de días distintos: vuelve a cargarlos juntos.
-          </p>
-        )}
       </div>
       <div className="modal-foot">
-        {cuadra && <span className="muted" style={{ fontSize: 12.5, marginRight: 'auto' }}>✓ Cuadra con el pedido</span>}
         <button className="btn" onClick={onClose}>Cerrar</button>
       </div>
     </Modal>
@@ -487,7 +478,13 @@ export default function ProgramacionesView({
     .map((p) => {
       const delCatalogo = conjuntos.get(String(p.id).toUpperCase())
       const ficha = refMap.get(p.id)
-      const pedido = Number(p.pedido) || 0
+      // El pedido que manda es el del desglose (reporte de separados): si
+      // alguien carga el reporte viejo de Pedidos y Cortes encima, su cifra
+      // no puede pisar la del separados, o la columna y el modal se
+      // contradicen (287 contra 318 en la misma referencia).
+      const pedido = p.desglose
+        ? (Number(p.desglose.total) || 0)
+        : (Number(p.pedido) || 0)
       const piezas = delCatalogo ? delCatalogo.piezas : []
       const programado = programadoDe({ id: p.id, piezas }, ordenesPorRef, codigos)
       const pendiente = pedido - programado

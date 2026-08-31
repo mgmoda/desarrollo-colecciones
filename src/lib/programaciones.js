@@ -318,6 +318,12 @@ function leerSeparadosDeFilas(filas, norm) {
 const normColor = (s) => String(s || '')
   .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   .toUpperCase().trim()
+// Nombres distintos que son el mismo color, confirmados por Diego: en las
+// \u00f3rdenes digitan NARANJA para el que el pedido llama AMARILLO, y el pedido
+// escribe FUSCIA donde la orden dice FUCSIA. El alias solo entra cuando el
+// empate normal no encuentra nada: si un pedido trae NARANJA de verdad,
+// el exacto gana primero.
+const ALIAS_COLOR = { NARANJA: 'AMARILLO', FUCSIA: 'FUSCIA', FUSCIA: 'FUCSIA' }
 export function empatarColor(color, coloresPedido) {
   const c = normColor(color)
   const exacto = coloresPedido.find((p) => normColor(p) === c)
@@ -327,7 +333,13 @@ export function empatarColor(color, coloresPedido) {
     const pp = normColor(p).replace(/[^A-Z0-9]/g, '')
     return pp && cc && (cc.includes(pp) || pp.includes(cc))
   })
-  return parcial || null
+  if (parcial) return parcial
+  const alias = ALIAS_COLOR[c]
+  if (alias) {
+    const porAlias = coloresPedido.find((p) => normColor(p) === alias)
+    if (porAlias) return porAlias
+  }
+  return null
 }
 
 // Los cortes (órdenes) de una fila, cada uno con su curva de colores y tallas

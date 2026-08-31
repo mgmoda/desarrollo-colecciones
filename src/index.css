@@ -6424,15 +6424,23 @@ select.filtro-taller { flex: none; width: 215px; }
 .tela-chip span { color: var(--ink-soft); font-variant-numeric: tabular-nums; font-size: 11.5px; }
 
 /* ---------- Movimientos (tela pedida / Textampa) ---------- */
-.mov-chip {
-  display: inline-flex; align-items: baseline; gap: 7px;
-  border: 1px solid; border-radius: 999px; padding: 2px 10px;
-  font-size: 12px; white-space: nowrap;
+/* En la tabla, los movimientos se leen como una tablita alineada: proceso,
+   color con cantidad y días, cada cosa en su columna. */
+.mov-tabla {
+  display: grid; grid-template-columns: repeat(3, max-content);
+  gap: 3px 14px; align-items: baseline; text-align: left;
 }
-.mov-chip b { font-weight: 600; }
-.mov-dias { font-variant-numeric: tabular-nums; font-weight: 600; }
-.mov-dias.tarde { color: #b23121; }
-.mov-stack { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.mov-f { display: contents; }
+.mov-f-proc {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; white-space: nowrap;
+}
+.mov-f-que { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mov-f-dias {
+  font-size: 12px; color: var(--ink-soft);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.mov-f-dias.tarde { color: #b23121; font-weight: 700; }
 
 /* La tablita tipo Excel del registro: los colores como filas, las cantidades
    como celdas. Se ve y se siente como hoja de cálculo a propósito. */

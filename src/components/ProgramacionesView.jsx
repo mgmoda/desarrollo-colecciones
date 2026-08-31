@@ -28,16 +28,19 @@ const fechaCorta = (ts) => {
 }
 const diasTxt = (n) => `${n} ${n === 1 ? 'día' : 'días'}`
 
-// El chip de un movimiento: proceso, color, cantidad y sus días — corriendo
-// si sigue abierto (rojo pasadas dos semanas), o los que tardó si ya llegó.
-function MovChip({ mov }) {
+// Una línea de movimiento: proceso, color con cantidad y días, en columnas
+// alineadas para que se lea como tabla y no como etiquetas sueltas. Corre en
+// vivo si sigue abierto (rojo pasadas dos semanas); si ya llegó, dice cuántos
+// días tardó.
+function MovFila({ mov }) {
   const p = procesoMov(mov.proceso)
   const cerrado = !!mov.llegadaAt
   const dias = cerrado ? diasEntre(mov.desde, mov.llegadaAt) : diasDesde(mov.desde)
   return (
-    <span className="mov-chip" style={{ background: p.bg, color: p.fg, borderColor: p.bd }}>
-      {p.label} <b>{mov.color} ×{mov.cant}</b>
-      <span className={'mov-dias' + (!cerrado && dias > 15 ? ' tarde' : '')}>
+    <span className="mov-f">
+      <span className="mov-f-proc" style={{ color: p.fg }}>{p.label}</span>
+      <span className="mov-f-que">{mov.color} ×{mov.cant}</span>
+      <span className={'mov-f-dias' + (!cerrado && dias > 15 ? ' tarde' : '')}>
         {cerrado ? `llegó en ${diasTxt(dias)}` : diasTxt(dias)}
       </span>
     </span>
@@ -69,14 +72,15 @@ function EstadoChip({ estado, color, chico, flecha }) {
   )
 }
 
-// El registro y la lista de movimientos, dentro del modal de seguimiento.
+// El modal de movimientos: se abre tocando la casilla "En proceso".
 //
 // Registrar es llenar una tablita tipo Excel: los colores del pedido ya vienen
 // puestos como filas y solo se escriben las cantidades (Enter o flecha baja a
 // la siguiente celda; el color que no va se deja en blanco). Un botón crea un
 // movimiento por cada color con cantidad, con la fecha de hoy y a nombre de
-// quien registra, y el estado de la referencia se mueve solo.
-function MovimientosSeccion({ fila, ficha, usuario, onGuardar, onEstadoAuto }) {
+// quien registra, y el estado de la referencia se mueve solo. Aquí mismo se
+// marca "Llegó", que cierra el movimiento dejando cuántos días tardó.
+function MovimientosModal({ fila, ficha, usuario, onGuardar, onClose }) {
   const [proceso, setProceso] = useState('tela')
   const [cants, setCants] = useState({})
   const celdas = useRef([])
@@ -106,39 +110,34 @@ function MovimientosSeccion({ fila, ficha, usuario, onGuardar, onEstadoAuto }) {
         id: (ahora + i).toString(36) + Math.random().toString(36).slice(2, 6),
         proceso, color: x.color, cant: x.cant, desde: ahora, usuario,
       }))
-    const entrada = {
-      usuario, at: ahora,
-      texto: p.label + ': ' + nuevos.map((m) => `${m.color} ×${m.cant}`).join(' · '),
-    }
-    if (p.estado !== (fila.estado || '')) entrada.estado = p.estado
+    // El estado de la referencia se mueve solo con el movimiento; el
+    // seguimiento (las notas) no se toca: es texto libre y nada más.
     onGuardar({
       ...fila,
       movimientos: [...movs, ...nuevos],
       estado: p.estado,
       estadoColor: '',
-      observaciones: [...(fila.observaciones || []), entrada],
     })
-    if (onEstadoAuto) onEstadoAuto(p.estado)
     setCants({})
   }
 
   function llego(mov) {
-    const ahora = Date.now()
-    const p = procesoMov(mov.proceso)
-    const dias = diasEntre(mov.desde, ahora)
     onGuardar({
       ...fila,
       movimientos: movs.map((m) => (m.id === mov.id
-        ? { ...m, llegadaAt: ahora, llegadaUsuario: usuario } : m)),
-      observaciones: [...(fila.observaciones || []), {
-        usuario, at: ahora,
-        texto: `Llegó: ${p.label} ${mov.color} ×${mov.cant} (${diasTxt(dias)})`,
-      }],
+        ? { ...m, llegadaAt: Date.now(), llegadaUsuario: usuario } : m)),
     })
   }
 
   return (
-    <div className="field">
+    <Modal open onClose={onClose} size="md">
+      <div className="modal-head">
+        <h2 className="modal-title">{fila.id} · en proceso</h2>
+        <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
+      </div>
+      <div className="modal-body">
+      <p className="field-hint" style={{ marginTop: 0 }}>{fila.descripcion || '—'}</p>
+      <div className="field">
       <label className="field-label">Registrar movimiento</label>
       <div className="est-chips">
         {PROCESOS_MOV.map((p) => (
@@ -212,7 +211,7 @@ function MovimientosSeccion({ fila, ficha, usuario, onGuardar, onEstadoAuto }) {
         <div className="mov-lista">
           {abiertos.map((m) => (
             <div key={m.id} className="mov-item">
-              <MovChip mov={m} />
+              <MovFila mov={m} />
               <span className="mov-desde">desde el {fechaCorta(m.desde)}</span>
               <button type="button" className="btn btn-ghost mov-llego"
                 title="Marcar que ya llegó: se cierra el movimiento y queda cuánto tardó"
@@ -222,53 +221,44 @@ function MovimientosSeccion({ fila, ficha, usuario, onGuardar, onEstadoAuto }) {
           ))}
           {cerrados.map((m) => (
             <div key={m.id} className="mov-item cerrado">
-              <MovChip mov={m} />
+              <MovFila mov={m} />
               <span className="mov-desde">{fechaCorta(m.desde)} → {fechaCorta(m.llegadaAt)}</span>
               <span className="mov-quien">{nombreCorto(m.usuario)}</span>
             </div>
           ))}
         </div>
       )}
-    </div>
+      </div>
+      </div>
+      <div className="modal-foot">
+        <button className="btn" onClick={onClose}>Cerrar</button>
+      </div>
+    </Modal>
   )
 }
 
-// El seguimiento de una referencia: en qué estado está y qué han dicho.
+// El seguimiento de una referencia: solo texto, fácil de escribir.
 //
-// Un solo gesto: se toca el estado, si es "Sin tela" se toca el color que
-// falta -salen de la ficha-, se escribe la nota si hay algo que decir, y
-// Guardar. Todo queda en la misma bitácora: los cambios de estado se anotan
-// solos, y en la reunión se ve si la respuesta de hoy es la misma de hace ocho
-// días, que es la señal de que el problema no se mueve.
-function SeguimientoModal({ fila, ficha, usuario, onGuardar, onClose }) {
+// Nada de opciones ni estados aquí: el estado lo mueven los movimientos de
+// "En proceso". Esto es la conversación —qué dijo el proveedor, qué se está
+// esperando— y cada nota queda con quién la escribió, fecha y hora.
+function SeguimientoModal({ fila, usuario, onGuardar, onClose }) {
   const [texto, setTexto] = useState('')
-  const [estado, setEstado] = useState((fila && fila.estado) || '')
-  const [color, setColor] = useState((fila && fila.estadoColor) || '')
-  const [otroColor, setOtroColor] = useState('')
   if (!fila) return null
-  const historial = [...(fila.observaciones || [])].sort((a, b) => (b.at || 0) - (a.at || 0))
-  const colores = ((ficha && ficha.colores) || []).map((c) => c && c.name).filter(Boolean)
-  const colorFinal = estado === 'sinTela' ? (color || otroColor.trim()) : ''
-  const cambio = estado !== (fila.estado || '')
-    || colorFinal !== (fila.estadoColor || '')
-    || !!texto.trim()
+  const historial = [...(fila.observaciones || [])]
+    .filter((o) => o.texto)
+    .sort((a, b) => (b.at || 0) - (a.at || 0))
+  const cambio = !!texto.trim()
 
   function guardar() {
     if (!cambio) return
-    const entrada = { usuario, at: Date.now() }
-    if (texto.trim()) entrada.texto = texto.trim()
-    if (estado !== (fila.estado || '') || colorFinal !== (fila.estadoColor || '')) {
-      entrada.estado = estado
-      if (colorFinal) entrada.color = colorFinal
-    }
     onGuardar({
       ...fila,
-      estado,
-      estadoColor: colorFinal,
-      observaciones: [...(fila.observaciones || []), entrada],
+      observaciones: [...(fila.observaciones || []), {
+        usuario, at: Date.now(), texto: texto.trim(),
+      }],
     })
     setTexto('')
-    setOtroColor('')
   }
 
   return (
@@ -281,47 +271,7 @@ function SeguimientoModal({ fila, ficha, usuario, onGuardar, onClose }) {
         <p className="field-hint" style={{ marginTop: 0 }}>{fila.descripcion || '—'}</p>
 
         <div className="field">
-          <label className="field-label">¿En qué va?</label>
-          <div className="est-chips">
-            {ESTADOS_PROG.map((e) => (
-              <button key={e.key} type="button"
-                className={'est-chip' + (estado === e.key ? ' on' : '')}
-                style={estado === e.key
-                  ? { background: e.bg, color: e.fg, borderColor: e.bd }
-                  : undefined}
-                onClick={() => { setEstado(estado === e.key ? '' : e.key); setColor('') }}>
-                {e.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {estado === 'sinTela' && (
-          <div className="field">
-            <label className="field-label">¿Cuál color falta?</label>
-            {colores.length > 0 ? (
-              <div className="est-chips">
-                {colores.map((c) => (
-                  <button key={c} type="button"
-                    className={'est-chip' + (color === c ? ' on color' : '')}
-                    onClick={() => setColor(color === c ? '' : c)}>
-                    {c}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <input className="input" value={otroColor} placeholder="Ej. verde"
-                onChange={(e) => setOtroColor(e.target.value)} />
-            )}
-          </div>
-        )}
-
-        <MovimientosSeccion fila={fila} ficha={ficha} usuario={usuario}
-          onGuardar={onGuardar}
-          onEstadoAuto={(e) => { setEstado(e); setColor(''); setOtroColor('') }} />
-
-        <div className="field">
-          <label className="field-label">Nota (opcional)</label>
+          <label className="field-label">Nota</label>
           <textarea className="input prog-ta" rows={2} value={texto}
             onChange={(e) => setTexto(e.target.value)}
             placeholder="Ej. se está buscando reemplazo con otros proveedores" />
@@ -336,8 +286,7 @@ function SeguimientoModal({ fila, ficha, usuario, onGuardar, onClose }) {
                 <b>{nombreCorto(o.usuario)}</b>
                 <span>{fechaHora(o.at)}</span>
               </div>
-              {o.estado && <EstadoChip estado={o.estado} color={o.color} chico flecha />}
-              {o.texto && <p>{o.texto}</p>}
+              <p>{o.texto}</p>
             </div>
           ))}
         </div>
@@ -666,6 +615,7 @@ export default function ProgramacionesView({
   const [telaF, setTelaF] = useState('')
   const [cargar, setCargar] = useState(false)
   const [obsDe, setObsDe] = useState(null)
+  const [movDe, setMovDe] = useState(null)
   const [desgDe, setDesgDe] = useState(null)
   const [progDe, setProgDe] = useState(null)
   const [faltaDe, setFaltaDe] = useState(null)
@@ -722,8 +672,8 @@ export default function ProgramacionesView({
         piezas,
         estado: p.estado || '',
         estadoColor: p.estadoColor || '',
-        obs: (p.observaciones || []).length,
-        ultimaObs: (p.observaciones || []).slice(-1)[0] || null,
+        obs: (p.observaciones || []).filter((o) => o.texto).length,
+        ultimaObs: (p.observaciones || []).filter((o) => o.texto).slice(-1)[0] || null,
         movAbiertos: (p.movimientos || []).filter((m) => !m.llegadaAt),
       }
     }), [programaciones, marca, refMap, conjuntos, ordenesPorRef, codigos, telas])
@@ -1032,31 +982,28 @@ export default function ProgramacionesView({
                       ) : <span className="muted">—</span>}
                     </td>
                     <td>
-                      {f.movAbiertos.length ? (
-                        <button type="button" className="prog-seg"
-                          onClick={() => setObsDe(f)}
-                          title="Movimientos andando — clic para ver, agregar o marcar que llegó">
-                          <span className="mov-stack">
-                            {f.movAbiertos.map((m) => <MovChip key={m.id} mov={m} />)}
+                      <button type="button" className="prog-seg"
+                        onClick={() => setMovDe(f)}
+                        title="Registrar tela pedida o Textampa, o marcar que llegó">
+                        {f.movAbiertos.length ? (
+                          <span className="mov-tabla">
+                            {f.movAbiertos.map((m) => <MovFila key={m.id} mov={m} />)}
                           </span>
-                        </button>
-                      ) : <span className="muted">—</span>}
+                        ) : <span className="prog-seg-vacio">+ registrar</span>}
+                      </button>
                     </td>
                     <td>
                       <button type="button" className="prog-seg"
                         onClick={() => setObsDe(f)}
-                        title={f.obs ? `${f.obs} anotaciones — clic para ver o cambiar` : 'Marcar en qué va'}>
-                        {f.estado
-                          ? <EstadoChip estado={f.estado} color={f.estadoColor} chico />
-                          : <span className="prog-seg-vacio">+ anotar</span>}
-                        {f.ultimaObs && f.ultimaObs.texto && (
-                          <span className="prog-seg-txt">{f.ultimaObs.texto}</span>
-                        )}
-                        {f.ultimaObs && (
-                          <span className="prog-obs-fecha">
-                            {nombreCorto(f.ultimaObs.usuario)} · {fechaHora(f.ultimaObs.at)}
-                          </span>
-                        )}
+                        title={f.obs ? `${f.obs} anotaciones — clic para ver o agregar` : 'Anotar seguimiento'}>
+                        {f.ultimaObs ? (
+                          <>
+                            <span className="prog-seg-txt">{f.ultimaObs.texto}</span>
+                            <span className="prog-obs-fecha">
+                              {nombreCorto(f.ultimaObs.usuario)} · {fechaHora(f.ultimaObs.at)}
+                            </span>
+                          </>
+                        ) : <span className="prog-seg-vacio">+ anotar</span>}
                       </button>
                     </td>
                     <td>
@@ -1134,8 +1081,13 @@ export default function ProgramacionesView({
 
       {obsDe && (
         <SeguimientoModal fila={(programaciones || []).find((p) => p.id === obsDe.id) || obsDe}
-          ficha={refMap.get(obsDe.id)}
           usuario={usuario} onGuardar={onGuardar} onClose={() => setObsDe(null)} />
+      )}
+
+      {movDe && (
+        <MovimientosModal fila={(programaciones || []).find((p) => p.id === movDe.id) || movDe}
+          ficha={refMap.get(movDe.id)}
+          usuario={usuario} onGuardar={onGuardar} onClose={() => setMovDe(null)} />
       )}
     </>
   )

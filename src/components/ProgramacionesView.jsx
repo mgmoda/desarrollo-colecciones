@@ -459,6 +459,12 @@ function ProgramadoModal({ fila, cortes, onClose }) {
               {c.pieza && <span className="tag conj-tag">{c.pieza}</span>}
               <span>{formatDate(c.fecha)}</span>
               <span>· {num(c.cant)} unidades</span>
+              {c.alistada && c.programada !== c.cant && (
+                <span className="desg-ajuste"
+                  title="La orden mandó a cortar esa cantidad, pero en alistamiento salió otra">
+                  se mandaron a cortar {num(c.programada)}
+                </span>
+              )}
             </p>
             {c.colores.length ? (
               <TablaColores colores={c.colores} tallas={c.tallas} nombreDe={nombreDe} />

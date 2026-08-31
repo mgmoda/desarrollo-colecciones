@@ -54,6 +54,26 @@ export const estadoProg = (key) => ESTADOS_PROG.find((e) => e.key === key) || nu
 // pegada al código (MG-P995CONJUNTO), así que no se exige el espacio.
 export const esOrdenConjunto = (o) => /CONJUNTO\s*$/i.test(String(o.producto || '').trim())
 
+// Lo que de verdad se cortó de una orden.
+//
+// La orden de corte dice lo que se mandó a cortar, pero muchas veces la tela
+// no alcanza —o rinde de más— y la cantidad final es la que sale de
+// alistamiento: en 69 de 269 órdenes no coincide con lo programado. Mientras
+// la orden no llegue a alistamiento manda la orden de corte, que es lo único
+// que hay.
+export function cantidadReal(o) {
+  const st = o.stages || {}
+  const alis = Number((st.alistamiento || {}).cant) || 0
+  return alis > 0 ? alis : Number((st.ordenCorte || {}).cant) || 0
+}
+
+// El campo de la curva que corresponde a esa cantidad, para que el detalle por
+// color sume exactamente lo mismo que la columna: alistamiento se reparte por
+// el detalle de entrega de corte —en Factory las dos salen de la misma
+// entrega, y suman igual en las 269 órdenes— y la orden de corte por lo
+// programado.
+const campoCurva = (o) => (Number(((o.stages || {}).alistamiento || {}).cant) > 0 ? 'corte' : 'prog')
+
 // Un conjunto se programa en dos órdenes, una por prenda, con la misma
 // cantidad: 61 blusas y 61 pantalones son 61 conjuntos. Si una de las dos no se
 // programó, la tela de la otra se queda esperando. Esto devuelve cuál falta.
@@ -64,7 +84,7 @@ export function piezaQueFalta(piezas, ordenesPorRef, refMap, codigos) {
     let n = 0
     cods.forEach((c) => (ordenesPorRef.get(c) || [])
       .filter(esOrdenConjunto)
-      .forEach((o) => { n += Number((o.stages.ordenCorte || {}).cant) || 0 }))
+      .forEach((o) => { n += cantidadReal(o) }))
     return n
   }
   const conteos = piezas.map((ref) => ({ ref, n: cuenta(ref) }))
@@ -107,7 +127,7 @@ export function programadoDe(fila, ordenesPorRef, codigos) {
     let n = 0
     cods.forEach((c) => (ordenesPorRef.get(c) || []).forEach((o) => {
       if (esOrdenConjunto(o) !== deConjunto) return
-      n += Number((o.stages.ordenCorte || {}).cant) || 0
+      n += cantidadReal(o)
     }))
     return n
   }
@@ -391,12 +411,13 @@ export function cortesDe(fila, ordenesPorRef, codigos, coloresPedido) {
     cods.forEach((c) => (ordenesPorRef.get(c) || []).forEach((o) => {
       if (esOrdenConjunto(o) !== deConjunto) return
       const oc = o.stages.ordenCorte || {}
+      const campo = campoCurva(o)
       // La curva agrupada por color, con la talla sin el cero de relleno
       // (Factory escribe "08", el pedido "8").
       const porColor = new Map()
       const tallas = new Set()
       ;(o.curva || []).forEach((r) => {
-        const n = Number(r.prog) || 0
+        const n = Number(r[campo]) || 0
         if (!n) return
         const color = String(r.color || '').trim() || '—'
         const talla = String(r.talla || '').replace(/^0+(?=\d)/, '')
@@ -418,7 +439,11 @@ export function cortesDe(fila, ordenesPorRef, codigos, coloresPedido) {
       out.push({
         orden: o.orden,
         fecha: oc.fecha || '',
-        cant: Number(oc.cant) || 0,
+        cant: cantidadReal(o),
+        // Lo que se mandó a cortar, cuando terminó siendo otra cosa: sirve
+        // para explicar en el modal por qué la cifra no es la de la orden.
+        programada: Number(oc.cant) || 0,
+        alistada: campo === 'corte',
         pieza: pieza || '',
         muestra: o.origen === 'muestra',
         colores,
@@ -439,7 +464,21 @@ export function cortesDe(fila, ordenesPorRef, codigos, coloresPedido) {
 // tiene queda como fila propia en negativo, y los cortes viejos sin curva se
 // restan aparte, sin inventarles color. Así el total del modal es exactamente
 // pedido menos programado, el mismo número de la columna.
-export function faltaPorColor(desglose, cortes) {
+// Un conjunto se corta en dos órdenes, una por prenda y con la misma cantidad:
+// 61 blusas y 61 pantalones son 61 conjuntos. Para restar del pedido cuenta
+// una sola prenda —la que más se cortó, igual que la columna Programado—;
+// restando las dos se descontaba el doble y la falta llegaba a salir negativa.
+function cortesQueCuentan(cortes) {
+  const lista = cortes || []
+  const piezas = [...new Set(lista.map((c) => c.pieza).filter(Boolean))]
+  if (piezas.length < 2) return lista
+  const total = (p) => lista.filter((c) => c.pieza === p).reduce((n, c) => n + c.cant, 0)
+  const mayor = piezas.reduce((a, p) => (total(p) > total(a) ? p : a), piezas[0])
+  return lista.filter((c) => c.pieza === mayor)
+}
+
+export function faltaPorColor(desglose, cortesTodos) {
+  const cortes = cortesQueCuentan(cortesTodos)
   const filas = new Map()
   ;(desglose.colores || []).forEach((c) => {
     filas.set(c.color, { color: c.color, delPedido: true, tallas: { ...c.tallas }, unid: c.unid })

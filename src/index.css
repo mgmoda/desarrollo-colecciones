@@ -6409,6 +6409,45 @@ select.filtro-taller { flex: none; width: 215px; }
   border-radius: 6px; padding: 1px 7px; white-space: nowrap;
 }
 
+/* ---------- Rendimiento de doblado y corte ---------- */
+.rend-barra {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.rend-nav { display: flex; align-items: center; gap: 6px; }
+.rend-periodo {
+  font-weight: 600; font-size: 13.5px; min-width: 148px; text-align: center;
+}
+.rend-card {
+  background: var(--surface); border: 1px solid var(--hairline);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  overflow: hidden; margin-bottom: 18px;
+}
+.rend-card-h {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap; padding: 14px 18px 11px; border-bottom: 1px solid var(--hairline);
+}
+.rend-card-h h2 { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; }
+.rend-nota { font-size: 11.5px; color: var(--muted); }
+.rend-mejor {
+  margin-left: 8px; background: #eaf3de; color: #27500a; border: 1px solid #c0dd97;
+  border-radius: 999px; padding: 1px 9px; font-size: 10.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.rend-fila { display: flex; align-items: center; gap: 10px; }
+.rend-barra-bg {
+  flex: 1; min-width: 60px; height: 7px; border-radius: 99px;
+  background: #efece4; overflow: hidden;
+}
+.rend-barra-bg span { display: block; height: 100%; border-radius: 99px; background: #6259c4; }
+.rend-val { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 56px; text-align: right; }
+.rend-aviso {
+  padding: 11px 18px; border-top: 1px solid var(--hairline);
+  font-size: 12.5px; color: var(--muted); background: #faf9f5;
+}
+.prog-kpi em { display: block; font-size: 11.5px; color: var(--muted); font-style: normal; }
+.et-tag-doblado { background: #faeeda; color: #633806; border-color: #fac775; }
+.et-tag-corte { background: #eeedfe; color: #3c3489; border-color: #cecbf6; }
+
 /* ---------- Doblado y corte medidos por el sistema ---------- */
 /* Tres estados bien distintos a propósito: punteado = nadie ha empezado,
    color con punto latiendo = andando, verde = tapa cerrada. */

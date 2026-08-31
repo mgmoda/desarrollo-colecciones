@@ -14,6 +14,7 @@ import CurvaModal, { MEDIDA_DE_AREA } from './CurvaModal.jsx'
 import NotaRefModal from './NotaRefModal.jsx'
 import FaseToggles from './FaseToggles.jsx'
 import EtapaProceso from './EtapaProceso.jsx'
+import RendimientoCorte from './RendimientoCorte.jsx'
 import { duracion, estaAndando, estaListo } from '../lib/procesos.js'
 
 const tallerDe = (o) => (o.stages && o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || ''
@@ -92,6 +93,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   const [conjuntoDe, setConjuntoDe] = useState(null) // orden cuyo conjunto se está viendo
   const [curvaDe, setCurvaDe] = useState(null) // orden cuya curva de tallas se está viendo
   const [notaDe, setNotaDe] = useState(null)   // orden cuya nota se está escribiendo
+  // En la mesa de corte se puede pasar de las órdenes al rendimiento de las
+  // etapas que el sistema mide (doblado y corte).
+  const [vista, setVista] = useState('ordenes')
   const ocultas = fasesOcultas || new Set()
   const area = AREAS[areaKey]
   const [q, setQ] = useState('')
@@ -218,6 +222,14 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
           </p>
         </div>
         <div className="view-actions">
+          {showProcesos && (
+            <div className="dis-filtros">
+              <button type="button" className={'proc-f-btn' + (vista === 'ordenes' ? ' on' : '')}
+                onClick={() => setVista('ordenes')}>Órdenes</button>
+              <button type="button" className={'proc-f-btn' + (vista === 'rendimiento' ? ' on' : '')}
+                onClick={() => setVista('rendimiento')}>Rendimiento</button>
+            </div>
+          )}
           <FaseToggles ocultas={ocultas} onToggle={onToggleFase} puedeCambiar={puedeFiltrar} />
           {selected.size > 0 && (
             <button className="btn btn-primary" onClick={generatePdf}>
@@ -239,6 +251,13 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         </div>
       </div>
 
+      {showProcesos && vista === 'rendimiento' ? (
+        // El rendimiento mira TODAS las órdenes, no solo las que siguen
+        // esperando corte: una orden ya cortada se fue de esta mesa, pero su
+        // tiempo es justamente lo que hay que medir.
+        <RendimientoCorte orders={orders} procesos={procesos} />
+      ) : (
+      <>
       <AreaKpis areaKey={areaKey} orders={visibles} enEtapa={enEtapa}
         refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
 
@@ -397,6 +416,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
             </tbody>
           </table>
         </div>
+      )}
+      </>
       )}
 
       {notaDe && (

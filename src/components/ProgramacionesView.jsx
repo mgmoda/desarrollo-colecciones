@@ -4,8 +4,9 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import {
-  ESTADOS_PROG, cortesDe, esConjunto, estadoProg, faltaPorColor, indiceCodigos,
-  indiceConjuntos, leerArchivo, leerPegado, piezaQueFalta, programadoDe, telasDe,
+  ESTADOS_PROG, colorProducidoDe, cortesDe, esConjunto, estadoProg, faltaPorColor,
+  indiceCodigos, indiceConjuntos, leerArchivo, leerPegado, piezaQueFalta,
+  programadoDe, telasDe,
 } from '../lib/programaciones.js'
 import { formatDate } from '../lib/constants.js'
 
@@ -269,9 +270,19 @@ function FaltaModal({ fila, cortes, onClose }) {
   if (!fila || !fila.desglose) return null
   const f = faltaPorColor(fila.desglose, cortes)
   const num = (n) => n.toLocaleString('es-CO')
-  const nombreDe = (c) => c.delPedido ? c.color : (
-    <span className="desg-otro" title="Se programó en un color que el pedido no tiene">{c.color} ⚠</span>
-  )
+  const nombreDe = (c) => {
+    if (!c.delPedido) {
+      return <span className="desg-otro" title="Se programó en un color que el pedido no tiene">{c.color} ⚠</span>
+    }
+    // Si el color del pedido se está produciendo con otro nombre (el BEIGE
+    // que sale CRUDO), se avisa aquí mismo.
+    const producido = colorProducidoDe(fila.id, c.color)
+    return producido ? (
+      <span title={`El pedido dice ${c.color}, pero se produce como ${producido}`}>
+        {c.color} <span className="muted">→ {producido}</span>
+      </span>
+    ) : c.color
+  }
   // La tela que hay que conseguir para lo que falta, color por color: las
   // unidades pendientes de cada color por el promedio de la ficha. Solo los
   // colores del pedido que aún deben unidades; la unidad es m/und o m/conj

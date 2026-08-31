@@ -324,7 +324,27 @@ const normColor = (s) => String(s || '')
 // empate normal no encuentra nada: si un pedido trae NARANJA de verdad,
 // el exacto gana primero.
 const ALIAS_COLOR = { NARANJA: 'AMARILLO', FUCSIA: 'FUSCIA', FUSCIA: 'FUCSIA' }
-export function empatarColor(color, coloresPedido) {
+// Cambios de color de UNA referencia, confirmados por Diego: el cliente pidió
+// un color y la producción salió en otro (se corta cruda y cambia el plan, o
+// el pedido lo nombró distinto). Color de la orden → color del pedido al que
+// corresponde. Son puntuales: CRUDO no significa lo mismo en otra referencia.
+const EQUIV_POR_REF = {
+  C6900: { CRUDO: 'AZUL' },
+  M5238: { CRUDO: 'BLANCO' },
+  M5253: { CRUDO: 'BEIGE' },
+  C6895: { VERDE: 'CAQUI' },
+  C6911: { 'VINO TINTO 2': 'ROJO', 'VINO TINTO': 'ROJO' },
+}
+// El nombre con el que realmente sale ese color: para avisar en el modal que
+// el BEIGE del pedido se está produciendo como CRUDO.
+export function colorProducidoDe(refId, colorPedido) {
+  const eq = EQUIV_POR_REF[String(refId || '').toUpperCase().trim()]
+  if (!eq) return null
+  const buscado = normColor(colorPedido)
+  const hallado = Object.entries(eq).find(([, ped]) => normColor(ped) === buscado)
+  return hallado ? hallado[0] : null
+}
+export function empatarColor(color, coloresPedido, refId) {
   const c = normColor(color)
   const exacto = coloresPedido.find((p) => normColor(p) === c)
   if (exacto) return exacto
@@ -338,6 +358,12 @@ export function empatarColor(color, coloresPedido) {
   if (alias) {
     const porAlias = coloresPedido.find((p) => normColor(p) === alias)
     if (porAlias) return porAlias
+  }
+  const eq = EQUIV_POR_REF[String(refId || '').toUpperCase().trim()]
+  if (eq && eq[c]) {
+    const objetivo = normColor(eq[c])
+    const porEquiv = coloresPedido.find((p) => normColor(p) === objetivo)
+    if (porEquiv) return porEquiv
   }
   return null
 }
@@ -370,8 +396,9 @@ export function cortesDe(fila, ordenesPorRef, codigos, coloresPedido) {
       const colores = [...porColor.entries()].map(([color, d]) => ({
         color,
         // El color real es el del pedido: si el nombre de la orden empata con
-        // uno del pedido, se muestra con ese nombre.
-        colorPedido: coloresPedido ? empatarColor(color, coloresPedido) : null,
+        // uno del pedido, se muestra con ese nombre. Las equivalencias
+        // puntuales van por la referencia de la fila, no por la de la pieza.
+        colorPedido: coloresPedido ? empatarColor(color, coloresPedido, fila.id) : null,
         tallas: d.tallas,
         unid: d.unid,
       })).sort((a, b) => b.unid - a.unid)

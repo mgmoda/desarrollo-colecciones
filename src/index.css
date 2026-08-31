@@ -3835,6 +3835,10 @@ img.ship-ref-photo {
 .proc-f-btn b { font-weight: 700; opacity: 0.75; margin-left: 2px; }
 .proc-f-btn:hover { background: #faf8f3; color: var(--ink); }
 .proc-f-btn.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+/* Tela sin metros pendientes: sigue en la lista, pero no compite con las que
+   sí hay que conseguir. */
+.proc-f-btn.apagado { color: var(--muted); border-style: dashed; }
+.proc-f-btn.apagado.on { color: #fff; border-style: solid; }
 
 .proc-picker { display: flex; flex-direction: column; gap: 10px; }
 .proc-chips { display: flex; flex-wrap: wrap; gap: 6px; }

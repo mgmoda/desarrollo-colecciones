@@ -890,12 +890,15 @@ export default function ProgramacionesView({
           <div className="dis-filtros" style={{ marginBottom: 14 }}>
             <button type="button" className={'proc-f-btn' + (!telaF ? ' on' : '')}
               onClick={() => setTelaF('')}>Todas <b>{grupos.length}</b></button>
-            {/* Chips solo de las telas que más metros necesitan: son las que
-                se vienen a revisar. Las demás igual aparecen abajo en su
-                tarjeta, y el buscador también encuentra por nombre de tela. */}
-            {grupos.filter((g, i) => (g.metros > 0 && i < 15) || telaF === g.key).map((g) => (
+            {/* Todas las telas, las que más metros piden primero. Las que no
+                necesitan metros —sus referencias ya están programadas— van al
+                final y en gris, pero siguen ahí: la lista es el inventario
+                completo de telas de la marca. */}
+            {grupos.map((g) => (
               <button key={g.key} type="button"
-                className={'proc-f-btn' + (telaF === g.key ? ' on' : '')}
+                className={'proc-f-btn' + (telaF === g.key ? ' on' : '')
+                  + (g.metros > 0 ? '' : ' apagado')}
+                title={g.metros > 0 ? undefined : 'Sin metros pendientes: sus referencias ya están programadas'}
                 onClick={() => setTelaF(telaF === g.key ? '' : g.key)}>
                 {g.tela} <b>{g.filas.length}</b>
               </button>

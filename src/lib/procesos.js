@@ -11,7 +11,32 @@
 
 import { diasDesde, diasEntre } from './dates.js'
 
+// Los que cortan en casa. Diego no va en esta lista: a él no se le asigna
+// una orden, se le MANDA la tela, y eso es un movimiento de varias órdenes a
+// la vez con su propia fecha de salida.
 export const CORTADORES = ['Fabián', 'Janet']
+export const EXTERNO = 'Diego'
+
+// Una orden está afuera cuando su corte está abierto y es tercerizado.
+export const estaFuera = (proc) => {
+  const c = (proc || {}).corte
+  return !!(c && c.desde && !c.hasta && c.externo)
+}
+
+// Manda la orden donde Diego: el corte arranca ahí mismo, porque desde que
+// sale la tela ya está en sus manos. `iso` permite registrar una salida de
+// ayer; sin él queda la de hoy.
+export function enviarExterno(proc, usuario, iso) {
+  let desde = Date.now()
+  if (iso) {
+    const [a, m, d] = iso.split('-').map(Number)
+    if (a && m && d) {
+      const ahora = new Date()
+      desde = new Date(a, m - 1, d, ahora.getHours(), ahora.getMinutes()).getTime()
+    }
+  }
+  return { ...(proc || {}), corte: { desde, usuario, quien: EXTERNO, externo: true } }
+}
 
 export const ETAPAS_PROC = [
   {

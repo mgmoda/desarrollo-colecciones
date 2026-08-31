@@ -70,16 +70,26 @@ export default function EtapaProceso({ etapa, proc, usuario, onCambiar }) {
   }
 
   if (estaAndando(et)) {
+    // La tela que está afuera se ve distinta: no es lo mismo que la esté
+    // cortando alguien de la casa.
+    const clase = et.externo ? 'externo' : etapa
     return (
-      <span className={'et-vivo ' + etapa} title={`${e.andando} desde el ${dm(et.desde)}`}>
+      <span className={'et-vivo ' + clase}
+        title={et.externo
+          ? `La tela está donde ${et.quien} desde el ${dm(et.desde)}`
+          : `${e.andando} desde el ${dm(et.desde)}`}>
         <span className="punto" />
         {et.quien && <span className="et-quien">{et.quien}</span>}
         <Tiempo texto={dur.texto} ts={et.desde} max={aIso(Date.now())}
           clase={dur.dias > e.limite ? 'tarde' : ''}
           titulo={`Empezó el ${dm(et.desde)} · clic para corregir`}
           onCambiar={(iso) => onCambiar(cambiarFecha(proc, etapa, 'desde', iso))} />
-        <button type="button" className="et-mini ok" title="Terminó: se cierra y queda cuánto tardó"
-          aria-label="Terminó" onClick={() => onCambiar(cerrar(proc, etapa, usuario))}>✓</button>
+        <button type="button" className="et-mini ok"
+          title={et.externo
+            ? 'Volvió cortada: se cierra y queda cuántos días estuvo afuera'
+            : 'Terminó: se cierra y queda cuánto tardó'}
+          aria-label={et.externo ? 'Volvió' : 'Terminó'}
+          onClick={() => onCambiar(cerrar(proc, etapa, usuario))}>✓</button>
         {equis}
       </span>
     )

@@ -15,7 +15,10 @@ import NotaRefModal from './NotaRefModal.jsx'
 import FaseToggles from './FaseToggles.jsx'
 import EtapaProceso from './EtapaProceso.jsx'
 import RendimientoCorte from './RendimientoCorte.jsx'
-import { duracion, estaAndando, estaListo } from '../lib/procesos.js'
+import EnviarExternoModal from './EnviarExternoModal.jsx'
+import {
+  EXTERNO, duracion, enviarExterno, estaAndando, estaFuera, estaListo,
+} from '../lib/procesos.js'
 
 const tallerDe = (o) => (o.stages && o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || ''
 
@@ -96,6 +99,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   // En la mesa de corte se puede pasar de las órdenes al rendimiento de las
   // etapas que el sistema mide (doblado y corte).
   const [vista, setVista] = useState('ordenes')
+  // Dónde está el corte: en casa o donde Diego. Es la misma tabla filtrada.
+  const [donde, setDonde] = useState('')
+  const [enviando, setEnviando] = useState(null)
   const ocultas = fasesOcultas || new Set()
   const area = AREAS[areaKey]
   const [q, setQ] = useState('')
@@ -153,6 +159,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   const rows = useMemo(() => {
     let list = enEtapa
     if (tallerSel) list = list.filter((o) => tallerDe(o) === tallerSel)
+    if (donde) list = list.filter((o) => (donde === 'diego') === estaFuera(procesos[o.orden]))
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((o) =>
@@ -181,7 +188,22 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       procCorte: (o) => diasAbierta(procesos[o.orden], 'corte'),
     }
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [enEtapa, q, tallerSel, sortKey, sortDir, baseStage, refMap])
+  }, [enEtapa, q, tallerSel, donde, procesos, sortKey, sortDir, baseStage, refMap])
+
+  // Lo que está donde Diego ahora mismo: cuántas órdenes, cuántas unidades y
+  // —lo que de verdad importa— hace cuántos días salió la más vieja.
+  const fuera = useMemo(() => {
+    const list = enEtapa.filter((o) => estaFuera(procesos[o.orden]))
+    const dias = list.map((o) => duracion(procesos[o.orden].corte).dias)
+    return {
+      n: list.length,
+      unid: list.reduce((n, o) => n + (Number((o.stages.ordenCorte || {}).cant) || 0), 0),
+      masVieja: dias.length ? Math.max(...dias) : 0,
+      refVieja: list.length
+        ? list[dias.indexOf(Math.max(...dias))].referencia
+        : '',
+    }
+  }, [enEtapa, procesos])
 
   const thProps = { sortKey, sortDir, onSort: toggle }
 
@@ -231,6 +253,12 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
             </div>
           )}
           <FaseToggles ocultas={ocultas} onToggle={onToggleFase} puedeCambiar={puedeFiltrar} />
+          {selected.size > 0 && showProcesos && donde !== 'diego' && (
+            <button className="btn btn-ext"
+              onClick={() => setEnviando(rows.filter((o) => selected.has(o.id)))}>
+              Enviar donde {EXTERNO} ({selected.size})
+            </button>
+          )}
           {selected.size > 0 && (
             <button className="btn btn-primary" onClick={generatePdf}>
               Generar PDF ({selected.size})
@@ -258,8 +286,34 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         <RendimientoCorte orders={orders} procesos={procesos} />
       ) : (
       <>
-      <AreaKpis areaKey={areaKey} orders={visibles} enEtapa={enEtapa}
-        refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
+      {showProcesos && (fuera.n > 0 || donde) && (
+        <div className="dis-filtros" style={{ marginBottom: 14 }}>
+          <button type="button" className={'proc-f-btn' + (!donde ? ' on' : '')}
+            onClick={() => setDonde('')}>Todas <b>{enEtapa.length}</b></button>
+          <button type="button" className={'proc-f-btn' + (donde === 'casa' ? ' on' : '')}
+            onClick={() => setDonde('casa')}>En casa <b>{enEtapa.length - fuera.n}</b></button>
+          <button type="button" className={'proc-f-btn ext' + (donde === 'diego' ? ' on' : '')}
+            onClick={() => setDonde('diego')}>Donde {EXTERNO} <b>{fuera.n}</b></button>
+        </div>
+      )}
+
+      {showProcesos && donde === 'diego' && fuera.n > 0 ? (
+        <div className="prog-kpis">
+          <div className="prog-kpi"><span>Órdenes afuera</span><b>{fuera.n}</b>
+            <em>de {enEtapa.length} en la mesa</em></div>
+          <div className="prog-kpi"><span>Unidades afuera</span>
+            <b>{fuera.unid.toLocaleString('es-CO')}</b>
+            <em>esperando volver cortadas</em></div>
+          <div className={'prog-kpi' + (fuera.masVieja > 5 ? ' alerta' : '')}>
+            <span>La más antigua</span><b>{fuera.masVieja} d</b>
+            <em>{fuera.refVieja}</em></div>
+          <div className="prog-kpi"><span>Sin salir</span>
+            <b>{enEtapa.length - fuera.n}</b><em>siguen en casa</em></div>
+        </div>
+      ) : (
+        <AreaKpis areaKey={areaKey} orders={visibles} enEtapa={enEtapa}
+          refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
+      )}
 
       {rows.length === 0 ? (
         <div className="empty-state">
@@ -303,7 +357,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 const canOpen = !!(onOpenRef && ref)
                 return (
                   <tr key={o.id}
-                    className={(selected.has(o.id) ? 'row-sel' : '') + ' row-click'}
+                    className={(selected.has(o.id) ? 'row-sel' : '') + ' row-click'
+                      + (showProcesos && estaFuera(procesos[o.orden]) ? ' row-ext' : '')}
                     onClick={() => setCurvaDe(o)}
                     title="Ver la curva de tallas y colores de esta orden">
                     <td className="cell-check" onClick={(e) => e.stopPropagation()}>
@@ -322,6 +377,11 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                     <td className="mono">{o.orden}</td>
                     <td className="strong">
                       {o.referencia}
+                      {showProcesos && estaFuera(procesos[o.orden]) && (
+                        <span className="tag tag-ext" title={`La tela está donde ${EXTERNO}`}>
+                          Donde {EXTERNO}
+                        </span>
+                      )}
                       {(() => {
                         const fs = faltantesPorRef && faltantesPorRef.get(normRef(o.referencia))
                         if (!fs || !fs.length) return null
@@ -418,6 +478,19 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         </div>
       )}
       </>
+      )}
+
+      {enviando && (
+        <EnviarExternoModal ordenes={enviando}
+          onConfirmar={(iso) => {
+            enviando.forEach((o) => onGuardarProceso(
+              o.orden, enviarExterno(procesos[o.orden], usuario, iso),
+            ))
+            setEnviando(null)
+            setSelected(new Set())
+            setDonde('diego')
+          }}
+          onClose={() => setEnviando(null)} />
       )}
 
       {notaDe && (

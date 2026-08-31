@@ -234,6 +234,24 @@ export async function dbDeleteProgramacion(id) {
   if (error) throw error
 }
 
+// Doblado y corte medidos por el sistema. La llave es el número de orden:
+// el sync de Factory reemplaza dev_orders entero y les cambia el id, así que
+// contra el id no sobreviviría nada.
+export async function dbLoadProcesos() {
+  const { data, error } = await supabase.from('dev_procesos').select('id, data')
+  if (error) throw error
+  const m = {}
+  ;(data || []).forEach((r) => { m[r.id] = r.data || {} })
+  return m
+}
+
+export async function dbUpsertProceso(orden, proc) {
+  const { error } = await supabase
+    .from('dev_procesos')
+    .upsert({ id: String(orden), data: proc })
+  if (error) throw error
+}
+
 // Telas por referencia, desde la ficha técnica de Factory: las sube el sync
 // del servidor a dev_telas (tela, grupo y promedio de consumo por prenda, sin
 // entretela). Cambian poco, así que se cargan una vez al entrar.

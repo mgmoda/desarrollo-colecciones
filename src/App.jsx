@@ -32,7 +32,7 @@ import {
   dbLoadFaltantes, dbUpsertFaltante, dbDeleteFaltante,
   dbLoadPreordenes, dbUpsertPreorden, dbDeletePreorden,
   dbLoadProgramaciones, dbUpsertProgramacion, dbUpsertProgramaciones, dbDeleteProgramacion,
-  dbLoadTelas,
+  dbLoadTelas, dbLoadProcesos, dbUpsertProceso,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice, normRef } from './lib/constants.js'
@@ -76,6 +76,8 @@ export default function App() {
   const [programaciones, setProgramaciones] = useState([])
   // Telas por referencia (ficha de Factory): { C6892: [{tela, grupo, prom}] }.
   const [telasFicha, setTelasFicha] = useState({})
+  // Doblado y corte medidos por el sistema, por número de orden.
+  const [procesos, setProcesos] = useState({})
   const [refs, setRefs] = useState([])
   const [settings, setSettings] = useState({ telas: normalizeTelas(DEFAULT_TELAS), colors: DEFAULT_COLORS, proveedores: [], decorados: ['Flor'], marcas: DEFAULT_MARCAS, procesos: DEFAULT_PROCESOS })
 
@@ -119,8 +121,9 @@ export default function App() {
     Promise.all([
       dbLoadOrders(), dbLoadRefs(), dbLoadSettings(), dbLoadFaltantes(), dbLoadRefsMeta(),
       dbLoadOrdersStamp(), dbLoadPreordenes(), dbLoadProgramaciones(), dbLoadTelas(),
+      dbLoadProcesos(),
     ])
-      .then(([o, r, s, fl, meta, stamp, po, pr, tf]) => {
+      .then(([o, r, s, fl, meta, stamp, po, pr, tf, pc]) => {
         if (cancelled) return
         refsMeta.current = new Map(meta.map((m) => [m.id, m.updated_at]))
         ordersStamp.current = stamp
@@ -128,6 +131,7 @@ export default function App() {
         setPreordenes(po)
         setProgramaciones(pr)
         setTelasFicha(tf)
+        setProcesos(pc)
         setOrders(o)
         // Migración silenciosa: corregir "Maricet" → "Mariset" Y eliminar
         // cualquier campo "_stub" que se haya persistido por error.
@@ -183,11 +187,13 @@ export default function App() {
     enVuelo.current = true
     setSyncing(true)
     try {
-      const [fl, meta, stamp, po] = await Promise.all([
+      const [fl, meta, stamp, po, pc] = await Promise.all([
         dbLoadFaltantes(), dbLoadRefsMeta(), dbLoadOrdersStamp(), dbLoadPreordenes(),
+        dbLoadProcesos(),
       ])
       setFaltantes(fl)
       setPreordenes(po)
+      setProcesos(pc)
 
       // Las órdenes solo se bajan si la marca se movió. Si no hay marca (algo
       // raro pasó), se bajan igual: más vale gastar datos que quedar viejo.
@@ -433,6 +439,17 @@ export default function App() {
       return [...m.values()]
     })
     dbUpsertProgramaciones(lista).catch((e) => { console.error(e); alert('No se pudo cargar: ' + e.message) })
+  }
+
+  // Doblado y corte: se pinta de una y se guarda detrás, para que abrir o
+  // cerrar la tapa se sienta instantáneo en la mesa de corte.
+  function guardarProceso(orden, proc) {
+    const clave = String(orden)
+    setProcesos((m) => ({ ...m, [clave]: proc }))
+    dbUpsertProceso(clave, proc).catch((e) => {
+      console.error(e)
+      alert('No se pudo guardar: ' + e.message)
+    })
   }
 
   function borrarProgramacion(id) {
@@ -883,6 +900,7 @@ export default function App() {
             faltantesPorRef={faltantesPorRef} onIrAFaltantes={() => setTab('faltantes')}
             fasesOcultas={fasesOcultas} onToggleFase={toggleFase} puedeFiltrar={esAdmin}
             topLinks={topLinks} onVincularTop={vincularTop} conjuntoLinks={conjuntoLinks}
+            procesos={procesos} usuario={emailSesion} onGuardarProceso={guardarProceso}
             onViewImage={setLightbox} onOpenRef={openEdit} onSetFields={handleSetFields} />
         )}
         {tab === 'ensamble' && (

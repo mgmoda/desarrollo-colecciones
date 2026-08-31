@@ -13,8 +13,19 @@ import ConjuntoModal from './ConjuntoModal.jsx'
 import CurvaModal, { MEDIDA_DE_AREA } from './CurvaModal.jsx'
 import NotaRefModal from './NotaRefModal.jsx'
 import FaseToggles from './FaseToggles.jsx'
+import EtapaProceso from './EtapaProceso.jsx'
+import { duracion, estaAndando, estaListo } from '../lib/procesos.js'
 
 const tallerDe = (o) => (o.stages && o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || ''
+
+// Días que lleva abierta una etapa medida por el sistema. Nulo si está
+// cerrada o si nadie la ha empezado: así el orden las deja al final.
+function diasAbierta(proc, etapa) {
+  const et = (proc || {})[etapa]
+  if (!estaAndando(et)) return null
+  const d = duracion(et)
+  return d ? d.dias : null
+}
 
 // Días que el taller tuvo el lote: del envío a la entrega de ensamble.
 function diasEnTaller(o) {
@@ -76,7 +87,7 @@ function TopCell({ orden, refRow, topLinks, onAbrir }) {
   )
 }
 
-export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, onSetFields, fasesOcultas, onToggleFase, puedeFiltrar, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes }) {
+export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, onSetFields, fasesOcultas, onToggleFase, puedeFiltrar, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes, procesos = {}, usuario, onGuardarProceso }) {
   const [topDe, setTopDe] = useState(null) // orden cuyo vínculo de top se está viendo
   const [conjuntoDe, setConjuntoDe] = useState(null) // orden cuyo conjunto se está viendo
   const [curvaDe, setCurvaDe] = useState(null) // orden cuya curva de tallas se está viendo
@@ -113,6 +124,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   // tela. Sin eso, Corte muestra iguales dos cosas distintas: lo que espera que
   // doblen la tela y lo que ya está doblado esperando la tijera.
   const showDoblado = areaKey === 'corte'
+  // Doblado y corte medidos por el sistema: solo en la mesa de corte, que es
+  // donde están las órdenes esperando que alguien las doble y las corte.
+  const showProcesos = areaKey === 'corte' && !!onGuardarProceso
   const limiteDias = limiteDiasArea(areaKey)
   const pendienteLabel = area.next ? STAGE_LABEL[area.next] : 'Recibido'
 
@@ -157,6 +171,10 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       diasTaller: (o) => diasEnTaller(o),
       valorTaller: (o) => Number(o.valorTaller) || 0,
       doblado: (o) => ((o.stages.doblado || {}).fecha) || '',
+      // Por estas dos se ordena para ver primero lo que lleva más días
+      // abierto; lo cerrado y lo que no ha empezado quedan al final.
+      procDoblado: (o) => diasAbierta(procesos[o.orden], 'doblado'),
+      procCorte: (o) => diasAbierta(procesos[o.orden], 'corte'),
     }
     return sortRows(list, accessors[sortKey], sortDir)
   }, [enEtapa, q, tallerSel, sortKey, sortDir, baseStage, refMap])
@@ -249,6 +267,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />
                 {showDoblado && <SortTh label="Doblado" col="doblado" {...thProps} />}
                 <SortTh label="Cant" col="cant" className="num" {...thProps} />
+                {showProcesos && <SortTh label="Doblando" col="procDoblado" {...thProps} />}
+                {showProcesos && <SortTh label="Cortando" col="procCorte" {...thProps} />}
                 {showAtraso && <SortTh label="Días" col="atraso" className="num" {...thProps} />}
                 {showDiasTaller && <SortTh label="Días en taller" col="diasTaller" className="num" {...thProps} />}
                 <th>Pendiente</th>
@@ -332,6 +352,18 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                       </td>
                     )}
                     <td className="num">{base.cant}</td>
+                    {showProcesos && (
+                      <td>
+                        <EtapaProceso etapa="doblado" proc={procesos[o.orden]}
+                          usuario={usuario} onCambiar={(p) => onGuardarProceso(o.orden, p)} />
+                      </td>
+                    )}
+                    {showProcesos && (
+                      <td>
+                        <EtapaProceso etapa="corte" proc={procesos[o.orden]}
+                          usuario={usuario} onCambiar={(p) => onGuardarProceso(o.orden, p)} />
+                      </td>
+                    )}
                     {showAtraso && (
                       <td className="num">
                         {atraso == null ? '' : (

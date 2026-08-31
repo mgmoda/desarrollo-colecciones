@@ -261,6 +261,16 @@ function SeguimientoModal({ fila, usuario, onGuardar, onClose }) {
     setTexto('')
   }
 
+  // Borrar una nota. Se busca por identidad y no por posición: la lista que se
+  // ve está ordenada al revés y filtrada, así que su índice no es el mismo.
+  function borrar(obs) {
+    const todas = fila.observaciones || []
+    const i = todas.indexOf(obs)
+    if (i < 0) return
+    if (!window.confirm('¿Borrar esta nota?\n\n' + obs.texto)) return
+    onGuardar({ ...fila, observaciones: todas.filter((_, j) => j !== i) })
+  }
+
   return (
     <Modal open onClose={onClose} size="md">
       <div className="modal-head">
@@ -285,6 +295,9 @@ function SeguimientoModal({ fila, usuario, onGuardar, onClose }) {
               <div className="prog-obs-cab">
                 <b>{nombreCorto(o.usuario)}</b>
                 <span>{fechaHora(o.at)}</span>
+                <button type="button" className="prog-obs-del"
+                  title="Borrar esta nota" aria-label="Borrar esta nota"
+                  onClick={() => borrar(o)}>✕</button>
               </div>
               <p>{o.texto}</p>
             </div>

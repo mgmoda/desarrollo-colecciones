@@ -685,7 +685,9 @@ export default function ProgramacionesView({
   const [desgDe, setDesgDe] = useState(null)
   const [progDe, setProgDe] = useState(null)
   const [faltaDe, setFaltaDe] = useState(null)
-  const { sortKey, sortDir, toggle } = useSort('pendiente', 'desc')
+  // Arranca por pedido de mayor a menor —lo más vendido primero— en las dos
+  // marcas. Las columnas siguen ordenando al tocar su encabezado.
+  const { sortKey, sortDir, toggle } = useSort('pedido', 'desc')
 
   // Los conjuntos ya están armados en Costos: de ahí sale su foto, que es la de
   // las dos prendas puestas y no la de la blusa sola.

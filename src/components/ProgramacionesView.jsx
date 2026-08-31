@@ -241,6 +241,7 @@ function ProgramadoModal({ fila, cortes, onClose }) {
           <div key={i} className="desg-corte">
             <p className="desg-corte-cab">
               <b>Orden {c.orden}</b>
+              {c.muestra && <span className="tag" title="Orden de muestras: también descuenta del pedido">Muestra</span>}
               {c.pieza && <span className="tag conj-tag">{c.pieza}</span>}
               <span>{formatDate(c.fecha)}</span>
               <span>· {num(c.cant)} unidades</span>
@@ -478,6 +479,10 @@ export default function ProgramacionesView({
   const ordenesPorRef = useMemo(() => {
     const m = new Map()
     ;(orders || []).forEach((o) => {
+      // Las premuestras no cuentan como programado: es una sola prenda para
+      // decidir, no producción. Las muestras sí, y llegan del sync con su
+      // curva para restarlas por color y talla.
+      if (o.origen === 'premuestra') return
       if (!m.has(o.referencia)) m.set(o.referencia, [])
       m.get(o.referencia).push(o)
     })

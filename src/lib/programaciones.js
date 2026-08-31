@@ -407,6 +407,7 @@ export function cortesDe(fila, ordenesPorRef, codigos, coloresPedido) {
         fecha: oc.fecha || '',
         cant: Number(oc.cant) || 0,
         pieza: pieza || '',
+        muestra: o.origen === 'muestra',
         colores,
         tallas: [...tallas].sort((a, b) => Number(a) - Number(b)),
       })

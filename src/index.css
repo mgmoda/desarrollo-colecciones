@@ -6309,6 +6309,8 @@ select.filtro-taller { flex: none; width: 215px; }
 .prog-kpi.alerta b { color: #8c2f28; }
 /* Lo que falta por programar es el número que se persigue. */
 .prog-falta { color: #8c2f28; }
+/* Falta real en cero: lo que falta ya está todo pedido o en Textampa. */
+.prog-cubierto { color: #27500a; white-space: nowrap; }
 .prog-tipo {
   margin-left: 8px; font-size: 10.5px; color: var(--muted);
   border: 1px solid var(--hairline-strong); border-radius: 999px; padding: 0 6px;

@@ -28,6 +28,24 @@ const fechaCorta = (ts) => {
 }
 const diasTxt = (n) => `${n} ${n === 1 ? 'día' : 'días'}`
 
+// Lo que una referencia tiene andando: unidades en proceso, los días del
+// movimiento más viejo —el que manda para saber cuál lleva más esperando— y
+// lo que de verdad falta por gestionar, que es la falta menos lo que ya se
+// mandó a pedir o a estampar.
+function enProceso(movimientos, pendiente) {
+  const abiertos = (movimientos || []).filter((m) => !m.llegadaAt)
+  const unid = abiertos.reduce((n, m) => n + (Number(m.cant) || 0), 0)
+  return {
+    movAbiertos: abiertos,
+    procUnid: unid,
+    // Sin movimientos no hay días: así el orden por días los deja al final.
+    procDias: abiertos.length
+      ? Math.max(...abiertos.map((m) => diasDesde(m.desde) || 0))
+      : null,
+    faltaReal: pendiente - unid,
+  }
+}
+
 // Una línea de movimiento: proceso, color con cantidad y días, en columnas
 // alineadas para que se lea como tabla y no como etiquetas sueltas. Corre en
 // vivo si sigue abierto (rojo pasadas dos semanas); si ya llegó, dice cuántos
@@ -621,6 +639,7 @@ export default function ProgramacionesView({
   const [marca, setMarca] = useState('Casania')
   const [q, setQ] = useState('')
   const [soloPendientes, setSoloPendientes] = useState(false)
+  const [soloProceso, setSoloProceso] = useState(false)
   const [estadoF, setEstadoF] = useState('')
   // Dos formas de mirar lo mismo: por referencia (la tabla) o por tela,
   // agrupando las referencias que usan cada una y los metros que necesitan.
@@ -687,13 +706,14 @@ export default function ProgramacionesView({
         estadoColor: p.estadoColor || '',
         obs: (p.observaciones || []).filter((o) => o.texto).length,
         ultimaObs: (p.observaciones || []).filter((o) => o.texto).slice(-1)[0] || null,
-        movAbiertos: (p.movimientos || []).filter((m) => !m.llegadaAt),
+        ...enProceso(p.movimientos, pendiente),
       }
     }), [programaciones, marca, refMap, conjuntos, ordenesPorRef, codigos, telas])
 
   const rows = useMemo(() => {
     let list = filas
     if (soloPendientes) list = list.filter((f) => f.pendiente > 0)
+    if (soloProceso) list = list.filter((f) => f.movAbiertos.length > 0)
     if (estadoF) list = list.filter((f) => f.estado === estadoF)
     const term = q.trim().toLowerCase()
     if (term) {
@@ -708,10 +728,14 @@ export default function ProgramacionesView({
       pedido: (f) => f.pedido,
       programado: (f) => f.programado,
       pendiente: (f) => f.pendiente,
+      faltaReal: (f) => f.faltaReal,
+      // Por días: la referencia que lleva más tiempo esperando queda de
+      // primera al ordenar de mayor a menor.
+      proceso: (f) => f.procDias,
       obs: (f) => f.obs,
     }
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [filas, q, soloPendientes, estadoF, sortKey, sortDir])
+  }, [filas, q, soloPendientes, soloProceso, estadoF, sortKey, sortDir])
 
   const tot = useMemo(() => rows.reduce((a, f) => ({
     pedido: a.pedido + f.pedido,
@@ -776,6 +800,17 @@ export default function ProgramacionesView({
             onClick={() => setSoloPendientes(!soloPendientes)}>
             Solo con pendiente
           </button>
+          {(() => {
+            const n = filas.filter((f) => f.movAbiertos.length > 0).length
+            if (!n && !soloProceso) return null
+            return (
+              <button type="button" className={'proc-f-btn' + (soloProceso ? ' on' : '')}
+                title="Solo las que tienen tela pedida o Textampa andando"
+                onClick={() => setSoloProceso(!soloProceso)}>
+                En proceso <b>{n}</b>
+              </button>
+            )
+          })()}
           {ESTADOS_PROG.map((e) => {
             const n = filas.filter((f) => f.estado === e.key).length
             if (!n && estadoF !== e.key) return null
@@ -917,8 +952,9 @@ export default function ProgramacionesView({
                 <SortTh label="Pedido" col="pedido" className="num" {...thProps} />
                 <SortTh label="Programado" col="programado" className="num" {...thProps} />
                 <SortTh label="Falta" col="pendiente" className="num" {...thProps} />
+                <SortTh label="Falta real" col="faltaReal" className="num" {...thProps} />
                 <th>Tela</th>
-                <th>En proceso</th>
+                <SortTh label="En proceso" col="proceso" {...thProps} />
                 <SortTh label="Seguimiento" col="obs" {...thProps} />
                 <th></th>
               </tr>
@@ -980,6 +1016,12 @@ export default function ProgramacionesView({
                           {num(f.pendiente)}
                         </button>
                       ) : f.pendiente > 0 ? num(f.pendiente) : <span className="muted">—</span>}
+                    </td>
+                    <td className={'num strong' + (f.faltaReal > 0 && f.procUnid > 0 ? ' prog-falta' : '')}>
+                      {f.pendiente <= 0 ? <span className="muted">—</span>
+                        : f.procUnid === 0 ? <span className="muted">{num(f.pendiente)}</span>
+                          : f.faltaReal > 0 ? num(f.faltaReal)
+                            : <span className="prog-cubierto" title="Todo lo que falta ya está en proceso">✓ 0</span>}
                     </td>
                     <td>
                       {(f.telasRef || []).length ? (

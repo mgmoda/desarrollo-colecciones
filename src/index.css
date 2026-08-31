@@ -6405,29 +6405,16 @@ select.filtro-taller { flex: none; width: 215px; }
 .desg-otro { color: #8c2f28; }
 
 /* ---------- Telas en programaciones ---------- */
-/* La vista por tela: una tarjeta por tela con sus referencias y los metros
-   que necesita. El chip compacto es el mismo dato en la tabla por referencia. */
-.tela-card {
-  background: var(--surface); border: 1px solid var(--hairline);
-  border-radius: var(--radius); box-shadow: var(--shadow-sm);
-  margin-bottom: 16px; overflow: hidden;
+/* La vista por tela: una fila por tela que se despliega con sus referencias.
+   Con sesenta telas, tarjetas abiertas o chips no se pueden recorrer. */
+.tela-fila td { font-size: 14px; }
+.tela-fila.abierta td { background: #faf9f5; font-weight: 600; }
+.tela-flecha { width: 26px; color: var(--muted); text-align: center; }
+.tela-detalle > td { padding: 0 0 0 26px; background: #faf9f5; }
+.tela-detalle .data-table { background: var(--surface); }
+.tela-detalle .data-table th {
+  font-size: 10px; padding-top: 7px; padding-bottom: 7px;
 }
-.tela-card-head {
-  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
-  padding: 13px 18px 11px; border-bottom: 1px solid var(--hairline);
-}
-.tela-nombre { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; }
-.tela-grupo {
-  font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
-  color: var(--muted); border: 1px solid var(--hairline-strong);
-  border-radius: 6px; padding: 1px 7px;
-}
-.tela-total { margin-left: auto; text-align: right; display: flex; flex-direction: column; }
-.tela-total b {
-  font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.tela-total span { font-size: 11.5px; color: var(--muted); }
 .tela-stack { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
 .tela-chip {
   display: inline-flex; align-items: baseline; gap: 6px;

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { Fragment, useMemo, useRef, useState } from 'react'
 import Modal from './Modal.jsx'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
@@ -777,10 +777,9 @@ export default function ProgramacionesView({
     pendiente: a.pendiente + Math.max(0, f.pendiente),
   }), { pedido: 0, programado: 0, pendiente: 0 }), [rows])
 
-  // La otra vista: cada tela con las referencias que la usan, los metros que
-  // necesita (promedio × falta) y el estado más atrasado del seguimiento de
-  // sus referencias, que es el que manda: la tela está tan lista como la
-  // referencia que menos ha avanzado.
+  // La otra vista: cada tela con las referencias que la usan y los metros que
+  // necesita (promedio × falta). La que más metros pide va de primera, que es
+  // la que hay que salir a conseguir.
   const grupos = useMemo(() => {
     const m = new Map()
     rows.forEach((f) => (f.telasRef || []).forEach((t) => {
@@ -790,20 +789,9 @@ export default function ProgramacionesView({
       g.filas.push({ ...f, prom: t.prom, metros: t.metros })
       g.metros += t.metros
     }))
-    const orden = (e) => {
-      const i = ESTADOS_PROG.findIndex((x) => x.key === e)
-      return i < 0 ? 99 : i
-    }
-    return [...m.values()].map((g) => {
-      const conEstado = g.filas.filter((f) => f.estado)
-      return {
-        ...g,
-        filas: g.filas.sort((a, b) => b.metros - a.metros),
-        estado: conEstado.length
-          ? conEstado.reduce((a, f) => (orden(f.estado) < orden(a) ? f.estado : a), conEstado[0].estado)
-          : '',
-      }
-    }).sort((a, b) => b.metros - a.metros)
+    return [...m.values()]
+      .map((g) => ({ ...g, filas: g.filas.sort((a, b) => b.metros - a.metros) }))
+      .sort((a, b) => b.metros - a.metros)
   }, [rows])
 
   const sinFichaTela = useMemo(() => rows.filter((f) => !(f.telasRef || []).length), [rows])
@@ -887,89 +875,116 @@ export default function ProgramacionesView({
         </div>
       ) : vista === 'tela' ? (
         <>
-          <div className="dis-filtros" style={{ marginBottom: 14 }}>
-            <button type="button" className={'proc-f-btn' + (!telaF ? ' on' : '')}
-              onClick={() => setTelaF('')}>Todas <b>{grupos.length}</b></button>
-            {/* Todas las telas, las que más metros piden primero. Las que no
-                necesitan metros —sus referencias ya están programadas— van al
-                final y en gris, pero siguen ahí: la lista es el inventario
-                completo de telas de la marca. */}
-            {grupos.map((g) => (
-              <button key={g.key} type="button"
-                className={'proc-f-btn' + (telaF === g.key ? ' on' : '')
-                  + (g.metros > 0 ? '' : ' apagado')}
-                title={g.metros > 0 ? undefined : 'Sin metros pendientes: sus referencias ya están programadas'}
-                onClick={() => setTelaF(telaF === g.key ? '' : g.key)}>
-                {g.tela} <b>{g.filas.length}</b>
-              </button>
-            ))}
-          </div>
-
-          {grupos.filter((g) => !telaF || g.key === telaF).map((g) => (
-            <div key={g.key} className="tela-card">
-              <div className="tela-card-head">
-                <span className="tela-nombre">{g.tela}</span>
-                {g.grupo && <span className="tela-grupo">{g.grupo}</span>}
-                {g.estado && <EstadoChip estado={g.estado} chico />}
-                <div className="tela-total">
-                  <b>{mts(g.metros)}</b>
-                  <span>necesarios · {g.filas.length} {g.filas.length === 1 ? 'referencia' : 'referencias'}</span>
-                </div>
-              </div>
-              <div className="table-wrap">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Foto</th>
-                      <th>Referencia</th>
-                      <th>Descripción</th>
-                      <th className="num">Promedio</th>
-                      <th className="num">Falta</th>
-                      <th className="num">Metros</th>
-                      <th>Seguimiento</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {g.filas.map((f) => {
-                      const ficha = refMap.get(f.id)
-                      return (
-                        <tr key={f.id}>
-                          <td className="cell-photo">
-                            {f.image
-                              ? <img src={f.image} alt={f.id} className="thumb" title="Ampliar foto"
-                                onClick={() => onViewImage && onViewImage(f.image)} />
-                              : <span className="thumb empty" title="Sin foto en la ficha">—</span>}
-                          </td>
-                          <td className="strong" style={{ cursor: ficha && onOpenRef ? 'pointer' : 'default' }}
-                            onClick={() => ficha && onOpenRef && onOpenRef(ficha)}>
-                            {f.id}
-                            {f.conj && <span className="tag conj-tag">Conjunto</span>}
-                          </td>
-                          <td className="muted">{f.descripcion || '—'}</td>
-                          <td className="num muted">{dec(f.prom)} m/{f.conj ? 'conj' : 'und'}</td>
-                          <td className={'num strong' + (f.pendiente > 0 ? ' prog-falta' : '')}>
-                            {f.pendiente > 0 ? num(f.pendiente) : <span className="muted">—</span>}
-                          </td>
-                          <td className="num strong">
-                            {f.metros > 0 ? mts(f.metros) : <span className="muted">—</span>}
-                          </td>
-                          <td>
-                            <button type="button" className="prog-seg"
-                              onClick={() => setObsDe(f)}
-                              title={f.obs ? `${f.obs} anotaciones — clic para ver o cambiar` : 'Marcar en qué va'}>
-                              {f.estado
-                                ? <EstadoChip estado={f.estado} color={f.estadoColor} chico />
-                                : <span className="prog-seg-vacio">+ anotar</span>}
-                            </button>
+          {/* Una fila por tela, la que más metros pide primero. Se toca una y
+              se abren debajo sus referencias: con sesenta telas, una lista de
+              tarjetas abiertas —o de chips— no se puede recorrer. */}
+          <div className="table-wrap">
+            <table className="data-table tela-tabla">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Tela</th>
+                  <th>Grupo</th>
+                  <th className="num">Referencias</th>
+                  <th className="num">Falta</th>
+                  <th className="num">Metros</th>
+                  <th>En proceso</th>
+                </tr>
+              </thead>
+              <tbody>
+                {grupos.map((g) => {
+                  const abierta = telaF === g.key
+                  const unidades = g.filas.reduce((n, f) => n + Math.max(0, f.pendiente), 0)
+                  const movs = g.filas.flatMap((f) => f.movAbiertos)
+                  return (
+                    <Fragment key={g.key}>
+                      <tr className={'tela-fila row-click' + (abierta ? ' abierta' : '')}
+                        onClick={() => setTelaF(abierta ? '' : g.key)}
+                        title={abierta ? 'Cerrar' : 'Ver sus referencias'}>
+                        <td className="tela-flecha">{abierta ? '▾' : '▸'}</td>
+                        <td className="strong">{g.tela}</td>
+                        <td className="muted">{g.grupo || '—'}</td>
+                        <td className="num">{num(g.filas.length)}</td>
+                        <td className={'num' + (unidades > 0 ? ' prog-falta strong' : ' muted')}>
+                          {unidades > 0 ? num(unidades) : '—'}
+                        </td>
+                        <td className="num strong">
+                          {g.metros > 0 ? mts(g.metros) : <span className="muted">—</span>}
+                        </td>
+                        <td>
+                          {movs.length ? (
+                            <span className="mov-tabla">
+                              {movs.slice(0, 2).map((m) => <MovFila key={m.id} mov={m} />)}
+                            </span>
+                          ) : <span className="muted">—</span>}
+                        </td>
+                      </tr>
+                      {abierta && (
+                        <tr className="tela-detalle">
+                          <td colSpan={7}>
+                            <table className="data-table">
+                              <thead>
+                                <tr>
+                                  <th>Foto</th>
+                                  <th>Referencia</th>
+                                  <th>Descripción</th>
+                                  <th className="num">Promedio</th>
+                                  <th className="num">Falta</th>
+                                  <th className="num">Metros</th>
+                                  <th>En proceso</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {g.filas.map((f) => {
+                                  const ficha = refMap.get(f.id)
+                                  return (
+                                    <tr key={f.id}>
+                                      <td className="cell-photo">
+                                        {f.image
+                                          ? <img src={f.image} alt={f.id} className="thumb" title="Ampliar foto"
+                                            onClick={() => onViewImage && onViewImage(f.image)} />
+                                          : <span className="thumb empty" title="Sin foto en la ficha">—</span>}
+                                      </td>
+                                      <td className="strong" style={{ cursor: ficha && onOpenRef ? 'pointer' : 'default' }}
+                                        onClick={() => ficha && onOpenRef && onOpenRef(ficha)}>
+                                        {f.id}
+                                        {f.conj && <span className="tag conj-tag">Conjunto</span>}
+                                      </td>
+                                      <td className="muted">{f.descripcion || '—'}</td>
+                                      <td className="num muted">{dec(f.prom)} m/{f.conj ? 'conj' : 'und'}</td>
+                                      <td className={'num strong' + (f.pendiente > 0 ? ' prog-falta' : '')}>
+                                        {f.pendiente > 0 ? num(f.pendiente) : <span className="muted">—</span>}
+                                      </td>
+                                      <td className="num strong">
+                                        {f.metros > 0 ? mts(f.metros) : <span className="muted">—</span>}
+                                      </td>
+                                      <td>
+                                        <button type="button" className="prog-seg"
+                                          onClick={() => setMovDe(f)}
+                                          title="Registrar tela pedida o Textampa, o marcar que llegó">
+                                          {f.movAbiertos.length ? (
+                                            <span className="mov-tabla">
+                                              {f.movAbiertos.map((m) => <MovFila key={m.id} mov={m} />)}
+                                            </span>
+                                          ) : f.estado
+                                            ? <EstadoChip estado={f.estado} color={f.estadoColor} chico />
+                                            : <span className="prog-seg-vacio">+ registrar</span>}
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
                           </td>
                         </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
+                      )}
+                    </Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
 
           {sinFichaTela.length > 0 && (
             <p className="field-hint">
@@ -1081,6 +1096,10 @@ export default function ProgramacionesView({
                           <span className="mov-tabla">
                             {f.movAbiertos.map((m) => <MovFila key={m.id} mov={m} />)}
                           </span>
+                        ) : f.estado ? (
+                          // Sin nada andando pero con estado: lo que se pidió
+                          // ya llegó y la referencia quedó lista para programar.
+                          <EstadoChip estado={f.estado} color={f.estadoColor} chico />
                         ) : <span className="prog-seg-vacio">+ registrar</span>}
                       </button>
                     </td>

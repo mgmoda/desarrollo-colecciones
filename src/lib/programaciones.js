@@ -116,6 +116,18 @@ export function programadoDe(fila, ordenesPorRef, codigos) {
   return sumar(fila.id, false)
 }
 
+// El nombre con el que se muestra una tela.
+//
+// Factory deja el guión de la referencia pegado al final (INDISOULLAB-,
+// CAPRI-), y hay telas que figuran con dos referencias distintas siendo la
+// misma en la práctica: MIILA es INDISOULLAB. Sin unificar salen partidas en
+// dos renglones y los metros de una misma tela quedan repartidos.
+const ALIAS_TELA = { MIILA: 'INDISOULLAB' }
+export function nombreTela(s) {
+  const limpio = String(s || '').trim().replace(/[\s-]+$/, '').trim()
+  return ALIAS_TELA[limpio.toUpperCase()] || limpio
+}
+
 // Las telas de una fila, desde la ficha técnica de Factory. La ficha puede
 // estar bajo el código final o bajo el interno, así que se busca por los dos.
 // El conjunto no tiene ficha propia: se arma sumando las telas de sus dos
@@ -133,9 +145,10 @@ export function telasDe(fila, telasIdx, codigos) {
   const fuentes = piezas.length ? piezas : [fila.id]
   const m = new Map()
   fuentes.forEach((r) => de(r).forEach((t) => {
-    const k = String(t.tela || '').toUpperCase()
+    const nombre = nombreTela(t.tela)
+    const k = nombre.toUpperCase()
     if (!k) return
-    if (!m.has(k)) m.set(k, { tela: t.tela, grupo: t.grupo || '', prom: 0 })
+    if (!m.has(k)) m.set(k, { tela: nombre, grupo: t.grupo || '', prom: 0 })
     m.get(k).prom = Math.round((m.get(k).prom + (Number(t.prom) || 0)) * 10000) / 10000
   }))
   return [...m.values()].sort((a, b) => b.prom - a.prom)

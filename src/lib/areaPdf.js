@@ -87,27 +87,25 @@ function drawRow(doc, item, size, y) {
   }
 
   const tx = MARGIN + PHOTO_W + 16
+  // Ancho útil del texto: hasta donde empiezan los días de la derecha.
+  const maxW = PAGE_W - MARGIN - tx - 100
+
   // Referencia
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(13)
   doc.setTextColor(...INK)
   doc.text(item.referencia || '', tx, y + 13)
 
-  // Producto · Empresa
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9.5)
-  doc.setTextColor(...GRAY)
-  const sub = [item.producto, item.empresa].filter(Boolean).join(' · ')
-  if (sub) doc.text(sub, tx, y + 28)
-
-  // Fecha base + pendiente
-  doc.setFontSize(9.5)
-  doc.setTextColor(...INK)
-  doc.text(`${item.baseLabel || 'Fecha'}: ${item.fecha || '—'}`, tx, y + 44)
-  if (item.pendienteLabel) {
-    doc.setTextColor(...GRAY)
-    doc.text(`Pendiente: ${item.pendienteLabel}`, tx, y + 58)
-  }
+  // Las líneas de detalle las arma quien pide el PDF: cada área muestra lo
+  // suyo —en talleres, la orden, las unidades y con quién está—.
+  ;(item.lineas || []).slice(0, 3).forEach((l, i) => {
+    if (!l || !l.texto) return
+    doc.setFont('helvetica', l.fuerte ? 'bold' : 'normal')
+    doc.setFontSize(9.5)
+    doc.setTextColor(...(l.gris ? GRAY : INK))
+    const [linea] = doc.splitTextToSize(l.texto, maxW)
+    doc.text(linea, tx, y + 28 + i * 15)
+  })
 
   // Días en la etapa (destacado a la derecha). El límite lo pone el área, para
   // que el rojo del PDF sea el mismo que el de la pantalla.
@@ -120,7 +118,7 @@ function drawRow(doc, item, size, y) {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(...GRAY)
-    doc.text('en esta etapa', PAGE_W - MARGIN, y + 30, { align: 'right' })
+    doc.text(item.diasLabel || 'en esta etapa', PAGE_W - MARGIN, y + 30, { align: 'right' })
   }
 }
 

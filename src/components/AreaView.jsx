@@ -218,15 +218,25 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
     const items = chosen.map((o) => {
       const base = o.stages[baseStage] || {}
       const ref = refMap.get(o.referencia)
+      const cant = (base.cant || (o.stages.ordenCorte || {}).cant || '')
+      // En talleres el papel se usa para reclamar: lo que importa es con quién
+      // está el lote, cuántas unidades son y hace cuántos días salió.
+      const lineas = showTaller
+        ? [
+          { texto: `Orden ${o.orden}${cant ? ` · ${cant} unidades` : ''}`, gris: true },
+          { texto: `Taller: ${tallerDe(o) || '—'}`, fuerte: true },
+        ]
+        : [
+          { texto: [o.producto, o.empresa].filter(Boolean).join(' · '), gris: true },
+          { texto: `${STAGE_LABEL[baseStage]}: ${formatDate(base.fecha) || '—'}` },
+          { texto: pendienteLabel ? `Pendiente: ${pendienteLabel}` : '', gris: true },
+        ]
       return {
         referencia: o.referencia,
-        producto: o.producto,
-        empresa: o.empresa,
-        baseLabel: STAGE_LABEL[baseStage],
-        fecha: formatDate(base.fecha),
+        lineas,
         atraso: showAtraso ? diasDesde(base.fecha) : null,
+        diasLabel: showTaller ? 'en el taller' : 'en esta etapa',
         limiteDias,
-        pendienteLabel,
         image: ref && ref.image ? ref.image : null,
       }
     })

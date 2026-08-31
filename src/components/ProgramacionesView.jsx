@@ -1040,8 +1040,8 @@ export default function ProgramacionesView({
                         </span>
                       )}
                     </td>
-                    <td className="muted">
-                      {f.descripcion || '—'}
+                    <td className="muted cel-desc" title={f.descripcion || ''}>
+                      <span className="desc-txt">{f.descripcion || '—'}</span>
                       {f.tipoFicha && <span className="prog-tipo">{f.tipoFicha}</span>}
                     </td>
                     <td className="num strong">
@@ -1126,10 +1126,11 @@ export default function ProgramacionesView({
                       </button>
                     </td>
                     <td>
-                      <button className="btn btn-ghost" style={{ color: '#b23121' }}
+                      <button className="prog-quitar" aria-label={`Quitar ${f.id}`}
+                        title={`Quitar ${f.id} de programaciones`}
                         onClick={() => {
                           if (window.confirm(`¿Quitar ${f.id} de programaciones?`)) onBorrar(f.id)
-                        }}>Quitar</button>
+                        }}>✕</button>
                     </td>
                   </tr>
                 )

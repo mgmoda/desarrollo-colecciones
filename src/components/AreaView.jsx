@@ -290,10 +290,11 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         <div className="dis-filtros" style={{ marginBottom: 14 }}>
           <button type="button" className={'proc-f-btn' + (!donde ? ' on' : '')}
             onClick={() => setDonde('')}>Todas <b>{enEtapa.length}</b></button>
-          <button type="button" className={'proc-f-btn' + (donde === 'casa' ? ' on' : '')}
-            onClick={() => setDonde('casa')}>En casa <b>{enEtapa.length - fuera.n}</b></button>
           <button type="button" className={'proc-f-btn ext' + (donde === 'diego' ? ' on' : '')}
-            onClick={() => setDonde('diego')}>Donde {EXTERNO} <b>{fuera.n}</b></button>
+            title={`La tela está donde ${EXTERNO}`}
+            onClick={() => setDonde(donde === 'diego' ? '' : 'diego')}>
+            Corte externo <b>{fuera.n}</b>
+          </button>
         </div>
       )}
 

@@ -133,7 +133,6 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   // Entre el trazo y el corte, Factory registra el doblado y alistamiento de la
   // tela. Sin eso, Corte muestra iguales dos cosas distintas: lo que espera que
   // doblen la tela y lo que ya está doblado esperando la tijera.
-  const showDoblado = areaKey === 'corte'
   // Doblado y corte medidos por el sistema: solo en la mesa de corte, que es
   // donde están las órdenes esperando que alguien las doble y las corte.
   const showProcesos = areaKey === 'corte' && !!onGuardarProceso
@@ -181,7 +180,6 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       atraso: (o) => diasDesde((o.stages[baseStage] || {}).fecha),
       diasTaller: (o) => diasEnTaller(o),
       valorTaller: (o) => Number(o.valorTaller) || 0,
-      doblado: (o) => ((o.stages.doblado || {}).fecha) || '',
       // Por estas dos se ordena para ver primero lo que lleva más días
       // abierto; lo cerrado y lo que no ha empezado quedan al final.
       procDoblado: (o) => diasAbierta(procesos[o.orden], 'doblado'),
@@ -349,7 +347,6 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 {showTaller && <SortTh label="Taller" col="taller" {...thProps} />}
                 {showValorTaller && <SortTh label="Valor taller" col="valorTaller" className="num" {...thProps} />}
                 <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />
-                {showDoblado && <SortTh label="Doblado" col="doblado" {...thProps} />}
                 <SortTh label="Cant" col="cant" className="num" {...thProps} />
                 {showProcesos && <SortTh label="Doblando" col="procDoblado" {...thProps} />}
                 {showProcesos && <SortTh label="Cortando" col="procCorte" {...thProps} />}
@@ -434,13 +431,6 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                       </td>
                     )}
                     <td>{formatDate(base.fecha)}</td>
-                    {showDoblado && (
-                      <td>
-                        {(o.stages.doblado || {}).fecha
-                          ? formatDate(o.stages.doblado.fecha)
-                          : <span className="tag tag-warn" title="La tela todavía no se ha doblado y alistado para corte">Sin doblar</span>}
-                      </td>
-                    )}
                     <td className="num">{base.cant}</td>
                     {/* El clic se queda en la casilla: la fila entera abre la
                         curva de tallas, y marcar el doblado no es pedir eso. */}

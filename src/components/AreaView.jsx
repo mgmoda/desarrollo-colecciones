@@ -352,14 +352,16 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                       </td>
                     )}
                     <td className="num">{base.cant}</td>
+                    {/* El clic se queda en la casilla: la fila entera abre la
+                        curva de tallas, y marcar el doblado no es pedir eso. */}
                     {showProcesos && (
-                      <td>
+                      <td onClick={(ev) => ev.stopPropagation()}>
                         <EtapaProceso etapa="doblado" proc={procesos[o.orden]}
                           usuario={usuario} onCambiar={(p) => onGuardarProceso(o.orden, p)} />
                       </td>
                     )}
                     {showProcesos && (
-                      <td>
+                      <td onClick={(ev) => ev.stopPropagation()}>
                         <EtapaProceso etapa="corte" proc={procesos[o.orden]}
                           usuario={usuario} onCambiar={(p) => onGuardarProceso(o.orden, p)} />
                       </td>

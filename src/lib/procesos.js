@@ -75,3 +75,32 @@ export function reabrir(proc, etapaKey) {
   const { hasta: _fin, cerradoPor: _quien, ...resto } = et
   return { ...proc, [etapaKey]: resto }
 }
+
+// Borra la etapa completa: para cuando se inició por equivocación.
+export function borrarEtapa(proc, etapaKey) {
+  const { [etapaKey]: _fuera, ...resto } = proc || {}
+  return resto
+}
+
+// Corrige la fecha de inicio o de fin. Se conserva la hora original —lo que
+// se corrige es el día, no el momento— y el día empieza a las 8 si la etapa
+// se está creando de cero.
+export function cambiarFecha(proc, etapaKey, campo, iso) {
+  const et = (proc || {})[etapaKey]
+  if (!et || !iso) return proc
+  const [a, m, d] = iso.split('-').map(Number)
+  if (!a || !m || !d) return proc
+  const previa = new Date(et[campo] || Date.now())
+  const nueva = new Date(a, m - 1, d, previa.getHours(), previa.getMinutes())
+  return { ...proc, [etapaKey]: { ...et, [campo]: nueva.getTime() } }
+}
+
+// La fecha de una etapa en el formato que entiende el calendario del
+// navegador (aaaa-mm-dd), en hora local.
+export function aIso(ts) {
+  const d = new Date(Number(ts) || 0)
+  if (isNaN(d)) return ''
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${mm}-${dd}`
+}

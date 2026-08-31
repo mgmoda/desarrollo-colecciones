@@ -20,6 +20,7 @@ export const ETAPAS_PROC = [
     andando: 'Doblando',
     listo: 'Doblado',
     iniciar: 'Iniciar doblado',
+    corto: 'Doblar',
     // El doblado arranca de una: ahí lo que importa es cuándo empezó.
     pregunta: null,
     limite: 5,
@@ -30,6 +31,7 @@ export const ETAPAS_PROC = [
     andando: 'Cortando',
     listo: 'Cortado',
     iniciar: 'Iniciar corte',
+    corto: 'Cortar',
     // El corte sí pregunta quién: se quiere medir a cada cortador.
     pregunta: CORTADORES,
     limite: 5,
@@ -44,7 +46,9 @@ export function duracion(et) {
   if (!et || !et.desde) return null
   const fin = et.hasta || Date.now()
   const dias = et.hasta ? diasEntre(et.desde, et.hasta) : diasDesde(et.desde)
-  if (dias > 0) return { dias, texto: `${dias} ${dias === 1 ? 'día' : 'días'}` }
+  // "3 d" y no "3 días": es como ya se escribe en la columna Días, y estas
+  // dos columnas tienen que caber sin mandar la tabla a scroll horizontal.
+  if (dias > 0) return { dias, texto: `${dias} d` }
   const horas = Math.max(0, Math.round((fin - et.desde) / 3600000))
   if (horas >= 1) return { dias: 0, texto: `${horas} h` }
   return { dias: 0, texto: 'hoy' }

@@ -4,17 +4,20 @@ import {
   abrir, borrarEtapa, cambiarFecha, cerrar, reabrir,
 } from '../lib/procesos.js'
 
-// Fecha corta de la etapa, que al tocarla abre el calendario del navegador.
-// Por defecto queda la de hoy; esto es para corregirla cuando empezaron ayer
-// y lo vienen a marcar hoy.
-function FechaEtapa({ ts, min, max, titulo, onCambiar }) {
-  const picker = useRef(null)
+const dm = (ts) => {
   const d = new Date(Number(ts) || 0)
-  const texto = isNaN(d) ? '—'
+  return isNaN(d) ? '—'
     : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+// El tiempo de la etapa, que además es el botón para corregir la fecha: se
+// toca y abre el calendario del navegador. Va junto y no en dos controles
+// porque la columna tiene que caber sin empujar la tabla a lo ancho.
+function Tiempo({ texto, ts, min, max, titulo, clase, onCambiar }) {
+  const picker = useRef(null)
   return (
-    <span className="et-fecha">
-      <button type="button" className="et-fecha-btn" title={titulo}
+    <span className="et-t">
+      <button type="button" className={'et-t-btn' + (clase ? ' ' + clase : '')} title={titulo}
         onClick={() => { try { picker.current.showPicker() } catch { picker.current.focus() } }}>
         {texto}
       </button>
@@ -29,9 +32,9 @@ function FechaEtapa({ ts, min, max, titulo, onCambiar }) {
 // tres estados: sin empezar, andando con el contador corriendo, y cerrada con
 // el tiempo que tomó.
 //
-// Todo se hace desde la misma casilla y sin ventanas: un toque inicia, un
-// toque cierra la tapa, las fechas se corrigen tocándolas, y la ✕ borra la
-// etapa si se marcó por equivocación.
+// Se escribe cortito a propósito —el encabezado de la columna ya dice si es
+// doblando o cortando— para que las dos quepan sin mandar la tabla a scroll
+// horizontal. Lo que no cabe en el texto va en el tooltip.
 export default function EtapaProceso({ etapa, proc, usuario, onCambiar }) {
   const [preguntando, setPreguntando] = useState(false)
   const e = etapaProc(etapa)
@@ -44,50 +47,40 @@ export default function EtapaProceso({ etapa, proc, usuario, onCambiar }) {
   }
 
   function borrar() {
-    const qué = estaListo(et) ? `${e.listo.toLowerCase()}` : `${e.andando.toLowerCase()}`
-    if (!window.confirm(`¿Borrar el ${qué} de esta orden?`)) return
+    if (!window.confirm(`¿Borrar el ${e.label.toLowerCase()} de esta orden?`)) return
     onCambiar(borrarEtapa(proc, etapa))
   }
 
-  const botonBorrar = (
+  const equis = (
     <button type="button" className="et-x" title="Borrar: se marcó por equivocación"
       aria-label="Borrar" onClick={borrar}>✕</button>
   )
 
   if (estaListo(et)) {
     return (
-      <span className="et-listo">
-        <button type="button" className="et-listo-txt" title="Clic para volver a abrirla"
-          onClick={() => onCambiar(reabrir(proc, etapa))}>
-          ✓ {e.listo} <b>{dur.texto}</b>
-        </button>
-        {et.quien && <span className="et-quien">{et.quien}</span>}
-        <span className="cuando">
-          <FechaEtapa ts={et.desde} max={aIso(et.hasta)} titulo="Cambiar la fecha en que empezó"
-            onCambiar={(iso) => onCambiar(cambiarFecha(proc, etapa, 'desde', iso))} />
-          →
-          <FechaEtapa ts={et.hasta} min={aIso(et.desde)} titulo="Cambiar la fecha en que terminó"
-            onCambiar={(iso) => onCambiar(cambiarFecha(proc, etapa, 'hasta', iso))} />
-        </span>
-        {botonBorrar}
+      <span className="et-listo" title={`${e.listo} · ${dm(et.desde)} → ${dm(et.hasta)}`}>
+        <Tiempo texto={`✓ ${dur.texto}`} ts={et.hasta} min={aIso(et.desde)} max={aIso(Date.now())}
+          titulo={`Terminó el ${dm(et.hasta)} · clic para corregir`}
+          onCambiar={(iso) => onCambiar(cambiarFecha(proc, etapa, 'hasta', iso))} />
+        <button type="button" className="et-mini" title="Volver a abrirla"
+          aria-label="Volver a abrir" onClick={() => onCambiar(reabrir(proc, etapa))}>↺</button>
+        {equis}
       </span>
     )
   }
 
   if (estaAndando(et)) {
     return (
-      <span className={'et-vivo ' + etapa}>
+      <span className={'et-vivo ' + etapa} title={`${e.andando} desde el ${dm(et.desde)}`}>
         <span className="punto" />
-        {e.andando}
-        {et.quien && <><span className="et-quien">{et.quien}</span></>}
-        <FechaEtapa ts={et.desde} max={aIso(Date.now())} titulo="Cambiar la fecha en que empezó"
+        {et.quien && <span className="et-quien">{et.quien}</span>}
+        <Tiempo texto={dur.texto} ts={et.desde} max={aIso(Date.now())}
+          clase={dur.dias > e.limite ? 'tarde' : ''}
+          titulo={`Empezó el ${dm(et.desde)} · clic para corregir`}
           onCambiar={(iso) => onCambiar(cambiarFecha(proc, etapa, 'desde', iso))} />
-        <span className={'et-dias' + (dur.dias > e.limite ? ' tarde' : '')}>{dur.texto}</span>
-        <button type="button" className="tapa" title="Terminó: se cierra y queda cuánto tardó"
-          onClick={() => onCambiar(cerrar(proc, etapa, usuario))}>
-          ✓ Terminó
-        </button>
-        {botonBorrar}
+        <button type="button" className="et-mini ok" title="Terminó: se cierra y queda cuánto tardó"
+          aria-label="Terminó" onClick={() => onCambiar(cerrar(proc, etapa, usuario))}>✓</button>
+        {equis}
       </span>
     )
   }
@@ -105,9 +98,9 @@ export default function EtapaProceso({ etapa, proc, usuario, onCambiar }) {
   }
 
   return (
-    <button type="button" className="et-iniciar"
+    <button type="button" className="et-iniciar" title={e.iniciar}
       onClick={() => (e.pregunta ? setPreguntando(true) : iniciar(null))}>
-      ▸ {e.iniciar}
+      ▸ {e.corto}
     </button>
   )
 }

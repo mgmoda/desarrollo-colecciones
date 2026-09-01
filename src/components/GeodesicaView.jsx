@@ -22,7 +22,7 @@ function diasHasta(fechaStr) {
 // Vista dedicada a Geodésica: agrupa las órdenes por referencia, muestra
 // la etapa actual, permite editar precio, marcar como despachada y
 // exportar a PDF las seleccionadas.
-export default function GeodesicaView({ refs, orders, refMap, preordenes, onGuardarPreorden, onBorrarPreorden, onViewImage, onOpenRef, onSetField, onSetFields }) {
+export default function GeodesicaView({ refs, orders, refMap, preordenes, disenosStamp, onGuardarPreorden, onBorrarPreorden, onViewImage, onOpenRef, onSetField, onSetFields }) {
   const [q, setQ] = useState('')
   const [areaF, setAreaF] = useState('')
   // 'porProgramar' | 'pendientes' | 'despachadas' | 'todas'
@@ -173,6 +173,14 @@ export default function GeodesicaView({ refs, orders, refMap, preordenes, onGuar
     if (estado === 'disenos' && disenos.length === 0 && !disenosCargando) cargarDisenos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estado])
+
+  // Alguien tocó un diseño en otro computador: si esta pestaña los está
+  // mostrando, se vuelven a pedir. Sin esto había que recargar la página.
+  useEffect(() => {
+    if (!disenosStamp) return
+    if (estado === 'disenos' && disenos.length > 0 && !disenosCargando) cargarDisenos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disenosStamp])
 
   function toggleSel(id) {
     setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })

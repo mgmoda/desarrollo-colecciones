@@ -15,17 +15,28 @@ export async function dbLoadOrders() {
   return list
 }
 
-// Marca de "las órdenes cambiaron": la mueve un trigger cada vez que se
-// escribe dev_orders, venga de Factory o de una importación desde la app.
-// Son unos bytes, y evita bajar las 461 órdenes cuando no cambió nada.
-export async function dbLoadOrdersStamp() {
-  const { data, error } = await supabase
-    .from('dev_sync')
-    .select('updated_at')
-    .eq('id', 'orders')
-    .maybeSingle()
+// Marcas de cambio, una por tabla: las mueve un disparador cada vez que se
+// escribe. Son unos pocos bytes y evitan bajar 140 kB de programaciones o
+// 111 kB de telas cada 25 segundos a cada usuario para nada.
+export async function dbLoadStamps() {
+  const { data, error } = await supabase.from('dev_sync').select('id, updated_at')
   if (error) throw error
-  return data ? data.updated_at : null
+  const m = {}
+  ;(data || []).forEach((r) => { m[r.id] = r.updated_at })
+  return m
+}
+
+// Avisos en vivo. En vez de escuchar cada tabla —algunas pesan 23 MB— se
+// escucha la de marcas, que pesa nada: cuando una se mueve, el navegador va y
+// baja solo esa. Devuelve la función para desconectarse.
+export function dbEscucharCambios(alCambiar) {
+  const canal = supabase
+    .channel('dev_sync_cambios')
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'dev_sync' },
+      (msg) => alCambiar((msg.new && msg.new.id) || ''))
+    .subscribe()
+  return () => { supabase.removeChannel(canal) }
 }
 
 export async function dbLoadRefs() {

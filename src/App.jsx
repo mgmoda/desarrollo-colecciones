@@ -12,6 +12,7 @@ import ProgramacionesView from './components/ProgramacionesView.jsx'
 import FotosView from './components/FotosView.jsx'
 import FaltantesView from './components/FaltantesView.jsx'
 import SyncIndicator from './components/SyncIndicator.jsx'
+import NuevaVersion from './components/NuevaVersion.jsx'
 import ColeccionView from './components/ColeccionView.jsx'
 import AutorizacionesView from './components/AutorizacionesView.jsx'
 import ImportModal from './components/ImportModal.jsx'
@@ -26,7 +27,7 @@ import { supabase } from './lib/supabase.js'
 import {
   dbLoadOrders,
   dbLoadRefsMeta,
-  dbLoadOrdersStamp,
+  dbLoadStamps, dbEscucharCambios,
   dbLoadRefsByIds, dbLoadRefs, dbLoadSettings,
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings, dbLog,
   dbLoadFaltantes, dbUpsertFaltante, dbDeleteFaltante,
@@ -113,20 +114,24 @@ export default function App() {
   const refsMeta = useRef(new Map())
   const enVuelo = useRef(false)
   // Marca de las órdenes en el servidor: si no se movió, no hay qué bajar.
-  const ordersStamp = useRef(null)
+  // Marcas de cambio por tabla en la última vuelta: lo que no se movió no se
+  // vuelve a bajar.
+  const stamps = useRef({})
+  const [stampDisenos, setStampDisenos] = useState(null)
 
   useEffect(() => {
     if (!userId) { setLoaded(false); return }
     let cancelled = false
     Promise.all([
       dbLoadOrders(), dbLoadRefs(), dbLoadSettings(), dbLoadFaltantes(), dbLoadRefsMeta(),
-      dbLoadOrdersStamp(), dbLoadPreordenes(), dbLoadProgramaciones(), dbLoadTelas(),
+      dbLoadStamps(), dbLoadPreordenes(), dbLoadProgramaciones(), dbLoadTelas(),
       dbLoadProcesos(),
     ])
-      .then(([o, r, s, fl, meta, stamp, po, pr, tf, pc]) => {
+      .then(([o, r, s, fl, meta, marcas, po, pr, tf, pc]) => {
         if (cancelled) return
         refsMeta.current = new Map(meta.map((m) => [m.id, m.updated_at]))
-        ordersStamp.current = stamp
+        stamps.current = marcas
+        setStampDisenos(marcas.disenos)
         setFaltantes(fl)
         setPreordenes(po)
         setProgramaciones(pr)
@@ -182,54 +187,41 @@ export default function App() {
   // dentro de la ficha— y con eso la sincronización no alcanzaba a cerrar.
   async function syncFromServer() {
     if (!userId) return
-    if (formOpen || importOpen) return
     if (enVuelo.current) return
     enVuelo.current = true
     setSyncing(true)
     try {
-      const [fl, meta, stamp, po, pc] = await Promise.all([
-        dbLoadFaltantes(), dbLoadRefsMeta(), dbLoadOrdersStamp(), dbLoadPreordenes(),
-        dbLoadProcesos(),
-      ])
-      setFaltantes(fl)
-      setPreordenes(po)
-      setProcesos(pc)
+      // Primero las marcas —unos bytes— para saber qué se movió, y después
+      // solo eso. Sin esto habría que bajar 140 kB de programaciones y 111 kB
+      // de telas cada vuelta aunque nadie las hubiera tocado.
+      const marcas = await dbLoadStamps()
+      const cambio = (k) => marcas[k] !== stamps.current[k]
 
-      // Las órdenes solo se bajan si la marca se movió. Si no hay marca (algo
-      // raro pasó), se bajan igual: más vale gastar datos que quedar viejo.
-      if (!stamp || stamp !== ordersStamp.current) {
-        const o = await dbLoadOrders()
-        setOrders(o)
-        ordersStamp.current = stamp
+      // La pausa mientras se edita es SOLO de lo que se está editando: si
+      // alguien deja una ficha abierta, el resto del sistema debe seguir
+      // llegándole. Antes se frenaba todo y la pantalla quedaba vieja sin
+      // ninguna señal.
+      const pedidos = []
+      if (cambio('faltantes')) pedidos.push(dbLoadFaltantes().then(setFaltantes))
+      if (cambio('preordenes')) pedidos.push(dbLoadPreordenes().then(setPreordenes))
+      if (cambio('procesos')) pedidos.push(dbLoadProcesos().then(setProcesos))
+      if (cambio('programaciones')) pedidos.push(dbLoadProgramaciones().then(setProgramaciones))
+      if (cambio('telas')) pedidos.push(dbLoadTelas().then(setTelasFicha))
+      // Los diseños los carga Geodésica en su pestaña: aquí solo se le pasa
+      // la marca para que sepa cuándo volver a pedirlos.
+      if (cambio('disenos')) setStampDisenos(marcas.disenos)
+      if (cambio('settings') && !formOpen) {
+        pedidos.push(dbLoadSettings().then((s) => s && setSettings((a) => ({ ...a, ...s }))))
       }
+      if (!importOpen && (cambio('orders') || !marcas.orders)) {
+        pedidos.push(dbLoadOrders().then(setOrders))
+      }
+      await Promise.all(pedidos)
 
-      const previo = refsMeta.current
-      const ahora = new Map(meta.map((m) => [m.id, m.updated_at]))
-      const cambiadas = meta.filter((m) => previo.get(m.id) !== m.updated_at).map((m) => m.id)
-      const bajadas = await dbLoadRefsByIds(cambiadas)
-      refsMeta.current = ahora
-
-      setRefs((local) => {
-        const limpiar = (rr) => {
-          const { _stub: _ignore, ...clean } = rr
-          if (clean.marca === 'Maricet') clean.marca = 'Mariset'
-          return clean
-        }
-        const nuevas = new Map(bajadas.map((rr) => [rr.id, limpiar(rr)]))
-        const out = []
-        local.forEach((rr) => {
-          // Borrada en otro computador: estaba en el servidor y ya no está.
-          if (!ahora.has(rr.id) && previo.has(rr.id)) return
-          const rem = nuevas.get(rr.id)
-          nuevas.delete(rr.id)
-          // Si lo local es más nuevo hay un guardado en vuelo: manda lo local.
-          if (rem && (rr.updatedAt || 0) <= (rem.updatedAt || 0)) { out.push(rem); return }
-          out.push(rr)
-        })
-        // Fichas creadas en otro computador.
-        nuevas.forEach((rr) => out.push(rr))
-        return out
-      })
+      // Las fichas van por su cuenta: pesan 23 MB entre todas, así que se
+      // pregunta cuáles cambiaron y se bajan solo esas. Con la ficha abierta
+      // no se tocan, para no pisar lo que se está escribiendo.
+      if (!formOpen && (cambio('refs') || !marcas.refs)) await syncRefs()
       setLastSync(Date.now())
     } catch (e) {
       console.error('Sincronizar:', e)
@@ -239,7 +231,52 @@ export default function App() {
     }
   }
 
-  // Timer del polling cada 25s.
+  // Las fichas pesan ~23 MB entre todas por las fotos, así que no se bajan
+  // enteras: se pide la huella (id + updated_at) y solo se traen las que
+  // cambiaron.
+  async function syncRefs() {
+    const meta = await dbLoadRefsMeta()
+    const previo = refsMeta.current
+    const ahora = new Map(meta.map((m) => [m.id, m.updated_at]))
+    const cambiadas = meta.filter((m) => previo.get(m.id) !== m.updated_at).map((m) => m.id)
+    const bajadas = await dbLoadRefsByIds(cambiadas)
+    refsMeta.current = ahora
+
+    setRefs((local) => {
+      const limpiar = (rr) => {
+        const { _stub: _ignore, ...clean } = rr
+        if (clean.marca === 'Maricet') clean.marca = 'Mariset'
+        return clean
+      }
+      const nuevas = new Map(bajadas.map((rr) => [rr.id, limpiar(rr)]))
+      const out = []
+      local.forEach((rr) => {
+        // Borrada en otro computador: estaba en el servidor y ya no está.
+        if (!ahora.has(rr.id) && previo.has(rr.id)) return
+        const rem = nuevas.get(rr.id)
+        nuevas.delete(rr.id)
+        // Si lo local es más nuevo hay un guardado en vuelo: manda lo local.
+        if (rem && (rr.updatedAt || 0) <= (rem.updatedAt || 0)) { out.push(rem); return }
+        out.push(rr)
+      })
+      // Fichas creadas en otro computador.
+      nuevas.forEach((rr) => out.push(rr))
+      return out
+    })
+  }
+
+  // Aviso en vivo: el servidor avisa apenas algo cambia y el dato aparece en
+  // segundos, sin que nadie recargue. Es lo que hace que cargar un archivo se
+  // vea de una en las demás pantallas.
+  useEffect(() => {
+    if (!userId || !loaded) return
+    return dbEscucharCambios(() => { syncFromServer() })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, loaded])
+
+  // Y el reloj de 25 s se queda de red de seguridad: si el aviso en vivo se
+  // cae —wifi, suspensión, un proxy que corta el websocket— nadie se entera,
+  // y sin esto la pantalla quedaría vieja en silencio.
   useEffect(() => {
     if (!userId || !loaded) return
     const id = setInterval(() => { syncFromServer() }, 25000)
@@ -829,6 +866,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <NuevaVersion ocupado={formOpen || importOpen} />
       <header className="topbar">
         <div className="brand">
           <div className="brand-mark">MG</div>
@@ -931,7 +969,8 @@ export default function App() {
         )}
         {tab === 'geodesica' && (
           <GeodesicaView refs={refIndex} orders={orders} refMap={refMap}
-            preordenes={preordenes} onGuardarPreorden={guardarPreorden} onBorrarPreorden={borrarPreorden}
+            preordenes={preordenes} disenosStamp={stampDisenos}
+            onGuardarPreorden={guardarPreorden} onBorrarPreorden={borrarPreorden}
             onViewImage={setLightbox} onOpenRef={openEdit}
             onSetField={handleSetField} onSetFields={handleSetFields} />
         )}

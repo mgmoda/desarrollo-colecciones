@@ -308,6 +308,11 @@ export default function App() {
   // Diego y Ninfa. Ninfa no se vuelve admin por esto —no edita fichas, no
   // importa, no toca los filtros de fase—, solo gana esta pestaña.
   const veProgramaciones = ['ninfa@mgmoda.local', ...ADMINS].includes(emailSesion)
+  // La mesa de corte la maneja Mónica: solo ella y Diego marcan doblado y
+  // corte o mandan tela afuera. Los demás la ven y sacan sus PDF, pero no
+  // tocan nada —el tiempo que se mide ahí depende de que lo marque quien
+  // realmente lo está haciendo.
+  const puedeCorte = ['monica@mgmoda.local', ...ADMINS].includes(emailSesion)
   const tabsVisibles = useMemo(
     () => (esAdmin ? TABS : TABS.filter((t) =>
       TABS_OPERACION.includes(t.key)
@@ -900,7 +905,8 @@ export default function App() {
             faltantesPorRef={faltantesPorRef} onIrAFaltantes={() => setTab('faltantes')}
             fasesOcultas={fasesOcultas} onToggleFase={toggleFase} puedeFiltrar={esAdmin}
             topLinks={topLinks} onVincularTop={vincularTop} conjuntoLinks={conjuntoLinks}
-            procesos={procesos} usuario={emailSesion} onGuardarProceso={guardarProceso}
+            procesos={procesos} usuario={emailSesion}
+            onGuardarProceso={puedeCorte ? guardarProceso : undefined}
             onViewImage={setLightbox} onOpenRef={openEdit} onSetFields={handleSetFields} />
         )}
         {tab === 'ensamble' && (

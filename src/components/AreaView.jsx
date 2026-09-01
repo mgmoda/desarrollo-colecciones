@@ -135,7 +135,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   // doblen la tela y lo que ya está doblado esperando la tijera.
   // Doblado y corte medidos por el sistema: solo en la mesa de corte, que es
   // donde están las órdenes esperando que alguien las doble y las corte.
-  const showProcesos = areaKey === 'corte' && !!onGuardarProceso
+  // Todos los ven; marcarlos es de quien maneja la mesa.
+  const showProcesos = areaKey === 'corte'
+  const puedeProcesos = !!onGuardarProceso
   const limiteDias = limiteDiasArea(areaKey)
   const pendienteLabel = area.next ? STAGE_LABEL[area.next] : 'Recibido'
 
@@ -261,7 +263,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
             </div>
           )}
           <FaseToggles ocultas={ocultas} onToggle={onToggleFase} puedeCambiar={puedeFiltrar} />
-          {selected.size > 0 && showProcesos && donde !== 'diego' && (
+          {selected.size > 0 && showProcesos && puedeProcesos && donde !== 'diego' && (
             <button className="btn btn-ext"
               onClick={() => setEnviando(rows.filter((o) => selected.has(o.id)))}>
               Enviar donde {EXTERNO} ({selected.size})
@@ -437,13 +439,15 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                     {showProcesos && (
                       <td className="cel-proc" onClick={(ev) => ev.stopPropagation()}>
                         <EtapaProceso etapa="doblado" proc={procesos[o.orden]}
-                          usuario={usuario} onCambiar={(p) => onGuardarProceso(o.orden, p)} />
+                          usuario={usuario} puedeEditar={puedeProcesos}
+                          onCambiar={(p) => onGuardarProceso(o.orden, p)} />
                       </td>
                     )}
                     {showProcesos && (
                       <td className="cel-proc" onClick={(ev) => ev.stopPropagation()}>
                         <EtapaProceso etapa="corte" proc={procesos[o.orden]}
-                          usuario={usuario} onCambiar={(p) => onGuardarProceso(o.orden, p)} />
+                          usuario={usuario} puedeEditar={puedeProcesos}
+                          onCambiar={(p) => onGuardarProceso(o.orden, p)} />
                       </td>
                     )}
                     {showAtraso && (

@@ -6521,6 +6521,10 @@ tr.row-ext > td { background: #f7fbfd; }
 /* La hora de inicio y fin: chiquita, para que no le quite el sitio al dato
    principal —los días— pero se pueda leer sin pasar el mouse. */
 .et-celda { display: inline-flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+/* Sin permiso para marcar: se ve el estado, no hay nada que tocar. */
+.et-vivo.fijo, .et-listo.fijo { padding-right: 9px; cursor: default; }
+.et-vivo.fijo b, .et-listo.fijo b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.et-vivo.fijo b.tarde { color: #b23121; }
 .et-horas {
   font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums;
   white-space: nowrap; padding-left: 9px;

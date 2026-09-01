@@ -35,11 +35,39 @@ function Tiempo({ texto, ts, min, max, titulo, clase, onCambiar }) {
 // Se escribe cortito a propósito —el encabezado de la columna ya dice si es
 // doblando o cortando— para que las dos quepan sin mandar la tabla a scroll
 // horizontal. Lo que no cabe en el texto va en el tooltip.
-export default function EtapaProceso({ etapa, proc, usuario, onCambiar }) {
+export default function EtapaProceso({ etapa, proc, usuario, puedeEditar = true, onCambiar }) {
   const [preguntando, setPreguntando] = useState(false)
   const e = etapaProc(etapa)
   const et = (proc || {})[etapa]
   const dur = duracion(et)
+
+  // Quien no maneja la mesa lo ve, pero sin nada que tocar: el tiempo que se
+  // mide aquí solo sirve si lo marca quien de verdad está doblando o cortando.
+  if (!puedeEditar) {
+    if (estaListo(et)) {
+      return (
+        <span className="et-celda">
+          <span className="et-listo fijo" title={`${e.listo} · ${rangoTxt(et.desde, et.hasta)}`}>
+            ✓ <b>{dur.texto}</b>
+          </span>
+          <span className="et-horas">{rangoTxt(et.desde, et.hasta)}</span>
+        </span>
+      )
+    }
+    if (estaAndando(et)) {
+      return (
+        <span className="et-celda">
+          <span className={'et-vivo fijo ' + (et.externo ? 'externo' : etapa)}>
+            <span className="punto" />
+            {et.quien && <span className="et-quien">{et.quien}</span>}
+            <b className={dur.dias > e.limite ? 'tarde' : ''}>{dur.texto}</b>
+          </span>
+          <span className="et-horas">{desdeTxt(et.desde)}</span>
+        </span>
+      )
+    }
+    return <span className="muted">—</span>
+  }
 
   function iniciar(quien) {
     setPreguntando(false)

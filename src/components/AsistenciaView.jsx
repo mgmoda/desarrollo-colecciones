@@ -6,13 +6,20 @@ import { dbLoadAsistencia } from '../lib/db.js'
 import { periodRange, periodLabel, shiftPeriod } from '../lib/periods.js'
 import { isoLocal } from '../lib/dates.js'
 
-// Asistencia del huellero, solo MARISET-CASANIA.
+// Asistencia del huellero, solo MARISET-CASANIA. Sirve para dos cosas: ver
+// quién llega tarde y sacar la nómina. Por eso cada día trae entrada, salida,
+// tiempo en planta y minutos de tardanza, y cada persona sus totales.
 //
 // El lector no distingue entrada de salida —todo lo graba igual—, así que la
 // ENTRADA es la primera marcación del día y la salida la última, si está a
 // media hora o más. Dos marcaciones seguidas cuentan como una. Eso lo resuelve
-// el sync del servidor; aquí solo se muestra, por semana o por mes, y se
-// refresca solo cuando llega una marcación nueva.
+// el sync del servidor, que junta lo que el programa ya descargó con lo que
+// lee directo del lector cada 10 minutos.
+
+// El turno de producción tal como está en el huellero (turno "7am-4.45pm").
+// A la gente de MARISET-CASANIA la tienen en un horario vacío, así que el
+// ZKTeco no les calcula tardanza: se calcula aquí con este turno.
+const TURNO = { entrada: '07:00', salida: '16:45', tolerancia: 2, sabado: { entrada: '07:00', salida: '11:30' } }
 
 const MODOS = [{ key: 'semana', label: 'Semana' }, { key: 'mes', label: 'Mes' }]
 const DIAS = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
@@ -21,13 +28,31 @@ const aMin = (hhmm) => {
   const [h, m] = String(hhmm || '').split(':').map(Number)
   return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null
 }
-// Se redondea el total ANTES de partirlo en horas y minutos: redondeando el
-// resto salían horas como "06:60".
+// Se redondea el total ANTES de partirlo: redondeando el resto salían "06:60".
 const deMin = (min) => {
   const t = Math.round(min)
   return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`
 }
+const horasTxt = (min) => {
+  if (min == null) return '—'
+  const t = Math.round(min)
+  return `${Math.floor(t / 60)}h ${String(t % 60).padStart(2, '0')}m`
+}
 const dm = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
+const diaSemana = (iso) => (new Date(iso + 'T12:00:00').getDay() + 6) % 7
+const num = (n) => Math.round(n).toLocaleString('es-CO')
+
+// Lo que se deriva de un día: minutos en planta y minutos de tardanza contra
+// el turno. El domingo no hay turno, así que no hay tardanza.
+function calcularDia(f) {
+  const e = aMin(f.entrada)
+  const s = aMin(f.salida)
+  const ds = diaSemana(f.fecha)
+  const turnoEntrada = ds === 5 ? TURNO.sabado.entrada : TURNO.entrada
+  const limite = aMin(turnoEntrada) + TURNO.tolerancia
+  const tarde = ds === 6 || e == null || e <= limite ? 0 : e - aMin(turnoEntrada)
+  return { ...f, min: e, horas: e != null && s != null && s > e ? s - e : null, tarde }
+}
 
 // `cargar` solo se reemplaza en pruebas; en la app es la base de siempre.
 export default function AsistenciaView({ stamp, cargar = dbLoadAsistencia }) {
@@ -52,13 +77,13 @@ export default function AsistenciaView({ stamp, cargar = dbLoadAsistencia }) {
     let vivo = true
     setCargando(true)
     cargar(desde, hasta)
-      .then((l) => { if (vivo) setFilas(l) })
+      .then((l) => { if (vivo) setFilas(l.map(calcularDia)) })
       .catch((e) => { console.error('Asistencia:', e); if (vivo) setFilas([]) })
       .finally(() => { if (vivo) setCargando(false) })
     return () => { vivo = false }
   }, [desde, hasta, stamp])
 
-  // Una fila por persona con sus días del período.
+  // Una fila por persona con sus días y sus totales del período.
   const personas = useMemo(() => {
     const m = new Map()
     filas.forEach((f) => {
@@ -69,13 +94,16 @@ export default function AsistenciaView({ stamp, cargar = dbLoadAsistencia }) {
     const term = q.trim().toLowerCase()
     let list = [...m.values()].map((p) => {
       const ds = [...p.dias.values()]
-      const mins = ds.map((d) => aMin(d.entrada)).filter((v) => v != null)
+      const mins = ds.map((d) => d.min).filter((v) => v != null)
+      const conHoras = ds.filter((d) => d.horas != null)
       return {
         ...p,
         n: ds.length,
+        horas: conHoras.reduce((a, d) => a + d.horas, 0),
+        diasConHoras: conHoras.length,
         promedio: mins.length ? mins.reduce((a, b) => a + b, 0) / mins.length : null,
-        temprana: mins.length ? Math.min(...mins) : null,
-        tarde: mins.length ? Math.max(...mins) : null,
+        tardes: ds.filter((d) => d.tarde > 0).length,
+        minTarde: ds.reduce((a, d) => a + d.tarde, 0),
         sinSalida: ds.filter((d) => !d.salida).length,
       }
     })
@@ -83,9 +111,9 @@ export default function AsistenciaView({ stamp, cargar = dbLoadAsistencia }) {
     const acc = {
       nombre: (p) => p.nombre,
       n: (p) => p.n,
+      horas: (p) => p.horas,
       promedio: (p) => p.promedio,
-      temprana: (p) => p.temprana,
-      tarde: (p) => p.tarde,
+      tardes: (p) => p.tardes,
       sinSalida: (p) => p.sinSalida,
     }
     return sortRows(list, acc[sortKey], sortDir)
@@ -102,26 +130,28 @@ export default function AsistenciaView({ stamp, cargar = dbLoadAsistencia }) {
 
   const tot = useMemo(() => {
     const deHoy = filas.filter((f) => f.fecha === hoy)
-    const minsHoy = deHoy.map((f) => aMin(f.entrada)).filter((v) => v != null)
-    const todos = filas.map((f) => aMin(f.entrada)).filter((v) => v != null)
+    const conHoras = filas.filter((f) => f.horas != null)
     return {
-      personas: personas.length,
-      dias: filas.length,
-      promedio: todos.length ? todos.reduce((a, b) => a + b, 0) / todos.length : null,
-      hoy: deHoy.length,
-      hoyPrimera: minsHoy.length ? Math.min(...minsHoy) : null,
-      hoyUltima: minsHoy.length ? Math.max(...minsHoy) : null,
       incluyeHoy: hoy >= desde && hoy <= hasta,
+      hoy: deHoy.length,
+      hoyTarde: deHoy.filter((f) => f.tarde > 0).length,
+      horas: conHoras.reduce((a, f) => a + f.horas, 0),
+      tardes: filas.filter((f) => f.tarde > 0).length,
       sinSalida: filas.filter((f) => !f.salida).length,
+      personas: personas.length,
     }
   }, [filas, personas, hoy, desde, hasta])
 
   function bajarCsv() {
     const linea = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`
-    const cab = ['Fecha', 'Nombre', 'Carne', 'Entrada', 'Salida', 'Marcaciones']
+    const cab = ['Fecha', 'Dia', 'Nombre', 'Carne', 'Entrada', 'Salida', 'Horas en planta', 'Minutos tarde', 'Marcaciones']
     const cuerpo = [...filas]
-      .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.nombre.localeCompare(b.nombre))
-      .map((f) => [f.fecha, f.nombre, f.badge, f.entrada, f.salida || '', (f.marcas || []).join(' ')].map(linea).join(';'))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre) || a.fecha.localeCompare(b.fecha))
+      .map((f) => [
+        f.fecha, DIAS[diaSemana(f.fecha)], f.nombre, f.badge, f.entrada, f.salida || '',
+        f.horas == null ? '' : (f.horas / 60).toFixed(2).replace('.', ','),
+        f.tarde || 0, (f.marcas || []).join(' '),
+      ].map(linea).join(';'))
     const csv = '﻿' + [cab.map(linea).join(';'), ...cuerpo].join('\r\n')
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
     const a = document.createElement('a')
@@ -133,6 +163,37 @@ export default function AsistenciaView({ stamp, cargar = dbLoadAsistencia }) {
 
   const thProps = { sortKey, sortDir, onSort: toggle }
   const hora = (min) => (min == null ? '—' : deMin(min))
+  const actualizado = stamp ? new Date(stamp) : null
+
+  const Entrada = ({ d }) => (
+    <span className={'asis-ent' + (d.tarde > 0 ? ' tarde' : '')}
+      title={d.tarde > 0 ? `Llegó ${d.tarde} min después de las ${TURNO.entrada}` : `Turno ${TURNO.entrada}`}>
+      {d.entrada}{d.tarde > 0 && <small>+{d.tarde}</small>}
+    </span>
+  )
+
+  const Detalle = ({ dias }) => (
+    <table className="data-table">
+      <thead>
+        <tr>
+          <th>Fecha</th><th className="num">Entrada</th><th className="num">Salida</th>
+          <th className="num">En planta</th><th className="num">Tarde</th><th>Marcaciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {dias.map((d) => (
+          <tr key={d.fecha}>
+            <td>{DIAS[diaSemana(d.fecha)]} {dm(d.fecha)}</td>
+            <td className="num"><Entrada d={d} /></td>
+            <td className="num">{d.salida || <span className="muted">—</span>}</td>
+            <td className="num strong">{horasTxt(d.horas)}</td>
+            <td className={'num' + (d.tarde ? ' prog-falta strong' : ' muted')}>{d.tarde ? `${d.tarde} min` : '—'}</td>
+            <td className="muted">{(d.marcas || []).join(' · ')}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
 
   return (
     <div className="view">
@@ -140,7 +201,10 @@ export default function AsistenciaView({ stamp, cargar = dbLoadAsistencia }) {
         <div>
           <h1 className="view-title">Asistencia</h1>
           <p className="view-sub">
-            MARISET-CASANIA · la entrada es la primera marcación del día · {periodLabel(modo, rango)}
+            MARISET-CASANIA · turno {TURNO.entrada}–{TURNO.salida}, tolerancia {TURNO.tolerancia} min
+            {actualizado && !isNaN(actualizado) && (
+              <> · lector leído a las {String(actualizado.getHours()).padStart(2, '0')}:{String(actualizado.getMinutes()).padStart(2, '0')}</>
+            )}
           </p>
         </div>
         <div className="view-actions">
@@ -164,18 +228,21 @@ export default function AsistenciaView({ stamp, cargar = dbLoadAsistencia }) {
 
       <div className="prog-kpis">
         {tot.incluyeHoy ? (
-          <div className="prog-kpi">
-            <span>Hoy llegaron</span><b>{tot.hoy}</b>
-            <em>{tot.hoy ? `primera ${hora(tot.hoyPrimera)} · última ${hora(tot.hoyUltima)}` : 'todavía nadie ha marcado'}</em>
+          <div className={'prog-kpi' + (tot.hoyTarde ? ' alerta' : '')}>
+            <span>Hoy</span><b>{tot.hoy}</b>
+            <em>{tot.hoy ? `${tot.hoy === 1 ? 'llegó' : 'llegaron'} · ${tot.hoyTarde} tarde` : 'todavía nadie ha marcado'}</em>
           </div>
         ) : (
-          <div className="prog-kpi"><span>Persona-días</span><b>{tot.dias}</b><em>en el período</em></div>
+          <div className="prog-kpi"><span>Personas</span><b>{tot.personas}</b><em>marcaron en el período</em></div>
         )}
-        <div className="prog-kpi"><span>Personas</span><b>{tot.personas}</b><em>que marcaron en el período</em></div>
-        <div className="prog-kpi"><span>Entrada promedio</span><b>{hora(tot.promedio)}</b><em>de todas las marcaciones</em></div>
-        <div className={'prog-kpi' + (tot.sinSalida ? ' alerta' : '')}>
+        <div className="prog-kpi"><span>Horas en planta</span><b>{horasTxt(tot.horas)}</b><em>suma del período</em></div>
+        <div className={'prog-kpi' + (tot.tardes ? ' alerta' : '')}>
+          <span>Llegadas tarde</span><b>{tot.tardes}</b>
+          <em>después de las {deMin(aMin(TURNO.entrada) + TURNO.tolerancia)}</em>
+        </div>
+        <div className="prog-kpi">
           <span>Sin salida</span><b>{tot.sinSalida}</b>
-          <em>{tot.sinSalida ? 'marcaron una sola vez ese día' : 'todos marcaron entrada y salida'}</em>
+          <em>{tot.sinSalida ? 'marcaron una sola vez ese día' : 'todos con entrada y salida'}</em>
         </div>
       </div>
 
@@ -197,7 +264,8 @@ export default function AsistenciaView({ stamp, cargar = dbLoadAsistencia }) {
                     {c.nombre} <b>{c.num}</b>
                   </th>
                 ))}
-                <SortTh label="Días" col="n" className="num" {...thProps} />
+                <SortTh label="Horas" col="horas" className="num" {...thProps} />
+                <SortTh label="Tarde" col="tardes" className="num" {...thProps} />
               </tr>
             </thead>
             <tbody>
@@ -211,14 +279,16 @@ export default function AsistenciaView({ stamp, cargar = dbLoadAsistencia }) {
                         title={d ? `${d.n} ${d.n === 1 ? 'marcación' : 'marcaciones'}: ${(d.marcas || []).join(', ')}` : ''}>
                         {d ? (
                           <>
-                            <b className="asis-ent">{d.entrada}</b>
+                            <Entrada d={d} />
                             <span className="asis-sal">{d.salida || '·'}</span>
+                            <span className="asis-h">{d.horas != null ? horasTxt(d.horas) : ''}</span>
                           </>
                         ) : <span className="muted">—</span>}
                       </td>
                     )
                   })}
-                  <td className="num">{p.n}</td>
+                  <td className="num strong">{horasTxt(p.horas)}</td>
+                  <td className={'num' + (p.tardes ? ' prog-falta strong' : ' muted')}>{p.tardes || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -232,9 +302,9 @@ export default function AsistenciaView({ stamp, cargar = dbLoadAsistencia }) {
                 <th></th>
                 <SortTh label="Persona" col="nombre" {...thProps} />
                 <SortTh label="Días" col="n" className="num" {...thProps} />
+                <SortTh label="Horas en planta" col="horas" className="num" {...thProps} />
                 <SortTh label="Entrada promedio" col="promedio" className="num" {...thProps} />
-                <SortTh label="Más temprano" col="temprana" className="num" {...thProps} />
-                <SortTh label="Más tarde" col="tarde" className="num" {...thProps} />
+                <SortTh label="Llegadas tarde" col="tardes" className="num" {...thProps} />
                 <SortTh label="Sin salida" col="sinSalida" className="num" {...thProps} />
               </tr>
             </thead>
@@ -250,31 +320,17 @@ export default function AsistenciaView({ stamp, cargar = dbLoadAsistencia }) {
                       <td className="tela-flecha">{on ? '▾' : '▸'}</td>
                       <td className="strong">{p.nombre}<span className="asis-carne">{p.badge}</span></td>
                       <td className="num">{p.n}</td>
-                      <td className="num strong">{hora(p.promedio)}</td>
-                      <td className="num">{hora(p.temprana)}</td>
-                      <td className="num">{hora(p.tarde)}</td>
-                      <td className={'num' + (p.sinSalida ? ' muted' : '')}>{p.sinSalida || '—'}</td>
+                      <td className="num strong" title={p.diasConHoras < p.n ? `Sobre ${p.diasConHoras} días con salida` : ''}>
+                        {horasTxt(p.horas)}
+                      </td>
+                      <td className="num">{hora(p.promedio)}</td>
+                      <td className={'num' + (p.tardes ? ' prog-falta strong' : ' muted')}>
+                        {p.tardes ? `${p.tardes} (${p.minTarde} min)` : '—'}
+                      </td>
+                      <td className={'num' + (p.sinSalida ? '' : ' muted')}>{p.sinSalida || '—'}</td>
                     </tr>
                     {on && (
-                      <tr className="tela-detalle">
-                        <td colSpan={7}>
-                          <table className="data-table">
-                            <thead>
-                              <tr><th>Fecha</th><th className="num">Entrada</th><th className="num">Salida</th><th>Marcaciones</th></tr>
-                            </thead>
-                            <tbody>
-                              {dias.map((d) => (
-                                <tr key={d.fecha}>
-                                  <td>{DIAS[(new Date(d.fecha + 'T12:00:00').getDay() + 6) % 7]} {dm(d.fecha)}</td>
-                                  <td className="num strong">{d.entrada}</td>
-                                  <td className="num">{d.salida || <span className="muted">—</span>}</td>
-                                  <td className="muted">{(d.marcas || []).join(' · ')}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </td>
-                      </tr>
+                      <tr className="tela-detalle"><td colSpan={7}><Detalle dias={dias} /></td></tr>
                     )}
                   </Fragment>
                 )

@@ -6416,8 +6416,12 @@ select.filtro-taller { flex: none; width: 215px; }
 .asis-tabla th.asis-dia b { font-weight: 700; color: var(--ink); margin-left: 3px; }
 .asis-tabla th.asis-dia.hoy, .asis-tabla td.asis-celda.hoy { background: #faf3e2; }
 .asis-celda { text-align: center; }
-.asis-ent { display: block; font-variant-numeric: tabular-nums; }
+.asis-ent { display: block; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Tarde: la entrada en rojo con los minutos de más al lado. */
+.asis-ent.tarde { color: #b23121; }
+.asis-ent small { font-size: 10px; font-weight: 700; margin-left: 3px; }
 .asis-sal { display: block; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.asis-h { display: block; font-size: 10px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .asis-carne { display: block; font-size: 10.5px; font-weight: 400; color: var(--muted); }
 
 /* Aviso de versión nueva: discreto, arriba de todo, con su botón. */

@@ -64,9 +64,12 @@ export const ETAPAS_PROC = [
 ]
 export const etapaProc = (key) => ETAPAS_PROC.find((e) => e.key === key) || ETAPAS_PROC[0]
 
-// Cuánto lleva (o cuánto tardó) una etapa, ya redondeado a días de calendario.
-// Un corte que empieza y termina el mismo día no son "0 días": son horas, y
-// decirlo así es más útil que un cero.
+// Cuánto lleva (o cuánto tardó) una etapa. Siempre es una DURACIÓN, nunca una
+// fecha: decir "hoy" era engañoso —una etapa abierta y cerrada ayer también
+// mostraba "hoy", porque lo que se medía era que duró menos de un día—.
+//
+// Los días son de calendario, como en el resto del sistema; por debajo de un
+// día se baja a horas y a minutos, que es lo que dura un corte.
 export function duracion(et) {
   if (!et || !et.desde) return null
   const fin = et.hasta || Date.now()
@@ -74,9 +77,30 @@ export function duracion(et) {
   // "3 d" y no "3 días": es como ya se escribe en la columna Días, y estas
   // dos columnas tienen que caber sin mandar la tabla a scroll horizontal.
   if (dias > 0) return { dias, texto: `${dias} d` }
-  const horas = Math.max(0, Math.round((fin - et.desde) / 3600000))
-  if (horas >= 1) return { dias: 0, texto: `${horas} h` }
-  return { dias: 0, texto: 'hoy' }
+  const minutos = Math.max(0, Math.round((fin - et.desde) / 60000))
+  if (minutos >= 60) return { dias: 0, texto: `${Math.round(minutos / 60)} h` }
+  if (minutos >= 1) return { dias: 0, texto: `${minutos} min` }
+  return { dias: 0, texto: 'recién' }
+}
+
+// Cuándo empezó, dicho como se dice hablando: la hora si fue hoy, "ayer" si
+// fue ayer, y la fecha si fue antes. Sin esto, un "desde las 16:04" no deja
+// saber de qué día se está hablando.
+export function desdeTxt(ts) {
+  const d = diasDesde(ts)
+  const hora = horaProc(ts)
+  if (d === 0) return `desde las ${hora}`
+  if (d === 1) return `desde ayer ${hora}`
+  return `desde el ${fechaHoraProc(ts)}`
+}
+
+// El rango de una etapa cerrada. Si empezó y terminó el mismo día la fecha no
+// se repite.
+export function rangoTxt(desde, hasta) {
+  const mismoDia = diasEntre(desde, hasta) === 0
+  return mismoDia
+    ? `${fechaHoraProc(desde)} → ${horaProc(hasta)}`
+    : `${fechaHoraProc(desde)} → ${fechaHoraProc(hasta)}`
 }
 
 export const estaAndando = (et) => !!(et && et.desde && !et.hasta)

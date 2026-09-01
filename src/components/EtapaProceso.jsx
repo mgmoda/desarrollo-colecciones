@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import {
-  aIso, duracion, estaAndando, estaListo, etapaProc, fechaHoraProc, horaProc,
-  abrir, borrarEtapa, cambiarFecha, cerrar, reabrir,
+  aIso, desdeTxt, duracion, estaAndando, estaListo, etapaProc, fechaHoraProc,
+  horaProc, rangoTxt, abrir, borrarEtapa, cambiarFecha, cerrar, reabrir,
 } from '../lib/procesos.js'
 
 const dm = (ts) => {
@@ -70,7 +70,7 @@ export default function EtapaProceso({ etapa, proc, usuario, onCambiar }) {
             aria-label="Volver a abrir" onClick={() => onCambiar(reabrir(proc, etapa))}>↺</button>
           {equis}
         </span>
-        <span className="et-horas">{horaProc(et.desde)} → {horaProc(et.hasta)}</span>
+        <span className="et-horas">{rangoTxt(et.desde, et.hasta)}</span>
       </span>
     )
   }
@@ -99,7 +99,7 @@ export default function EtapaProceso({ etapa, proc, usuario, onCambiar }) {
           onClick={() => onCambiar(cerrar(proc, etapa, usuario))}>✓</button>
         {equis}
       </span>
-      <span className="et-horas">desde las {horaProc(et.desde)}</span>
+      <span className="et-horas">{desdeTxt(et.desde)}</span>
       </span>
     )
   }

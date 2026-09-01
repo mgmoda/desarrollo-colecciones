@@ -9,6 +9,7 @@ import CostosView from './components/CostosView.jsx'
 import SeguimientoView from './components/SeguimientoView.jsx'
 import GeodesicaView from './components/GeodesicaView.jsx'
 import ProgramacionesView from './components/ProgramacionesView.jsx'
+import AsistenciaView from './components/AsistenciaView.jsx'
 import FotosView from './components/FotosView.jsx'
 import FaltantesView from './components/FaltantesView.jsx'
 import SyncIndicator from './components/SyncIndicator.jsx'
@@ -57,6 +58,7 @@ const TABS = [
   { key: 'costos', label: 'Costos' },
   { key: 'geodesica', label: 'Geodésica' },
   { key: 'programaciones', label: 'Programaciones' },
+  { key: 'asistencia', label: 'Asistencia' },
 ]
 const AREA_KEYS = ['trazos', 'corte', 'enviar', 'alistamiento', 'talleres', 'entrega']
 // Lo que ve quien no es admin: el recorrido de producción y los faltantes.
@@ -118,6 +120,7 @@ export default function App() {
   // vuelve a bajar.
   const stamps = useRef({})
   const [stampDisenos, setStampDisenos] = useState(null)
+  const [stampAsistencia, setStampAsistencia] = useState(null)
 
   useEffect(() => {
     if (!userId) { setLoaded(false); return }
@@ -132,6 +135,7 @@ export default function App() {
         refsMeta.current = new Map(meta.map((m) => [m.id, m.updated_at]))
         stamps.current = marcas
         setStampDisenos(marcas.disenos)
+        setStampAsistencia(marcas.asistencia)
         setFaltantes(fl)
         setPreordenes(po)
         setProgramaciones(pr)
@@ -210,6 +214,8 @@ export default function App() {
       // Los diseños los carga Geodésica en su pestaña: aquí solo se le pasa
       // la marca para que sepa cuándo volver a pedirlos.
       if (cambio('disenos')) setStampDisenos(marcas.disenos)
+      // La asistencia la pide su pestaña por período; aquí solo se le avisa.
+      if (cambio('asistencia')) setStampAsistencia(marcas.asistencia)
       if (cambio('settings') && !formOpen) {
         pedidos.push(dbLoadSettings().then((s) => s && setSettings((a) => ({ ...a, ...s }))))
       }
@@ -350,11 +356,15 @@ export default function App() {
   // tocan nada —el tiempo que se mide ahí depende de que lo marque quien
   // realmente lo está haciendo.
   const puedeCorte = ['monica@mgmoda.local', ...ADMINS].includes(emailSesion)
+  // La asistencia del huellero son datos personales de los empleados: la ven
+  // solo Diego y Ninfa.
+  const veAsistencia = ['ninfa@mgmoda.local', ...ADMINS].includes(emailSesion)
   const tabsVisibles = useMemo(
     () => (esAdmin ? TABS : TABS.filter((t) =>
       TABS_OPERACION.includes(t.key)
-      || (t.key === 'programaciones' && veProgramaciones))),
-    [esAdmin, veProgramaciones],
+      || (t.key === 'programaciones' && veProgramaciones)
+      || (t.key === 'asistencia' && veAsistencia))),
+    [esAdmin, veProgramaciones, veAsistencia],
   )
 
   // Si quedó guardada una pestaña que este usuario no puede ver, se lo lleva a
@@ -981,6 +991,9 @@ export default function App() {
             onGuardar={guardarProgramacion} onGuardarVarias={guardarProgramaciones}
             onBorrar={borrarProgramacion}
             onViewImage={setLightbox} onOpenRef={openEdit} />
+        )}
+        {tab === 'asistencia' && veAsistencia && (
+          <AsistenciaView stamp={stampAsistencia} />
         )}
       </main>
 

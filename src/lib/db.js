@@ -263,6 +263,19 @@ export async function dbUpsertProceso(orden, proc) {
   if (error) throw error
 }
 
+// Asistencia del huellero (solo MARISET-CASANIA): una fila por persona y día,
+// la sube el sync del servidor con la entrada (primera marcación) y la salida.
+// Se pide por rango de fechas: la pestaña muestra dos meses y navega por
+// semana o por mes, así que no hay que bajar todo cada vez.
+export async function dbLoadAsistencia(desde, hasta) {
+  let q = supabase.from('dev_asistencia').select('data').order('fecha')
+  if (desde) q = q.gte('fecha', desde)
+  if (hasta) q = q.lte('fecha', hasta)
+  const { data, error } = await q
+  if (error) throw error
+  return (data || []).map((r) => r.data)
+}
+
 // Telas por referencia, desde la ficha técnica de Factory: las sube el sync
 // del servidor a dev_telas (tela, grupo y promedio de consumo por prenda, sin
 // entretela). Cambian poco, así que se cargan una vez al entrar.

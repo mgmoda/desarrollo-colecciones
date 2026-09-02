@@ -23,6 +23,11 @@ export const estaFuera = (proc) => {
   return !!(c && c.desde && !c.hasta && c.externo)
 }
 
+// Una orden se cortó afuera si su corte fue tercerizado, esté abierto o ya
+// cerrado: cuando Factory registra la entrega de corte, esa prenda la cortó
+// Diego y no la mesa de MG, y así hay que contarla.
+export const corteExterno = (proc) => !!(proc && proc.corte && proc.corte.externo)
+
 // Manda la orden donde Diego: el corte arranca ahí mismo, porque desde que
 // sale la tela ya está en sus manos. `iso` permite registrar una salida de
 // ayer; sin él queda la de hoy.

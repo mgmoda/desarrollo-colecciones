@@ -1,5 +1,6 @@
 import { normRef } from './constants.js'
 import { diasDesde, diasEntre } from './dates.js'
+import { corteExterno } from './procesos.js'
 
 export function stageDone(order, key) {
   const s = order.stages && order.stages[key]
@@ -796,7 +797,13 @@ export const MODULOS_FLUJO = [
 
 // Unidades cerradas en cada módulo, semana por semana, con el desglose por
 // marca de cada celda.
-export function unidadesPorSemana(orders, refMap, semanas) {
+//
+// En Corte la cifra se parte en dos: lo que cortó la mesa de MG y lo que se
+// cortó afuera, donde Diego. Factory no distingue —para él todo es entrega de
+// corte—; lo sabe el sistema por el movimiento de "Enviar donde Diego" que
+// queda en `procesos`. La celda lleva el total en `unidades` y aparte
+// `externo`, para mostrarlo al lado sin abrir otra columna.
+export function unidadesPorSemana(orders, refMap, semanas, procesos) {
   return semanas.map((dias) => {
     const desde = dias[0]
     const hasta = dias[dias.length - 1]
@@ -806,7 +813,12 @@ export function unidadesPorSemana(orders, refMap, semanas) {
         const f = (o.stages && o.stages[m.etapa] && o.stages[m.etapa].fecha) || ''
         return f && f >= desde && f <= hasta
       })
-      modulos[m.key] = desglosePorMarca(dentro, refMap, m.etapa)
+      const celda = desglosePorMarca(dentro, refMap, m.etapa)
+      if (m.key === 'corte' && procesos) {
+        const afuera = dentro.filter((o) => corteExterno(procesos[o.orden]))
+        celda.externo = desglosePorMarca(afuera, refMap, m.etapa)
+      }
+      modulos[m.key] = celda
     })
     return { dias, desde, hasta, modulos }
   })

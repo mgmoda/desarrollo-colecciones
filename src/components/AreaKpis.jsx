@@ -114,7 +114,7 @@ function TarjetaCifra({ label, datos, modo }) {
   )
 }
 
-export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage, onOpenRef, izquierda, sinAcumulado }) {
+export default function AreaKpis({ areaKey, orders, enEtapa, refMap, procesos, onViewImage, onOpenRef, izquierda, sinAcumulado }) {
   // En Entrega ensamble no hay nada "pendiente": lo que entra ya está hecho,
   // así que la tarjeta de pendientes sería la misma del acumulado.
   const sinPendiente = areaKey === 'entrega'
@@ -208,7 +208,7 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, onViewImage
             })}
           </div>
 
-          <TablaSemanas orders={orders} refMap={refMap} destacado={areaKey} />
+          <TablaSemanas orders={orders} refMap={refMap} procesos={procesos} destacado={areaKey} />
         </div>
       </div>
 

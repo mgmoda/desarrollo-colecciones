@@ -5885,6 +5885,20 @@ select.filtro-taller { flex: none; width: 215px; }
 .sem-tabla tbody tr:last-child td.sem-col-on { border-bottom: 1px solid var(--hairline-strong); }
 .sem-tabla td.sem-col-on .sem-valor { font-weight: 600; color: var(--ink); }
 .sem-tabla td.sem-col-on .sem-barra { background: color-mix(in srgb, var(--hairline-strong) 55%, transparent); }
+/* Corte: "MG – Diego" en la misma celda; lo de afuera va en el azul de
+   "Donde Diego" para que se lea igual en toda la pestaña. */
+.sem-ext { color: #1c4f6e; font-weight: 600; }
+.sem-ext-leyenda {
+  display: block;
+  margin-top: 1px;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: inherit;
+  opacity: 0.85;
+}
+.sem-tabla thead th.sem-col-on .sem-ext { color: #9fd0ee; }
 
 /* ---------- Faltantes de corte ---------- */
 .tab-badge {

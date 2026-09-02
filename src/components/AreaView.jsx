@@ -323,7 +323,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         </div>
       ) : (
         <AreaKpis areaKey={areaKey} orders={visibles} enEtapa={enEtapa}
-          refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
+          refMap={refMap} procesos={procesos}
+          onViewImage={onViewImage} onOpenRef={onOpenRef} />
       )}
 
       {rows.length === 0 ? (

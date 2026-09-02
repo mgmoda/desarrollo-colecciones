@@ -17,7 +17,8 @@ import EtapaProceso from './EtapaProceso.jsx'
 import RendimientoCorte from './RendimientoCorte.jsx'
 import EnviarExternoModal from './EnviarExternoModal.jsx'
 import {
-  EXTERNO, duracion, enviarExterno, estaAndando, estaFuera, estaListo,
+  EXTERNO, alistandoDesde, desdeTxt, duracion, enviarExterno, estaAlistando, estaAndando,
+  estaFuera, estaListo,
 } from '../lib/procesos.js'
 
 const tallerDe = (o) => (o.stages && o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || ''
@@ -369,7 +370,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 return (
                   <tr key={o.id}
                     className={(selected.has(o.id) ? 'row-sel' : '') + ' row-click'
-                      + (showProcesos && estaFuera(procesos[o.orden]) ? ' row-ext' : '')}
+                      + (showProcesos && estaFuera(procesos[o.orden]) ? ' row-ext' : '')
+                      + (showProcesos && estaAlistando(procesos[o.orden]) ? ' row-al' : '')}
                     onClick={() => setCurvaDe(o)}
                     title="Ver la curva de tallas y colores de esta orden">
                     <td className="cell-check" onClick={(e) => e.stopPropagation()}>
@@ -475,7 +477,18 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                         )}
                       </td>
                     )}
-                    <td><span className="tag">{pendienteLabel}</span></td>
+                    {showProcesos && estaAlistando(procesos[o.orden]) ? (
+                      // Doblado y corte cerrados: ya está alistando. Se dice
+                      // cuánto lleva, que es lo que permite ver cuál se quedó.
+                      <td className="cel-al">
+                        <span className="tag tag-al" title="Doblado y corte terminados; esperando que Factory registre el alistamiento">
+                          Alistando · {duracion({ desde: alistandoDesde(procesos[o.orden]) }).texto}
+                        </span>
+                        <span className="cel-al-sub">{desdeTxt(alistandoDesde(procesos[o.orden]))}</span>
+                      </td>
+                    ) : (
+                      <td><span className="tag">{pendienteLabel}</span></td>
+                    )}
                   </tr>
                 )
               })}

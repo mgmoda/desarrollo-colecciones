@@ -111,6 +111,22 @@ export function rangoTxt(desde, hasta) {
 export const estaAndando = (et) => !!(et && et.desde && !et.hasta)
 export const estaListo = (et) => !!(et && et.desde && et.hasta)
 
+// Con el doblado y el corte cerrados la orden ya no espera tijera: está
+// alistándose, aunque siga en la mesa de corte hasta que Factory registre el
+// alistamiento. Si el corte fue afuera, el doblado también se hizo afuera y no
+// se marca aquí: basta con que el corte haya vuelto cerrado.
+export const estaAlistando = (proc) => {
+  const p = proc || {}
+  if (!estaListo(p.corte)) return false
+  return estaListo(p.doblado) || !!p.corte.externo
+}
+
+// Desde cuándo está alistando: cuando se cerró la última de las dos tapas.
+export const alistandoDesde = (proc) => {
+  const p = proc || {}
+  return Math.max((p.corte && p.corte.hasta) || 0, (p.doblado && p.doblado.hasta) || 0)
+}
+
 // Abre la etapa. `quien` solo lo usa el corte.
 export function abrir(proc, etapaKey, usuario, quien) {
   const et = { desde: Date.now(), usuario }

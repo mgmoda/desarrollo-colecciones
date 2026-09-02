@@ -6515,6 +6515,14 @@ select.filtro-taller { flex: none; width: 215px; }
   font-size: 10px; font-weight: 600;
 }
 tr.row-ext > td { background: #f7fbfd; }
+/* Doblado y corte cerrados: la orden está alistando. Toda la fila en verde
+   con franja a la izquierda, para verla desde lejos sin leer nada. */
+tr.row-al > td { background: #f3f9ea; }
+tr.row-al > td:first-child { box-shadow: inset 3px 0 0 #6aa838; }
+tr.row-al.row-sel > td { background: #e9f3da; }
+.tag-al { background: #eaf3de; color: #27500a; border-color: #c0dd97; font-weight: 600; }
+.cel-al { white-space: nowrap; }
+.cel-al-sub { display: block; margin-top: 3px; font-size: 10.5px; color: var(--muted); }
 .btn-ext { background: #1c4f6e; color: #fff; }
 .btn-ext:hover { background: #16405a; }
 .proc-f-btn.ext.on { background: #1c4f6e; border-color: #1c4f6e; }

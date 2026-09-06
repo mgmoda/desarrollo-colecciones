@@ -51,6 +51,7 @@ const TABS = [
   { key: 'alistamiento', label: 'Por enviar a taller' },
   { key: 'talleres', label: 'En talleres' },
   { key: 'entrega', label: 'Entrega ensamble' },
+  { key: 'bodega', label: 'Entrada a bodega' },
   { key: 'ensamble', label: 'Seguimiento' },
   { key: 'coleccion', label: 'Colección' },
   { key: 'fotos', label: 'Fotos' },
@@ -60,11 +61,11 @@ const TABS = [
   { key: 'programaciones', label: 'Programaciones' },
   { key: 'asistencia', label: 'Asistencia' },
 ]
-const AREA_KEYS = ['trazos', 'corte', 'enviar', 'alistamiento', 'talleres', 'entrega']
+const AREA_KEYS = ['trazos', 'corte', 'enviar', 'alistamiento', 'talleres', 'entrega', 'bodega']
 // Lo que ve quien no es admin: el recorrido de producción y los faltantes.
 const TABS_OPERACION = [
   'faltantes', 'ordencorte', 'trazos', 'corte',
-  'enviar', 'alistamiento', 'talleres', 'entrega',
+  'enviar', 'alistamiento', 'talleres', 'entrega', 'bodega',
 ]
 const TAB_KEY = 'desarrollo-colecciones:tab'
 

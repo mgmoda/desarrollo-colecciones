@@ -18,7 +18,10 @@ const MEDIDA = {
   enviar: { etapa: 'alistamiento', pendiente: 'Pendiente por alistar', hecho: 'Alistado esta semana', verbo: 'Alistado' },
   alistamiento: { etapa: 'envioEnsamble', pendiente: 'Pendiente por enviar', hecho: 'Enviado a taller esta semana', verbo: 'Enviado a taller' },
   talleres: { etapa: 'entregaEnsamble', pendiente: 'En talleres', hecho: 'Recibido de taller esta semana', verbo: 'Recibido de taller' },
-  entrega: { etapa: 'entregaEnsamble', pendiente: 'En esta etapa', hecho: 'Recibido esta semana', verbo: 'Recibido' },
+  entrega: { etapa: 'entregaEnsamble', pendiente: 'Pendiente por ingresar a bodega', hecho: 'Recibido esta semana', verbo: 'Recibido' },
+  // Bodega es el final del recorrido: lo que entra ya no tiene nada pendiente,
+  // así que se mide lo que va ingresando.
+  bodega: { etapa: 'entradaBodega', pendiente: 'En bodega', hecho: 'Ingresado a bodega esta semana', verbo: 'Ingresado a bodega' },
   // La orden de corte no acumula pendientes: se emite y la prenda pasa de una
   // vez a Trazos. Lo que se mide es cuánto se programa.
   ordencorte: { etapa: 'ordenCorte', pendiente: 'Programado', hecho: 'Programado esta semana', verbo: 'Programado' },
@@ -32,6 +35,7 @@ const ACUMULADO = {
   alistamiento: 'Enviado a taller en total',
   talleres: 'Recibido de taller en total',
   entrega: 'Recibido en total',
+  bodega: 'Ingresado a bodega en total',
   ordencorte: 'Programado en total',
 }
 
@@ -115,9 +119,9 @@ function TarjetaCifra({ label, datos, modo }) {
 }
 
 export default function AreaKpis({ areaKey, orders, enEtapa, refMap, procesos, onViewImage, onOpenRef, izquierda, sinAcumulado }) {
-  // En Entrega ensamble no hay nada "pendiente": lo que entra ya está hecho,
+  // En Entrada a bodega no hay nada "pendiente": lo que entra ya está hecho,
   // así que la tarjeta de pendientes sería la misma del acumulado.
-  const sinPendiente = areaKey === 'entrega'
+  const sinPendiente = areaKey === 'bodega'
   const [diaAbierto, setDiaAbierto] = useState('')
   const medida = MEDIDA[areaKey] || MEDIDA.trazos
   const hoy = isoLocal(new Date())
@@ -213,7 +217,7 @@ export default function AreaKpis({ areaKey, orders, enEtapa, refMap, procesos, o
       </div>
 
       <DiaProduccionModal dia={diaAbierto} detalle={detalle} titulo={medida.verbo}
-        porTaller={medida.etapa === 'envioEnsamble' || medida.etapa === 'entregaEnsamble'}
+        porTaller={['envioEnsamble', 'entregaEnsamble', 'entradaBodega'].includes(medida.etapa)}
         refMap={refMap} onViewImage={onViewImage}
         onOpenRef={(ficha) => { setDiaAbierto(''); onOpenRef && onOpenRef(ficha) }}
         onClose={() => setDiaAbierto('')} />

@@ -8,7 +8,7 @@ export const STAGES = [
   { key: 'envioEnsamble', label: 'Envío ensamble', hasDias: true, hasTaller: true },
   { key: 'entregaEnsamble', label: 'Entrega ensamble', hasDias: true },
   { key: 'revisado', label: 'Revisado', hasDias: true },
-  { key: 'entradaBodega', label: 'Entrada bodega', hasDias: true },
+  { key: 'entradaBodega', label: 'Entrada a bodega', hasDias: true },
 ]
 
 // Días que una orden puede quedarse en un área antes de pintarse en rojo. En
@@ -16,7 +16,9 @@ export const STAGES = [
 // lote no debería quedarse más de 3 días. En talleres el margen es mucho más
 // ancho, porque un taller sí se toma semanas con un lote y pintarlo todo de
 // rojo dejaría el aviso sin valor.
-const LIMITE_DIAS = { trazos: 3, corte: 3, enviar: 3, alistamiento: 3 }
+// Lo que vuelve del taller se revisa y entra a bodega en casa: tampoco
+// debería quedarse más de 3 días sin ingresar.
+const LIMITE_DIAS = { trazos: 3, corte: 3, enviar: 3, alistamiento: 3, entrega: 3 }
 const LIMITE_POR_DEFECTO = 14
 export const limiteDiasArea = (area) => (
   LIMITE_DIAS[area] != null ? LIMITE_DIAS[area] : LIMITE_POR_DEFECTO
@@ -25,14 +27,16 @@ export const limiteDiasArea = (area) => (
 // Áreas de trabajo. Cada orden cae en el área de su ÚLTIMA etapa cumplida:
 //   base  = etapa ya cumplida que define el área (y desde cuya fecha se cuenta el atraso)
 //   next  = etapa siguiente que aún NO se ha cumplido (lo pendiente)
-// El atraso = días desde la fecha de `base` hasta hoy (en 'entrega' no aplica).
+// El atraso = días desde la fecha de `base` hasta hoy (en 'bodega' no aplica:
+// es la última etapa, la prenda ya está guardada).
 export const AREAS = {
   trazos: { label: 'Trazos', responsable: 'Marcela', base: 'ordenCorte', next: 'trazo' },
   corte: { label: 'Corte', responsable: 'Mónica', base: 'trazo', next: 'entregaCorte' },
   enviar: { label: 'Por alistar', responsable: '', base: 'entregaCorte', next: 'alistamiento' },
   alistamiento: { label: 'Por enviar a taller', responsable: '', base: 'alistamiento', next: 'envioEnsamble' },
   talleres: { label: 'En talleres', responsable: '', base: 'envioEnsamble', next: 'entregaEnsamble' },
-  entrega: { label: 'Entrega ensamble', responsable: '', base: 'entregaEnsamble', next: null },
+  entrega: { label: 'Entrega ensamble', responsable: '', base: 'entregaEnsamble', next: 'entradaBodega' },
+  bodega: { label: 'Entrada a bodega', responsable: '', base: 'entradaBodega', next: null },
 }
 
 export const ORIGENES = {

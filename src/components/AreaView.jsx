@@ -39,10 +39,18 @@ function diasEnTaller(o) {
   return envio && entrega ? diasEntre(envio, entrega) : null
 }
 
+// Días que el lote esperó en casa entre volver del taller y entrar a bodega:
+// es la revisión, y es lo que se mide en Entrada a bodega.
+function diasParaBodega(o) {
+  const entrega = (o.stages && o.stages.entregaEnsamble && o.stages.entregaEnsamble.fecha) || ''
+  const bodega = (o.stages && o.stages.entradaBodega && o.stages.entradaBodega.fecha) || ''
+  return entrega && bodega ? diasEntre(entrega, bodega) : null
+}
+
 const STAGE_LABEL = {
   ordenCorte: 'Orden corte', trazo: 'Trazo', entregaCorte: 'Corte',
   alistamiento: 'Alistamiento', envioEnsamble: 'Envío a taller',
-  entregaEnsamble: 'Entrega ensamble', revisado: 'Revisado', entradaBodega: 'Entrada bodega',
+  entregaEnsamble: 'Entrega ensamble', revisado: 'Revisado', entradaBodega: 'Entrada a bodega',
 }
 
 // Celda Top/Forro. Si la prenda lleva top incluido —o si la fila ES un top—
@@ -109,9 +117,11 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   const [tallerSel, setTallerSel] = useState('')
   const [selected, setSelected] = useState(() => new Set())
   // La tabla abre ordenada por días, de mayor a menor, para que lo más demorado
-  // quede de primero. En Entrega ensamble no hay espera que contar: ahí lo que
-  // ordena es cuánto se demoró el taller con el lote.
-  const { sortKey, sortDir, toggle } = useSort(areaKey === 'entrega' ? 'diasTaller' : 'atraso', 'desc')
+  // quede de primero. En Entrega ensamble lo que ordena es cuánto se demoró el
+  // taller con el lote, y en Bodega —donde ya no hay espera— lo último que entró.
+  const { sortKey, sortDir, toggle } = useSort(
+    areaKey === 'entrega' ? 'diasTaller' : areaKey === 'bodega' ? 'fecha' : 'atraso', 'desc',
+  )
 
   // Limpia la selección al cambiar de área.
   useEffect(() => { setSelected(new Set()) }, [areaKey])
@@ -123,14 +133,15 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   const baseStage = area.base
   // El taller solo existe una vez el lote salió: en Por enviar a taller la
   // columna venía siempre vacía, así que ahí no se muestra.
-  const showTaller = areaKey === 'talleres' || areaKey === 'entrega'
-  // En Entrega ensamble ya no hay atraso; lo que importa es cuánto se demoró
-  // el taller con el lote, del envío a la entrega.
+  const showTaller = areaKey === 'talleres' || areaKey === 'entrega' || areaKey === 'bodega'
+  // En Entrega ensamble importa cuánto se demoró el taller con el lote, del
+  // envío a la entrega; en Bodega, cuánto tardó la revisión antes de entrar.
   const showDiasTaller = areaKey === 'entrega'
+  const showDiasBodega = areaKey === 'bodega'
   // Lo que se le paga al taller por ensamblar. Se muestra donde se decide el
   // despacho, que es cuando el dato sirve para algo.
   const showValorTaller = areaKey === 'alistamiento'
-  const showAtraso = areaKey !== 'entrega' // en entrega ya ingresó: no hay atraso
+  const showAtraso = areaKey !== 'bodega' // en bodega ya está guardada: no hay atraso
   // Entre el trazo y el corte, Factory registra el doblado y alistamiento de la
   // tela. Sin eso, Corte muestra iguales dos cosas distintas: lo que espera que
   // doblen la tela y lo que ya está doblado esperando la tijera.
@@ -140,7 +151,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   const showProcesos = areaKey === 'corte'
   const puedeProcesos = !!onGuardarProceso
   const limiteDias = limiteDiasArea(areaKey)
-  const pendienteLabel = area.next ? STAGE_LABEL[area.next] : 'Recibido'
+  const pendienteLabel = area.next ? STAGE_LABEL[area.next] : 'En bodega'
 
   // Las fases apagadas no cuentan en ninguna parte: ni en la tabla ni en los
   // KPIs. La semana mira todas las órdenes, no solo las de esta etapa, porque
@@ -182,6 +193,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       cant: (o) => Number((o.stages[baseStage] || {}).cant),
       atraso: (o) => diasDesde((o.stages[baseStage] || {}).fecha),
       diasTaller: (o) => diasEnTaller(o),
+      diasBodega: (o) => diasParaBodega(o),
       valorTaller: (o) => Number(o.valorTaller) || 0,
       // Por estas dos se ordena para ver primero lo que lleva más días
       // abierto; lo cerrado y lo que no ha empezado quedan al final.
@@ -236,7 +248,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         referencia: o.referencia,
         lineas,
         atraso: showAtraso ? diasDesde(base.fecha) : null,
-        diasLabel: showTaller ? 'en el taller' : 'en esta etapa',
+        diasLabel: areaKey === 'talleres' ? 'en el taller' : 'en esta etapa',
         limiteDias,
         image: ref && ref.image ? ref.image : null,
       }
@@ -356,6 +368,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 {showProcesos && <SortTh label="Cortando" col="procCorte" {...thProps} />}
                 {showAtraso && <SortTh label="Días" col="atraso" className="num" {...thProps} />}
                 {showDiasTaller && <SortTh label="Días en taller" col="diasTaller" className="num" {...thProps} />}
+                {showDiasBodega && <SortTh label="Días en revisión" col="diasBodega" className="num" {...thProps} />}
                 <th>Pendiente</th>
               </tr>
             </thead>
@@ -366,6 +379,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 const taller = (o.stages.envioEnsamble && o.stages.envioEnsamble.taller) || ''
                 const atraso = diasDesde(base.fecha)
                 const dias = showDiasTaller ? diasEnTaller(o) : null
+                const diasBod = showDiasBodega ? diasParaBodega(o) : null
                 const canOpen = !!(onOpenRef && ref)
                 return (
                   <tr key={o.id}
@@ -473,6 +487,17 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                               ? 'La entrega quedó registrada antes del envío'
                               : `Enviado ${formatDate(o.stages.envioEnsamble.fecha)}`}>
                             {dias} d
+                          </span>
+                        )}
+                      </td>
+                    )}
+                    {showDiasBodega && (
+                      <td className="num">
+                        {diasBod == null ? <span className="muted">—</span> : (
+                          <span className={'tag' + (diasBod > limiteDiasArea('entrega') ? ' tag-warn' : '')}
+                            title={`Recibido del taller ${formatDate(o.stages.entregaEnsamble.fecha)}; `
+                              + `entró a bodega ${formatDate(o.stages.entradaBodega.fecha)}`}>
+                            {diasBod} d
                           </span>
                         )}
                       </td>

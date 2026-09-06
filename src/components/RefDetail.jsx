@@ -16,7 +16,7 @@ function areaLabel(area) {
 }
 
 function OrderTimeline({ order }) {
-  const atraso = order && order._area !== 'entrega' ? diasDesde(areaBaseFecha(order)) : null
+  const atraso = order && order._area !== 'bodega' ? diasDesde(areaBaseFecha(order)) : null
   return (
     <div className="track">
       <div className="track-head">

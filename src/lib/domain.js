@@ -8,13 +8,14 @@ export function stageDone(order, key) {
 }
 
 // El área de una orden = la de su ÚLTIMA etapa cumplida (de la más avanzada
-// a la más temprana). Las etapas del Excel que no definen área propia
-// (revisado, entrada bodega) quedan por fuera.
+// a la más temprana). "Revisado" no define área propia: la prenda que vuelve
+// del taller está en Entrega ensamble hasta que entra a bodega.
 //
 // Entre corte y el envío al taller va el alistamiento. Lo que salió de corte y
 // todavía no se alista espera en Por alistar; una vez alistado pasa a
 // Alistamiento, que es la lista de lo que está listo para despachar al taller.
 export function orderArea(order) {
+  if (stageDone(order, 'entradaBodega')) return 'bodega'
   if (stageDone(order, 'entregaEnsamble')) return 'entrega'
   if (stageDone(order, 'envioEnsamble')) return 'talleres'
   if (stageDone(order, 'alistamiento')) return 'alistamiento'
@@ -29,7 +30,7 @@ export function ordersForArea(orders, areaKey) {
 }
 
 // Orden de avance de las áreas (de menos a más avanzada).
-export const AREA_ORDER = ['trazos', 'corte', 'enviar', 'alistamiento', 'talleres', 'entrega']
+export const AREA_ORDER = ['trazos', 'corte', 'enviar', 'alistamiento', 'talleres', 'entrega', 'bodega']
 
 export function areaIndex(area) {
   const i = AREA_ORDER.indexOf(area)
@@ -40,6 +41,7 @@ export function areaIndex(area) {
 const AREA_BASE = {
   trazos: 'ordenCorte', corte: 'trazo', enviar: 'entregaCorte',
   alistamiento: 'alistamiento', talleres: 'envioEnsamble', entrega: 'entregaEnsamble',
+  bodega: 'entradaBodega',
 }
 export function areaBaseFecha(order) {
   const a = orderArea(order)
@@ -793,6 +795,7 @@ export const MODULOS_FLUJO = [
   { key: 'alistamiento', label: 'Alistamiento', etapa: 'alistamiento' },
   { key: 'enviar', label: 'Enviado a taller', etapa: 'envioEnsamble' },
   { key: 'entrega', label: 'Entrega ensamble', etapa: 'entregaEnsamble' },
+  { key: 'bodega', label: 'Entrada a bodega', etapa: 'entradaBodega' },
 ]
 
 // Unidades cerradas en cada módulo, semana por semana, con el desglose por

@@ -5900,6 +5900,35 @@ select.filtro-taller { flex: none; width: 215px; }
 }
 .sem-tabla thead th.sem-col-on .sem-ext { color: #9fd0ee; }
 
+/* ---------- Entrada a bodega desde Revisión ---------- */
+tr.row-parcial > td { background: #fffaf0; }
+.pend-det { display: block; margin-top: 3px; font-size: 11px; font-weight: 500; color: #633806; white-space: normal; }
+.eb-ya { display: block; margin-top: 3px; font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+.cel-eb { white-space: nowrap; }
+.btn-eb { padding: 4px 10px; font-size: 11.5px; }
+.tag-parcial { background: #faeeda; color: #633806; border-color: #fac775; font-weight: 600; }
+.eb-head { display: flex; gap: 14px; align-items: center; min-width: 0; }
+.eb-foto { width: 46px; height: 60px; object-fit: cover; border-radius: 6px; flex: none; }
+.eb-meta { margin: 3px 0 0; color: var(--ink-soft); font-size: 12.5px; }
+.eb-grid-wrap { border: 1px solid var(--hairline); border-radius: 10px; overflow: auto; margin: 10px 0 14px; }
+.eb-grid { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.eb-grid th, .eb-grid td { text-align: center; padding: 7px 8px; white-space: nowrap; }
+.eb-grid th:first-child, .eb-grid td:first-child { text-align: left; padding-left: 12px; }
+.eb-grid thead th { background: var(--bg); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.eb-grid tbody td { border-top: 1px solid var(--hairline); }
+.eb-grid tfoot td { background: var(--bg); font-weight: 600; border-top: 1px solid var(--hairline); }
+.eb-grid td.num, .eb-grid th.num { text-align: right; padding-right: 12px; }
+.eb-inp { width: 44px; padding: 5px 0; border: 1px solid #cfcdc7; border-radius: 6px; text-align: center; font-weight: 600; font: inherit; background: #fff; }
+.eb-inp.parcial { border-color: #fac775; background: #fffaf0; color: #633806; }
+.eb-inp::-webkit-outer-spin-button, .eb-inp::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.eb-sub { display: block; color: var(--muted); font-size: 10.5px; font-weight: 400; margin-top: 2px; }
+.eb-sub-inline { color: var(--muted); font-size: 10.5px; font-weight: 400; }
+.eb-campos { display: grid; grid-template-columns: 70px 1fr; gap: 10px 14px; align-items: center; }
+.eb-campos .field-label { margin: 0; }
+.eb-res { color: var(--ink-soft); font-size: 12.5px; }
+.eb-res b { color: var(--ink); font-size: 13.5px; }
+.eb-amb { color: #633806; font-weight: 600; }
+
 /* ---------- Faltantes de corte ---------- */
 .tab-badge {
   margin-left: 6px;

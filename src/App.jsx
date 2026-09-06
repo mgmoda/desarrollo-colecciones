@@ -34,9 +34,10 @@ import {
   dbLoadFaltantes, dbUpsertFaltante, dbDeleteFaltante,
   dbLoadPreordenes, dbUpsertPreorden, dbDeletePreorden,
   dbLoadProgramaciones, dbUpsertProgramacion, dbUpsertProgramaciones, dbDeleteProgramacion,
-  dbLoadTelas, dbLoadProcesos, dbUpsertProceso,
+  dbLoadTelas, dbLoadProcesos, dbUpsertProceso, dbLoadEntradasBodega, dbUpsertEntradaBodega,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
+import { aplicarEntradas } from './lib/entradasBodega.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice, normRef } from './lib/constants.js'
 import { resumirCambios } from './lib/cambios.js'
 
@@ -75,7 +76,12 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false)
   const [loaded, setLoaded] = useState(false)
 
-  const [orders, setOrders] = useState([])
+  const [ordersFactory, setOrders] = useState([])
+  // Entradas a bodega registradas aquí, por número de orden. Se aplican sobre
+  // las órdenes de Factory: la que entró completa gana la etapa y sale de
+  // Revisión sin que nadie más tenga que enterarse.
+  const [entradasBodega, setEntradasBodega] = useState({})
+  const orders = useMemo(() => aplicarEntradas(ordersFactory, entradasBodega), [ordersFactory, entradasBodega])
   const [faltantes, setFaltantes] = useState([])
   const [preordenes, setPreordenes] = useState([])
   const [programaciones, setProgramaciones] = useState([])
@@ -130,9 +136,9 @@ export default function App() {
     Promise.all([
       dbLoadOrders(), dbLoadRefs(), dbLoadSettings(), dbLoadFaltantes(), dbLoadRefsMeta(),
       dbLoadStamps(), dbLoadPreordenes(), dbLoadProgramaciones(), dbLoadTelas(),
-      dbLoadProcesos(),
+      dbLoadProcesos(), dbLoadEntradasBodega(),
     ])
-      .then(([o, r, s, fl, meta, marcas, po, pr, tf, pc]) => {
+      .then(([o, r, s, fl, meta, marcas, po, pr, tf, pc, eb]) => {
         if (cancelled) return
         refsMeta.current = new Map(meta.map((m) => [m.id, m.updated_at]))
         stamps.current = marcas
@@ -143,6 +149,7 @@ export default function App() {
         setProgramaciones(pr)
         setTelasFicha(tf)
         setProcesos(pc)
+        setEntradasBodega(eb)
         setOrders(o)
         // Migración silenciosa: corregir "Maricet" → "Mariset" Y eliminar
         // cualquier campo "_stub" que se haya persistido por error.
@@ -211,6 +218,7 @@ export default function App() {
       if (cambio('faltantes')) pedidos.push(dbLoadFaltantes().then(setFaltantes))
       if (cambio('preordenes')) pedidos.push(dbLoadPreordenes().then(setPreordenes))
       if (cambio('procesos')) pedidos.push(dbLoadProcesos().then(setProcesos))
+      if (cambio('entradas')) pedidos.push(dbLoadEntradasBodega().then(setEntradasBodega))
       if (cambio('programaciones')) pedidos.push(dbLoadProgramaciones().then(setProgramaciones))
       if (cambio('telas')) pedidos.push(dbLoadTelas().then(setTelasFicha))
       // Los diseños los carga Geodésica en su pestaña: aquí solo se le pasa
@@ -358,6 +366,9 @@ export default function App() {
   // tocan nada —el tiempo que se mide ahí depende de que lo marque quien
   // realmente lo está haciendo.
   const puedeCorte = ['monica@mgmoda.local', ...ADMINS].includes(emailSesion)
+  // La entrada a bodega la registran quienes reciben y revisan: Mónica y
+  // Ninfa, además de Diego. Los demás ven Revisión sin el botón.
+  const puedeBodega = ['monica@mgmoda.local', 'ninfa@mgmoda.local', ...ADMINS].includes(emailSesion)
   // La asistencia del huellero son datos personales de los empleados: la ven
   // solo Diego y Ninfa.
   const veAsistencia = ['ninfa@mgmoda.local', ...ADMINS].includes(emailSesion)
@@ -504,6 +515,20 @@ export default function App() {
       console.error(e)
       alert('No se pudo guardar: ' + e.message)
     })
+  }
+
+  // Entrada a bodega desde Revisión: se pinta de una, se guarda detrás y
+  // queda en la bitácora con quién y cuánto.
+  function guardarEntradaBodega(orden, entrada) {
+    const clave = String(orden)
+    const previo = entradasBodega[clave] || { orden: clave, entradas: [] }
+    const registro = { ...previo, orden: clave, entradas: [...(previo.entradas || []), entrada] }
+    setEntradasBodega((m) => ({ ...m, [clave]: registro }))
+    dbUpsertEntradaBodega(clave, registro).catch((e) => {
+      console.error(e)
+      alert('No se pudo guardar la entrada: ' + e.message)
+    })
+    dbLog('entrada_bodega', 'orden', clave, { unid: entrada.unid, fecha: entrada.fecha, nota: entrada.nota })
   }
 
   function borrarProgramacion(id) {
@@ -957,6 +982,7 @@ export default function App() {
             topLinks={topLinks} onVincularTop={vincularTop} conjuntoLinks={conjuntoLinks}
             procesos={procesos} usuario={emailSesion}
             onGuardarProceso={puedeCorte ? guardarProceso : undefined}
+            onGuardarEntrada={puedeBodega ? guardarEntradaBodega : undefined}
             onViewImage={setLightbox} onOpenRef={openEdit} onSetFields={handleSetFields} />
         )}
         {tab === 'ensamble' && (

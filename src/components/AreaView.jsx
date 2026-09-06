@@ -16,6 +16,8 @@ import FaseToggles from './FaseToggles.jsx'
 import EtapaProceso from './EtapaProceso.jsx'
 import RendimientoCorte from './RendimientoCorte.jsx'
 import EnviarExternoModal from './EnviarExternoModal.jsx'
+import EntradaBodegaModal from './EntradaBodegaModal.jsx'
+import { pendientesDe, resumenFalta } from '../lib/entradasBodega.js'
 import {
   EXTERNO, alistandoDesde, desdeTxt, duracion, enviarExterno, estaAlistando, estaAndando,
   estaFuera, estaListo,
@@ -100,7 +102,8 @@ function TopCell({ orden, refRow, topLinks, onAbrir }) {
   )
 }
 
-export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, onSetFields, fasesOcultas, onToggleFase, puedeFiltrar, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes, procesos = {}, usuario, onGuardarProceso }) {
+export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, onSetFields, fasesOcultas, onToggleFase, puedeFiltrar, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes, procesos = {}, usuario, onGuardarProceso, onGuardarEntrada }) {
+  const [entradaDe, setEntradaDe] = useState(null) // orden que se está ingresando a bodega
   const [topDe, setTopDe] = useState(null) // orden cuyo vínculo de top se está viendo
   const [conjuntoDe, setConjuntoDe] = useState(null) // orden cuyo conjunto se está viendo
   const [curvaDe, setCurvaDe] = useState(null) // orden cuya curva de tallas se está viendo
@@ -164,7 +167,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   // día, solo cuánto hay esperando entrar a bodega y desde cuándo.
   const esCola = areaKey === 'revision'
   const cola = useMemo(() => {
-    const unid = (o) => Number((o.stages[baseStage] || {}).cant) || 0
+    // Cuenta lo que de verdad falta por entrar: una orden con entrada
+    // parcial ya no pesa entera en la cola.
+    const unid = (o) => pendientesDe(o, o.entradasBodega).falta
     const dias = enEtapa.map((o) => diasDesde((o.stages[baseStage] || {}).fecha))
     const iMax = dias.length ? dias.indexOf(Math.max(...dias)) : -1
     return {
@@ -212,6 +217,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       atraso: (o) => diasDesde((o.stages[baseStage] || {}).fecha),
       diasTaller: (o) => diasEnTaller(o),
       diasBodega: (o) => diasParaBodega(o),
+      falta: (o) => pendientesDe(o, o.entradasBodega).falta,
       valorTaller: (o) => Number(o.valorTaller) || 0,
       // Por estas dos se ordena para ver primero lo que lleva más días
       // abierto; lo cerrado y lo que no ha empezado quedan al final.
@@ -396,6 +402,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 {showValorTaller && <SortTh label="Valor taller" col="valorTaller" className="num" {...thProps} />}
                 <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />
                 <SortTh label="Cant" col="cant" className="num" {...thProps} />
+                {esCola && <SortTh label="Falta" col="falta" className="num" {...thProps} />}
                 {showProcesos && <SortTh label="Doblando" col="procDoblado" {...thProps} />}
                 {showProcesos && <SortTh label="Cortando" col="procCorte" {...thProps} />}
                 {showAtraso && <SortTh label="Días" col="atraso" className="num" {...thProps} />}
@@ -412,12 +419,18 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 const atraso = diasDesde(base.fecha)
                 const dias = showDiasTaller ? diasEnTaller(o) : null
                 const diasBod = showDiasBodega ? diasParaBodega(o) : null
+                const pend = esCola ? pendientesDe(o, o.entradasBodega) : null
+                const parcial = !!(pend && pend.entradas.length)
+                const ultimaEntrada = parcial
+                  ? pend.entradas.reduce((m, e) => (e.at > m.at ? e : m), pend.entradas[0])
+                  : null
                 const canOpen = !!(onOpenRef && ref)
                 return (
                   <tr key={o.id}
                     className={(selected.has(o.id) ? 'row-sel' : '') + ' row-click'
                       + (showProcesos && estaFuera(procesos[o.orden]) ? ' row-ext' : '')
-                      + (showProcesos && estaAlistando(procesos[o.orden]) ? ' row-al' : '')}
+                      + (showProcesos && estaAlistando(procesos[o.orden]) ? ' row-al' : '')
+                      + (parcial ? ' row-parcial' : '')}
                     onClick={() => setCurvaDe(o)}
                     title="Ver la curva de tallas y colores de esta orden">
                     <td className="cell-check" onClick={(e) => e.stopPropagation()}>
@@ -439,6 +452,12 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                       {showProcesos && estaFuera(procesos[o.orden]) && (
                         <span className="tag tag-ext" title={`La tela está donde ${EXTERNO}`}>
                           Donde {EXTERNO}
+                        </span>
+                      )}
+                      {parcial && pend.falta > 0 && (
+                        // Qué falta exactamente, para no tener que abrir el modal a mirar.
+                        <span className="pend-det" title="Pendiente por ingresar a bodega">
+                          Faltan {pend.falta}: {resumenFalta(pend)}
                         </span>
                       )}
                       {(() => {
@@ -483,6 +502,13 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                     )}
                     <td>{formatDate(base.fecha)}</td>
                     <td className="num">{base.cant}</td>
+                    {esCola && (
+                      <td className="num">
+                        {parcial
+                          ? <span className="tag tag-parcial" title={`Ya entraron ${pend.entrado} de ${pend.recibido}`}>{pend.falta}</span>
+                          : pend.falta}
+                      </td>
+                    )}
                     {/* El clic se queda en la casilla: la fila entera abre la
                         curva de tallas, y marcar el doblado no es pedir eso. */}
                     {showProcesos && (
@@ -543,6 +569,26 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                         </span>
                         <span className="cel-al-sub">{desdeTxt(alistandoDesde(procesos[o.orden]))}</span>
                       </td>
+                    ) : esCola ? (
+                      // Ingresar a bodega desde aquí mismo. El clic se queda en
+                      // la casilla: la fila abre la curva, no es eso.
+                      <td className="cel-eb" onClick={(ev) => ev.stopPropagation()}>
+                        {onGuardarEntrada ? (
+                          <button type="button"
+                            className={'btn btn-eb' + (parcial ? '' : ' btn-primary')}
+                            onClick={() => setEntradaDe(o)}>
+                            Ingresar a bodega
+                          </button>
+                        ) : (
+                          <span className="tag">{pendienteLabel}</span>
+                        )}
+                        {ultimaEntrada && (
+                          <span className="eb-ya">
+                            ya entraron {pend.entrado} · {formatDate(ultimaEntrada.fecha)}
+                            {ultimaEntrada.usuario ? ` · ${ultimaEntrada.usuario}` : ''}
+                          </span>
+                        )}
+                      </td>
                     ) : (
                       <td><span className="tag">{pendienteLabel}</span></td>
                     )}
@@ -554,6 +600,13 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         </div>
       )}
       </>
+      )}
+
+      {entradaDe && (
+        <EntradaBodegaModal orden={entradaDe} refRow={refMap.get(entradaDe.referencia)}
+          usuario={usuario}
+          onGuardar={(entrada) => { onGuardarEntrada(entradaDe.orden, entrada); setEntradaDe(null) }}
+          onClose={() => setEntradaDe(null)} />
       )}
 
       {enviando && (

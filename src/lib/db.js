@@ -263,6 +263,23 @@ export async function dbUpsertProceso(orden, proc) {
   if (error) throw error
 }
 
+// Entradas a bodega registradas desde Revisión, por número de orden:
+// { orden, entradas: [{ id, fecha, at, usuario, nota, unid, curva }] }.
+export async function dbLoadEntradasBodega() {
+  const { data, error } = await supabase.from('dev_entradas_bodega').select('id, data')
+  if (error) throw error
+  const m = {}
+  ;(data || []).forEach((r) => { m[r.id] = r.data || {} })
+  return m
+}
+
+export async function dbUpsertEntradaBodega(orden, registro) {
+  const { error } = await supabase
+    .from('dev_entradas_bodega')
+    .upsert({ id: String(orden), data: registro })
+  if (error) throw error
+}
+
 // Asistencia del huellero (solo MARISET-CASANIA): una fila por persona y día,
 // la sube el sync del servidor con la entrada (primera marcación) y la salida.
 // Se pide por rango de fechas: la pestaña muestra dos meses y navega por

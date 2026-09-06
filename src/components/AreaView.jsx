@@ -133,7 +133,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   const baseStage = area.base
   // El taller solo existe una vez el lote salió: en Por enviar a taller la
   // columna venía siempre vacía, así que ahí no se muestra.
-  const showTaller = areaKey === 'talleres' || areaKey === 'entrega' || areaKey === 'bodega'
+  const showTaller = ['talleres', 'entrega', 'revision', 'bodega'].includes(areaKey)
   // En Entrega ensamble importa cuánto se demoró el taller con el lote, del
   // envío a la entrega; en Bodega, cuánto tardó la revisión antes de entrar.
   const showDiasTaller = areaKey === 'entrega'
@@ -157,7 +157,25 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   // KPIs. La semana mira todas las órdenes, no solo las de esta etapa, porque
   // lo ya trazado hoy salió de Trazos.
   const visibles = useMemo(() => orders.filter((o) => !ocultas.has(o.origen)), [orders, ocultas])
-  const enEtapa = useMemo(() => ordersForArea(visibles, areaKey), [visibles, areaKey])
+  // Revisión toma la lista de Entrega ensamble: son las mismas órdenes.
+  const listaDe = area.lista || areaKey
+  const enEtapa = useMemo(() => ordersForArea(visibles, listaDe), [visibles, listaDe])
+  // Revisión es una cola, no una medición: sin tarjetas de semana ni día a
+  // día, solo cuánto hay esperando entrar a bodega y desde cuándo.
+  const esCola = areaKey === 'revision'
+  const cola = useMemo(() => {
+    const unid = (o) => Number((o.stages[baseStage] || {}).cant) || 0
+    const dias = enEtapa.map((o) => diasDesde((o.stages[baseStage] || {}).fecha))
+    const iMax = dias.length ? dias.indexOf(Math.max(...dias)) : -1
+    return {
+      n: enEtapa.length,
+      unid: enEtapa.reduce((n, o) => n + unid(o), 0),
+      vencidas: enEtapa.filter((o, i) => dias[i] > limiteDias).length,
+      unidVencidas: enEtapa.reduce((n, o, i) => n + (dias[i] > limiteDias ? unid(o) : 0), 0),
+      masVieja: iMax < 0 ? 0 : dias[iMax],
+      refVieja: iMax < 0 ? '' : enEtapa[iMax].referencia,
+    }
+  }, [enEtapa, baseStage, limiteDias])
 
   // Talleres presentes en la etapa, con cuántas órdenes tiene cada uno.
   const talleres = useMemo(() => {
@@ -333,6 +351,20 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
             <em>{fuera.refVieja}</em></div>
           <div className="prog-kpi"><span>Sin salir</span>
             <b>{enEtapa.length - fuera.n}</b><em>siguen en casa</em></div>
+        </div>
+      ) : esCola ? (
+        <div className="prog-kpis">
+          <div className="prog-kpi"><span>Unidades en revisión</span>
+            <b>{cola.unid.toLocaleString('es-CO')}</b>
+            <em>volvieron del taller y no han entrado a bodega</em></div>
+          <div className="prog-kpi"><span>Órdenes en revisión</span><b>{cola.n}</b>
+            <em>esperando entrada a bodega</em></div>
+          <div className={'prog-kpi' + (cola.vencidas > 0 ? ' alerta' : '')}>
+            <span>Más de {limiteDias} días</span><b>{cola.vencidas}</b>
+            <em>{cola.unidVencidas.toLocaleString('es-CO')} unidades</em></div>
+          <div className={'prog-kpi' + (cola.masVieja > limiteDias ? ' alerta' : '')}>
+            <span>La más antigua</span><b>{cola.masVieja} d</b>
+            <em>{cola.refVieja}</em></div>
         </div>
       ) : (
         <AreaKpis areaKey={areaKey} orders={visibles} enEtapa={enEtapa}

@@ -18,7 +18,7 @@ export const STAGES = [
 // rojo dejaría el aviso sin valor.
 // Lo que vuelve del taller se revisa y entra a bodega en casa: tampoco
 // debería quedarse más de 3 días sin ingresar.
-const LIMITE_DIAS = { trazos: 3, corte: 3, enviar: 3, alistamiento: 3, entrega: 3 }
+const LIMITE_DIAS = { trazos: 3, corte: 3, enviar: 3, alistamiento: 3, entrega: 3, revision: 3 }
 const LIMITE_POR_DEFECTO = 14
 export const limiteDiasArea = (area) => (
   LIMITE_DIAS[area] != null ? LIMITE_DIAS[area] : LIMITE_POR_DEFECTO
@@ -36,6 +36,10 @@ export const AREAS = {
   alistamiento: { label: 'Por enviar a taller', responsable: '', base: 'alistamiento', next: 'envioEnsamble' },
   talleres: { label: 'En talleres', responsable: '', base: 'envioEnsamble', next: 'entregaEnsamble' },
   entrega: { label: 'Entrega ensamble', responsable: '', base: 'entregaEnsamble', next: 'entradaBodega' },
+  // Revisión no es una etapa de Factory: es la misma lista de Entrega ensamble
+  // mirada como cola —lo que volvió del taller y todavía no entra a bodega—,
+  // sin medición semanal. `lista` dice de qué área toma las órdenes.
+  revision: { label: 'Revisión', responsable: '', base: 'entregaEnsamble', next: 'entradaBodega', lista: 'entrega' },
   bodega: { label: 'Entrada a bodega', responsable: '', base: 'entradaBodega', next: null },
 }
 

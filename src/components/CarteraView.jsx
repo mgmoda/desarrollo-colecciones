@@ -394,7 +394,7 @@ export default function CarteraView({ usuario }) {
       {filas.length === 0 ? (
         <div className="empty-state">
           <p>Ningún cliente coincide con el filtro.</p>
-          <p className="muted">Probá quitando la ciudad o el chip activo.</p>
+          <p className="muted">Prueba quitando la ciudad o el chip activo.</p>
         </div>
       ) : (
         <div className="table-wrap">

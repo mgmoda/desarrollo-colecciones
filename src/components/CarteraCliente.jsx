@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Modal from './Modal.jsx'
+import CarteraMensaje from './CarteraMensaje.jsx'
 import { guardarGestion, cerrarGestion, etiquetaColeccion } from '../lib/cartera.js'
 import { formatPrice } from '../lib/constants.js'
 
@@ -45,6 +46,7 @@ export default function CarteraCliente({ cliente, usuario, onClose, onGuardado }
   const [form, setForm] = useState(FORM_VACIO)
   const [abrirForm, setAbrirForm] = useState(false)
   const [guardando, setGuardando] = useState(false)
+  const [mensaje, setMensaje] = useState(false)
   const [error, setError] = useState('')
 
   // Al cambiar de cliente se limpia todo: si no, la nota a medio escribir de
@@ -71,9 +73,9 @@ export default function CarteraCliente({ cliente, usuario, onClose, onGuardado }
 
   async function guardar() {
     const texto = form.texto.trim()
-    if (!form.gestor) { setError('Elegí quién hace la gestión.'); return }
+    if (!form.gestor) { setError('Elige quién hace la gestión.'); return }
     if (!texto && form.tipo !== 'pendiente') {
-      setError('Escribí qué dijo el cliente o la gestión realizada.'); return
+      setError('Escribe qué dijo el cliente o la gestión realizada.'); return
     }
     if (form.tipo === 'acuerdo' && !form.acuerdo_fecha) {
       setError('Un acuerdo de pago necesita la fecha de compromiso.'); return
@@ -352,11 +354,13 @@ export default function CarteraCliente({ cliente, usuario, onClose, onGuardado }
       </div>
 
       <div className="modal-foot">
-        <button className="btn btn-ghost" onClick={() => copiarMensaje(cliente)}>
+        <button className="btn btn-ghost" onClick={() => setMensaje(true)}>
           Mensaje de cobro para WhatsApp
         </button>
         <button className="btn btn-primary" onClick={onClose}>Cerrar</button>
       </div>
+
+      {mensaje && <CarteraMensaje cliente={cliente} onClose={() => setMensaje(false)} />}
     </Modal>
   )
 }
@@ -379,27 +383,4 @@ function diasDesdeISO(iso) {
   const [a, m, d] = iso.slice(0, 10).split('-').map(Number)
   const h = new Date()
   return Math.round((Date.UTC(h.getFullYear(), h.getMonth(), h.getDate()) - Date.UTC(a, m - 1, d)) / 86400000)
-}
-
-/** Arma el mensaje de cobro y lo deja en el portapapeles. */
-function copiarMensaje(c) {
-  const lineas = [
-    `Buen día, ${c.cliente}.`,
-    '',
-    `Le escribimos de MG MODA para recordarle el saldo pendiente de ${formatPrice(c.total)}.`,
-  ]
-  const vencidas = c.facturas.filter((f) => f.dias > 60)
-  if (vencidas.length) {
-    lineas.push('', 'Facturas con mayor atraso:')
-    vencidas.slice(0, 6).forEach((f) => {
-      lineas.push(`  · ${f.factura} — ${formatPrice(f.valor)} (${f.dias} días)`)
-    })
-  }
-  if (c.ult_pago) {
-    lineas.push('', `Su último abono fue el ${fechaLarga(c.ult_pago)}.`)
-  }
-  lineas.push('', 'Quedamos atentos. Gracias.')
-  const texto = lineas.join('\n')
-  if (navigator.clipboard) navigator.clipboard.writeText(texto)
-  window.alert('Mensaje copiado:\n\n' + texto)
 }

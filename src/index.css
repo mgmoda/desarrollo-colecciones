@@ -6995,5 +6995,27 @@ tr.row-al.row-sel > td { background: #e9f3da; }
 }
 .ct-opt:hover { background: #efece4; color: var(--ink); }
 .ct-opt.on { background: var(--ink); border-color: var(--ink); color: #fff; }
-.ct-texto { width: 100%; min-height: 78px; resize: vertical; margin-bottom: 14px; }
+.ct-texto {
+  width: 100%; min-height: 78px; resize: vertical; margin-bottom: 14px;
+  font-family: inherit;
+}
 .ct-form-foot { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* Mensaje de cobro para WhatsApp */
+.ct-msg-fila {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.ct-msg-lbl {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--muted); flex: 0 0 42px;
+}
+.ct-msg-area {
+  width: 100%; min-height: 260px; margin-top: 6px;
+  font-size: 13px; line-height: 1.55; resize: vertical;
+  white-space: pre-wrap;
+  /* La regla global de fuente sólo cubre `input`; sin esto el textarea
+     hereda la monoespaciada del navegador y el mensaje no se ve como
+     se verá en WhatsApp. */
+  font-family: inherit;
+}

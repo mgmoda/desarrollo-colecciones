@@ -4,6 +4,7 @@ import SearchInput from './SearchInput.jsx'
 import CarteraCliente from './CarteraCliente.jsx'
 import {
   cargarCartera, compromisoActivo, compromisoVencido, marcarSeguimiento,
+  recaudoDelMes,
 } from '../lib/cartera.js'
 import { formatPrice } from '../lib/constants.js'
 
@@ -29,6 +30,23 @@ const nivelDias = (d) => (d >= 90 ? 'flag-no' : d >= 60 ? 'flag-warn' : 'flag-ye
 const nivelPago = (d) => (d > 45 ? 'bad' : d > 20 ? 'mid' : 'ok')
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+const MESES_LARGO = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+
+/** "2026-09" del mes en curso y del anterior, en hora local. */
+function mesesDeCorte() {
+  const h = new Date()
+  const yy = h.getFullYear()
+  const mm = h.getMonth()
+  const clave = (a, m) => `${a}-${String(m + 1).padStart(2, '0')}`
+  return {
+    actual: clave(yy, mm),
+    anterior: mm === 0 ? clave(yy - 1, 11) : clave(yy, mm - 1),
+    nombreActual: MESES_LARGO[mm],
+    nombreAnterior: MESES_LARGO[mm === 0 ? 11 : mm - 1],
+    diaDelMes: h.getDate(),
+  }
+}
 function fechaCorta(iso) {
   if (!iso) return '—'
   const [a, m, d] = iso.slice(0, 10).split('-')
@@ -114,15 +132,27 @@ export default function CarteraView({ usuario }) {
         if (f.dias > 60) { vencido += f.valor; fxVencidas += 1 }
       }
     }
+    // Recaudo del mes: se suman los abonos por su FECHA, no por cuándo los
+    // vimos. Va sobre `pagosTodos` —el universo completo, con los clientes que
+    // ya cancelaron— y no sobre los clientes con saldo: si no, el total del mes
+    // iría bajando a medida que la gente termina de pagar.
+    const m = mesesDeCorte()
+    const universo = (datos && datos.pagosTodos) || []
+    const rec = recaudoDelMes(universo, m.actual)
+    const recPrev = recaudoDelMes(universo, m.anterior)
+
     return {
       total, t1, t2, vencido, fxVencidas, nfx,
+      mes: m,
+      recMes: rec.total, recAnt: recPrev.total,
+      nRecMes: rec.n, nClientesPagaron: rec.clientes,
       criticos: clientes.filter((c) => c.dias_max > 90).length,
       sinPago: clientes.filter((c) => c.dias_ult_pago === null || c.dias_ult_pago > 30).length,
       compromisos: clientes.filter((c) => compromisoVencido(c)).length,
       pendientes: clientes.filter((c) => c.pendiente && !c.pendiente_pagado).length,
       conAcuerdo: clientes.filter((c) => compromisoActivo(c)).length,
     }
-  }, [clientes])
+  }, [clientes, datos])
 
   const ciudades = useMemo(
     () => [...new Set(clientes.map((c) => c.ciudad).filter(Boolean))].sort(),
@@ -281,6 +311,29 @@ export default function CarteraView({ usuario }) {
                 <li><span>Madres <i>Ene–May</i></span><b>{formatPrice(kpi.t1) || '—'}</b></li>
                 <li><span>Diciembre <i>Jun–Dic</i></span><b>{formatPrice(kpi.t2) || '—'}</b></li>
               </ul>
+            </div>
+
+            <div className="kpi-card">
+              <p className="kpi-label">Recaudado en {kpi.mes.nombreActual}</p>
+              <p className="kpi-cifra ok">{formatPrice(kpi.recMes) || '$ 0'}</p>
+              <p className="kpi-unidad">
+                {kpi.nRecMes} {kpi.nRecMes === 1 ? 'abono' : 'abonos'}
+                {' de '}{kpi.nClientesPagaron}
+                {kpi.nClientesPagaron === 1 ? ' cliente' : ' clientes'}
+              </p>
+              <p className="kpi-desglose">
+                {kpi.recAnt > 0 ? (
+                  <>
+                    {kpi.mes.nombreAnterior}: {formatPrice(kpi.recAnt)}
+                    {' · '}
+                    <b className={kpi.recMes >= kpi.recAnt ? 'ct-sube' : 'ct-baja'}>
+                      {kpi.recMes >= kpi.recAnt ? '▲' : '▼'}
+                      {' '}
+                      {Math.abs(Math.round(((kpi.recMes - kpi.recAnt) / kpi.recAnt) * 100))}%
+                    </b>
+                  </>
+                ) : `sin comparación con ${kpi.mes.nombreAnterior}`}
+              </p>
             </div>
 
             <div className="kpi-card">

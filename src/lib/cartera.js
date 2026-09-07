@@ -98,13 +98,79 @@ export async function cargarCartera() {
     ultimaSync(),
   ])
 
+  // Universo COMPLETO de abonos, incluidos los de clientes que ya cancelaron
+  // y salieron del informe. Es lo que hay que usar para "lo recaudado en el
+  // mes": si se contara sólo lo de los clientes con saldo, el total del mes
+  // iría bajando a medida que la gente termina de pagar.
+  const pagosTodos = unirPagos(facturas, pagosAcum || [], pagosAcum !== null)
+
   return {
     ...agrupar(facturas, gestion || [], pagosAcum || []),
+    pagosTodos,
     seguidos: new Set((marcas || []).filter((m) => m.seguir_cobro).map((m) => m.cliente_key)),
     sync,
     // Para avisar en la vista que falta correr el SQL.
     faltanTablas: gestion === null || marcas === null,
   }
+}
+
+/**
+ * Une los abonos archivados con los que trae el informe de hoy, sin repetir,
+ * y de paso ARCHIVA los nuevos en `cartera_pagos`.
+ *
+ * El archivado hace falta porque el informe es un SNAPSHOT: trae los últimos 4
+ * pagos de cada factura ABIERTA. Cuando un cliente termina de pagar, su factura
+ * desaparece y con ella su historial. Sin archivar, "lo recaudado en el mes"
+ * iría encogiendo solo a medida que la gente cancela — justo al revés de la
+ * realidad. Lo hacía el backend viejo al importar; acá se hace al leer.
+ *
+ * La escritura no bloquea el render: se dispara y sigue. Suelen ser 0 filas.
+ */
+function unirPagos(facturas, pagosAcum, puedeArchivar) {
+  const todos = new Map()
+  for (const p of pagosAcum) {
+    const fecha = String(p.fecha).slice(0, 10)
+    const valor = Number(p.valor)
+    todos.set(`${p.cliente_key}|${fecha}|${valor}`, { cliente_key: p.cliente_key, fecha, valor })
+  }
+
+  const nuevos = []
+  for (const f of facturas) {
+    const ck = normKey(f.cliente)
+    for (const p of f.pagos || []) {
+      if (!p || !p.fecha || !(Number(p.valor) > 0)) continue
+      const fecha = String(p.fecha).slice(0, 10)
+      const valor = Number(p.valor)
+      const k = `${ck}|${fecha}|${valor}`
+      if (todos.has(k)) continue
+      const fila = { cliente_key: ck, fecha, valor }
+      todos.set(k, fila)
+      nuevos.push({ ...fila, cliente: f.cliente })
+    }
+  }
+
+  if (puedeArchivar && nuevos.length) {
+    supabase.from('cartera_pagos')
+      .upsert(nuevos, { onConflict: 'cliente_key,fecha,valor', ignoreDuplicates: true })
+      .then(({ error }) => {
+        if (error) console.warn('[cartera] no pude archivar los abonos nuevos:', error.message)
+      })
+  }
+  return [...todos.values()]
+}
+
+/** Suma de los abonos de un mes ("2026-09"), sobre el universo completo. */
+export function recaudoDelMes(pagosTodos, mes) {
+  let total = 0
+  let n = 0
+  const clientes = new Set()
+  for (const p of pagosTodos) {
+    if (p.fecha.slice(0, 7) !== mes) continue
+    total += p.valor
+    n += 1
+    clientes.add(p.cliente_key)
+  }
+  return { total, n, clientes: clientes.size }
 }
 
 async function ultimaSync() {

@@ -6792,6 +6792,10 @@ tr.row-al.row-sel > td { background: #e9f3da; }
    tras el "$" la partía en dos líneas. */
 .ct-kpis .kpi-cifra.bad { color: #b23121; }
 .ct-kpis .kpi-cifra.warn { color: #9a6a1e; }
+.ct-kpis .kpi-cifra.ok { color: #1f7a44; }
+.ct-sube, .ct-baja { font-weight: 700; white-space: nowrap; }
+.ct-sube { color: #1f7a44; }
+.ct-baja { color: #b23121; }
 /* En las áreas la cifra es un conteo de 4 dígitos; acá es dinero de 13
    caracteres ("$ 928.613.517"). A los 38px del sistema se SALÍA de la tarjeta
    en Safari, donde el track `auto` de la rejilla no crece hasta el max-content

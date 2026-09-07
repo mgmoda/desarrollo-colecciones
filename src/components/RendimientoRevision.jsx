@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { ETAPAS_CORTE, duracion, estaListo, fechaHoraProc, horaProc } from '../lib/procesos.js'
+import { ETAPAS_REVISION, duracion, estaListo, fechaHoraProc, horaProc } from '../lib/procesos.js'
 import { periodRange, periodLabel, shiftPeriod } from '../lib/periods.js'
 import { formatDate } from '../lib/constants.js'
 
@@ -15,17 +15,22 @@ const fecha = (ts) => formatDate(new Date(Number(ts) || 0))
 const num = (n) => Math.round(n).toLocaleString('es-CO')
 const dec1 = (n) => n.toLocaleString('es-CO', { maximumFractionDigits: 1 })
 
-// Unidades por día de una etapa cerrada. Un trabajo que sale el mismo día
-// cuenta como un día: decir que hizo 143 unidades en un día se entiende, y
-// repartirlo en fracciones de día infla el número sin que signifique más.
-const porDia = (unid, dias) => unid / Math.max(1, dias)
+// Horas de reloj de una etapa cerrada, dichas como se dicen: "3 h 10 min",
+// "45 min", "2 d 4 h".
+function horasTxt(ms) {
+  const min = Math.max(0, Math.round(ms / 60000))
+  if (min < 60) return `${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `${h} h${min % 60 ? ` ${min % 60} min` : ''}`
+  const d = Math.floor(h / 24)
+  return `${d} d${h % 24 ? ` ${h % 24} h` : ''}`
+}
 
-// Rendimiento de doblado y corte: qué se cerró en el período, cuánto tardó
-// cada uno, y cuál de los dos cortadores rinde más.
-//
-// El promedio de días solo engaña —no es lo mismo cortar 59 en un día que 193
-// en cuatro—, así que la comparación se hace en unidades por día.
-export default function RendimientoCorte({ orders, procesos }) {
+// Rendimiento de la revisión: cuánto se revisó en el período, en cuánto
+// tiempo, quién lo hizo y cuánto se fue a arreglos. Las unidades por hora
+// comparan parejo entre personas: no es lo mismo revisar 40 en dos horas
+// que 140 en cinco.
+export default function RendimientoRevision({ orders, procesos }) {
   const [modo, setModo] = useState('semana')
   const [ancla, setAncla] = useState(() => new Date())
   const [etapaF, setEtapaF] = useState('')
@@ -42,17 +47,20 @@ export default function RendimientoCorte({ orders, procesos }) {
     return m
   }, [orders])
 
-  // Una fila por etapa cerrada, con lo que hay que saber de ella.
+  // Una fila por etapa cerrada en el período.
   const cerradas = useMemo(() => {
     const out = []
     Object.entries(procesos || {}).forEach(([orden, proc]) => {
       const o = porOrden.get(String(orden))
-      ETAPAS_CORTE.forEach((e) => {
+      ETAPAS_REVISION.forEach((e) => {
         const et = (proc || {})[e.key]
         if (!estaListo(et)) return
         if (rango && (et.hasta < rango.start.getTime() || et.hasta >= rango.end.getTime())) return
         const d = duracion(et)
-        const unid = Number(((o && o.stages && o.stages.ordenCorte) || {}).cant) || 0
+        const st = (o && o.stages) || {}
+        const recibido = Number((st.entregaEnsamble || st.ordenCorte || {}).cant) || 0
+        const unid = e.key === 'arreglos' ? (Number(et.unid) || 0) : recibido
+        const ms = Math.max(0, et.hasta - et.desde)
         out.push({
           id: orden + '-' + e.key,
           orden,
@@ -63,44 +71,55 @@ export default function RendimientoCorte({ orders, procesos }) {
           unid,
           quien: et.quien || '',
           dias: d.dias,
-          tiempo: d.texto,
-          ritmo: unid ? porDia(unid, d.dias) : 0,
+          ms,
+          tiempo: e.key === 'arreglos' ? d.texto : horasTxt(ms),
+          // Menos de cinco minutos no es una revisión medida: sin ritmo, para
+          // que un cierre inmediato no dispare miles de unidades por hora.
+          ritmo: unid && ms >= 5 * 60000 ? unid / (ms / 3600000) : 0,
           desde: et.desde,
           hasta: et.hasta,
           limite: e.limite,
+          conArreglos: !!((proc || {}).arreglos && (proc || {}).arreglos.desde),
+          unidArreglo: Number(((proc || {}).arreglos || {}).unid) || 0,
         })
       })
     })
     return out
   }, [procesos, porOrden, rango])
 
-  // Los dos cortadores, comparados en lo que de verdad se puede comparar.
-  const cortadores = useMemo(() => {
+  // Quién revisa, comparado en unidades por hora.
+  const personas = useMemo(() => {
     const m = new Map()
-    cerradas.filter((c) => c.etapa === 'corte' && c.quien).forEach((c) => {
-      if (!m.has(c.quien)) m.set(c.quien, { quien: c.quien, cortes: 0, unid: 0, dias: 0 })
-      const g = m.get(c.quien)
-      g.cortes += 1
+    cerradas.filter((c) => c.etapa === 'revision').forEach((c) => {
+      const k = c.quien || '—'
+      if (!m.has(k)) m.set(k, { quien: k, n: 0, unid: 0, ms: 0, conArreglos: 0, unidArreglo: 0 })
+      const g = m.get(k)
+      g.n += 1
       g.unid += c.unid
-      g.dias += Math.max(1, c.dias)
+      g.ms += c.ms
+      if (c.conArreglos) { g.conArreglos += 1; g.unidArreglo += c.unidArreglo }
     })
     return [...m.values()]
       .map((g) => ({
         ...g,
-        promedio: g.dias / g.cortes,
-        ritmo: g.dias ? g.unid / g.dias : 0,
-        lote: g.cortes ? g.unid / g.cortes : 0,
+        promedio: g.n ? g.ms / g.n : 0,
+        ritmo: g.ms ? g.unid / (g.ms / 3600000) : 0,
       }))
       .sort((a, b) => b.ritmo - a.ritmo)
   }, [cerradas])
 
   const tot = useMemo(() => {
-    const de = (k) => cerradas.filter((c) => c.etapa === k)
-    const prom = (l) => (l.length ? l.reduce((n, c) => n + Math.max(1, c.dias), 0) / l.length : 0)
+    const rev = cerradas.filter((c) => c.etapa === 'revision')
+    const arr = cerradas.filter((c) => c.etapa === 'arreglos')
+    const ms = rev.reduce((n, c) => n + c.ms, 0)
     return {
-      doblado: { n: de('doblado').length, prom: prom(de('doblado')) },
-      corte: { n: de('corte').length, prom: prom(de('corte')) },
-      unid: de('corte').reduce((n, c) => n + c.unid, 0),
+      rev: rev.length,
+      unid: rev.reduce((n, c) => n + c.unid, 0),
+      promedio: rev.length ? ms / rev.length : 0,
+      ritmo: ms ? rev.reduce((n, c) => n + c.unid, 0) / (ms / 3600000) : 0,
+      arr: arr.length,
+      unidArr: arr.reduce((n, c) => n + c.unid, 0),
+      diasArr: arr.length ? arr.reduce((n, c) => n + Math.max(1, c.dias), 0) / arr.length : 0,
     }
   }, [cerradas])
 
@@ -111,40 +130,34 @@ export default function RendimientoCorte({ orders, procesos }) {
       unid: (c) => c.unid,
       etapa: (c) => c.etapaLabel,
       quien: (c) => c.quien,
-      dias: (c) => c.dias,
+      tiempo: (c) => c.ms,
       ritmo: (c) => c.ritmo,
       hasta: (c) => c.hasta,
     }
     return sortRows(list, accessors[sortKey], sortDir)
   }, [cerradas, etapaF, sortKey, sortDir])
 
-  // El mejor solo se corona cuando hay con qué: con dos o tres cierres el
-  // número se mueve demasiado para llamarlo rendimiento.
-  const mejor = cortadores.length > 1 && cortadores[0].cortes >= 3 && cortadores[1].cortes >= 3
-    ? cortadores[0]
-    : null
-  const pocos = cortadores.length > 0 && cortadores.some((c) => c.cortes < 5)
-
   function bajarCsv() {
-    const cab = ['Referencia', 'Orden', 'Producto', 'Cantidad', 'Etapa', 'Quien', 'Dias',
-      'Und por dia', 'Fecha inicio', 'Hora inicio', 'Fecha fin', 'Hora fin', 'Horas']
+    const cab = ['Referencia', 'Orden', 'Producto', 'Unidades', 'Etapa', 'Quien', 'Tiempo',
+      'Und por hora', 'Fecha inicio', 'Hora inicio', 'Fecha fin', 'Hora fin', 'Horas']
     const linea = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`
     const cuerpo = rows.map((c) => [
       c.referencia, c.orden, c.producto, c.unid, c.etapaLabel, c.quien || '',
-      Math.max(1, c.dias), Math.round(c.ritmo),
+      c.tiempo, dec1(c.ritmo),
       fecha(c.desde), horaProc(c.desde), fecha(c.hasta), horaProc(c.hasta),
-      Math.round((c.hasta - c.desde) / 3600000),
+      dec1(c.ms / 3600000),
     ].map(linea).join(';'))
     const csv = '﻿' + [cab.map(linea).join(';'), ...cuerpo].join('\r\n')
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
     const a = document.createElement('a')
     a.href = url
-    a.download = `rendimiento-corte-${modo === 'todo' ? 'todo' : periodLabel(modo, rango)}.csv`
+    a.download = `rendimiento-revision-${modo === 'todo' ? 'todo' : periodLabel(modo, rango)}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
 
   const thProps = { sortKey, sortDir, onSort: toggle }
+  const pocos = personas.length > 0 && personas.some((p) => p.n < 5)
 
   return (
     <>
@@ -168,7 +181,7 @@ export default function RendimientoCorte({ orders, procesos }) {
           </div>
         )}
         <div className="dis-filtros" style={{ marginLeft: 'auto' }}>
-          {ETAPAS_CORTE.map((e) => {
+          {ETAPAS_REVISION.map((e) => {
             const n = cerradas.filter((c) => c.etapa === e.key).length
             const on = etapaF === e.key
             return (
@@ -186,68 +199,63 @@ export default function RendimientoCorte({ orders, procesos }) {
 
       <div className="prog-kpis">
         <div className="prog-kpi">
-          <span>Doblado · promedio</span>
-          <b>{tot.doblado.n ? dec1(tot.doblado.prom) + ' d' : '—'}</b>
-          <em>{tot.doblado.n} {tot.doblado.n === 1 ? 'cerrado' : 'cerrados'}</em>
+          <span>Órdenes revisadas</span>
+          <b>{tot.rev}</b>
+          <em>{num(tot.unid)} unidades</em>
         </div>
         <div className="prog-kpi">
-          <span>Corte · promedio</span>
-          <b>{tot.corte.n ? dec1(tot.corte.prom) + ' d' : '—'}</b>
-          <em>{tot.corte.n} {tot.corte.n === 1 ? 'cerrado' : 'cerrados'}</em>
+          <span>Tiempo promedio</span>
+          <b>{tot.rev ? horasTxt(tot.promedio) : '—'}</b>
+          <em>por orden revisada</em>
         </div>
         <div className="prog-kpi">
-          <span>Unidades cortadas</span>
-          <b>{num(tot.unid)}</b>
-          <em>en el período</em>
+          <span>Unidades por hora</span>
+          <b>{tot.rev ? dec1(tot.ritmo) : '—'}</b>
+          <em>de revisión</em>
         </div>
-        <div className="prog-kpi">
-          <span>Etapas cerradas</span>
-          <b>{cerradas.length}</b>
-          <em>doblado y corte</em>
+        <div className={'prog-kpi' + (tot.arr ? ' alerta' : '')}>
+          <span>Arreglos de vuelta</span>
+          <b>{tot.arr}</b>
+          <em>{tot.arr ? `${num(tot.unidArr)} unid · ${dec1(tot.diasArr)} d afuera en promedio` : 'ninguno en el período'}</em>
         </div>
       </div>
 
-      {cortadores.length > 0 && (
+      {personas.length > 0 && (
         <div className="rend-card">
           <div className="rend-card-h">
-            <h2>Cortadores</h2>
+            <h2>Quién revisa</h2>
             <span className="rend-nota">
-              El ritmo compara parejo: no es lo mismo cortar 59 en un día que 193 en cuatro
+              Las unidades por hora comparan parejo: no es lo mismo revisar 40 en dos horas que 140 en cinco
             </span>
           </div>
           <div className="table-wrap">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Cortador</th>
-                  <th className="num">Cortes</th>
+                  <th>Persona</th>
+                  <th className="num">Órdenes</th>
                   <th className="num">Unidades</th>
-                  <th className="num">Lote promedio</th>
-                  <th className="num">Días promedio</th>
-                  <th>Ritmo</th>
+                  <th className="num">Tiempo promedio</th>
+                  <th className="num">Con arreglos</th>
+                  <th className="num">Unid a arreglo</th>
+                  <th>Unidades por hora</th>
                 </tr>
               </thead>
               <tbody>
-                {cortadores.map((c) => (
-                  <tr key={c.quien}>
-                    <td className="strong">
-                      {c.quien}
-                      {mejor && mejor.quien === c.quien && (
-                        <span className="rend-mejor" title="Más unidades por día en este período">
-                          Mejor ritmo
-                        </span>
-                      )}
-                    </td>
-                    <td className="num">{c.cortes}</td>
-                    <td className="num">{num(c.unid)}</td>
-                    <td className="num muted">{num(c.lote)}</td>
-                    <td className="num">{dec1(c.promedio)} d</td>
+                {personas.map((p) => (
+                  <tr key={p.quien}>
+                    <td className="strong">{p.quien}</td>
+                    <td className="num">{p.n}</td>
+                    <td className="num">{num(p.unid)}</td>
+                    <td className="num">{horasTxt(p.promedio)}</td>
+                    <td className="num">{p.conArreglos || <span className="muted">—</span>}</td>
+                    <td className="num">{p.unidArreglo || <span className="muted">—</span>}</td>
                     <td>
                       <div className="rend-fila">
                         <div className="rend-barra-bg">
-                          <span style={{ width: Math.round(100 * c.ritmo / (cortadores[0].ritmo || 1)) + '%' }} />
+                          <span style={{ width: Math.round(100 * p.ritmo / (personas[0].ritmo || 1)) + '%' }} />
                         </div>
-                        <span className="rend-val">{num(c.ritmo)} u/d</span>
+                        <span className="rend-val">{dec1(p.ritmo)} u/h</span>
                       </div>
                     </td>
                   </tr>
@@ -257,8 +265,8 @@ export default function RendimientoCorte({ orders, procesos }) {
           </div>
           {pocos && (
             <p className="rend-aviso">
-              Con pocos cortes cerrados los promedios se mueven mucho. Empiezan a
-              significar algo desde unos 15 o 20 por persona.
+              Con pocas revisiones cerradas los promedios se mueven mucho. Empiezan a
+              significar algo desde unas 15 o 20 por persona.
             </p>
           )}
         </div>
@@ -268,7 +276,7 @@ export default function RendimientoCorte({ orders, procesos }) {
         <div className="empty-state">
           <p>No se cerró ninguna etapa {modo === 'todo' ? 'todavía' : 'en este período'}.</p>
           <p className="muted">
-            Cada doblado o corte que se cierre en la tabla de órdenes entra aquí con su tiempo.
+            Cada revisión o arreglo que se cierre en la tabla de órdenes entra aquí con su tiempo.
           </p>
         </div>
       ) : (
@@ -277,11 +285,11 @@ export default function RendimientoCorte({ orders, procesos }) {
             <thead>
               <tr>
                 <SortTh label="Referencia" col="referencia" {...thProps} />
-                <SortTh label="Cant" col="unid" className="num" {...thProps} />
+                <SortTh label="Unid" col="unid" className="num" {...thProps} />
                 <SortTh label="Etapa" col="etapa" {...thProps} />
                 <SortTh label="Quién" col="quien" {...thProps} />
-                <SortTh label="Tardó" col="dias" className="num" {...thProps} />
-                <SortTh label="Und/día" col="ritmo" className="num" {...thProps} />
+                <SortTh label="Tardó" col="tiempo" className="num" {...thProps} />
+                <SortTh label="Und/hora" col="ritmo" className="num" {...thProps} />
                 <SortTh label="Fechas" col="hasta" {...thProps} />
               </tr>
             </thead>
@@ -293,7 +301,9 @@ export default function RendimientoCorte({ orders, procesos }) {
                   <td><span className={'tag et-tag-' + c.etapa}>{c.etapaLabel}</span></td>
                   <td>{c.quien || <span className="muted">—</span>}</td>
                   <td className={'num strong' + (c.dias > c.limite ? ' prog-falta' : '')}>{c.tiempo}</td>
-                  <td className="num">{c.unid ? num(c.ritmo) : <span className="muted">—</span>}</td>
+                  <td className="num">
+                    {c.etapa === 'revision' && c.unid ? dec1(c.ritmo) : <span className="muted">—</span>}
+                  </td>
                   <td className="muted rend-fechas"
                     title={`Empezó ${fechaHoraProc(c.desde)} · terminó ${fechaHoraProc(c.hasta)}`}>
                     {fecha(c.desde)} <b>{horaProc(c.desde)}</b>

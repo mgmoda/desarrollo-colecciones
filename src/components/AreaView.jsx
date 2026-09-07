@@ -15,6 +15,7 @@ import NotaRefModal from './NotaRefModal.jsx'
 import FaseToggles from './FaseToggles.jsx'
 import EtapaProceso from './EtapaProceso.jsx'
 import RendimientoCorte from './RendimientoCorte.jsx'
+import RendimientoRevision from './RendimientoRevision.jsx'
 import EnviarExternoModal from './EnviarExternoModal.jsx'
 import EntradaBodegaModal from './EntradaBodegaModal.jsx'
 import { pendientesDe, resumenFalta } from '../lib/entradasBodega.js'
@@ -172,6 +173,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
     const unid = (o) => pendientesDe(o, o.entradasBodega).falta
     const dias = enEtapa.map((o) => diasDesde((o.stages[baseStage] || {}).fecha))
     const iMax = dias.length ? dias.indexOf(Math.max(...dias)) : -1
+    const et = (o, k) => (procesos[o.orden] || {})[k]
+    const revisando = enEtapa.filter((o) => estaAndando(et(o, 'revision')))
+    const enArreglos = enEtapa.filter((o) => estaAndando(et(o, 'arreglos')))
     return {
       n: enEtapa.length,
       unid: enEtapa.reduce((n, o) => n + unid(o), 0),
@@ -179,8 +183,12 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       unidVencidas: enEtapa.reduce((n, o, i) => n + (dias[i] > limiteDias ? unid(o) : 0), 0),
       masVieja: iMax < 0 ? 0 : dias[iMax],
       refVieja: iMax < 0 ? '' : enEtapa[iMax].referencia,
+      revisando: revisando.length,
+      unidRevisando: revisando.reduce((n, o) => n + unid(o), 0),
+      arreglos: enArreglos.length,
+      unidArreglos: enArreglos.reduce((n, o) => n + (Number(et(o, 'arreglos').unid) || 0), 0),
     }
-  }, [enEtapa, baseStage, limiteDias])
+  }, [enEtapa, baseStage, limiteDias, procesos])
 
   // Talleres presentes en la etapa, con cuántas órdenes tiene cada uno.
   const talleres = useMemo(() => {
@@ -223,6 +231,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       // abierto; lo cerrado y lo que no ha empezado quedan al final.
       procDoblado: (o) => diasAbierta(procesos[o.orden], 'doblado'),
       procCorte: (o) => diasAbierta(procesos[o.orden], 'corte'),
+      procRevision: (o) => diasAbierta(procesos[o.orden], 'revision'),
+      procArreglos: (o) => diasAbierta(procesos[o.orden], 'arreglos'),
     }
     return sortRows(list, accessors[sortKey], sortDir)
   }, [enEtapa, q, tallerSel, donde, procesos, sortKey, sortDir, baseStage, refMap])
@@ -291,7 +301,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
           </p>
         </div>
         <div className="view-actions">
-          {showProcesos && (
+          {(showProcesos || esCola) && (
             <div className="dis-filtros">
               <button type="button" className={'proc-f-btn' + (vista === 'ordenes' ? ' on' : '')}
                 onClick={() => setVista('ordenes')}>Órdenes</button>
@@ -326,11 +336,13 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         </div>
       </div>
 
-      {showProcesos && vista === 'rendimiento' ? (
+      {(showProcesos || esCola) && vista === 'rendimiento' ? (
         // El rendimiento mira TODAS las órdenes, no solo las que siguen
         // esperando corte: una orden ya cortada se fue de esta mesa, pero su
         // tiempo es justamente lo que hay que medir.
-        <RendimientoCorte orders={orders} procesos={procesos} />
+        esCola
+          ? <RendimientoRevision orders={orders} procesos={procesos} />
+          : <RendimientoCorte orders={orders} procesos={procesos} />
       ) : (
       <>
       {showProcesos && (fuera.n > 0 || donde) && (
@@ -365,6 +377,11 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
             <em>volvieron del taller y no han entrado a bodega</em></div>
           <div className="prog-kpi"><span>Órdenes en revisión</span><b>{cola.n}</b>
             <em>esperando entrada a bodega</em></div>
+          <div className="prog-kpi"><span>Revisando ahora</span><b>{cola.revisando}</b>
+            <em>{cola.unidRevisando.toLocaleString('es-CO')} unidades</em></div>
+          <div className={'prog-kpi' + (cola.arreglos > 0 ? ' arreglos' : '')}>
+            <span>En arreglos</span><b>{cola.arreglos}</b>
+            <em>{cola.arreglos ? `${cola.unidArreglos.toLocaleString('es-CO')} unidades afuera` : 'ninguna afuera'}</em></div>
           <div className={'prog-kpi' + (cola.vencidas > 0 ? ' alerta' : '')}>
             <span>Más de {limiteDias} días</span><b>{cola.vencidas}</b>
             <em>{cola.unidVencidas.toLocaleString('es-CO')} unidades</em></div>
@@ -396,13 +413,17 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 <SortTh label="# Orden" col="orden" {...thProps} />
                 <SortTh label="Referencia" col="referencia" {...thProps} />
                 <SortTh label="Producto" col="producto" {...thProps} />
-                <SortTh label="Procesos" col="procesos" {...thProps} />
-                <SortTh label="Top/Forro" col="topForro" {...thProps} />
+                {/* En Revisión estas dos no aportan y el espacio lo necesitan
+                    las casillas de Revisando y Arreglos. */}
+                {!esCola && <SortTh label="Procesos" col="procesos" {...thProps} />}
+                {!esCola && <SortTh label="Top/Forro" col="topForro" {...thProps} />}
                 {showTaller && <SortTh label="Taller" col="taller" {...thProps} />}
                 {showValorTaller && <SortTh label="Valor taller" col="valorTaller" className="num" {...thProps} />}
                 <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />
                 <SortTh label="Cant" col="cant" className="num" {...thProps} />
                 {esCola && <SortTh label="Falta" col="falta" className="num" {...thProps} />}
+                {esCola && <SortTh label="Revisando" col="procRevision" {...thProps} />}
+                {esCola && <SortTh label="Arreglos" col="procArreglos" {...thProps} />}
                 {showProcesos && <SortTh label="Doblando" col="procDoblado" {...thProps} />}
                 {showProcesos && <SortTh label="Cortando" col="procCorte" {...thProps} />}
                 {showAtraso && <SortTh label="Días" col="atraso" className="num" {...thProps} />}
@@ -488,10 +509,12 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                       <ProductoCell orden={o} vinculo={conjuntoLinks.get(claveOrden(o))}
                         onAbrir={setConjuntoDe} />
                     </td>
-                    <td><ProcesosTags refRow={ref} /></td>
-                    <td onClick={(e) => e.stopPropagation()}>
-                      <TopCell orden={o} refRow={ref} topLinks={topLinks} onAbrir={setTopDe} />
-                    </td>
+                    {!esCola && <td><ProcesosTags refRow={ref} /></td>}
+                    {!esCola && (
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <TopCell orden={o} refRow={ref} topLinks={topLinks} onAbrir={setTopDe} />
+                      </td>
+                    )}
                     {showTaller && <td className="cel-taller" title={taller}>{taller}</td>}
                     {showValorTaller && (
                       <td className="num" title={o.valorTaller
@@ -507,6 +530,20 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                         {parcial
                           ? <span className="tag tag-parcial" title={`Ya entraron ${pend.entrado} de ${pend.recibido}`}>{pend.falta}</span>
                           : pend.falta}
+                      </td>
+                    )}
+                    {esCola && (
+                      <td className="cel-proc" onClick={(ev) => ev.stopPropagation()}>
+                        <EtapaProceso etapa="revision" proc={procesos[o.orden]}
+                          usuario={usuario} puedeEditar={puedeProcesos}
+                          onCambiar={(p) => onGuardarProceso(o.orden, p)} />
+                      </td>
+                    )}
+                    {esCola && (
+                      <td className="cel-proc" onClick={(ev) => ev.stopPropagation()}>
+                        <EtapaProceso etapa="arreglos" proc={procesos[o.orden]}
+                          usuario={usuario} puedeEditar={puedeProcesos}
+                          onCambiar={(p) => onGuardarProceso(o.orden, p)} />
                       </td>
                     )}
                     {/* El clic se queda en la casilla: la fila entera abre la

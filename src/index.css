@@ -5907,6 +5907,7 @@ tr.row-parcial > td { background: #fffaf0; }
 .cel-eb { white-space: nowrap; }
 .btn-eb { padding: 4px 10px; font-size: 11.5px; }
 .tag-parcial { background: #faeeda; color: #633806; border-color: #fac775; font-weight: 600; }
+.prog-kpi.arreglos b { color: #3c3489; }
 .eb-head { display: flex; gap: 14px; align-items: center; min-width: 0; }
 .eb-foto { width: 46px; height: 60px; object-fit: cover; border-radius: 6px; flex: none; }
 .eb-meta { margin: 3px 0 0; color: var(--ink-soft); font-size: 12.5px; }
@@ -6539,6 +6540,13 @@ tr.row-parcial > td { background: #fffaf0; }
 .et-vivo.corte { background: #eeedfe; color: #3c3489; border-color: #cecbf6; }
 /* Tercerizado: la tela no está en la casa, y se ve en otro color. */
 .et-vivo.externo { background: #e8f1f7; color: #1c4f6e; border-color: #b9d7e8; }
+/* Revisión: revisando en verde agua, arreglos afuera en morado. */
+.et-vivo.revision { background: #e1f5ee; color: #085041; border-color: #9fe1cb; }
+.et-vivo.arreglos { background: #eeedfe; color: #3c3489; border-color: #cecbf6; }
+.et-tag-revision { background: #e1f5ee; color: #085041; border-color: #9fe1cb; }
+.et-tag-arreglos { background: #eeedfe; color: #3c3489; border-color: #cecbf6; }
+.et-unid { width: 58px; padding: 4px 6px; border: 1px solid var(--hairline-strong); border-radius: 7px; font: inherit; font-size: 12px; }
+.et-unid::-webkit-outer-spin-button, .et-unid::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .tag-ext {
   margin-left: 7px; background: #e8f1f7; color: #1c4f6e; border-color: #b9d7e8;
   font-size: 10px; font-weight: 600;

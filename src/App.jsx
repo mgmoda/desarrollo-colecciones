@@ -37,7 +37,8 @@ import {
   dbLoadTelas, dbLoadProcesos, dbUpsertProceso, dbLoadEntradasBodega, dbUpsertEntradaBodega,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
-import { aplicarEntradas } from './lib/entradasBodega.js'
+import { aplicarEntradas, pendientesDe } from './lib/entradasBodega.js'
+import { cerrar, estaAndando } from './lib/procesos.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice, normRef } from './lib/constants.js'
 import { resumirCambios } from './lib/cambios.js'
 
@@ -529,6 +530,13 @@ export default function App() {
       alert('No se pudo guardar la entrada: ' + e.message)
     })
     dbLog('entrada_bodega', 'orden', clave, { unid: entrada.unid, fecha: entrada.fecha, nota: entrada.nota })
+    // Si entró completa y todavía estaba "revisando", la revisión se cierra
+    // sola: ya nadie la va a cerrar después.
+    const o = ordersFactory.find((x) => String(x.orden) === clave)
+    const proc = procesos[clave]
+    if (o && proc && estaAndando(proc.revision) && pendientesDe(o, registro).falta === 0) {
+      guardarProceso(clave, cerrar(proc, 'revision', emailSesion))
+    }
   }
 
   function borrarProgramacion(id) {
@@ -981,7 +989,7 @@ export default function App() {
             fasesOcultas={fasesOcultas} onToggleFase={toggleFase} puedeFiltrar={esAdmin}
             topLinks={topLinks} onVincularTop={vincularTop} conjuntoLinks={conjuntoLinks}
             procesos={procesos} usuario={emailSesion}
-            onGuardarProceso={puedeCorte ? guardarProceso : undefined}
+            onGuardarProceso={(tab === 'revision' ? puedeBodega : puedeCorte) ? guardarProceso : undefined}
             onGuardarEntrada={puedeBodega ? guardarEntradaBodega : undefined}
             onViewImage={setLightbox} onOpenRef={openEdit} onSetFields={handleSetFields} />
         )}

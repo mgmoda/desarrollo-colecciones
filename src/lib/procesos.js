@@ -43,7 +43,15 @@ export function enviarExterno(proc, usuario, iso) {
   return { ...(proc || {}), corte: { desde, usuario, quien: EXTERNO, externo: true } }
 }
 
-export const ETAPAS_PROC = [
+// Quien marca, dicho corto: "monica@mgmoda.local" → "Monica".
+export const nombreDe = (email) => {
+  const n = String(email || '').split('@')[0]
+  return n ? n.charAt(0).toUpperCase() + n.slice(1) : ''
+}
+
+// Las etapas de la mesa de corte. Las de Revisión van aparte (abajo): son
+// otras casillas, en otra pestaña, con su propio rendimiento.
+export const ETAPAS_CORTE = [
   {
     key: 'doblado',
     label: 'Doblado',
@@ -67,6 +75,37 @@ export const ETAPAS_PROC = [
     limite: 5,
   },
 ]
+
+// Las de Revisión: lo que volvió del taller se revisa, y lo que sale con
+// defecto va a arreglo y vuelve. Revisar no pregunta quién: queda quien la
+// marcó. Arreglos pregunta cuántas unidades salen.
+export const ETAPAS_REVISION = [
+  {
+    key: 'revision',
+    label: 'Revisión',
+    andando: 'Revisando',
+    listo: 'Revisada',
+    iniciar: 'Iniciar revisión',
+    corto: 'Revisar',
+    pregunta: null,
+    quienUsuario: true,
+    limite: 3,
+  },
+  {
+    key: 'arreglos',
+    label: 'Arreglos',
+    andando: 'En arreglos',
+    listo: 'Arreglos de vuelta',
+    iniciar: 'Salen a arreglo',
+    corto: 'Arreglos',
+    pregunta: null,
+    cantidad: true,
+    cerrarTitulo: 'Volvieron los arreglos: se cierra y queda cuántos días estuvieron afuera',
+    limite: 5,
+  },
+]
+
+export const ETAPAS_PROC = [...ETAPAS_CORTE, ...ETAPAS_REVISION]
 export const etapaProc = (key) => ETAPAS_PROC.find((e) => e.key === key) || ETAPAS_PROC[0]
 
 // Cuánto lleva (o cuánto tardó) una etapa. Siempre es una DURACIÓN, nunca una
@@ -127,9 +166,10 @@ export const alistandoDesde = (proc) => {
   return Math.max((p.corte && p.corte.hasta) || 0, (p.doblado && p.doblado.hasta) || 0)
 }
 
-// Abre la etapa. `quien` solo lo usa el corte.
-export function abrir(proc, etapaKey, usuario, quien) {
-  const et = { desde: Date.now(), usuario }
+// Abre la etapa. `quien` lo usa el corte (el cortador) y la revisión (quien
+// la marcó); `extra` lo usan los arreglos (cuántas unidades salieron).
+export function abrir(proc, etapaKey, usuario, quien, extra) {
+  const et = { desde: Date.now(), usuario, ...(extra || {}) }
   if (quien) et.quien = quien
   return { ...(proc || {}), [etapaKey]: et }
 }

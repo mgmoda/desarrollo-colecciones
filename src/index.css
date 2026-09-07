@@ -6792,9 +6792,18 @@ tr.row-al.row-sel > td { background: #e9f3da; }
    tras el "$" la partía en dos líneas. */
 .ct-kpis .kpi-cifra.bad { color: #b23121; }
 .ct-kpis .kpi-cifra.warn { color: #9a6a1e; }
-/* Sólo en Cartera: acá la cifra es dinero y el espacio tras el "$" la partía
-   en dos renglones. En las áreas son conteos cortos y no hay que tocarlas. */
-.ct-kpis .kpi-cifra { white-space: nowrap; }
+/* En las áreas la cifra es un conteo de 4 dígitos; acá es dinero de 13
+   caracteres ("$ 928.613.517"). A los 38px del sistema se SALÍA de la tarjeta
+   en Safari, donde el track `auto` de la rejilla no crece hasta el max-content
+   y los items, con flex-shrink:0, se desbordaban. Se arregla por los dos lados:
+   la tarjeta puede crecer y envolver, y la cifra es fluida.
+   (No hace falta white-space:nowrap: formatPrice separa el "$" con un espacio
+   duro U+00A0, así que la cifra nunca se parte en dos renglones.) */
+.ct-kpis .kpi-nums .kpi-card { min-width: 250px; }
+.ct-kpis .kpi-cifra { font-size: clamp(21px, 1.9vw, 30px); }
+@media (max-width: 1100px) {
+  .ct-kpis .kpi-grid { grid-template-columns: 1fr; }
+}
 /* .kpi-marcas es una rejilla auto-fit de 220px: en las tarjetas angostas de
    las áreas da una columna, pero en una tarjeta ancha se abre en varias. */
 .ct-kpis .kpi-marcas.ct-lista { grid-template-columns: 1fr; gap: 0; }

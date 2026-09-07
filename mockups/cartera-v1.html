@@ -59,15 +59,8 @@
   .ct-alert .sp { flex:1; }
 
   /* ── KPIs: mismas clases que las áreas; sólo el color del acento ── */
-  /* En las áreas la cifra es un conteo corto; acá es dinero y el espacio
-     tras el "$" la partía en dos líneas. */
-  .kpi-cifra { white-space:nowrap; }
-  .kpi-cifra.bad  { color:#b23121; }
-  .kpi-cifra.warn { color:#9a6a1e; }
-  /* .kpi-marcas es una rejilla auto-fit de 220px: en las tarjetas angostas
-     de las áreas da una columna, pero en una tarjeta ancha se abre en varias.
-     Acá se fuerza a una sola para que se lea como lista. */
-  .kpi-card .kpi-marcas.ct-lista { grid-template-columns:1fr; gap:0; }
+  /* Estas reglas viven en src/index.css bajo .ct-kpis; el mockup sólo
+     agrega la clase al contenedor para verse igual que lo desplegado. */
   .ct-kpi-split { display:flex; height:6px; border-radius:999px; overflow:hidden;
                   background:#ece9e1; margin:12px 0 0; }
   .ct-kpi-split i { display:block; height:100%; }
@@ -271,7 +264,7 @@
     </div>
 
     <!-- ══════════ KPIs — el patrón de Corte / Por alistar ══════════ -->
-    <div class="kpi-wrap">
+    <div class="kpi-wrap ct-kpis">
       <div class="kpi-grid">
         <div class="kpi-nums">
 

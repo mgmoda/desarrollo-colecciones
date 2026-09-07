@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mockup · Cartera dentro de Desarrollo de Colecciones</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- CSS REAL de la app: mismo sistema visual, no una copia -->
+  <link rel="stylesheet" href="/src/index.css" />
+
+  <style>
+  /* ══════════════════════════════════════════════════════════════════
+     CARTERA — pestaña nueva de Desarrollo de Colecciones
+     ──────────────────────────────────────────────────────────────────
+     Se apoya en lo que ya existe: .topbar/.tabs, .view-head,
+     .kpi-wrap/.kpi-grid/.kpi-card (el MISMO patrón de Corte, Por alistar
+     y En talleres — AreaKpis.jsx), .table-wrap/.data-table, .searchbox,
+     .filterselect, .tag/.flag-*, .modal-overlay/.modal.
+
+     TIPOGRAFÍA: las cifras van en Inter con tabular-nums, igual que en
+     todas las áreas. Fraunces se reserva para los títulos, como en el
+     resto de la app — NO se usa para dinero.
+     MONEDA: formato del sistema (formatPrice de src/lib/constants.js)
+     → toLocaleString('es-CO', currency COP) = "$ 276.743.881".
+     ══════════════════════════════════════════════════════════════════ */
+
+  /* ── Banda de sincronización ────────────────────────────────────── */
+  .ct-sync {
+    display:flex; align-items:center; gap:14px;
+    background:var(--surface); border:1px solid var(--hairline);
+    border-radius:var(--radius); padding:14px 18px; margin-bottom:12px;
+  }
+  .ct-sync-ic {
+    width:36px; height:36px; flex:none; border-radius:10px;
+    background:#ece9e1; color:var(--ink); display:grid; place-items:center;
+  }
+  .ct-sync-t { font-weight:600; font-size:13.5px; }
+  .ct-sync-s { font-size:12px; color:var(--muted); margin-top:1px; }
+  .ct-sync-sp { flex:1; }
+  .ct-live {
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:11.5px; font-weight:600; color:#1f7a44;
+    background:#e3f3e8; padding:5px 11px; border-radius:999px;
+  }
+  .ct-live i { width:6px; height:6px; border-radius:50%; background:#1f7a44; }
+
+  /* ── Aviso de compromisos vencidos ──────────────────────────────── */
+  .ct-alert {
+    display:flex; align-items:center; gap:12px;
+    background:#fdf6ee; border:1px solid #e7c9aa; color:#8a5326;
+    border-radius:var(--radius); padding:13px 18px; margin-bottom:20px;
+    font-size:13.5px;
+  }
+  .ct-alert b { color:#7a4418; }
+  .ct-alert .sp { flex:1; }
+
+  /* ── KPIs: mismas clases que las áreas; sólo el color del acento ── */
+  /* En las áreas la cifra es un conteo corto; acá es dinero y el espacio
+     tras el "$" la partía en dos líneas. */
+  .kpi-cifra { white-space:nowrap; }
+  .kpi-cifra.bad  { color:#b23121; }
+  .kpi-cifra.warn { color:#9a6a1e; }
+  /* .kpi-marcas es una rejilla auto-fit de 220px: en las tarjetas angostas
+     de las áreas da una columna, pero en una tarjeta ancha se abre en varias.
+     Acá se fuerza a una sola para que se lea como lista. */
+  .kpi-card .kpi-marcas.ct-lista { grid-template-columns:1fr; gap:0; }
+  .ct-kpi-split { display:flex; height:6px; border-radius:999px; overflow:hidden;
+                  background:#ece9e1; margin:12px 0 0; }
+  .ct-kpi-split i { display:block; height:100%; }
+  .kpi-marcas li.ct-bad b  { color:#b23121; }
+  .kpi-marcas li.ct-warn b { color:#9a6a1e; }
+
+  /* ── Barra de filtros sobre la tabla ────────────────────────────── */
+  .ct-filters {
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:14px; flex-wrap:wrap;
+  }
+  .ct-filters .searchbox { flex:0 0 260px; }
+  .ct-filters .filterselect { flex:0 0 190px; }
+  .ct-chips { display:flex; gap:6px; flex-wrap:wrap; margin-left:auto; }
+  .ct-chip {
+    border:1px solid var(--hairline-strong); background:var(--surface);
+    color:var(--ink-soft); border-radius:999px; padding:7px 13px;
+    font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:7px;
+    transition:all .15s ease;
+  }
+  .ct-chip:hover { background:#efece4; color:var(--ink); }
+  .ct-chip.on { background:var(--ink); border-color:var(--ink); color:#fff; }
+  .ct-chip .n {
+    font-size:11px; font-weight:700; padding:1px 6px;
+    border-radius:999px; background:#ece9e1; color:var(--ink-soft);
+  }
+  .ct-chip.on .n { background:rgba(255,255,255,.2); color:#fff; }
+  .ct-chip.warn { border-color:#fac775; color:#8a5326; }
+  .ct-chip.warn .n { background:#fbf0db; color:#9a6a1e; }
+  .ct-chip.bad  { border-color:#e9b3ac; color:#b23121; }
+  .ct-chip.bad .n { background:#fbe6e3; color:#b23121; }
+
+  /* ── Celda de cliente: sólo la ★ y el nombre ────────────────────── */
+  /* La tabla base es white-space:nowrap; acá se libera para que el nombre
+     salga COMPLETO, envolviendo a dos líneas si hace falta. */
+  .ct-cli { display:flex; align-items:center; gap:9px; white-space:normal; }
+  .ct-star {
+    flex:none; border:none; background:none; color:#c9c5ba;
+    font-size:14px; line-height:1; padding:2px; border-radius:5px;
+  }
+  .ct-star:hover { color:#c8951f; background:#fbf0db; }
+  .ct-star.on { color:#d9a021; }
+  .ct-cli-n { font-weight:600; line-height:1.25; }
+
+  /* Ciudad: columna propia, para poder filtrar y ordenar por zona */
+  .data-table td.ct-ciudad { color:var(--ink-soft); font-size:12.5px; }
+
+  /* Cifras: exactamente como en el resto del sistema — td.num centrado,
+     Inter, tabular-nums. El total lleva td.strong, nada más. */
+  .data-table th.ct-per-h span {
+    display:block; font-size:9.5px; font-weight:500;
+    text-transform:none; letter-spacing:0; color:var(--muted);
+  }
+  .data-table td.ct-per { color:var(--ink-soft); }
+  .ct-dash { color:#c9c5ba; }
+
+  .ct-ult b { font-weight:700; }
+  .ct-ult b.ok  { color:#1f7a44; }
+  .ct-ult b.mid { color:#9a6a1e; }
+  .ct-ult b.bad { color:#b23121; }
+
+  .data-table td.ct-gest { width:160px; max-width:160px; overflow:hidden;
+                           text-overflow:ellipsis; font-size:12.5px; }
+  .ct-gest-none { color:#c9c5ba; }
+  .ct-gest-tag { display:inline-flex; align-items:center; gap:6px; min-width:0; }
+  .ct-gest-tag i { width:7px; height:7px; border-radius:50%; flex:none; }
+  .ct-gest-tag i.ok { background:#1f7a44; }
+  .ct-gest-tag i.info { background:#2c5a8c; }
+
+  .ct-foot {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 16px; border-top:1px solid var(--hairline);
+    font-size:12.5px; color:var(--muted); background:#faf8f3;
+  }
+  .ct-foot b { font-size:15px; font-weight:600; color:var(--ink);
+               font-variant-numeric:tabular-nums; }
+
+  /* ── Detalle del cliente (modal del sistema) ────────────────────── */
+  .ct-modal-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:22px; }
+  .ct-mc { background:#faf8f3; border:1px solid var(--hairline); border-radius:10px; padding:13px 15px; }
+  .ct-mc .l { font-size:10px; font-weight:600; text-transform:uppercase;
+              letter-spacing:.1em; color:var(--muted); margin-bottom:5px; }
+  .ct-mc .v { font-size:19px; font-weight:600; font-variant-numeric:tabular-nums;
+              letter-spacing:-.02em; }
+  .ct-mc .v.bad { color:#b23121; }
+  .ct-mc .v small { display:block; font-size:11.5px; font-weight:400;
+                    color:var(--muted); letter-spacing:0; margin-top:2px; }
+
+  .ct-sec { margin-bottom:24px; }
+  .ct-sec-h {
+    display:flex; align-items:center; gap:10px;
+    font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.1em;
+    color:var(--muted); padding-bottom:9px; margin-bottom:12px;
+    border-bottom:1px solid var(--hairline);
+  }
+  .ct-sec-h .sp { flex:1; }
+  .ct-sec-h .c { font-weight:600; text-transform:none; letter-spacing:0; font-size:12px; }
+
+  .ct-pago {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 0; border-bottom:1px solid var(--hairline); font-size:13px;
+  }
+  .ct-pago .f { font-weight:500; }
+  .ct-pago .r { color:var(--muted); font-size:11.5px; margin-left:7px; }
+  .ct-pago .m { font-size:14px; font-weight:600; color:#1f7a44;
+                font-variant-numeric:tabular-nums; }
+
+  .ct-empty {
+    padding:22px; text-align:center; color:var(--muted); font-size:12.5px;
+    background:#faf8f3; border:1px dashed var(--hairline-strong); border-radius:10px;
+  }
+
+  /* Nota del mockup — no va al módulo real */
+  .mk {
+    position:fixed; left:14px; bottom:14px; z-index:80; max-width:340px;
+    background:var(--ink); color:#d8d5cc; font-size:11.5px; line-height:1.55;
+    padding:10px 14px; border-radius:10px; box-shadow:var(--shadow-md);
+  }
+  .mk b { color:#fff; }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- ══════════ TOPBAR REAL DE LA APP ══════════ -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">MG</div>
+      <div class="brand-text">
+        <span class="brand-name">Desarrollo de Colecciones</span>
+        <span class="brand-tag">Control de producción</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="searchbox" style="width:190px">
+        <span class="searchbox-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        </span>
+        <input class="searchbox-input" placeholder="Buscar referencia…" />
+      </div>
+      <button class="btn btn-ghost">Importar</button>
+      <button class="btn btn-ghost">Actividad</button>
+      <span style="font-size:12px;color:var(--muted)">diego</span>
+      <button class="logout-btn">Salir</button>
+    </div>
+    <nav class="tabs">
+      <button class="tab">Inicio</button>
+      <button class="tab">Resumen</button>
+      <button class="tab">Faltantes</button>
+      <button class="tab">Orden de corte</button>
+      <button class="tab">Trazos</button>
+      <button class="tab">Corte</button>
+      <button class="tab">Por alistar</button>
+      <button class="tab">Por enviar a taller</button>
+      <button class="tab">En talleres</button>
+      <button class="tab">Entrega ensamble</button>
+      <button class="tab">Revisión</button>
+      <button class="tab">Entrada a bodega</button>
+      <button class="tab">Seguimiento</button>
+      <button class="tab">Colección</button>
+      <button class="tab">Costos</button>
+      <button class="tab active">Cartera</button>
+      <button class="tab">Geodésica</button>
+      <button class="tab">Programaciones</button>
+    </nav>
+  </header>
+
+  <!-- ══════════ CONTENIDO ══════════ -->
+  <main class="content">
+
+    <div class="view-head">
+      <div>
+        <div class="view-title">Cartera</div>
+        <div class="view-sub">Seguimiento de recaudo — MG MODA S.A.S.</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost">Reporte de seguimiento</button>
+        <button class="btn btn-ghost">Enviar resumen</button>
+        <button class="btn btn-primary">Importar CARTEREA.XLS</button>
+      </div>
+    </div>
+
+    <div class="ct-sync">
+      <div class="ct-sync-ic">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 16.6A4.5 4.5 0 0 0 17.5 8h-1.3A7 7 0 1 0 5 15.3"/><path d="M12 12v9"/><path d="m8.5 17.5 3.5-3.5 3.5 3.5"/></svg>
+      </div>
+      <div>
+        <div class="ct-sync-t">Cartera al 7 de septiembre, 10:00 a.&nbsp;m.</div>
+        <div class="ct-sync-s">SYD · 10000870.LIS — 581 facturas · 108 clientes</div>
+      </div>
+      <div class="ct-sync-sp"></div>
+      <span class="ct-live"><i></i> Sincroniza sola cada 30 min</span>
+    </div>
+
+    <div class="ct-alert">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+      <span>Compromisos de pago: <b>4 vencidos</b> sin registrar el abono.</span>
+      <span class="sp"></span>
+      <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px">Ver compromisos</button>
+    </div>
+
+    <!-- ══════════ KPIs — el patrón de Corte / Por alistar ══════════ -->
+    <div class="kpi-wrap">
+      <div class="kpi-grid">
+        <div class="kpi-nums">
+
+          <div class="kpi-card">
+            <p class="kpi-label">Cartera total</p>
+            <p class="kpi-cifra">$ 944.267.100</p>
+            <p class="kpi-unidad">108 clientes</p>
+            <div class="ct-kpi-split">
+              <i style="width:74.6%;background:var(--ink)"></i>
+              <i style="width:25.4%;background:#b9b3a3"></i>
+            </div>
+            <ul class="kpi-marcas ct-lista">
+              <li><span>Madres <i>2026-1</i></span><b>$ 704.712.400</b></li>
+              <li><span>Diciembre <i>2026-2</i></span><b>$ 239.554.700</b></li>
+            </ul>
+          </div>
+
+          <div class="kpi-card">
+            <p class="kpi-label">Vencida +60 días</p>
+            <p class="kpi-cifra bad">$ 851.427.900</p>
+            <p class="kpi-unidad">90% del total</p>
+            <p class="kpi-desglose">424 facturas por encima del plazo</p>
+          </div>
+
+        </div>
+
+        <div class="kpi-card">
+          <p class="kpi-label">Clientes que requieren gestión</p>
+          <ul class="kpi-marcas ct-lista" style="margin-top:14px">
+            <li class="ct-bad"><span>Críticos <i>+90 días</i></span><b>94</b></li>
+            <li class="ct-warn"><span>Sin abono <i>+30 días</i></span><b>55</b></li>
+            <li><span>Compromisos vencidos <i>sin abono</i></span><b>4</b></li>
+            <li><span>En seguimiento <i>correo diario</i></span><b>6</b></li>
+            <li class="kpi-suma"><span>Clientes con saldo</span><b>108</b></li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════ FILTROS ══════════ -->
+    <div class="ct-filters">
+      <div class="searchbox">
+        <span class="searchbox-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        </span>
+        <input class="searchbox-input" placeholder="Cliente o ciudad…" />
+      </div>
+      <div class="filterselect">
+        <button class="fs-field"><span class="fs-value">Todas las ciudades</span><span class="fs-caret">▾</span></button>
+      </div>
+      <div class="filterselect">
+        <button class="fs-field"><span class="fs-value">Ambas colecciones</span><span class="fs-caret">▾</span></button>
+      </div>
+      <div class="ct-chips">
+        <button class="ct-chip on">Todos <span class="n">108</span></button>
+        <button class="ct-chip">Pendientes <span class="n">8</span></button>
+        <button class="ct-chip bad">Crítico +90d <span class="n">94</span></button>
+        <button class="ct-chip warn">Sin pago +30d <span class="n">55</span></button>
+        <button class="ct-chip">Compromisos <span class="n">4</span></button>
+        <button class="ct-chip">★ Seguimiento <span class="n">6</span></button>
+      </div>
+    </div>
+
+    <!-- ══════════ TABLA ══════════ -->
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Ciudad</th>
+            <th class="num ct-per-h">Antes<span>&lt; 2026</span></th>
+            <th class="num ct-per-h">2026-1<span>Madres</span></th>
+            <th class="num ct-per-h">2026-2<span>Diciembre</span></th>
+            <th class="num">Total debe ▾</th>
+            <th class="num">Antigüedad</th>
+            <th class="num">Últ. pago</th>
+            <th>Gestión</th>
+          </tr>
+        </thead>
+        <tbody id="tb"></tbody>
+      </table>
+      <div class="ct-foot">
+        <span>108 de 108 clientes</span>
+        <span><b>$ 944.267.100</b> en cartera</span>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════ DETALLE DEL CLIENTE (modal del sistema) ══════════ -->
+<div class="modal-overlay" id="ov" style="display:none">
+  <div class="modal modal-lg">
+    <div class="modal-head">
+      <div>
+        <h2 id="mName">GEODESIKA SAS</h2>
+        <p class="modal-sub" id="mMeta">MEDELLIN · 28 facturas pendientes</p>
+      </div>
+      <button class="icon-btn" id="mX">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="ct-modal-cards">
+        <div class="ct-mc"><div class="l">Total debe</div><div class="v">$ 276.743.881</div></div>
+        <div class="ct-mc"><div class="l">Antigüedad máx</div><div class="v bad">216 días</div></div>
+        <div class="ct-mc"><div class="l">Último pago</div><div class="v">26 ago<small>hace 12 días</small></div></div>
+      </div>
+
+      <div class="ct-sec">
+        <div class="ct-sec-h">Deuda por colección</div>
+        <div class="ct-modal-cards" style="grid-template-columns:repeat(2,1fr);margin:0">
+          <div class="ct-mc"><div class="l">2026-1 · Madres</div><div class="v">$ 152.080.076</div></div>
+          <div class="ct-mc"><div class="l">2026-2 · Diciembre</div><div class="v">$ 124.663.805</div></div>
+        </div>
+      </div>
+
+      <div class="ct-sec">
+        <div class="ct-sec-h">Facturas pendientes <span class="sp"></span><span class="c">28</span></div>
+        <div class="table-wrap" style="box-shadow:none">
+          <table class="data-table">
+            <thead>
+              <tr><th>Factura</th><th>Fecha</th><th>Vence</th><th class="num">Días</th><th class="num">Valor</th><th class="num">Col.</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono">C 05396</td><td>03 feb 26</td><td>04 mar 26</td><td class="num"><span class="flag flag-no">216d</span></td><td class="num">$ 8.619.268</td><td class="num"><span class="tag">T1</span></td></tr>
+              <tr><td class="mono">C 05397</td><td>04 feb 26</td><td>05 mar 26</td><td class="num"><span class="flag flag-no">215d</span></td><td class="num">$ 6.269.401</td><td class="num"><span class="tag">T1</span></td></tr>
+              <tr><td class="mono">C 05401</td><td>17 feb 26</td><td>18 mar 26</td><td class="num"><span class="flag flag-no">202d</span></td><td class="num">$ 5.447.453</td><td class="num"><span class="tag">T1</span></td></tr>
+              <tr><td class="mono">C 05406</td><td>02 mar 26</td><td>01 abr 26</td><td class="num"><span class="flag flag-no">189d</span></td><td class="num">$ 20.384.663</td><td class="num"><span class="tag">T1</span></td></tr>
+              <tr><td class="mono">C 06176</td><td>01 sep 26</td><td>01 oct 26</td><td class="num"><span class="flag flag-yes">6d</span></td><td class="num">$ 20.426.350</td><td class="num"><span class="tag">T2</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="ct-sec">
+        <div class="ct-sec-h">Historial de pagos <span class="sp"></span><span class="c">10</span></div>
+        <div class="ct-pago"><div><span class="f">26 de agosto de 2026</span><span class="r">hace 12d</span></div><div class="m">$ 10.000.000</div></div>
+        <div class="ct-pago"><div><span class="f">20 de agosto de 2026</span><span class="r">hace 18d</span></div><div class="m">$ 15.190.337</div></div>
+        <div class="ct-pago"><div><span class="f">12 de agosto de 2026</span><span class="r">hace 26d</span></div><div class="m">$ 7.000.000</div></div>
+        <div class="ct-pago"><div><span class="f">05 de agosto de 2026</span><span class="r">hace 33d</span></div><div class="m">$ 5.417.250</div></div>
+        <div class="ct-pago"><div><span class="f">16 de julio de 2026</span><span class="r">hace 53d</span></div><div class="m">$ 29.800.699</div></div>
+      </div>
+
+      <div class="ct-sec" style="margin-bottom:0">
+        <div class="ct-sec-h">Gestión y seguimiento <span class="sp"></span></div>
+        <div class="ct-empty">Sin registros de gestión todavía.</div>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost">Mensaje de cobro para WhatsApp</button>
+      <button class="btn btn-primary">Registrar gestión</button>
+    </div>
+  </div>
+</div>
+
+<div class="mk">
+  <b>Mockup</b> — Cartera como pestaña de Desarrollo de Colecciones,
+  con el CSS real de la app. Clic en una fila para ver el cliente.
+</div>
+
+<script>
+/* Datos REALES de la app de cobranza (7-sep-2026). */
+const FILAS = [
+ {n:"GEODESIKA SAS",c:"MEDELLIN",fx:28,antes:0,m1:152080076,m2:124663805,t:276743881,d:216,u:"26 ago",ud:12,g:null,star:true},
+ {n:"GRUPO GMZ COLOMBIA SAS",c:"PALMIRA",fx:16,antes:49741059,m1:0,m2:0,t:49741059,d:720,u:"11 ago 25",ud:392,g:null},
+ {n:"ALCIRA ISABEL PEÑA MARTINEZ",c:"EL CARMEN DE BOLIVAR",fx:17,antes:0,m1:35492381,m2:0,t:35492381,d:145,u:"24 ago",ud:14,g:null},
+ {n:"CARMELA LOZADA",c:"PALMIRA",fx:26,antes:0,m1:30686452,m2:898400,t:31584852,d:150,u:"24 ago",ud:14,g:{k:"info",x:"Novedad · se cobra"}},
+ {n:"MARIA TERESA ECHEVERRI TRUJILLO",c:"CERETE",fx:20,antes:0,m1:30316559,m2:0,t:30316559,d:138,u:"2 sep",ud:5,g:null},
+ {n:"ASTRID CARRILLO DE BRACHO",c:"VALLEDUPAR",fx:26,antes:8052888,m1:21879490,m2:0,t:29932378,d:312,u:"20 ago",ud:18,g:{k:"ok",x:"Pagó · por resolver"},star:true},
+ {n:"DAMARIS RINCON VERGARA",c:"NEIVA",fx:15,antes:0,m1:21994759,m2:0,t:21994759,d:133,u:"31 ago",ud:7,g:{k:"ok",x:"Pagó · por resolver"}},
+ {n:"CLAUDIA NERISSA ARIAS SANDOVAL",c:"VILLAVICENCIO",fx:13,antes:0,m1:18202359,m2:0,t:18202359,d:136,u:"21 jul",ud:48,g:null},
+ {n:"BELKIYOLANYS TORRES POLO",c:"VALLEDUPAR",fx:6,antes:0,m1:18112276,m2:0,t:18112276,d:132,u:"31 jul",ud:38,g:{k:"ok",x:"Pagó · por resolver"}},
+ {n:"MIRIAM ANGULO CELORIO",c:"BUENAVENTURA",fx:9,antes:0,m1:18061501,m2:0,t:18061501,d:123,u:"2 sep",ud:5,g:null},
+ {n:"AMPARO TRUJILLO CASTRO",c:"NEIVA",fx:16,antes:0,m1:15271179,m2:692874,t:15964053,d:153,u:"1 sep",ud:6,g:{k:"ok",x:"Pagó · por resolver"},star:true},
+ {n:"LUZ ENID RODRIGUEZ CARDONA",c:"IBAGUE",fx:11,antes:171241,m1:15754172,m2:0,t:15925413,d:292,u:"18 ago",ud:20,g:{k:"ok",x:"Pagó · por resolver"}}
+];
+
+/* formatPrice del sistema (src/lib/constants.js) → "$ 276.743.881" */
+const formatPrice = (v) => Number(v).toLocaleString("es-CO",
+  { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+/* Las columnas por colección van abreviadas: son comparativas y son tres.
+   El Total debe va COMPLETO — es la cifra sobre la que se decide. */
+const corto = (v) => !v ? null
+  : v >= 1e6 ? "$ " + (v / 1e6).toFixed(1).replace(".", ",") + "M"
+             : "$ " + Math.round(v / 1000) + "K";
+const nivel = (d) => d >= 90 ? "bad" : d >= 60 ? "mid" : "ok";
+const flag  = (d) => d >= 90 ? "flag-no" : d >= 60 ? "flag-warn" : "flag-yes";
+
+document.getElementById("tb").innerHTML = FILAS.map((f) => `
+  <tr class="row-click">
+    <td>
+      <div class="ct-cli">
+        <button class="ct-star ${f.star ? "on" : ""}" title="Correo diario de seguimiento">★</button>
+        <span class="ct-cli-n">${f.n}</span>
+      </div>
+    </td>
+    <td class="ct-ciudad">${f.c}</td>
+    ${[f.antes, f.m1, f.m2].map((v) =>
+      `<td class="num ct-per"${v ? ` title="${formatPrice(v)}"` : ""}>${
+        v ? corto(v) : '<span class="ct-dash">—</span>'}</td>`
+    ).join("")}
+    <td class="num strong">${formatPrice(f.t)}</td>
+    <td class="num"><span class="flag ${flag(f.d)}">${f.d} d</span></td>
+    <td class="num"><span class="ct-ult">${f.u} · <b class="${nivel(f.ud)}">${f.ud}d</b></span></td>
+    <td class="ct-gest" title="${f.g ? f.g.x : ""}">${
+      f.g ? `<span class="ct-gest-tag"><i class="${f.g.k}"></i>${f.g.x}</span>`
+          : '<span class="ct-gest-none">— sin gestión —</span>'
+    }</td>
+  </tr>`).join("");
+
+const ov = document.getElementById("ov");
+document.getElementById("tb").addEventListener("click", (e) => {
+  const st = e.target.closest(".ct-star");
+  if (st) { st.classList.toggle("on"); return; }
+  const tr = e.target.closest("tr"); if (!tr) return;
+  const i = [...tr.parentElement.children].indexOf(tr), f = FILAS[i];
+  document.getElementById("mName").textContent = f.n;
+  document.getElementById("mMeta").textContent = `${f.c} · ${f.fx} facturas pendientes`;
+  ov.style.display = "flex";
+});
+const cerrar = () => { ov.style.display = "none"; };
+document.getElementById("mX").addEventListener("click", cerrar);
+ov.addEventListener("click", (e) => { if (e.target === ov) cerrar(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrar(); });
+</script>
+</body>
+</html>

@@ -6,6 +6,7 @@ import ResumenView from './components/ResumenView.jsx'
 import AreaView from './components/AreaView.jsx'
 import OrdenCorteView from './components/OrdenCorteView.jsx'
 import CostosView from './components/CostosView.jsx'
+import CarteraView from './components/CarteraView.jsx'
 import SeguimientoView from './components/SeguimientoView.jsx'
 import GeodesicaView from './components/GeodesicaView.jsx'
 import ProgramacionesView from './components/ProgramacionesView.jsx'
@@ -60,6 +61,7 @@ const TABS = [
   { key: 'fotos', label: 'Fotos' },
   { key: 'autorizaciones', label: 'Autorizaciones' },
   { key: 'costos', label: 'Costos' },
+  { key: 'cartera', label: 'Cartera' },
   { key: 'geodesica', label: 'Geodésica' },
   { key: 'programaciones', label: 'Programaciones' },
   { key: 'asistencia', label: 'Asistencia' },
@@ -1012,6 +1014,9 @@ export default function App() {
           <CostosView refs={refIndexMG} marcas={settings.marcas} telasCatalog={settings.telas}
             onEdit={openEdit} onNew={openNew} onViewImage={setLightbox} onSetFields={handleSetFields}
             onAssignPhoto={handleAssignPhoto} />
+        )}
+        {tab === 'cartera' && (
+          <CarteraView usuario={emailSesion} />
         )}
         {tab === 'geodesica' && (
           <GeodesicaView refs={refIndex} orders={orders} refMap={refMap}

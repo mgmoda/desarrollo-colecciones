@@ -1,0 +1,436 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import SortTh from './SortTh.jsx'
+import SearchInput from './SearchInput.jsx'
+import CarteraCliente from './CarteraCliente.jsx'
+import {
+  cargarCartera, compromisoActivo, compromisoVencido, marcarSeguimiento,
+} from '../lib/cartera.js'
+import { formatPrice } from '../lib/constants.js'
+
+// ════════════════════════════════════════════════════════════════════════
+// CARTERA — seguimiento de recaudo
+// ────────────────────────────────────────────────────────────────────────
+// Reemplaza la app aparte de cobranza (Flask + Postgres local, puerto 5075).
+// Las facturas las sube solo el servidor de SYD cada 30 minutos; acá se leen
+// de `cartera_facturas` y se agrupan por cliente.
+//
+// Diseño aprobado: public/mockups/cartera-v1.html
+// ════════════════════════════════════════════════════════════════════════
+
+// Cifra abreviada para las columnas por colección: son comparativas y son
+// varias. El "Total debe" va completo — es sobre lo que se decide.
+function corto(v) {
+  if (!v) return null
+  if (v >= 1e6) return '$ ' + (v / 1e6).toFixed(1).replace('.', ',') + 'M'
+  return '$ ' + Math.round(v / 1000) + 'K'
+}
+
+const nivelDias = (d) => (d >= 90 ? 'flag-no' : d >= 60 ? 'flag-warn' : 'flag-yes')
+const nivelPago = (d) => (d > 45 ? 'bad' : d > 20 ? 'mid' : 'ok')
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+function fechaCorta(iso) {
+  if (!iso) return '—'
+  const [a, m, d] = iso.slice(0, 10).split('-')
+  const esteAnio = String(new Date().getFullYear()) === a
+  return `${Number(d)} ${MESES[Number(m) - 1]}${esteAnio ? '' : ' ' + a.slice(2)}`
+}
+function fechaHora(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return d.toLocaleString('es-CO', {
+    day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit',
+  })
+}
+
+const CHIPS = [
+  { key: 'todos', label: 'Todos' },
+  { key: 'pendiente', label: 'Pendientes' },
+  { key: 'critico', label: 'Crítico +90d', tono: 'bad' },
+  { key: 'sinpago', label: 'Sin pago +30d', tono: 'warn' },
+  { key: 'acuerdo', label: 'Compromisos' },
+  { key: 'seguidos', label: '★ Seguimiento' },
+]
+
+export default function CarteraView({ usuario }) {
+  const [datos, setDatos] = useState(null)
+  const [error, setError] = useState('')
+  const [cargando, setCargando] = useState(true)
+  const [seguidos, setSeguidos] = useState(() => new Set())
+
+  const [q, setQ] = useState('')
+  const [ciudad, setCiudad] = useState('')
+  const [coleccion, setColeccion] = useState('')
+  const [chip, setChip] = useState('todos')
+  const [sortKey, setSortKey] = useState('total')
+  const [sortDir, setSortDir] = useState('desc')
+  const [abierto, setAbierto] = useState(null)   // cliente_key del detalle
+
+  const cargar = useCallback(async () => {
+    setCargando(true)
+    setError('')
+    try {
+      const d = await cargarCartera()
+      setDatos(d)
+      setSeguidos(d.seguidos)
+    } catch (e) {
+      setError(String((e && e.message) || e))
+    } finally {
+      setCargando(false)
+    }
+  }, [])
+
+  useEffect(() => { cargar() }, [cargar])
+
+  const clientes = datos ? datos.clientes : []
+
+  // ── Columnas por colección ───────────────────────────────────────────
+  // Se muestran las dos colecciones más recientes; todo lo anterior se suma
+  // en "Antes". Con seis columnas la tabla no cabía sin scroll horizontal, y
+  // el desglose completo está en el detalle del cliente.
+  const cols = useMemo(() => {
+    const ps = datos ? datos.periodos : []
+    const ultimas = ps.slice(-2)
+    const viejas = ps.slice(0, Math.max(0, ps.length - 2)).map((p) => p.key)
+    return { ultimas, viejas, corteLabel: ultimas.length ? ultimas[0].key.split('-')[0] : '' }
+  }, [datos])
+
+  const antesDe = useCallback(
+    (c) => cols.viejas.reduce((a, k) => a + (c.periodos[k] || 0), 0),
+    [cols.viejas],
+  )
+
+  // ── Totales ──────────────────────────────────────────────────────────
+  const kpi = useMemo(() => {
+    const total = clientes.reduce((a, c) => a + c.total, 0)
+    const t1 = clientes.reduce((a, c) => a + c.t1, 0)
+    const t2 = clientes.reduce((a, c) => a + c.t2, 0)
+    let vencido = 0
+    let fxVencidas = 0
+    let nfx = 0
+    for (const c of clientes) {
+      for (const f of c.facturas) {
+        nfx += 1
+        if (f.dias > 60) { vencido += f.valor; fxVencidas += 1 }
+      }
+    }
+    return {
+      total, t1, t2, vencido, fxVencidas, nfx,
+      criticos: clientes.filter((c) => c.dias_max > 90).length,
+      sinPago: clientes.filter((c) => c.dias_ult_pago === null || c.dias_ult_pago > 30).length,
+      compromisos: clientes.filter((c) => compromisoVencido(c)).length,
+      pendientes: clientes.filter((c) => c.pendiente && !c.pendiente_pagado).length,
+      conAcuerdo: clientes.filter((c) => compromisoActivo(c)).length,
+    }
+  }, [clientes])
+
+  const ciudades = useMemo(
+    () => [...new Set(clientes.map((c) => c.ciudad).filter(Boolean))].sort(),
+    [clientes],
+  )
+
+  // ── Filtro + orden ───────────────────────────────────────────────────
+  const filas = useMemo(() => {
+    const texto = q.trim().toLowerCase()
+    const out = clientes.filter((c) => {
+      if (texto && !(
+        c.cliente.toLowerCase().includes(texto) ||
+        (c.ciudad || '').toLowerCase().includes(texto)
+      )) return false
+      if (ciudad && c.ciudad !== ciudad) return false
+      if (coleccion === '1' && c.t1 <= 0) return false
+      if (coleccion === '2' && c.t2 <= 0) return false
+      if (chip === 'pendiente' && !(c.pendiente && !c.pendiente_pagado)) return false
+      if (chip === 'critico' && c.dias_max <= 90) return false
+      if (chip === 'sinpago' && !(c.dias_ult_pago === null || c.dias_ult_pago > 30)) return false
+      if (chip === 'acuerdo' && !compromisoActivo(c)) return false
+      if (chip === 'seguidos' && !seguidos.has(c.cliente_key)) return false
+      return true
+    })
+
+    const valor = (c) => {
+      if (sortKey === 'cliente') return c.cliente
+      if (sortKey === 'ciudad') return c.ciudad || ''
+      if (sortKey === 'antes') return antesDe(c)
+      if (sortKey === 'dias_max') return c.dias_max
+      // Sin pagos va al final en descendente: es lo más grave, no lo menos.
+      if (sortKey === 'dias_ult') return c.dias_ult_pago === null ? Infinity : c.dias_ult_pago
+      if (sortKey.startsWith('per:')) return c.periodos[sortKey.slice(4)] || 0
+      return c.total
+    }
+    const signo = sortDir === 'asc' ? 1 : -1
+    return [...out].sort((a, b) => {
+      const va = valor(a), vb = valor(b)
+      if (typeof va === 'string') return signo * va.localeCompare(vb, 'es')
+      return signo * (va - vb)
+    })
+  }, [clientes, q, ciudad, coleccion, chip, seguidos, sortKey, sortDir, antesDe])
+
+  const totalFiltrado = filas.reduce((a, c) => a + c.total, 0)
+
+  function ordenar(col) {
+    if (col === sortKey) setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(col); setSortDir(col === 'cliente' || col === 'ciudad' ? 'asc' : 'desc') }
+  }
+
+  async function alternarSeguimiento(c, ev) {
+    ev.stopPropagation()
+    const activo = seguidos.has(c.cliente_key)
+    const copia = new Set(seguidos)
+    if (activo) copia.delete(c.cliente_key); else copia.add(c.cliente_key)
+    setSeguidos(copia)               // optimista: la ★ responde al instante
+    try {
+      await marcarSeguimiento(c, !activo)
+    } catch (e) {
+      setSeguidos(seguidos)          // se revierte si la nube dijo que no
+      setError('No se pudo guardar el seguimiento: ' + ((e && e.message) || e))
+    }
+  }
+
+  const cliente = abierto ? clientes.find((c) => c.cliente_key === abierto) : null
+
+  if (cargando && !datos) {
+    return (
+      <>
+        <div className="view-head">
+          <div><div className="view-title">Cartera</div>
+            <div className="view-sub">Seguimiento de recaudo — MG MODA S.A.S.</div></div>
+        </div>
+        <div className="empty-state"><p>Cargando la cartera…</p></div>
+      </>
+    )
+  }
+
+  return (
+    <>
+      <div className="view-head">
+        <div>
+          <div className="view-title">Cartera</div>
+          <div className="view-sub">Seguimiento de recaudo — MG MODA S.A.S.</div>
+        </div>
+        <div className="ct-head-btns">
+          <button className="btn btn-ghost" onClick={cargar} disabled={cargando}>
+            {cargando ? 'Actualizando…' : 'Actualizar'}
+          </button>
+        </div>
+      </div>
+
+      {error && <div className="ct-error">{error}</div>}
+
+      {datos && datos.faltanTablas && (
+        <div className="ct-alert">
+          <span>
+            Falta correr <b>supabase_cartera.sql</b> en el SQL Editor: la gestión de
+            cobro y las marcas de seguimiento todavía no se pueden guardar.
+          </span>
+        </div>
+      )}
+
+      <div className="ct-sync">
+        <div className="ct-sync-ic" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M20 16.6A4.5 4.5 0 0 0 17.5 8h-1.3A7 7 0 1 0 5 15.3" />
+            <path d="M12 12v9" /><path d="m8.5 17.5 3.5-3.5 3.5 3.5" />
+          </svg>
+        </div>
+        <div>
+          <div className="ct-sync-t">
+            {datos && datos.sync
+              ? `Cartera al ${datos.sync.corte ? fechaCorta(datos.sync.corte) : fechaHora(datos.sync.creado_en)}`
+              : 'Sin sincronizaciones todavía'}
+          </div>
+          <div className="ct-sync-s">
+            {datos && datos.sync
+              ? `SYD · ${datos.sync.archivo} — ${kpi.nfx} facturas · ${clientes.length} clientes`
+              : 'El servidor sube el informe del SYD cada 30 minutos.'}
+          </div>
+        </div>
+        <div className="ct-sync-sp" />
+        <span className="ct-live"><i />Sincroniza sola cada 30 min</span>
+      </div>
+
+      {kpi.compromisos > 0 && (
+        <div className="ct-alert">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 9v4M12 17h.01" />
+            <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+          </svg>
+          <span>
+            Compromisos de pago: <b>{kpi.compromisos} vencidos</b> sin registrar el abono.
+          </span>
+          <span className="sp" />
+          <button className="btn btn-ghost ct-btn-sm" onClick={() => setChip('acuerdo')}>
+            Ver compromisos
+          </button>
+        </div>
+      )}
+
+      {/* KPIs — mismo patrón que Corte y Por alistar (AreaKpis) */}
+      <div className="kpi-wrap ct-kpis">
+        <div className="kpi-grid">
+          <div className="kpi-nums">
+            <div className="kpi-card">
+              <p className="kpi-label">Cartera total</p>
+              <p className="kpi-cifra">{formatPrice(kpi.total) || '$ 0'}</p>
+              <p className="kpi-unidad">{clientes.length} clientes</p>
+              <div className="ct-kpi-split">
+                <i style={{ width: (kpi.total ? (kpi.t1 / kpi.total) * 100 : 0) + '%', background: 'var(--ink)' }} />
+                <i style={{ width: (kpi.total ? (kpi.t2 / kpi.total) * 100 : 0) + '%', background: '#b9b3a3' }} />
+              </div>
+              <ul className="kpi-marcas ct-lista">
+                <li><span>Madres <i>Ene–May</i></span><b>{formatPrice(kpi.t1) || '—'}</b></li>
+                <li><span>Diciembre <i>Jun–Dic</i></span><b>{formatPrice(kpi.t2) || '—'}</b></li>
+              </ul>
+            </div>
+
+            <div className="kpi-card">
+              <p className="kpi-label">Vencida +60 días</p>
+              <p className="kpi-cifra bad">{formatPrice(kpi.vencido) || '$ 0'}</p>
+              <p className="kpi-unidad">
+                {kpi.total ? Math.round((kpi.vencido / kpi.total) * 100) : 0}% del total
+              </p>
+              <p className="kpi-desglose">{kpi.fxVencidas} facturas por encima del plazo</p>
+            </div>
+          </div>
+
+          <div className="kpi-card">
+            <p className="kpi-label">Clientes que requieren gestión</p>
+            <ul className="kpi-marcas ct-lista ct-lista-top">
+              <li className="ct-bad"><span>Críticos <i>+90 días</i></span><b>{kpi.criticos}</b></li>
+              <li className="ct-warn"><span>Sin abono <i>+30 días</i></span><b>{kpi.sinPago}</b></li>
+              <li><span>Compromisos vencidos <i>sin abono</i></span><b>{kpi.compromisos}</b></li>
+              <li><span>En seguimiento <i>correo diario</i></span><b>{seguidos.size}</b></li>
+              <li className="kpi-suma"><span>Clientes con saldo</span><b>{clientes.length}</b></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="ct-filters">
+        <SearchInput value={q} onChange={setQ} placeholder="Cliente o ciudad…" className="ct-search" />
+        <select className="input select ct-select" value={ciudad} onChange={(e) => setCiudad(e.target.value)}>
+          <option value="">Todas las ciudades</option>
+          {ciudades.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select className="input select ct-select" value={coleccion} onChange={(e) => setColeccion(e.target.value)}>
+          <option value="">Ambas colecciones</option>
+          <option value="1">Madres (Ene–May)</option>
+          <option value="2">Diciembre (Jun–Dic)</option>
+        </select>
+        <div className="ct-chips">
+          {CHIPS.map((ch) => {
+            const n = ch.key === 'todos' ? clientes.length
+              : ch.key === 'pendiente' ? kpi.pendientes
+              : ch.key === 'critico' ? kpi.criticos
+              : ch.key === 'sinpago' ? kpi.sinPago
+              : ch.key === 'acuerdo' ? kpi.conAcuerdo
+              : seguidos.size
+            return (
+              <button key={ch.key} type="button"
+                className={'ct-chip' + (chip === ch.key ? ' on' : '') + (ch.tono ? ' ' + ch.tono : '')}
+                onClick={() => setChip(ch.key)}>
+                {ch.label} <span className="n">{n}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Tabla */}
+      {filas.length === 0 ? (
+        <div className="empty-state">
+          <p>Ningún cliente coincide con el filtro.</p>
+          <p className="muted">Probá quitando la ciudad o el chip activo.</p>
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <SortTh label="Cliente" col="cliente" sortKey={sortKey} sortDir={sortDir} onSort={ordenar} />
+                <SortTh label="Ciudad" col="ciudad" sortKey={sortKey} sortDir={sortDir} onSort={ordenar} />
+                {cols.viejas.length > 0 && (
+                  <SortTh className="num ct-per-h" col="antes" sortKey={sortKey} sortDir={sortDir} onSort={ordenar}
+                    label={<>Antes<span>&lt; {cols.corteLabel}</span></>} />
+                )}
+                {cols.ultimas.map((p) => (
+                  <SortTh key={p.key} className="num ct-per-h" col={'per:' + p.key}
+                    sortKey={sortKey} sortDir={sortDir} onSort={ordenar}
+                    label={<>{p.key}<span>{p.sub}</span></>} />
+                ))}
+                <SortTh label="Total debe" col="total" className="num" sortKey={sortKey} sortDir={sortDir} onSort={ordenar} />
+                <SortTh label="Antigüedad" col="dias_max" className="num" sortKey={sortKey} sortDir={sortDir} onSort={ordenar} />
+                <SortTh label="Últ. pago" col="dias_ult" className="num" sortKey={sortKey} sortDir={sortDir} onSort={ordenar} />
+                <th className="ct-gest">Gestión</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filas.map((c) => {
+                const antes = antesDe(c)
+                const g = c.gestion[0]
+                return (
+                  <tr key={c.cliente_key} className="row-click" onClick={() => setAbierto(c.cliente_key)}>
+                    <td>
+                      <div className="ct-cli">
+                        <button type="button"
+                          className={'ct-star' + (seguidos.has(c.cliente_key) ? ' on' : '')}
+                          onClick={(e) => alternarSeguimiento(c, e)}
+                          title="Incluir en el correo diario de seguimiento">★</button>
+                        <span className="ct-cli-n">{c.cliente}</span>
+                      </div>
+                    </td>
+                    <td className="ct-ciudad">{c.ciudad || '—'}</td>
+                    {cols.viejas.length > 0 && (
+                      <td className="num ct-per" title={antes ? formatPrice(antes) : ''}>
+                        {corto(antes) || <span className="ct-dash">—</span>}
+                      </td>
+                    )}
+                    {cols.ultimas.map((p) => {
+                      const v = c.periodos[p.key] || 0
+                      return (
+                        <td key={p.key} className="num ct-per" title={v ? formatPrice(v) : ''}>
+                          {corto(v) || <span className="ct-dash">—</span>}
+                        </td>
+                      )
+                    })}
+                    <td className="num strong">{formatPrice(c.total) || '—'}</td>
+                    <td className="num">
+                      <span className={'flag ' + nivelDias(c.dias_max)}>{c.dias_max} d</span>
+                    </td>
+                    <td className="num">
+                      {c.ult_pago ? (
+                        <span className="ct-ult">
+                          {fechaCorta(c.ult_pago)} · <b className={nivelPago(c.dias_ult_pago)}>{c.dias_ult_pago}d</b>
+                        </span>
+                      ) : <span className="ct-dash">sin pagos</span>}
+                    </td>
+                    <td className="ct-gest" title={g ? g.texto : ''}>
+                      {g ? (
+                        <span className="ct-gest-tag">
+                          <i className={c.pendiente && !c.pendiente_pagado ? 'info' : 'ok'} />
+                          {g.texto}
+                        </span>
+                      ) : <span className="ct-gest-none">— sin gestión —</span>}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+          <div className="ct-foot">
+            <span>{filas.length} de {clientes.length} clientes</span>
+            <span><b>{formatPrice(totalFiltrado) || '$ 0'}</b> en cartera</span>
+          </div>
+        </div>
+      )}
+
+      <CarteraCliente
+        cliente={cliente}
+        usuario={usuario}
+        onClose={() => setAbierto(null)}
+        onGuardado={cargar}
+      />
+    </>
+  )
+}

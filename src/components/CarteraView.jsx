@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import CarteraCliente from './CarteraCliente.jsx'
@@ -53,6 +53,31 @@ function fechaCorta(iso) {
   const esteAnio = String(new Date().getFullYear()) === a
   return `${Number(d)} ${MESES[Number(m) - 1]}${esteAnio ? '' : ' ' + a.slice(2)}`
 }
+/** "8 de septiembre" — la fecha a la que están los saldos. */
+function fechaLarga(iso) {
+  const [a, m, d] = iso.slice(0, 10).split('-')
+  const anio = String(new Date().getFullYear()) === a ? '' : ` de ${a}`
+  return `${Number(d)} de ${MESES_LARGO[Number(m) - 1]}${anio}`
+}
+function horaCorta(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' })
+}
+/**
+ * Qué tan viejo es el informe. Importa: si el servidor deja de sincronizar,
+ * la cartera se queda quieta y nada en pantalla lo delata — pasó el 7-sep,
+ * quince horas con datos viejos sin que se notara.
+ */
+function frescuraDe(corte) {
+  if (!corte) return null
+  const [a, m, d] = corte.slice(0, 10).split('-').map(Number)
+  const h = new Date()
+  const dias = Math.round(
+    (Date.UTC(h.getFullYear(), h.getMonth(), h.getDate()) - Date.UTC(a, m - 1, d)) / 86400000)
+  if (dias <= 0) return { texto: 'al día', tono: 'ok' }
+  if (dias === 1) return { texto: 'informe de ayer', tono: 'warn' }
+  return { texto: `hace ${dias} días`, tono: 'bad' }
+}
 function fechaHora(iso) {
   if (!iso) return '—'
   const d = new Date(iso)
@@ -99,6 +124,24 @@ export default function CarteraView({ usuario }) {
   }, [])
 
   useEffect(() => { cargar() }, [cargar])
+
+  // Refresco solo. El servidor sube el informe cada 30 minutos, pero la vista
+  // cargaba una única vez: una pestaña abierta desde ayer mostraba datos de
+  // ayer sin nada que lo delatara (pasó el 8-sep). Se vuelve a mirar cada 5
+  // minutos y al volver a la pestaña. No se refresca con el detalle abierto:
+  // reordenaría la lista debajo de quien está leyendo.
+  const detalleAbierto = useRef(false)
+  detalleAbierto.current = abierto !== null
+  useEffect(() => {
+    const refrescar = () => { if (!detalleAbierto.current) cargar() }
+    const reloj = setInterval(refrescar, 5 * 60 * 1000)
+    const alVolver = () => { if (document.visibilityState === 'visible') refrescar() }
+    document.addEventListener('visibilitychange', alVolver)
+    return () => {
+      clearInterval(reloj)
+      document.removeEventListener('visibilitychange', alVolver)
+    }
+  }, [cargar])
 
   const clientes = datos ? datos.clientes : []
 
@@ -153,6 +196,8 @@ export default function CarteraView({ usuario }) {
       conAcuerdo: clientes.filter((c) => compromisoActivo(c)).length,
     }
   }, [clientes, datos])
+
+  const frescura = datos && datos.sync ? frescuraDe(datos.sync.corte) : null
 
   const ciudades = useMemo(
     () => [...new Set(clientes.map((c) => c.ciudad).filter(Boolean))].sort(),
@@ -266,12 +311,18 @@ export default function CarteraView({ usuario }) {
         <div>
           <div className="ct-sync-t">
             {datos && datos.sync
-              ? `Cartera al ${datos.sync.corte ? fechaCorta(datos.sync.corte) : fechaHora(datos.sync.creado_en)}`
+              ? <>
+                  Cartera al {datos.sync.corte
+                    ? fechaLarga(datos.sync.corte)
+                    : fechaHora(datos.sync.creado_en)}
+                  {frescura && <span className={'ct-frescura ' + frescura.tono}>{frescura.texto}</span>}
+                </>
               : 'Sin sincronizaciones todavía'}
           </div>
           <div className="ct-sync-s">
             {datos && datos.sync
               ? `SYD · ${datos.sync.archivo} — ${kpi.nfx} facturas · ${clientes.length} clientes`
+                + ` · traído a las ${horaCorta(datos.sync.creado_en)}`
               : 'El servidor sube el informe del SYD cada 30 minutos.'}
           </div>
         </div>

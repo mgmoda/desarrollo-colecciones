@@ -6770,6 +6770,14 @@ tr.row-al.row-sel > td { background: #e9f3da; }
   background: #ece9e1; color: var(--ink); display: grid; place-items: center;
 }
 .ct-sync-t { font-weight: 600; font-size: 13.5px; }
+/* Qué tan viejo es el informe, al lado de la fecha de corte. */
+.ct-frescura {
+  margin-left: 9px; padding: 2px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; vertical-align: 1px;
+}
+.ct-frescura.ok { background: #e3f3e8; color: #1f7a44; }
+.ct-frescura.warn { background: #fbf0db; color: #9a6a1e; }
+.ct-frescura.bad { background: #fbe6e3; color: #b23121; }
 .ct-sync-s { font-size: 12px; color: var(--muted); margin-top: 1px; }
 .ct-sync-sp { flex: 1; }
 .ct-live {

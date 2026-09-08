@@ -38,7 +38,11 @@ declare
   v_total    numeric(18,2);
   v_clientes int;
 begin
-  delete from public.cartera_facturas;
+  -- OJO: `delete` SIN `where` lo rechaza Supabase con
+  -- "DELETE requires a WHERE clause" (SQLSTATE 21000). El `where true` es
+  -- obligatorio. Omitirlo dejó la sincronización del servidor caída 15 horas
+  -- el 7-sep-2026: el script sólo tolera un 404 y con este error se moría.
+  delete from public.cartera_facturas where true;
 
   insert into public.cartera_facturas
     (factura, cliente, ciudad, fecha, vencimiento, dias, valor, s, pagos)

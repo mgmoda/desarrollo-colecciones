@@ -150,36 +150,60 @@ create table if not exists public.cartera_facturas_vistas (
 
 
 -- ───────────────────────────────────────────────────────────────────────
--- 5) Permisos y RLS
---    Igual que las tablas dev_*: quien tenga sesión puede leer y escribir.
---    El filtro por rol (que Cartera la vea sólo el admin) se hace en la app,
---    en tabsVisibles, como con Programaciones y Asistencia.
+
 -- ───────────────────────────────────────────────────────────────────────
-alter table public.cartera_gestion         enable row level security;
-alter table public.cartera_clientes        enable row level security;
-alter table public.cartera_pagos           enable row level security;
-alter table public.cartera_facturas_vistas enable row level security;
-
-drop policy if exists cartera_gestion_auth on public.cartera_gestion;
-create policy cartera_gestion_auth on public.cartera_gestion
-  for all to authenticated using (true) with check (true);
-
-drop policy if exists cartera_clientes_auth on public.cartera_clientes;
-create policy cartera_clientes_auth on public.cartera_clientes
-  for all to authenticated using (true) with check (true);
-
-drop policy if exists cartera_pagos_auth on public.cartera_pagos;
-create policy cartera_pagos_auth on public.cartera_pagos
-  for all to authenticated using (true) with check (true);
-
-drop policy if exists cartera_facturas_vistas_auth on public.cartera_facturas_vistas;
-create policy cartera_facturas_vistas_auth on public.cartera_facturas_vistas
-  for all to authenticated using (true) with check (true);
-
+-- 5) Permisos base
+-- ───────────────────────────────────────────────────────────────────────
 grant select, insert, update, delete on public.cartera_gestion         to authenticated;
 grant select, insert, update, delete on public.cartera_clientes        to authenticated;
 grant select, insert, update, delete on public.cartera_pagos           to authenticated;
 grant select, insert, update, delete on public.cartera_facturas_vistas to authenticated;
+grant select on public.cartera_facturas to authenticated;
+grant select on public.cartera_sync_log to authenticated;
 
 grant usage, select on sequence public.cartera_gestion_id_seq to authenticated;
 grant usage, select on sequence public.cartera_pagos_id_seq   to authenticated;
+
+
+-- ───────────────────────────────────────────────────────────────────────
+-- 6) RLS: la cartera es de UN solo usuario
+--    Los `grant` de arriba abren la puerta al rol; las políticas de abajo
+--    deciden quién pasa. Esconder la pestaña en la app NO es control de
+--    acceso: cualquiera con sesión podía consultar las tablas directo.
+-- ───────────────────────────────────────────────────────────────────────
+create or replace function public.cartera_autorizado()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(auth.jwt() ->> 'email', '') in (
+    'diego_monsalve87@hotmail.com'
+  );
+$$;
+
+grant execute on function public.cartera_autorizado() to authenticated;
+
+-- La sincronización del servidor NO se ve afectada: entra por
+-- reemplazar_cartera(), que es SECURITY DEFINER y por eso no pasa por RLS.
+
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'cartera_facturas', 'cartera_sync_log', 'cartera_gestion',
+    'cartera_clientes', 'cartera_pagos', 'cartera_facturas_vistas'
+  ] loop
+    execute format('alter table public.%I enable row level security', t);
+    -- se retiran las políticas permisivas anteriores
+    execute format('drop policy if exists lectura_%s on public.%I', t, t);
+    execute format('drop policy if exists %s_auth on public.%I', t, t);
+    execute format('drop policy if exists lectura_cartera on public.%I', t);
+    execute format('drop policy if exists lectura_cartera_log on public.%I', t);
+    execute format('drop policy if exists solo_cartera on public.%I', t);
+    execute format(
+      'create policy solo_cartera on public.%I for all to authenticated '
+      'using (public.cartera_autorizado()) with check (public.cartera_autorizado())', t);
+  end loop;
+end $$;

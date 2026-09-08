@@ -14,7 +14,7 @@ import { diasDesde, diasEntre } from './dates.js'
 // Los que cortan en casa. Diego no va en esta lista: a él no se le asigna
 // una orden, se le MANDA la tela, y eso es un movimiento de varias órdenes a
 // la vez con su propia fecha de salida.
-export const CORTADORES = ['Fabián', 'Janet']
+export const CORTADORES = ['Fabián', 'Janet', 'Mónica']
 export const EXTERNO = 'Diego'
 
 // Una orden está afuera cuando su corte está abierto y es tercerizado.

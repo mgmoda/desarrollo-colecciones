@@ -16,6 +16,7 @@ import FaseToggles from './FaseToggles.jsx'
 import EtapaProceso from './EtapaProceso.jsx'
 import RendimientoCorte from './RendimientoCorte.jsx'
 import RendimientoRevision from './RendimientoRevision.jsx'
+import TalleresView from './TalleresView.jsx'
 import EnviarExternoModal from './EnviarExternoModal.jsx'
 import EntradaBodegaModal from './EntradaBodegaModal.jsx'
 import { pendientesDe, resumenFalta } from '../lib/entradasBodega.js'
@@ -167,6 +168,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   // Revisión es una cola, no una medición: sin tarjetas de semana ni día a
   // día, solo cuánto hay esperando entrar a bodega y desde cuándo.
   const esCola = areaKey === 'revision'
+  // En talleres tiene una segunda vista: el directorio de talleres por
+  // temporada, para ver a cuáles no se les ha mandado nada.
+  const esTalleres = areaKey === 'talleres'
   const cola = useMemo(() => {
     // Cuenta lo que de verdad falta por entrar: una orden con entrada
     // parcial ya no pesa entera en la cola.
@@ -301,12 +305,12 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
           </p>
         </div>
         <div className="view-actions">
-          {(showProcesos || esCola) && (
+          {(showProcesos || esCola || esTalleres) && (
             <div className="dis-filtros">
               <button type="button" className={'proc-f-btn' + (vista === 'ordenes' ? ' on' : '')}
-                onClick={() => setVista('ordenes')}>Órdenes</button>
+                onClick={() => setVista('ordenes')}>{esTalleres ? 'En proceso' : 'Órdenes'}</button>
               <button type="button" className={'proc-f-btn' + (vista === 'rendimiento' ? ' on' : '')}
-                onClick={() => setVista('rendimiento')}>Rendimiento</button>
+                onClick={() => setVista('rendimiento')}>{esTalleres ? 'Talleres' : 'Rendimiento'}</button>
             </div>
           )}
           <FaseToggles ocultas={ocultas} onToggle={onToggleFase} puedeCambiar={puedeFiltrar} />
@@ -336,13 +340,15 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         </div>
       </div>
 
-      {(showProcesos || esCola) && vista === 'rendimiento' ? (
+      {(showProcesos || esCola || esTalleres) && vista === 'rendimiento' ? (
         // El rendimiento mira TODAS las órdenes, no solo las que siguen
         // esperando corte: una orden ya cortada se fue de esta mesa, pero su
         // tiempo es justamente lo que hay que medir.
-        esCola
-          ? <RendimientoRevision orders={orders} procesos={procesos} />
-          : <RendimientoCorte orders={orders} procesos={procesos} />
+        esTalleres
+          ? <TalleresView onViewImage={onViewImage} />
+          : esCola
+            ? <RendimientoRevision orders={orders} procesos={procesos} />
+            : <RendimientoCorte orders={orders} procesos={procesos} />
       ) : (
       <>
       {showProcesos && (fuera.n > 0 || donde) && (

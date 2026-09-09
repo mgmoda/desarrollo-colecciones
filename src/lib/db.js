@@ -280,6 +280,15 @@ export async function dbUpsertEntradaBodega(orden, registro) {
   if (error) throw error
 }
 
+// Historial de talleres: una fila por salida a taller (ensamble) de los
+// últimos 30 meses, la sube el sync del servidor desde Factory cada 12 horas.
+// Se pide al abrir la vista Talleres; no hace falta tenerla siempre cargada.
+export async function dbLoadTalleresHist() {
+  const { data, error } = await supabase.from('dev_talleres_hist').select('data').order('fecha')
+  if (error) throw error
+  return (data || []).map((r) => r.data)
+}
+
 // Asistencia del huellero (solo MARISET-CASANIA): una fila por persona y día,
 // la sube el sync del servidor con la entrada (primera marcación) y la salida.
 // Se pide por rango de fechas: la pestaña muestra dos meses y navega por

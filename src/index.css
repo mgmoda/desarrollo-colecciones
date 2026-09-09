@@ -5903,6 +5903,32 @@ select.filtro-taller { flex: none; width: 215px; }
 }
 .sem-tabla thead th.sem-col-on .sem-ext { color: #9fd0ee; }
 
+/* ---------- Directorio de talleres por temporada ---------- */
+.tal-filtros { margin-bottom: 12px; align-items: center; }
+.tal-tabla th.tal-c, .tal-tabla td.tal-c { text-align: center; }
+.tal-tabla td { padding-top: 4px; padding-bottom: 4px; height: 30px; }
+.tal-rango { display: block; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); font-size: 10px; }
+.tal-nom { max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
+.tal-prendas { white-space: nowrap; }
+.tal-cel { display: inline-block; min-width: 46px; padding: 2px 6px; border-radius: 6px; font-weight: 600; font-variant-numeric: tabular-nums; border: 0; font: inherit; font-weight: 600; }
+.tal-cel.si { background: #eaf3de; color: #27500a; cursor: pointer; }
+.tal-cel.si:hover { background: #dcecc8; }
+.tal-cel.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
+.tal-cel.no { color: var(--muted); font-weight: 400; }
+.tal-cel.hoy { background: #fbeceb; color: #8c2f28; }
+tr.tal-abierta > td { background: #fbfaf7; }
+tr.tal-detalle > td { background: #fbfaf7; padding: 8px 10px 12px 28px; white-space: normal; }
+.tal-det-h { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; }
+.tal-det-h b { font-size: 13px; }
+.tal-cerrar { margin-left: auto; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
+.tal-lista { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--hairline); border-radius: 8px; overflow: hidden; font-size: 12.5px; }
+.tal-lista th { font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 5px 8px; background: var(--bg); text-align: left; }
+.tal-lista td { padding: 3px 8px; height: 34px; border-top: 1px solid var(--hairline); white-space: nowrap; }
+.tal-lista th.num, .tal-lista td.num { text-align: right; }
+.tal-foto { width: 26px; height: 34px; border-radius: 4px; object-fit: cover; display: inline-block; vertical-align: middle; cursor: zoom-in; background: var(--bg); }
+.tal-foto.sin { background: var(--bg); cursor: default; border: 1px dashed var(--hairline-strong); }
+.tal-nota { color: var(--muted); font-size: 11px; margin: 8px 0 0; }
+
 /* ---------- Entrada a bodega desde Revisión ---------- */
 tr.row-parcial > td { background: #fffaf0; }
 .pend-det { display: block; margin-top: 3px; font-size: 11px; font-weight: 500; color: #633806; white-space: normal; }

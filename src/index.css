@@ -5613,10 +5613,13 @@ select.filtro-taller { flex: none; width: 215px; }
 }
 
 /* ---------- Conjuntos: la otra prenda del par ---------- */
+/* La etiqueta del conjunto va DEBAJO del producto: al lado estiraba la
+   columna hasta 330 px y mandaba la tabla de Corte a scroll horizontal. */
 .conj-link {
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
   padding: 0;
   border: 0;
   background: transparent;

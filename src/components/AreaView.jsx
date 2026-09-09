@@ -419,7 +419,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                 {!esCola && <SortTh label="Top/Forro" col="topForro" {...thProps} />}
                 {showTaller && <SortTh label="Taller" col="taller" {...thProps} />}
                 {showValorTaller && <SortTh label="Valor taller" col="valorTaller" className="num" {...thProps} />}
-                <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />
+                {/* En Corte la fecha de trazo no cabe y no hace falta: los
+                    días se cuentan desde ella y la muestra el tooltip. */}
+                {!showProcesos && <SortTh label={STAGE_LABEL[baseStage]} col="fecha" {...thProps} />}
                 <SortTh label="Cant" col="cant" className="num" {...thProps} />
                 {esCola && <SortTh label="Falta" col="falta" className="num" {...thProps} />}
                 {esCola && <SortTh label="Revisando" col="procRevision" {...thProps} />}
@@ -529,7 +531,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                         {o.valorTaller ? formatPrice(o.valorTaller) : <span className="muted">—</span>}
                       </td>
                     )}
-                    <td>{formatDate(base.fecha)}</td>
+                    {!showProcesos && <td>{formatDate(base.fecha)}</td>}
                     <td className="num">{base.cant}</td>
                     {esCola && (
                       <td className="num">
@@ -572,9 +574,10 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                       <td className="num">
                         {atraso == null ? '' : (
                           <span className={'tag' + (atraso > limiteDias ? ' tag-warn' : '')}
-                            title={atraso > limiteDias
+                            title={(atraso > limiteDias
                               ? `Lleva más de ${limiteDias} días en esta etapa`
-                              : `${atraso} ${atraso === 1 ? 'día' : 'días'} en esta etapa`}>
+                              : `${atraso} ${atraso === 1 ? 'día' : 'días'} en esta etapa`)
+                              + (base.fecha ? ` · ${STAGE_LABEL[baseStage]} ${formatDate(base.fecha)}` : '')}>
                             {atraso} d
                           </span>
                         )}

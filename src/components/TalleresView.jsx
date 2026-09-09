@@ -26,12 +26,15 @@ function temporadaDe(iso) {
 const etiqueta = (key) => (key.startsWith('M') ? `Madres ${key.slice(1)}` : `Diciembre ${key.slice(1)}`)
 const rango = (key) => (key.startsWith('M') ? 'ene–may' : 'jun–dic')
 
-// Las últimas cuatro temporadas, la actual primero.
-function ultimasTemporadas(hoy) {
+// Todas las temporadas desde Madres 2023 hasta la actual, la actual primero.
+// Se ven de a cuatro y con las flechas se corre la ventana hacia atrás.
+const DESDE_ANIO = 2023
+const VENTANA = 4
+function todasTemporadas(hoy) {
   const out = []
   let a = hoy.getFullYear()
   let madres = hoy.getMonth() + 1 <= 5
-  for (let i = 0; i < 4; i += 1) {
+  while (a >= DESDE_ANIO) {
     out.push(madres ? `M${a}` : `D${a}`)
     if (madres) { a -= 1; madres = false } else { madres = true }
   }
@@ -61,9 +64,12 @@ const num = (n) => Number(n || 0).toLocaleString('es-CO')
 export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist }) {
   const [hist, setHist] = useState(null)
   const [error, setError] = useState('')
-  const [filtro, setFiltro] = useState('sin')
+  // Abre en "Todos" para que se vea de una la temporada en curso; el filtro
+  // "Sin enviar" está a un clic.
+  const [filtro, setFiltro] = useState('todos')
   const [q, setQ] = useState('')
   const [abierta, setAbierta] = useState(null) // { taller, temporada }
+  const [desdeTemp, setDesdeTemp] = useState(0) // dónde empieza la ventana de temporadas
 
   useEffect(() => {
     let vivo = true
@@ -74,8 +80,11 @@ export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist 
   }, [cargar])
 
   const hoy = useMemo(() => new Date(), [])
-  const temporadas = useMemo(() => ultimasTemporadas(hoy), [hoy])
-  const actual = temporadas[0]
+  const todas = useMemo(() => todasTemporadas(hoy), [hoy])
+  const actual = todas[0]
+  const temporadas = todas.slice(desdeTemp, desdeTemp + VENTANA)
+  const puedeAtras = desdeTemp + VENTANA < todas.length
+  const puedeAdelante = desdeTemp > 0
   const desde2a = useMemo(() => {
     const d = new Date(hoy); d.setMonth(d.getMonth() - MESES_2A)
     return d.toISOString().slice(0, 10)
@@ -165,6 +174,13 @@ export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist 
           </button>
         ))}
         <span style={{ flex: 1 }} />
+        <div className="rend-nav" title="Correr las temporadas">
+          <button type="button" className="icon-btn" aria-label="Temporadas anteriores"
+            disabled={!puedeAtras} onClick={() => setDesdeTemp((d) => Math.min(d + 1, todas.length - VENTANA))}>‹</button>
+          <span className="rend-periodo">{etiqueta(temporadas[temporadas.length - 1])} – {etiqueta(temporadas[0])}</span>
+          <button type="button" className="icon-btn" aria-label="Temporadas siguientes"
+            disabled={!puedeAdelante} onClick={() => setDesdeTemp((d) => Math.max(d - 1, 0))}>›</button>
+        </div>
         <SearchInput value={q} onChange={setQ} placeholder="Buscar taller o prenda…" />
       </div>
 

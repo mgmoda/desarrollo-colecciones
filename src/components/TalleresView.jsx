@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import Modal from './Modal.jsx'
 import SearchInput from './SearchInput.jsx'
 import { dbLoadTalleresHist } from '../lib/db.js'
 import { fotoFactoryUrl } from '../lib/supabase.js'
@@ -6,17 +7,22 @@ import { formatDate } from '../lib/constants.js'
 import { diasEntre } from '../lib/dates.js'
 
 // Directorio de talleres por temporada: a cuáles talleres buenos no les he
-// mandado nada esta temporada. Una fila por taller, una columna por cada una
-// de las últimas cuatro temporadas con las unidades que ensambló, y al tocar
-// una cifra se despliega debajo lo que hizo, con foto.
+// mandado nada esta temporada. Una fila por taller, una columna por temporada
+// con las unidades que ensambló, y al tocar una cifra se abre lo que hizo en
+// esa temporada, con foto.
 //
 // Las temporadas son las de Cartera: Madres (enero–mayo) y Diciembre
-// (junio–diciembre). Solo entran talleres con trabajo en los últimos dos años.
+// (junio–diciembre). La lista normal muestra los talleres con trabajo en los
+// últimos dos años; al buscar por nombre entra todo el historial (desde 2015).
 
 const MESES_2A = 24
 // Una salida de 15 unidades o menos es una muestra, no trabajo de taller: no
 // cuenta ni en las cifras ni en el detalle.
 const MIN_UNID = 16
+// Todo el historial de Factory arranca en 2015. Se ven cuatro temporadas a la
+// vez y con las flechas se corre la ventana hacia atrás.
+const DESDE_ANIO = 2015
+const VENTANA = 4
 
 function temporadaDe(iso) {
   const [a, m] = String(iso || '').split('-').map(Number)
@@ -26,10 +32,7 @@ function temporadaDe(iso) {
 const etiqueta = (key) => (key.startsWith('M') ? `Madres ${key.slice(1)}` : `Diciembre ${key.slice(1)}`)
 const rango = (key) => (key.startsWith('M') ? 'ene–may' : 'jun–dic')
 
-// Todas las temporadas desde Madres 2023 hasta la actual, la actual primero.
-// Se ven de a cuatro y con las flechas se corre la ventana hacia atrás.
-const DESDE_ANIO = 2023
-const VENTANA = 4
+// Todas las temporadas desde Madres 2015 hasta la actual, la actual primero.
 function todasTemporadas(hoy) {
   const out = []
   let a = hoy.getFullYear()
@@ -60,6 +63,7 @@ function tipoDe(fila) {
 }
 
 const num = (n) => Number(n || 0).toLocaleString('es-CO')
+const PIXEL = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
 
 export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist }) {
   const [hist, setHist] = useState(null)
@@ -79,6 +83,14 @@ export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist 
     return () => { vivo = false }
   }, [cargar])
 
+  // El encabezado de la tabla se queda pegado al bajar, justo debajo de la
+  // barra superior: se mide la barra porque su alto cambia con el ancho.
+  useEffect(() => {
+    const barra = document.querySelector('.topbar')
+    const alto = barra ? Math.round(barra.getBoundingClientRect().height) : 0
+    document.documentElement.style.setProperty('--tal-sticky-top', `${alto}px`)
+  }, [])
+
   const hoy = useMemo(() => new Date(), [])
   const todas = useMemo(() => todasTemporadas(hoy), [hoy])
   const actual = todas[0]
@@ -93,42 +105,47 @@ export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist 
   const talleres = useMemo(() => {
     const m = new Map()
     ;(hist || []).forEach((f) => {
-      if (!m.has(f.taller)) m.set(f.taller, { taller: f.taller, porTemp: {}, total2a: 0, tipos: {}, ultima: '' })
+      if (!m.has(f.taller)) m.set(f.taller, { taller: f.taller, porTemp: {}, total2a: 0, total: 0, tipos: {}, ultima: '', primera: '' })
       const t = m.get(f.taller)
       const k = temporadaDe(f.fecha)
       const cant = Number(f.cant) || 0
       t.porTemp[k] = (t.porTemp[k] || 0) + cant
+      t.total += cant
       if (f.fecha >= desde2a) {
         t.total2a += cant
         const tipo = tipoDe(f)
         if (tipo) t.tipos[tipo] = (t.tipos[tipo] || 0) + cant
       }
       if (f.fecha > t.ultima) t.ultima = f.fecha
+      if (!t.primera || f.fecha < t.primera) t.primera = f.fecha
     })
     return [...m.values()]
-      .filter((t) => t.total2a > 0)
       .map((t) => ({
         ...t,
         prendas: Object.entries(t.tipos).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k]) => k).join(' · '),
         enActual: (t.porTemp[actual] || 0) > 0,
       }))
-      .sort((a, b) => b.total2a - a.total2a)
+      .sort((a, b) => b.total2a - a.total2a || b.total - a.total)
   }, [hist, desde2a, actual])
 
+  const recientes = useMemo(() => talleres.filter((t) => t.total2a > 0), [talleres])
   const conteos = useMemo(() => ({
-    sin: talleres.filter((t) => !t.enActual).length,
-    con: talleres.filter((t) => t.enActual).length,
-    todos: talleres.length,
-  }), [talleres])
+    sin: recientes.filter((t) => !t.enActual).length,
+    con: recientes.filter((t) => t.enActual).length,
+    todos: recientes.length,
+  }), [recientes])
 
+  // Sin búsqueda: los de los últimos dos años, según el filtro. Con búsqueda:
+  // todo el historial, para encontrar un taller aunque lleve años sin trabajo.
+  const term = q.trim().toLowerCase()
   const filas = useMemo(() => {
-    let l = talleres
-    if (filtro === 'sin') l = l.filter((t) => !t.enActual)
-    if (filtro === 'con') l = l.filter((t) => t.enActual)
-    const term = q.trim().toLowerCase()
-    if (term) l = l.filter((t) => t.taller.toLowerCase().includes(term) || t.prendas.toLowerCase().includes(term))
-    return l
-  }, [talleres, filtro, q])
+    if (term) {
+      return talleres.filter((t) => t.taller.toLowerCase().includes(term) || t.prendas.toLowerCase().includes(term))
+    }
+    if (filtro === 'sin') return recientes.filter((t) => !t.enActual)
+    if (filtro === 'con') return recientes.filter((t) => t.enActual)
+    return recientes
+  }, [talleres, recientes, filtro, term])
 
   // Lo que hizo el taller abierto en la temporada abierta, más reciente primero.
   const detalle = useMemo(() => {
@@ -142,10 +159,6 @@ export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist 
     const prom = conDias.length ? Math.round(conDias.reduce((n, f) => n + f.dias, 0) / conDias.length) : null
     return { lista, unid, prom, ordenes: new Set(lista.map((f) => f.orden)).size }
   }, [abierta, hist])
-
-  function toggle(taller, temporada) {
-    setAbierta((a) => (a && a.taller === taller && a.temporada === temporada ? null : { taller, temporada }))
-  }
 
   if (error) return <div className="empty-state"><p>No se pudo cargar el historial de talleres.</p><p className="muted">{error}</p></div>
   if (!hist) return <div className="empty-state"><p>Cargando el historial de talleres…</p></div>
@@ -168,8 +181,8 @@ export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist 
     <>
       <div className="dis-filtros tal-filtros">
         {FILTROS.map((f) => (
-          <button key={f.key} type="button" className={'proc-f-btn' + (filtro === f.key ? ' on' : '')}
-            onClick={() => setFiltro(f.key)}>
+          <button key={f.key} type="button" className={'proc-f-btn' + (filtro === f.key && !term ? ' on' : '')}
+            disabled={!!term} onClick={() => setFiltro(f.key)}>
             {f.label} <b>{f.n}</b>
           </button>
         ))}
@@ -181,13 +194,18 @@ export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist 
           <button type="button" className="icon-btn" aria-label="Temporadas siguientes"
             disabled={!puedeAdelante} onClick={() => setDesdeTemp((d) => Math.max(d - 1, 0))}>›</button>
         </div>
-        <SearchInput value={q} onChange={setQ} placeholder="Buscar taller o prenda…" />
+        <SearchInput value={q} onChange={setQ} placeholder="Buscar taller en todo el historial…" />
       </div>
+      {term && (
+        <p className="tal-nota" style={{ margin: '0 0 8px' }}>
+          Buscando en todo el historial desde 2015: {filas.length} {filas.length === 1 ? 'taller' : 'talleres'}.
+        </p>
+      )}
 
       {filas.length === 0 ? (
-        <div className="empty-state"><p>Ningún taller con ese filtro.</p></div>
+        <div className="empty-state"><p>Ningún taller con ese {term ? 'nombre' : 'filtro'}.</p></div>
       ) : (
-        <div className="table-wrap">
+        <div className="table-wrap tal-wrap">
           <table className="data-table tal-tabla">
             <thead>
               <tr>
@@ -199,89 +217,40 @@ export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist 
                   </th>
                 ))}
                 <th className="num">2 años</th>
+                <th className="num" title="Todo el historial, desde 2015">Total</th>
                 <th>Prendas</th>
               </tr>
             </thead>
             <tbody>
               {filas.map((t) => (
-                <Fragment key={t.taller}>
-                  <tr className={abierta && abierta.taller === t.taller ? 'tal-abierta' : ''}>
-                    <td className="strong tal-nom" title={`Última orden: ${formatDate(t.ultima)}`}>{t.taller}</td>
-                    {temporadas.map((k) => {
-                      const v = t.porTemp[k] || 0
-                      const sel = abierta && abierta.taller === t.taller && abierta.temporada === k
-                      if (!v) {
-                        return (
-                          <td key={k} className="tal-c">
-                            <span className={'tal-cel ' + (k === actual ? 'hoy' : 'no')}>—</span>
-                          </td>
-                        )
-                      }
+                <tr key={t.taller}>
+                  <td className="strong tal-nom"
+                    title={`Trabaja desde ${formatDate(t.primera)} · última orden ${formatDate(t.ultima)}`}>
+                    {t.taller}
+                  </td>
+                  {temporadas.map((k) => {
+                    const v = t.porTemp[k] || 0
+                    if (!v) {
                       return (
                         <td key={k} className="tal-c">
-                          <button type="button" className={'tal-cel si' + (sel ? ' sel' : '')}
-                            title={`Ver lo que hizo en ${etiqueta(k)}`}
-                            onClick={() => toggle(t.taller, k)}>
-                            {num(v)}
-                          </button>
+                          <span className={'tal-cel ' + (k === actual ? 'hoy' : 'no')}>—</span>
                         </td>
                       )
-                    })}
-                    <td className="num strong">{num(t.total2a)}</td>
-                    <td className="muted tal-prendas">{t.prendas || '—'}</td>
-                  </tr>
-                  {abierta && abierta.taller === t.taller && detalle && (
-                    <tr className="tal-detalle">
-                      <td colSpan={temporadas.length + 3}>
-                        <div className="tal-det-h">
-                          <b>{etiqueta(abierta.temporada)}</b>
-                          <span className="muted">
-                            {detalle.ordenes} {detalle.ordenes === 1 ? 'orden' : 'órdenes'} · {num(detalle.unid)} unidades
-                            {detalle.prom != null ? ` · promedio ${detalle.prom} días en taller` : ''}
-                          </span>
-                          <button type="button" className="tal-cerrar" onClick={() => setAbierta(null)}>✕ cerrar</button>
-                        </div>
-                        <table className="tal-lista">
-                          <thead>
-                            <tr>
-                              <th />
-                              <th>Referencia</th>
-                              <th>Prenda</th>
-                              <th>Orden</th>
-                              <th className="num">Unid</th>
-                              <th>Enviada</th>
-                              <th>Entregada</th>
-                              <th className="num">Días</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {detalle.lista.map((f) => (
-                              <tr key={f.salida + '_' + f.orden}>
-                                <td>
-                                  {f.foto ? (
-                                    <img src={fotoFactoryUrl(f.producto)} alt="" className="tal-foto"
-                                      loading="lazy"
-                                      onClick={(e) => { if (!e.currentTarget.classList.contains('sin') && onViewImage) onViewImage(fotoFactoryUrl(f.producto)) }}
-                                      // La foto existe en Factory pero el servidor todavía no la
-                                      // sube (van de a 120 por corrida): recuadro vacío mientras tanto.
-                                      onError={(e) => { e.currentTarget.classList.add('sin'); e.currentTarget.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' }} />
-                                  ) : <span className="tal-foto sin" title="Sin foto en Factory" />}
-                                </td>
-                                <td className="strong">{f.ref || f.nombre}</td>
-                                <td className="muted">{f.ref && f.nombre && f.ref !== f.nombre ? f.nombre : (tipoDe(f) || '—')}</td>
-                                <td className="mono">{f.orden}</td>
-                                <td className="num">{num(f.cant)}</td>
-                                <td>{formatDate(f.fecha)}</td>
-                                <td>{f.entrega ? formatDate(f.entrega) : <span className="muted">—</span>}</td>
-                                <td className="num">{f.dias != null && f.dias >= 0 ? f.dias : <span className="muted">—</span>}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    }
+                    return (
+                      <td key={k} className="tal-c">
+                        <button type="button" className="tal-cel si"
+                          title={`Ver lo que hizo en ${etiqueta(k)}`}
+                          onClick={() => setAbierta({ taller: t.taller, temporada: k })}>
+                          {num(v)}
+                        </button>
                       </td>
-                    </tr>
-                  )}
-                </Fragment>
+                    )
+                  })}
+                  <td className="num strong">{t.total2a ? num(t.total2a) : <span className="muted">—</span>}</td>
+                  <td className="num muted">{num(t.total)}</td>
+                  <td className="muted tal-prendas">{t.prendas || '—'}</td>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -291,6 +260,60 @@ export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist 
         Un guion es una temporada sin órdenes; en rojo, la actual sin enviar. Se ordena por las unidades de los últimos dos años.
         Solo cuentan salidas de más de 15 unidades: las muestras no.
       </p>
+
+      {abierta && detalle && (
+        <Modal open onClose={() => setAbierta(null)} size="lg">
+          <div className="modal-head">
+            <div>
+              <h2 className="modal-title">{abierta.taller}</h2>
+              <p className="eb-meta">
+                <b>{etiqueta(abierta.temporada)}</b> · {detalle.ordenes} {detalle.ordenes === 1 ? 'orden' : 'órdenes'} · {num(detalle.unid)} unidades
+                {detalle.prom != null ? ` · promedio ${detalle.prom} días en taller` : ''}
+              </p>
+            </div>
+            <button className="icon-btn" onClick={() => setAbierta(null)} aria-label="Cerrar">✕</button>
+          </div>
+          <div className="modal-body tal-modal-body">
+            <table className="tal-lista">
+              <thead>
+                <tr>
+                  <th />
+                  <th>Referencia</th>
+                  <th>Prenda</th>
+                  <th>Orden</th>
+                  <th className="num">Unid</th>
+                  <th>Enviada</th>
+                  <th>Entregada</th>
+                  <th className="num">Días</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detalle.lista.map((f) => (
+                  <tr key={f.salida + '_' + f.orden}>
+                    <td>
+                      {f.foto ? (
+                        <img src={fotoFactoryUrl(f.producto)} alt="" className="tal-foto"
+                          loading="lazy"
+                          onClick={(e) => { if (!e.currentTarget.classList.contains('sin') && onViewImage) onViewImage(fotoFactoryUrl(f.producto)) }}
+                          // La foto existe en Factory pero el servidor todavía no la
+                          // sube (van de a 120 por corrida): recuadro vacío mientras tanto.
+                          onError={(e) => { e.currentTarget.classList.add('sin'); e.currentTarget.src = PIXEL }} />
+                      ) : <span className="tal-foto sin" title="Sin foto en Factory" />}
+                    </td>
+                    <td className="strong">{f.ref || f.nombre}</td>
+                    <td className="muted">{f.ref && f.nombre && f.ref !== f.nombre ? f.nombre : (tipoDe(f) || '—')}</td>
+                    <td className="mono">{f.orden}</td>
+                    <td className="num">{num(f.cant)}</td>
+                    <td>{formatDate(f.fecha)}</td>
+                    <td>{f.entrega ? formatDate(f.entrega) : <span className="muted">—</span>}</td>
+                    <td className="num">{f.dias != null && f.dias >= 0 ? f.dias : <span className="muted">—</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Modal>
+      )}
     </>
   )
 }

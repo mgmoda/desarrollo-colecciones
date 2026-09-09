@@ -5916,11 +5916,11 @@ select.filtro-taller { flex: none; width: 215px; }
 .tal-cel.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
 .tal-cel.no { color: var(--muted); font-weight: 400; }
 .tal-cel.hoy { background: #fbeceb; color: #8c2f28; }
-tr.tal-abierta > td { background: #fbfaf7; }
-tr.tal-detalle > td { background: #fbfaf7; padding: 8px 10px 12px 28px; white-space: normal; }
-.tal-det-h { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; }
-.tal-det-h b { font-size: 13px; }
-.tal-cerrar { margin-left: auto; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
+/* El encabezado se queda pegado al bajar: la tabla no hace scroll por dentro
+   sino con la página, y las cabeceras se pegan justo bajo la barra superior. */
+.tal-wrap { overflow: visible; }
+.tal-tabla thead th { top: var(--tal-sticky-top, 0); z-index: 3; }
+.tal-modal-body { padding: 10px 16px 16px; }
 .tal-lista { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--hairline); border-radius: 8px; overflow: hidden; font-size: 12.5px; }
 .tal-lista th { font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 5px 8px; background: var(--bg); text-align: left; }
 .tal-lista td { padding: 3px 8px; height: 34px; border-top: 1px solid var(--hairline); white-space: nowrap; }

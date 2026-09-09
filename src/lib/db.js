@@ -284,8 +284,17 @@ export async function dbUpsertEntradaBodega(orden, registro) {
 // las tienen. Se indexan por el nombre interno (MG-B872) y por la referencia
 // (M5254), que es como vienen las órdenes.
 export async function dbLoadMedidas() {
-  const { data, error } = await supabase.from('dev_medidas').select('data')
-  if (error) throw error
+  // Son más de 1.700 productos y Supabase entrega máximo 1.000 por petición:
+  // se pide por páginas hasta que venga una incompleta.
+  const PAGINA = 1000
+  const data = []
+  for (let desde = 0; ; desde += PAGINA) {
+    const { data: pag, error } = await supabase
+      .from('dev_medidas').select('data').order('id').range(desde, desde + PAGINA - 1)
+    if (error) throw error
+    ;(pag || []).forEach((r) => data.push(r))
+    if (!pag || pag.length < PAGINA) break
+  }
   const m = new Map()
   ;(data || []).forEach((r) => {
     const d = r.data || {}

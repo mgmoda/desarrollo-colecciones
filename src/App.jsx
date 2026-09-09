@@ -39,7 +39,7 @@ import {
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
 import { aplicarEntradas, pendientesDe } from './lib/entradasBodega.js'
-import { cerrar, estaAndando } from './lib/procesos.js'
+import { cerrar, estaAndando, nombreDe } from './lib/procesos.js'
 import { DEFAULT_TELAS, DEFAULT_COLORS, DEFAULT_MARCAS, DEFAULT_PROCESOS, EXTERNAL_ORIGENES, formatPrice, normRef } from './lib/constants.js'
 import { resumirCambios } from './lib/cambios.js'
 
@@ -520,6 +520,19 @@ export default function App() {
     })
   }
 
+  // Nota de una orden ("la tela venía con manchas"). Vive con el resto de lo
+  // que el sistema anota sobre la orden, por número de orden, y la puede
+  // escribir cualquiera: es quien ve el problema el que lo anota.
+  function guardarNotaOrden(orden, nota) {
+    const clave = String(orden)
+    const { nota: _vieja, ...resto } = procesos[clave] || {}
+    const proc = nota && nota.texto
+      ? { ...resto, nota: { ...nota, usuario: nombreDe(emailSesion), at: Date.now() } }
+      : resto
+    guardarProceso(clave, proc)
+    dbLog(nota && nota.texto ? 'nota_orden' : 'quitar_nota_orden', 'orden', clave, { texto: (nota && nota.texto) || '' })
+  }
+
   // Entrada a bodega desde Revisión: se pinta de una, se guarda detrás y
   // queda en la bitácora con quién y cuánto.
   function guardarEntradaBodega(orden, entrada) {
@@ -993,6 +1006,7 @@ export default function App() {
             procesos={procesos} usuario={emailSesion}
             onGuardarProceso={(tab === 'revision' ? puedeBodega : puedeCorte) ? guardarProceso : undefined}
             onGuardarEntrada={puedeBodega ? guardarEntradaBodega : undefined}
+            onGuardarNota={guardarNotaOrden}
             onViewImage={setLightbox} onOpenRef={openEdit} onSetFields={handleSetFields} />
         )}
         {tab === 'ensamble' && (

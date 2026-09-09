@@ -11,7 +11,7 @@ import AreaKpis from './AreaKpis.jsx'
 import ProcesosTags from './ProcesosTags.jsx'
 import ConjuntoModal from './ConjuntoModal.jsx'
 import CurvaModal, { MEDIDA_DE_AREA } from './CurvaModal.jsx'
-import NotaRefModal from './NotaRefModal.jsx'
+import NotaOrdenModal from './NotaOrdenModal.jsx'
 import FaseToggles from './FaseToggles.jsx'
 import EtapaProceso from './EtapaProceso.jsx'
 import RendimientoCorte from './RendimientoCorte.jsx'
@@ -103,7 +103,7 @@ function TopCell({ orden, refRow, topLinks, onAbrir }) {
   )
 }
 
-export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, onSetFields, fasesOcultas, onToggleFase, puedeFiltrar, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes, procesos = {}, usuario, onGuardarProceso, onGuardarEntrada }) {
+export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, onSetFields, fasesOcultas, onToggleFase, puedeFiltrar, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes, procesos = {}, usuario, onGuardarProceso, onGuardarEntrada, onGuardarNota }) {
   const [entradaDe, setEntradaDe] = useState(null) // orden que se está ingresando a bodega
   const [topDe, setTopDe] = useState(null) // orden cuyo vínculo de top se está viendo
   const [conjuntoDe, setConjuntoDe] = useState(null) // orden cuyo conjunto se está viendo
@@ -494,16 +494,22 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                           </button>
                         )
                       })()}
-                      {/* Nota de la referencia: por qué está frenada. Se
-                          escribe desde aquí, que es donde se ve el problema. */}
-                      {onSetFields && (
-                        <button type="button"
-                          className={'nota-btn' + (ref && ref.pendienteNota ? ' con' : '')}
-                          onClick={(e) => { e.stopPropagation(); setNotaDe(o) }}
-                          title={ref && ref.pendienteNota ? 'Editar la nota' : 'Escribir por qué está frenada'}>
-                          {ref && ref.pendienteNota ? ref.pendienteNota : '+ nota'}
-                        </button>
-                      )}
+                      {/* Nota de la ORDEN: por qué está frenada este lote. Se
+                          escribe desde aquí, que es donde se ve el problema, y
+                          no viaja a la siguiente programación de la referencia. */}
+                      {onGuardarNota && (() => {
+                        const nota = (procesos[o.orden] || {}).nota
+                        return (
+                          <button type="button"
+                            className={'nota-btn' + (nota && nota.texto ? ' con' : '')}
+                            onClick={(e) => { e.stopPropagation(); setNotaDe(o) }}
+                            title={nota && nota.texto
+                              ? `Editar la nota${nota.fecha ? ` · anotada el ${formatDate(nota.fecha)}` : ''}`
+                              : 'Escribir por qué está frenada esta orden'}>
+                            {nota && nota.texto ? nota.texto : '+ nota'}
+                          </button>
+                        )
+                      })()}
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <ProductoCell orden={o} vinculo={conjuntoLinks.get(claveOrden(o))}
@@ -660,8 +666,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
       )}
 
       {notaDe && (
-        <NotaRefModal orden={notaDe} refRow={refMap.get(notaDe.referencia)}
-          onGuardar={(campos) => onSetFields && onSetFields(notaDe.referencia, campos)}
+        <NotaOrdenModal orden={notaDe} nota={(procesos[notaDe.orden] || {}).nota}
+          onGuardar={(nota) => onGuardarNota(notaDe.orden, nota)}
           onClose={() => setNotaDe(null)} />
       )}
 

@@ -5929,6 +5929,16 @@ select.filtro-taller { flex: none; width: 215px; }
 .tal-foto.sin { background: var(--bg); cursor: default; border: 1px dashed var(--hairline-strong); }
 .tal-nota { color: var(--muted); font-size: 11px; margin: 8px 0 0; }
 
+/* ---------- Medidas por tallas (ficha técnica de Factory) ---------- */
+.tag-med { margin-left: 7px; background: #e6f1fb; color: #0c447c; border-color: #b5d4f4; font-size: 10.5px; font-weight: 600; cursor: pointer; }
+.tag-med:hover { background: #d6e8f8; }
+.med-wrap { overflow: auto; border: 1px solid var(--hairline); border-radius: 8px; }
+.med-tabla { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.med-tabla th { position: sticky; top: 0; background: var(--bg); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; text-align: left; white-space: nowrap; }
+.med-tabla td { padding: 5px 10px; border-top: 1px solid var(--hairline); white-space: nowrap; }
+.med-tabla th.num, .med-tabla td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.med-tabla td:first-child { position: sticky; left: 0; background: var(--surface); }
+
 /* ---------- Entrada a bodega desde Revisión ---------- */
 tr.row-parcial > td { background: #fffaf0; }
 .pend-det { display: block; margin-top: 3px; font-size: 11px; font-weight: 500; color: #633806; white-space: normal; }

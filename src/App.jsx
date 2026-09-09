@@ -35,7 +35,7 @@ import {
   dbLoadFaltantes, dbUpsertFaltante, dbDeleteFaltante,
   dbLoadPreordenes, dbUpsertPreorden, dbDeletePreorden,
   dbLoadProgramaciones, dbUpsertProgramacion, dbUpsertProgramaciones, dbDeleteProgramacion,
-  dbLoadTelas, dbLoadProcesos, dbUpsertProceso, dbLoadEntradasBodega, dbUpsertEntradaBodega,
+  dbLoadTelas, dbLoadProcesos, dbUpsertProceso, dbLoadEntradasBodega, dbUpsertEntradaBodega, dbLoadMedidas,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
 import { aplicarEntradas, pendientesDe } from './lib/entradasBodega.js'
@@ -84,6 +84,8 @@ export default function App() {
   // las órdenes de Factory: la que entró completa gana la etapa y sale de
   // Revisión sin que nadie más tenga que enterarse.
   const [entradasBodega, setEntradasBodega] = useState({})
+  // Medidas por talla de la ficha técnica de Factory, por nombre y referencia.
+  const [medidas, setMedidas] = useState(() => new Map())
   const orders = useMemo(() => aplicarEntradas(ordersFactory, entradasBodega), [ordersFactory, entradasBodega])
   const [faltantes, setFaltantes] = useState([])
   const [preordenes, setPreordenes] = useState([])
@@ -139,9 +141,10 @@ export default function App() {
     Promise.all([
       dbLoadOrders(), dbLoadRefs(), dbLoadSettings(), dbLoadFaltantes(), dbLoadRefsMeta(),
       dbLoadStamps(), dbLoadPreordenes(), dbLoadProgramaciones(), dbLoadTelas(),
-      dbLoadProcesos(), dbLoadEntradasBodega(),
+      dbLoadProcesos(), dbLoadEntradasBodega(), dbLoadMedidas().catch(() => new Map()),
     ])
-      .then(([o, r, s, fl, meta, marcas, po, pr, tf, pc, eb]) => {
+      .then(([o, r, s, fl, meta, marcas, po, pr, tf, pc, eb, md]) => {
+        setMedidas(md)
         if (cancelled) return
         refsMeta.current = new Map(meta.map((m) => [m.id, m.updated_at]))
         stamps.current = marcas
@@ -222,6 +225,7 @@ export default function App() {
       if (cambio('preordenes')) pedidos.push(dbLoadPreordenes().then(setPreordenes))
       if (cambio('procesos')) pedidos.push(dbLoadProcesos().then(setProcesos))
       if (cambio('entradas')) pedidos.push(dbLoadEntradasBodega().then(setEntradasBodega))
+      if (cambio('medidas')) pedidos.push(dbLoadMedidas().then(setMedidas))
       if (cambio('programaciones')) pedidos.push(dbLoadProgramaciones().then(setProgramaciones))
       if (cambio('telas')) pedidos.push(dbLoadTelas().then(setTelasFicha))
       // Los diseños los carga Geodésica en su pestaña: aquí solo se le pasa
@@ -1006,7 +1010,7 @@ export default function App() {
             procesos={procesos} usuario={emailSesion}
             onGuardarProceso={(tab === 'revision' ? puedeBodega : puedeCorte) ? guardarProceso : undefined}
             onGuardarEntrada={puedeBodega ? guardarEntradaBodega : undefined}
-            onGuardarNota={guardarNotaOrden}
+            onGuardarNota={guardarNotaOrden} medidas={medidas}
             onViewImage={setLightbox} onOpenRef={openEdit} onSetFields={handleSetFields} />
         )}
         {tab === 'ensamble' && (

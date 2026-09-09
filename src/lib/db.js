@@ -280,6 +280,21 @@ export async function dbUpsertEntradaBodega(orden, registro) {
   if (error) throw error
 }
 
+// Medidas por talla de la ficha técnica de Factory, solo de los productos que
+// las tienen. Se indexan por el nombre interno (MG-B872) y por la referencia
+// (M5254), que es como vienen las órdenes.
+export async function dbLoadMedidas() {
+  const { data, error } = await supabase.from('dev_medidas').select('data')
+  if (error) throw error
+  const m = new Map()
+  ;(data || []).forEach((r) => {
+    const d = r.data || {}
+    if (!Array.isArray(d.medidas) || !d.medidas.length) return
+    ;[d.nombre, d.ref].forEach((k) => { if (k) m.set(String(k).trim().toUpperCase(), d) })
+  })
+  return m
+}
+
 // Historial de talleres: una fila por salida a taller (ensamble) de los
 // últimos 30 meses, la sube el sync del servidor desde Factory cada 12 horas.
 // Se pide al abrir la vista Talleres; no hace falta tenerla siempre cargada.

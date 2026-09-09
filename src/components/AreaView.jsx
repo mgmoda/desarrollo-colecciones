@@ -17,6 +17,7 @@ import EtapaProceso from './EtapaProceso.jsx'
 import RendimientoCorte from './RendimientoCorte.jsx'
 import RendimientoRevision from './RendimientoRevision.jsx'
 import TalleresView from './TalleresView.jsx'
+import MedidasModal from './MedidasModal.jsx'
 import EnviarExternoModal from './EnviarExternoModal.jsx'
 import EntradaBodegaModal from './EntradaBodegaModal.jsx'
 import { pendientesDe, resumenFalta } from '../lib/entradasBodega.js'
@@ -104,8 +105,16 @@ function TopCell({ orden, refRow, topLinks, onAbrir }) {
   )
 }
 
-export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, onSetFields, fasesOcultas, onToggleFase, puedeFiltrar, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes, procesos = {}, usuario, onGuardarProceso, onGuardarEntrada, onGuardarNota }) {
+export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenRef, onSetFields, fasesOcultas, onToggleFase, puedeFiltrar, topLinks, onVincularTop, conjuntoLinks, faltantesPorRef, onIrAFaltantes, procesos = {}, usuario, onGuardarProceso, onGuardarEntrada, onGuardarNota, medidas }) {
   const [entradaDe, setEntradaDe] = useState(null) // orden que se está ingresando a bodega
+  const [medidasDe, setMedidasDe] = useState(null) // orden cuyas medidas por talla se están viendo
+  // Las medidas por talla de la ficha técnica. Se muestran en Por enviar a
+  // taller, que es donde el taller las necesita, y solo si la referencia las tiene.
+  const medidasDeOrden = (o) => {
+    if (!medidas || areaKey !== 'alistamiento') return null
+    const claves = [o.producto, o.referencia].map((k) => String(k || '').trim().toUpperCase().replace(/\s*CONJUNTO$/, ''))
+    return claves.map((k) => medidas.get(k)).find(Boolean) || null
+  }
   const [topDe, setTopDe] = useState(null) // orden cuyo vínculo de top se está viendo
   const [conjuntoDe, setConjuntoDe] = useState(null) // orden cuyo conjunto se está viendo
   const [curvaDe, setCurvaDe] = useState(null) // orden cuya curva de tallas se está viendo
@@ -483,6 +492,13 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                           Donde {EXTERNO}
                         </span>
                       )}
+                      {medidasDeOrden(o) && (
+                        <button type="button" className="tag tag-med"
+                          title="Esta referencia tiene medidas por talla en la ficha técnica · clic para verlas"
+                          onClick={(e) => { e.stopPropagation(); setMedidasDe(o) }}>
+                          📏 Medidas
+                        </button>
+                      )}
                       {parcial && pend.falta > 0 && (
                         // Qué falta exactamente, para no tener que abrir el modal a mirar.
                         <span className="pend-det" title="Pendiente por ingresar a bodega">
@@ -652,6 +668,10 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
         </div>
       )}
       </>
+      )}
+
+      {medidasDe && medidasDeOrden(medidasDe) && (
+        <MedidasModal orden={medidasDe} medidas={medidasDeOrden(medidasDe)} onClose={() => setMedidasDe(null)} />
       )}
 
       {entradaDe && (

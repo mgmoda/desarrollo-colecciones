@@ -14,6 +14,9 @@ import { diasEntre } from '../lib/dates.js'
 // (junio–diciembre). Solo entran talleres con trabajo en los últimos dos años.
 
 const MESES_2A = 24
+// Una salida de 15 unidades o menos es una muestra, no trabajo de taller: no
+// cuenta ni en las cifras ni en el detalle.
+const MIN_UNID = 16
 
 function temporadaDe(iso) {
   const [a, m] = String(iso || '').split('-').map(Number)
@@ -23,13 +26,13 @@ function temporadaDe(iso) {
 const etiqueta = (key) => (key.startsWith('M') ? `Madres ${key.slice(1)}` : `Diciembre ${key.slice(1)}`)
 const rango = (key) => (key.startsWith('M') ? 'ene–may' : 'jun–dic')
 
-// Las últimas cuatro temporadas, de la más vieja a la actual.
+// Las últimas cuatro temporadas, la actual primero.
 function ultimasTemporadas(hoy) {
   const out = []
   let a = hoy.getFullYear()
   let madres = hoy.getMonth() + 1 <= 5
   for (let i = 0; i < 4; i += 1) {
-    out.unshift(madres ? `M${a}` : `D${a}`)
+    out.push(madres ? `M${a}` : `D${a}`)
     if (madres) { a -= 1; madres = false } else { madres = true }
   }
   return out
@@ -65,14 +68,14 @@ export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist 
   useEffect(() => {
     let vivo = true
     cargar()
-      .then((h) => { if (vivo) setHist(h) })
+      .then((h) => { if (vivo) setHist((h || []).filter((f) => (Number(f.cant) || 0) >= MIN_UNID)) })
       .catch((e) => { if (vivo) setError(e.message || String(e)) })
     return () => { vivo = false }
   }, [cargar])
 
   const hoy = useMemo(() => new Date(), [])
   const temporadas = useMemo(() => ultimasTemporadas(hoy), [hoy])
-  const actual = temporadas[temporadas.length - 1]
+  const actual = temporadas[0]
   const desde2a = useMemo(() => {
     const d = new Date(hoy); d.setMonth(d.getMonth() - MESES_2A)
     return d.toISOString().slice(0, 10)
@@ -270,6 +273,7 @@ export default function TalleresView({ onViewImage, cargar = dbLoadTalleresHist 
       )}
       <p className="tal-nota">
         Un guion es una temporada sin órdenes; en rojo, la actual sin enviar. Se ordena por las unidades de los últimos dos años.
+        Solo cuentan salidas de más de 15 unidades: las muestras no.
       </p>
     </>
   )

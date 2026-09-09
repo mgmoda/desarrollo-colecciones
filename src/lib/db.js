@@ -284,9 +284,19 @@ export async function dbUpsertEntradaBodega(orden, registro) {
 // últimos 30 meses, la sube el sync del servidor desde Factory cada 12 horas.
 // Se pide al abrir la vista Talleres; no hace falta tenerla siempre cargada.
 export async function dbLoadTalleresHist() {
-  const { data, error } = await supabase.from('dev_talleres_hist').select('data').order('fecha')
-  if (error) throw error
-  return (data || []).map((r) => r.data)
+  // Son más de 3.000 filas y Supabase entrega máximo 1.000 por petición: se
+  // pide por páginas hasta que venga una incompleta.
+  const PAGINA = 1000
+  const out = []
+  for (let desde = 0; ; desde += PAGINA) {
+    const { data, error } = await supabase
+      .from('dev_talleres_hist').select('data').order('fecha').order('id')
+      .range(desde, desde + PAGINA - 1)
+    if (error) throw error
+    ;(data || []).forEach((r) => out.push(r.data))
+    if (!data || data.length < PAGINA) break
+  }
+  return out
 }
 
 // Asistencia del huellero (solo MARISET-CASANIA): una fila por persona y día,

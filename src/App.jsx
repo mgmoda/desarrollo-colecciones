@@ -379,12 +379,19 @@ export default function App() {
   // La asistencia del huellero son datos personales de los empleados: la ven
   // solo Diego y Ninfa.
   const veAsistencia = ['ninfa@mgmoda.local', ...ADMINS].includes(emailSesion)
+  // La cartera la ven Diego y Kelly, la encargada de cobranza. Kelly es de
+  // cartera y no de producción: para ella es la única pestaña. El acceso real
+  // a los datos lo controla cartera_autorizado() en la base, no esta lista.
+  const veCartera = ['kelly@mgmoda.local', ...ADMINS].includes(emailSesion)
+  const soloCartera = emailSesion === 'kelly@mgmoda.local'
   const tabsVisibles = useMemo(
     () => (esAdmin ? TABS : TABS.filter((t) =>
-      TABS_OPERACION.includes(t.key)
-      || (t.key === 'programaciones' && veProgramaciones)
-      || (t.key === 'asistencia' && veAsistencia))),
-    [esAdmin, veProgramaciones, veAsistencia],
+      (t.key === 'cartera' && veCartera)
+      || (!soloCartera && (
+        TABS_OPERACION.includes(t.key)
+        || (t.key === 'programaciones' && veProgramaciones)
+        || (t.key === 'asistencia' && veAsistencia))))),
+    [esAdmin, veProgramaciones, veAsistencia, veCartera, soloCartera],
   )
 
   // Si quedó guardada una pestaña que este usuario no puede ver, se lo lleva a

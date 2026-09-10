@@ -160,8 +160,21 @@ select count(*) from public.cartera_facturas;
   con la factura. Por eso `unirPagos()` **archiva** los abonos en
   `cartera_pagos`, y "lo recaudado en el mes" se calcula sobre el universo
   completo, no sobre los clientes con saldo.
-- Un `acuerdo` exige fecha de compromiso; un `pendiente` puede ir sin texto y
-  queda `estado='abierta'` hasta que alguien lo cierre.
+- **Contactos (sep-2026, reemplaza a los cuatro tipos de gestión).** La
+  cartera la cobran dos personas (Diego y Kelly) **sin dueño por cliente**.
+  Cada contacto es una fila de `cartera_gestion` con `tipo='contacto'`,
+  `canal` (WhatsApp/Llamada/Visita) y `resultado` (sin_respuesta, promesa,
+  abono, reclamo, no_llamar); si es promesa, `acuerdo_fecha`/`acuerdo_monto`.
+  Las gestiones viejas siguen contando como contactos por su fecha
+  (`resultadoDe()` en `lib/cartera.js`). Por cliente, `agrupar()` deriva
+  `ult_contacto`, `dias_contacto`, `promesa` (vigente/vencida/cumplida: se
+  cumple sola cuando llega un abono después de hecha), `en_espera` (contacto
+  en los últimos `ESPERA_DIAS`=7 días), `para_llamar` y `no_llamar`. La lista
+  abre en "Para llamar hoy" con las promesas vencidas primero. El formulario
+  vive en `CarteraContacto.jsx` (`FormContacto`, `LineaContacto`) y se usa
+  desde la lista (botón "Contacté") y desde el detalle del cliente.
+- Un `acuerdo` viejo exige fecha; un `pendiente` viejo puede seguir
+  `estado='abierta'` hasta que alguien lo marque resuelto en el detalle.
 
 **Lo que NO se migró** (sigue sólo en cobranza-app, necesita servidor): el
 correo diario de seguimiento, el reporte en PDF y la importación del

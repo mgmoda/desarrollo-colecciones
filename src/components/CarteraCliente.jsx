@@ -1,26 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import Modal from './Modal.jsx'
 import CarteraMensaje from './CarteraMensaje.jsx'
-import { guardarGestion, cerrarGestion, etiquetaColeccion } from '../lib/cartera.js'
+import { FormContacto, LineaContacto } from './CarteraContacto.jsx'
+import { autorDe, cerrarGestion, etiquetaColeccion } from '../lib/cartera.js'
 import { formatPrice } from '../lib/constants.js'
 
 // ════════════════════════════════════════════════════════════════════════
 // Detalle de un cliente de cartera: qué debe, desde cuándo, qué ha pagado
-// y toda la gestión de cobro. Es donde se registra cada contacto.
-//
-// Las reglas de validación son las mismas del backend que se reemplaza
-// (cobranza-app, POST /api/gestion): un acuerdo necesita fecha, un encargo
-// puede ir sin texto (se describe solo) y queda ABIERTO hasta resolverse.
+// y el historial de contactos. El contacto se registra con el mismo
+// formulario de dos toques de la lista ("Contacté").
 // ════════════════════════════════════════════════════════════════════════
-
-const GESTORES = ['Jorge', 'Nancy', 'Adriana', 'Estela', 'Samuel', 'Kelly', 'Diego']
-const CANALES = ['WhatsApp', 'Llamada', 'Remito', 'Visita']
-const TIPOS = [
-  { k: 'novedad', label: 'Novedad' },
-  { k: 'promesa', label: 'Promesa de pago' },
-  { k: 'acuerdo', label: 'Acuerdo de pago' },
-  { k: 'pendiente', label: 'Pendiente / Encargo' },
-]
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
@@ -37,22 +26,14 @@ function fechaCorta(iso) {
 }
 const hoyISO = () => new Date().toISOString().slice(0, 10)
 
-const FORM_VACIO = {
-  gestor: '', canal: '', remitido_a: '', tipo: 'novedad', texto: '',
-  acuerdo_fecha: '', acuerdo_monto: '', proximo_seguimiento: '',
-}
-
 export default function CarteraCliente({ cliente, usuario, onClose, onGuardado }) {
-  const [form, setForm] = useState(FORM_VACIO)
   const [abrirForm, setAbrirForm] = useState(false)
-  const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState(false)
   const [error, setError] = useState('')
 
-  // Al cambiar de cliente se limpia todo: si no, la nota a medio escribir de
-  // uno aparecía en el siguiente.
+  // Al cambiar de cliente se cierra el formulario: si no, el contacto a medio
+  // escribir de uno aparecía en el siguiente.
   useEffect(() => {
-    setForm({ ...FORM_VACIO, gestor: nombreProbable(usuario) })
     setAbrirForm(false)
     setError('')
   }, [cliente && cliente.cliente_key, usuario])
@@ -69,49 +50,10 @@ export default function CarteraCliente({ cliente, usuario, onClose, onGuardado }
 
   if (!cliente) return null
 
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
-
-  async function guardar() {
-    const texto = form.texto.trim()
-    if (!form.gestor) { setError('Elige quién hace la gestión.'); return }
-    if (!texto && form.tipo !== 'pendiente') {
-      setError('Escribe qué dijo el cliente o la gestión realizada.'); return
-    }
-    if (form.tipo === 'acuerdo' && !form.acuerdo_fecha) {
-      setError('Un acuerdo de pago necesita la fecha de compromiso.'); return
-    }
-
-    // Un encargo sin desenlace se describe solo, igual que en el backend viejo.
-    const textoFinal = texto || (form.remitido_a
-      ? `Encargo a ${form.remitido_a}: contactar al cliente (sin respuesta aún)`
-      : 'Pendiente de contacto / respuesta del cliente')
-
-    setGuardando(true)
-    setError('')
-    try {
-      await guardarGestion(cliente, {
-        tipo: form.tipo,
-        texto: textoFinal,
-        canal: form.canal || null,
-        remitido_a: form.canal === 'Remito' ? (form.remitido_a || null) : null,
-        estado: form.tipo === 'pendiente' ? 'abierta' : 'cerrada',
-        acuerdo_fecha: form.acuerdo_fecha || null,
-        acuerdo_monto: montoNumero(form.acuerdo_monto),
-        proximo_seguimiento: form.tipo === 'pendiente' ? (form.proximo_seguimiento || null) : null,
-      }, form.gestor)
-      setForm({ ...FORM_VACIO, gestor: form.gestor })
-      setAbrirForm(false)
-      if (onGuardado) await onGuardado()
-    } catch (e) {
-      setError('No se pudo guardar: ' + ((e && e.message) || e))
-    } finally {
-      setGuardando(false)
-    }
-  }
-
+  // Encargos del modelo viejo que quedaron abiertos: se pueden cerrar.
   async function resolver(g) {
     try {
-      await cerrarGestion(g.id, form.gestor || nombreProbable(usuario))
+      await cerrarGestion(g.id, autorDe(usuario))
       if (onGuardado) await onGuardado()
     } catch (e) {
       setError('No se pudo cerrar el encargo: ' + ((e && e.message) || e))
@@ -222,41 +164,34 @@ export default function CarteraCliente({ cliente, usuario, onClose, onGuardado }
 
         <div className="ct-sec ct-sec-last">
           <div className="ct-sec-h">
-            Gestión y seguimiento<span className="sp" />
+            Contactos<span className="sp" />
             {!abrirForm && (
-              <button className="btn btn-soft ct-btn-sm" onClick={() => setAbrirForm(true)}>
-                Registrar gestión
+              <button className="btn btn-primary ct-btn-sm" onClick={() => setAbrirForm(true)}>
+                Contacté
               </button>
             )}
           </div>
 
+          {abrirForm && (
+            <FormContacto cliente={cliente} usuario={usuario} compacto
+              onCancelar={() => { setAbrirForm(false); setError('') }}
+              onGuardado={async () => { setAbrirForm(false); if (onGuardado) await onGuardado() }} />
+          )}
+
           {cliente.gestion.length === 0 && !abrirForm && (
-            <div className="ct-empty">Sin registros de gestión todavía.</div>
+            <div className="ct-empty">Nadie ha contactado a este cliente todavía.</div>
           )}
 
           {cliente.gestion.map((g) => (
-            <div className={'ct-g' + (g.estado === 'abierta' ? ' abierta' : '')} key={g.id}>
-              <div className="ct-g-top">
-                <span className="tag">{(TIPOS.find((t) => t.k === g.tipo) || {}).label || g.tipo}</span>
-                {g.canal && <span className="ct-g-canal">{g.canal}</span>}
-                <span className="ct-g-quien">{g.autor || '—'}</span>
-                <span className="sp" />
-                <span className="ct-g-fecha">{fechaCorta(g.creado_en)}</span>
-              </div>
-              <div className="ct-g-txt">{g.texto}</div>
-              {g.acuerdo_fecha && (
-                <div className="ct-g-acuerdo">
-                  Compromiso: {g.acuerdo_monto ? formatPrice(g.acuerdo_monto) : 'abono'}
-                  {' '}para el {fechaLarga(g.acuerdo_fecha)}
-                </div>
-              )}
+            <div key={g.id}>
+              <LineaContacto g={g} />
               {g.estado === 'abierta' && (
                 <div className="ct-g-pend">
                   <span>
                     {g.proximo_seguimiento
                       ? (g.proximo_seguimiento <= hoyISO()
                           ? 'Revisión vencida: ' : 'Volver a revisar el ') + fechaLarga(g.proximo_seguimiento)
-                      : 'Encargo sin fecha de revisión'}
+                      : 'Encargo abierto del modelo anterior'}
                   </span>
                   <button className="btn btn-ghost ct-btn-sm" onClick={() => resolver(g)}>
                     Marcar resuelto
@@ -265,91 +200,6 @@ export default function CarteraCliente({ cliente, usuario, onClose, onGuardado }
               )}
             </div>
           ))}
-
-          {abrirForm && (
-            <div className="ct-form">
-              <div className="ct-fld">
-                <label>¿Quién hace la gestión?</label>
-                <div className="ct-opts">
-                  {GESTORES.map((g) => (
-                    <button key={g} type="button"
-                      className={'ct-opt' + (form.gestor === g ? ' on' : '')}
-                      onClick={() => set('gestor', g)}>{g}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="ct-fld">
-                <label>Canal del contacto</label>
-                <div className="ct-opts">
-                  {CANALES.map((c) => (
-                    <button key={c} type="button"
-                      className={'ct-opt' + (form.canal === c ? ' on' : '')}
-                      onClick={() => set('canal', form.canal === c ? '' : c)}>{c}</button>
-                  ))}
-                </div>
-              </div>
-
-              {form.canal === 'Remito' && (
-                <div className="ct-fld">
-                  <label>Remito el contacto a</label>
-                  <select className="input select" value={form.remitido_a}
-                    onChange={(e) => set('remitido_a', e.target.value)}>
-                    <option value="">— elegir vendedor —</option>
-                    {GESTORES.filter((g) => g !== 'Diego').map((g) => <option key={g}>{g}</option>)}
-                  </select>
-                </div>
-              )}
-
-              <div className="ct-fld">
-                <label>Resultado</label>
-                <div className="ct-opts">
-                  {TIPOS.map((t) => (
-                    <button key={t.k} type="button"
-                      className={'ct-opt' + (form.tipo === t.k ? ' on' : '')}
-                      onClick={() => set('tipo', t.k)}>{t.label}</button>
-                  ))}
-                </div>
-              </div>
-
-              <textarea className="input ct-texto" value={form.texto}
-                onChange={(e) => set('texto', e.target.value)}
-                placeholder="¿Qué dijo el cliente? Motivo del atraso, compromiso, a quién se remite…" />
-
-              {(form.tipo === 'promesa' || form.tipo === 'acuerdo') && (
-                <div className="ct-fld-row">
-                  <div className="ct-fld">
-                    <label>Fecha de compromiso</label>
-                    <input type="date" className="input" value={form.acuerdo_fecha}
-                      onChange={(e) => set('acuerdo_fecha', e.target.value)} />
-                  </div>
-                  <div className="ct-fld">
-                    <label>Monto acordado</label>
-                    <input type="text" className="input" value={form.acuerdo_monto}
-                      onChange={(e) => set('acuerdo_monto', e.target.value)}
-                      placeholder="opcional" />
-                  </div>
-                </div>
-              )}
-
-              {form.tipo === 'pendiente' && (
-                <div className="ct-fld">
-                  <label>Volver a revisar el</label>
-                  <input type="date" className="input" value={form.proximo_seguimiento}
-                    onChange={(e) => set('proximo_seguimiento', e.target.value)} />
-                </div>
-              )}
-
-              <div className="ct-form-foot">
-                <button className="btn btn-ghost" onClick={() => { setAbrirForm(false); setError('') }}>
-                  Cancelar
-                </button>
-                <button className="btn btn-primary" onClick={guardar} disabled={guardando}>
-                  {guardando ? 'Guardando…' : 'Guardar gestión'}
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -366,18 +216,6 @@ export default function CarteraCliente({ cliente, usuario, onClose, onGuardado }
 }
 
 // ── Auxiliares ─────────────────────────────────────────────────────────
-
-function nombreProbable(usuario) {
-  if (!usuario) return ''
-  const base = String(usuario).split('@')[0].toLowerCase()
-  return GESTORES.find((g) => g.toLowerCase() === base) || ''
-}
-
-function montoNumero(txt) {
-  if (!txt) return null
-  const n = Number(String(txt).replace(/[^\d]/g, ''))
-  return Number.isFinite(n) && n > 0 ? n : null
-}
 
 function diasDesdeISO(iso) {
   const [a, m, d] = iso.slice(0, 10).split('-').map(Number)

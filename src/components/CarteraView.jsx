@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import CarteraCliente from './CarteraCliente.jsx'
+import CarteraContacto from './CarteraContacto.jsx'
 import {
-  cargarCartera, compromisoActivo, compromisoVencido, marcarSeguimiento,
-  recaudoDelMes,
+  ESPERA_DIAS, cargarCartera, compromisoActivo, compromisoVencido, contactosSemana,
+  etiquetaResultado, marcarSeguimiento, recaudoDelMes, resultadoDe,
 } from '../lib/cartera.js'
 import { formatPrice } from '../lib/constants.js'
 
@@ -86,16 +87,21 @@ function fechaHora(iso) {
   })
 }
 
+// La lista abre en "Para llamar hoy": nadie los ha contactado en los últimos
+// días o su promesa venció sin abono. Los contactados hace poco quedan "en
+// espera" para que la otra persona no los vuelva a llamar.
 const CHIPS = [
-  { key: 'todos', label: 'Todos' },
-  { key: 'pendiente', label: 'Pendientes' },
-  { key: 'critico', label: 'Crítico +90d', tono: 'bad' },
-  { key: 'sinpago', label: 'Sin pago +30d', tono: 'warn' },
-  { key: 'acuerdo', label: 'Compromisos' },
+  { key: 'llamar', label: 'Para llamar hoy', tono: 'bad' },
+  { key: 'espera', label: 'En espera' },
+  { key: 'promesa', label: 'Con promesa' },
+  { key: 'critico', label: 'Crítico +90d' },
+  { key: 'sinpago', label: 'Sin pago +30d' },
   { key: 'seguidos', label: '★ Seguimiento' },
+  { key: 'todos', label: 'Todos' },
 ]
+const haceTxt = (d) => (d == null ? '' : d === 0 ? 'hoy' : d === 1 ? 'ayer' : `hace ${d} d`)
 
-export default function CarteraView({ usuario }) {
+export default function CarteraView({ usuario, cargarDatos = cargarCartera }) {
   const [datos, setDatos] = useState(null)
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(true)
@@ -104,16 +110,17 @@ export default function CarteraView({ usuario }) {
   const [q, setQ] = useState('')
   const [ciudad, setCiudad] = useState('')
   const [coleccion, setColeccion] = useState('')
-  const [chip, setChip] = useState('todos')
+  const [chip, setChip] = useState('llamar')
   const [sortKey, setSortKey] = useState('total')
   const [sortDir, setSortDir] = useState('desc')
   const [abierto, setAbierto] = useState(null)   // cliente_key del detalle
+  const [contactoDe, setContactoDe] = useState(null) // cliente_key del "Contacté"
 
   const cargar = useCallback(async () => {
     setCargando(true)
     setError('')
     try {
-      const d = await cargarCartera()
+      const d = await cargarDatos()
       setDatos(d)
       setSeguidos(d.seguidos)
     } catch (e) {
@@ -121,7 +128,7 @@ export default function CarteraView({ usuario }) {
     } finally {
       setCargando(false)
     }
-  }, [])
+  }, [cargarDatos])
 
   useEffect(() => { cargar() }, [cargar])
 
@@ -131,7 +138,7 @@ export default function CarteraView({ usuario }) {
   // minutos y al volver a la pestaña. No se refresca con el detalle abierto:
   // reordenaría la lista debajo de quien está leyendo.
   const detalleAbierto = useRef(false)
-  detalleAbierto.current = abierto !== null
+  detalleAbierto.current = abierto !== null || contactoDe !== null
   useEffect(() => {
     const refrescar = () => { if (!detalleAbierto.current) cargar() }
     const reloj = setInterval(refrescar, 5 * 60 * 1000)
@@ -192,8 +199,13 @@ export default function CarteraView({ usuario }) {
       criticos: clientes.filter((c) => c.dias_max > 90).length,
       sinPago: clientes.filter((c) => c.dias_ult_pago === null || c.dias_ult_pago > 30).length,
       compromisos: clientes.filter((c) => compromisoVencido(c)).length,
-      pendientes: clientes.filter((c) => c.pendiente && !c.pendiente_pagado).length,
+      compromisosValor: clientes.filter((c) => compromisoVencido(c)).reduce((a, c) => a + c.total, 0),
       conAcuerdo: clientes.filter((c) => compromisoActivo(c)).length,
+      conPromesa: clientes.filter((c) => c.promesa && !c.promesa.cumplida).length,
+      paraLlamar: clientes.filter((c) => c.para_llamar).length,
+      enEspera: clientes.filter((c) => c.en_espera).length,
+      noLlamar: clientes.filter((c) => c.no_llamar).length,
+      semana: contactosSemana(clientes),
     }
   }, [clientes, datos])
 
@@ -215,10 +227,11 @@ export default function CarteraView({ usuario }) {
       if (ciudad && c.ciudad !== ciudad) return false
       if (coleccion === '1' && c.t1 <= 0) return false
       if (coleccion === '2' && c.t2 <= 0) return false
-      if (chip === 'pendiente' && !(c.pendiente && !c.pendiente_pagado)) return false
+      if (chip === 'llamar' && !c.para_llamar) return false
+      if (chip === 'espera' && !c.en_espera) return false
+      if (chip === 'promesa' && !(c.promesa && !c.promesa.cumplida)) return false
       if (chip === 'critico' && c.dias_max <= 90) return false
       if (chip === 'sinpago' && !(c.dias_ult_pago === null || c.dias_ult_pago > 30)) return false
-      if (chip === 'acuerdo' && !compromisoActivo(c)) return false
       if (chip === 'seguidos' && !seguidos.has(c.cliente_key)) return false
       return true
     })
@@ -230,11 +243,18 @@ export default function CarteraView({ usuario }) {
       if (sortKey === 'dias_max') return c.dias_max
       // Sin pagos va al final en descendente: es lo más grave, no lo menos.
       if (sortKey === 'dias_ult') return c.dias_ult_pago === null ? Infinity : c.dias_ult_pago
+      // Sin contacto va al final en descendente: es lo que más urge.
+      if (sortKey === 'contacto') return c.dias_contacto === null ? Infinity : c.dias_contacto
       if (sortKey.startsWith('per:')) return c.periodos[sortKey.slice(4)] || 0
       return c.total
     }
     const signo = sortDir === 'asc' ? 1 : -1
     return [...out].sort((a, b) => {
+      // En "Para llamar hoy" las promesas vencidas van primero: son lo más
+      // urgente, sin importar el monto.
+      if (chip === 'llamar' && sortKey === 'total' && a.promesa_vencida !== b.promesa_vencida) {
+        return a.promesa_vencida ? -1 : 1
+      }
       const va = valor(a), vb = valor(b)
       if (typeof va === 'string') return signo * va.localeCompare(vb, 'es')
       return signo * (va - vb)
@@ -263,6 +283,7 @@ export default function CarteraView({ usuario }) {
   }
 
   const cliente = abierto ? clientes.find((c) => c.cliente_key === abierto) : null
+  const clienteContacto = contactoDe ? clientes.find((c) => c.cliente_key === contactoDe) : null
 
   if (cargando && !datos) {
     return (
@@ -337,11 +358,12 @@ export default function CarteraView({ usuario }) {
             <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
           </svg>
           <span>
-            Compromisos de pago: <b>{kpi.compromisos} vencidos</b> sin registrar el abono.
+            Promesas de pago: <b>{kpi.compromisos} vencidas</b> sin abono
+            {kpi.compromisosValor ? <> · {formatPrice(kpi.compromisosValor)} en cartera</> : null}.
           </span>
           <span className="sp" />
-          <button className="btn btn-ghost ct-btn-sm" onClick={() => setChip('acuerdo')}>
-            Ver compromisos
+          <button className="btn btn-ghost ct-btn-sm" onClick={() => setChip('llamar')}>
+            Ver en "Para llamar hoy"
           </button>
         </div>
       )}
@@ -398,13 +420,15 @@ export default function CarteraView({ usuario }) {
           </div>
 
           <div className="kpi-card">
-            <p className="kpi-label">Clientes que requieren gestión</p>
+            <p className="kpi-label">Cobro de hoy</p>
             <ul className="kpi-marcas ct-lista ct-lista-top">
-              <li className="ct-bad"><span>Críticos <i>+90 días</i></span><b>{kpi.criticos}</b></li>
-              <li className="ct-warn"><span>Sin abono <i>+30 días</i></span><b>{kpi.sinPago}</b></li>
-              <li><span>Compromisos vencidos <i>sin abono</i></span><b>{kpi.compromisos}</b></li>
-              <li><span>En seguimiento <i>correo diario</i></span><b>{seguidos.size}</b></li>
-              <li className="kpi-suma"><span>Clientes con saldo</span><b>{clientes.length}</b></li>
+              <li className="ct-bad"><span>Para llamar hoy <i>sin contacto en {ESPERA_DIAS} días o promesa vencida</i></span><b>{kpi.paraLlamar}</b></li>
+              <li><span>En espera <i>contactados hace poco</i></span><b>{kpi.enEspera}</b></li>
+              <li className="ct-warn"><span>Promesas vencidas <i>sin abono</i></span><b>{kpi.compromisos}</b></li>
+              <li><span>Contactos esta semana
+                <i>{Object.entries(kpi.semana.por).map(([q, n]) => `${q} ${n}`).join(' · ') || '—'}</i></span>
+                <b>{kpi.semana.n}</b></li>
+              <li className="kpi-suma"><span>Clientes con saldo <i>{kpi.noLlamar ? `${kpi.noLlamar} sin llamar` : ''}</i></span><b>{clientes.length}</b></li>
             </ul>
           </div>
         </div>
@@ -425,10 +449,11 @@ export default function CarteraView({ usuario }) {
         <div className="ct-chips">
           {CHIPS.map((ch) => {
             const n = ch.key === 'todos' ? clientes.length
-              : ch.key === 'pendiente' ? kpi.pendientes
+              : ch.key === 'llamar' ? kpi.paraLlamar
+              : ch.key === 'espera' ? kpi.enEspera
+              : ch.key === 'promesa' ? kpi.conPromesa
               : ch.key === 'critico' ? kpi.criticos
               : ch.key === 'sinpago' ? kpi.sinPago
-              : ch.key === 'acuerdo' ? kpi.conAcuerdo
               : seguidos.size
             return (
               <button key={ch.key} type="button"
@@ -453,7 +478,6 @@ export default function CarteraView({ usuario }) {
             <thead>
               <tr>
                 <SortTh label="Cliente" col="cliente" sortKey={sortKey} sortDir={sortDir} onSort={ordenar} />
-                <SortTh label="Ciudad" col="ciudad" sortKey={sortKey} sortDir={sortDir} onSort={ordenar} />
                 {cols.viejas.length > 0 && (
                   <SortTh className="num ct-per-h" col="antes" sortKey={sortKey} sortDir={sortDir} onSort={ordenar}
                     label={<>Antes<span>&lt; {cols.corteLabel}</span></>} />
@@ -466,25 +490,33 @@ export default function CarteraView({ usuario }) {
                 <SortTh label="Total debe" col="total" className="num" sortKey={sortKey} sortDir={sortDir} onSort={ordenar} />
                 <SortTh label="Antigüedad" col="dias_max" className="num" sortKey={sortKey} sortDir={sortDir} onSort={ordenar} />
                 <SortTh label="Últ. pago" col="dias_ult" className="num" sortKey={sortKey} sortDir={sortDir} onSort={ordenar} />
-                <th className="ct-gest">Gestión</th>
+                <SortTh label="Último contacto" col="contacto" sortKey={sortKey} sortDir={sortDir} onSort={ordenar} />
+                <th>Promesa</th>
+                <th />
               </tr>
             </thead>
             <tbody>
               {filas.map((c) => {
                 const antes = antesDe(c)
-                const g = c.gestion[0]
+                const g = c.ult_contacto
+                const res = g ? resultadoDe(g) : ''
+                const inicial = g && g.autor ? g.autor.charAt(0).toUpperCase() : ''
                 return (
-                  <tr key={c.cliente_key} className="row-click" onClick={() => setAbierto(c.cliente_key)}>
+                  <tr key={c.cliente_key}
+                    className={'row-click' + (c.en_espera || c.no_llamar ? ' ct-espera' : '')}
+                    onClick={() => setAbierto(c.cliente_key)}>
                     <td>
                       <div className="ct-cli">
                         <button type="button"
                           className={'ct-star' + (seguidos.has(c.cliente_key) ? ' on' : '')}
                           onClick={(e) => alternarSeguimiento(c, e)}
                           title="Incluir en el correo diario de seguimiento">★</button>
-                        <span className="ct-cli-n">{c.cliente}</span>
+                        <span>
+                          <span className="ct-cli-n">{c.cliente}</span>
+                          <span className="ct-cli-ciu">{c.ciudad || '—'}</span>
+                        </span>
                       </div>
                     </td>
-                    <td className="ct-ciudad">{c.ciudad || '—'}</td>
                     {cols.viejas.length > 0 && (
                       <td className="num ct-per" title={antes ? formatPrice(antes) : ''}>
                         {corto(antes) || <span className="ct-dash">—</span>}
@@ -509,13 +541,47 @@ export default function CarteraView({ usuario }) {
                         </span>
                       ) : <span className="ct-dash">sin pagos</span>}
                     </td>
-                    <td className="ct-gest" title={g ? g.texto : ''}>
+                    <td title={g ? `${g.autor || '—'} · ${etiquetaResultado(res)}${g.canal ? ' · ' + g.canal : ''}${g.texto && g.texto !== etiquetaResultado(res) ? ' · ' + g.texto : ''}` : 'Nunca se ha contactado'}>
                       {g ? (
-                        <span className="ct-gest-tag">
-                          <i className={c.pendiente && !c.pendiente_pagado ? 'info' : 'ok'} />
-                          {g.texto}
-                        </span>
-                      ) : <span className="ct-gest-none">— sin gestión —</span>}
+                        <>
+                          <span className="ct-uc">
+                            <span className={'ct-av' + (inicial === 'K' ? ' k' : '')}>{inicial || '?'}</span>
+                            {haceTxt(c.dias_contacto)}
+                          </span>
+                          <span className="ct-uc-s">
+                            {etiquetaResultado(res)}{g.canal ? ` · ${g.canal}` : ''}
+                            {g.texto && g.texto !== etiquetaResultado(res) ? ` · "${g.texto}"` : ''}
+                          </span>
+                        </>
+                      ) : <span className="ct-res r-no_llamar" style={{ background: '#fbeceb' }}>Sin contacto</span>}
+                    </td>
+                    <td>
+                      {c.promesa && !c.promesa.cumplida ? (
+                        <>
+                          <span className={'ct-prom ' + (c.promesa.vencida ? 'ven' : 'vig')}>
+                            {c.promesa.vencida ? 'Venció el ' : ''}{fechaCorta(c.promesa.fecha)}
+                          </span>
+                          <span className="ct-uc-s">
+                            {c.promesa.monto ? formatPrice(c.promesa.monto) : 'abono'}{c.promesa.vencida ? ' · sin abono' : ''}
+                          </span>
+                        </>
+                      ) : c.promesa && c.promesa.cumplida ? (
+                        <span className="ct-prom cum" title="Llegó el abono después de la promesa">Cumplida</span>
+                      ) : <span className="ct-dash">—</span>}
+                    </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      {c.no_llamar ? (
+                        <button type="button" className="btn ct-btn-contacto espera"
+                          title="Marcado como no volver a llamar; registrar un contacto lo reactiva"
+                          onClick={() => setContactoDe(c.cliente_key)}>No llamar</button>
+                      ) : (
+                        <button type="button"
+                          className={'btn ct-btn-contacto' + (c.en_espera ? ' espera' : ' btn-primary')}
+                          title={c.en_espera ? `Contactado ${haceTxt(c.dias_contacto)} por ${g && g.autor}; se puede registrar otro contacto igual` : 'Registrar el contacto de hoy'}
+                          onClick={() => setContactoDe(c.cliente_key)}>
+                          {c.en_espera ? 'En espera' : 'Contacté'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )
@@ -535,6 +601,10 @@ export default function CarteraView({ usuario }) {
         onClose={() => setAbierto(null)}
         onGuardado={cargar}
       />
+      {clienteContacto && (
+        <CarteraContacto cliente={clienteContacto} usuario={usuario}
+          onClose={() => setContactoDe(null)} onGuardado={cargar} />
+      )}
     </>
   )
 }

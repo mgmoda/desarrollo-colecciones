@@ -50,6 +50,42 @@ function coleccionDe(iso) {
 
 export const etiquetaColeccion = (temp) => (temp === 1 ? 'Madres' : 'Diciembre')
 
+// ── Contactos ──────────────────────────────────────────────────────────
+// La cartera la cobran dos personas sin dueño por cliente. Lo que evita cobrar
+// dos veces es que cada contacto quede con quién, cuándo y qué quedó, y que un
+// cliente contactado hace poco se vea "en espera". Un contacto es una fila de
+// cartera_gestion con tipo 'contacto' y un resultado de esta lista; las
+// gestiones viejas (novedad, promesa, acuerdo, pendiente) siguen contando
+// como contactos por su fecha.
+
+/** Días que un cliente queda "en espera" después de un contacto. */
+export const ESPERA_DIAS = 7
+
+export const CANALES = ['WhatsApp', 'Llamada', 'Visita']
+export const RESULTADOS = [
+  { k: 'sin_respuesta', label: 'Sin respuesta' },
+  { k: 'promesa', label: 'Promete pagar' },
+  { k: 'abono', label: 'Abonó' },
+  { k: 'reclamo', label: 'Reclamo / novedad' },
+  { k: 'no_llamar', label: 'No volver a llamar' },
+]
+
+/** Resultado de una gestión, también para las registradas con el modelo viejo. */
+export function resultadoDe(g) {
+  if (!g) return ''
+  if (g.resultado) return g.resultado
+  if (g.tipo === 'acuerdo' || g.tipo === 'promesa') return 'promesa'
+  if (g.tipo === 'pendiente') return 'sin_respuesta'
+  return 'reclamo'
+}
+export const etiquetaResultado = (k) => ((RESULTADOS.find((r) => r.k === k) || {}).label || 'Novedad')
+
+/** Quién registra, dicho corto: "kelly@mgmoda.local" → "Kelly". */
+export function autorDe(usuario) {
+  const base = String(usuario || '').split('@')[0].trim()
+  return base ? base.charAt(0).toUpperCase() + base.slice(1).toLowerCase() : ''
+}
+
 // ── Lectura ────────────────────────────────────────────────────────────
 
 // Supabase devuelve 1000 filas por defecto; la cartera ronda las 600 pero
@@ -188,7 +224,7 @@ async function ultimaSync() {
 
 // ── Agrupación por cliente ─────────────────────────────────────────────
 
-function agrupar(facturas, gestion, pagosAcum) {
+export function agrupar(facturas, gestion, pagosAcum) {
   const hoy = hoyISO()
   const clientes = new Map()
   const periodosSet = new Set()
@@ -276,6 +312,28 @@ function agrupar(facturas, gestion, pagosAcum) {
     )
     c.acuerdo = c.gestion.find((g) => g.tipo === 'acuerdo' && g.estado !== 'abierta') || null
 
+    // Último contacto, promesa vigente y turno: es lo que mira quien cobra
+    // para saber si llama o espera.
+    const ult = c.gestion[0] || null
+    c.ult_contacto = ult
+    c.dias_contacto = ult ? diasHasta(String(ult.creado_en || '').slice(0, 10)) : null
+    c.no_llamar = !!(ult && resultadoDe(ult) === 'no_llamar')
+    const conFecha = c.gestion.find((g) => g.acuerdo_fecha) || null
+    if (conFecha) {
+      const desdeP = String(conFecha.creado_en || '').slice(0, 10)
+      const cumplida = c.pagos.some((p) => p.fecha >= desdeP)
+      c.promesa = {
+        fecha: conFecha.acuerdo_fecha, monto: conFecha.acuerdo_monto || null,
+        autor: conFecha.autor || '', cumplida,
+        vencida: !cumplida && conFecha.acuerdo_fecha < hoy,
+        vigente: !cumplida && conFecha.acuerdo_fecha >= hoy,
+      }
+    } else c.promesa = null
+    c.promesa_vencida = !!(c.promesa && c.promesa.vencida)
+    c.en_espera = !c.no_llamar && c.dias_contacto !== null
+      && c.dias_contacto < ESPERA_DIAS && !c.promesa_vencida
+    c.para_llamar = !c.no_llamar && !c.en_espera
+
     out.push(c)
   }
 
@@ -289,19 +347,29 @@ function agrupar(facturas, gestion, pagosAcum) {
   return { clientes: out, periodos, hoy }
 }
 
-/** ¿Tiene un compromiso de pago vigente? (acuerdo con fecha futura o de hoy) */
+/** ¿Tiene una promesa de pago vigente? (la más reciente, con fecha de hoy o futura) */
 export function compromisoActivo(c) {
-  const hoy = hoyISO()
-  return c.gestion.some((g) => g.tipo === 'acuerdo' && g.acuerdo_fecha && g.acuerdo_fecha >= hoy)
+  return !!(c.promesa && c.promesa.vigente)
 }
 
-/** Compromisos que ya se vencieron sin que se registre el abono. */
+/** La promesa más reciente ya se venció y no llegó el abono. */
 export function compromisoVencido(c) {
-  const hoy = hoyISO()
-  return c.gestion.some((g) => {
-    if (g.tipo !== 'acuerdo' || !g.acuerdo_fecha || g.acuerdo_fecha >= hoy) return false
-    return !c.pagos.some((p) => p.fecha >= g.acuerdo_fecha)
-  })
+  return !!(c.promesa && c.promesa.vencida)
+}
+
+/** Contactos de los últimos 7 días, por persona. */
+export function contactosSemana(clientes) {
+  const desde = new Date(); desde.setDate(desde.getDate() - 7)
+  const corte = desde.toISOString()
+  const por = {}
+  let n = 0
+  ;(clientes || []).forEach((c) => c.gestion.forEach((g) => {
+    if (String(g.creado_en || '') < corte) return
+    n += 1
+    const a = g.autor || '—'
+    por[a] = (por[a] || 0) + 1
+  }))
+  return { n, por }
 }
 
 // ── Escritura ──────────────────────────────────────────────────────────
@@ -319,6 +387,29 @@ export async function guardarGestion(cliente, datos, autor) {
     acuerdo_fecha: datos.acuerdo_fecha || null,
     acuerdo_monto: datos.acuerdo_monto || null,
     proximo_seguimiento: datos.proximo_seguimiento || null,
+  }
+  const { data, error } = await supabase.from('cartera_gestion').insert(fila).select()
+  if (error) throw error
+  return (data && data[0]) || fila
+}
+
+/**
+ * Registra un contacto: cómo, qué quedó y, si promete pagar, para cuándo.
+ * Es una fila más de cartera_gestion; el cliente pasa a "en espera" solo.
+ */
+export async function guardarContacto(cliente, datos, autor) {
+  const promesa = datos.resultado === 'promesa'
+  const fila = {
+    cliente_key: normKey(cliente.cliente),
+    cliente: cliente.cliente,
+    tipo: 'contacto',
+    resultado: datos.resultado || 'sin_respuesta',
+    texto: (datos.texto || '').trim() || etiquetaResultado(datos.resultado),
+    autor: autor || null,
+    canal: datos.canal || null,
+    estado: 'cerrada',
+    acuerdo_fecha: promesa ? (datos.acuerdo_fecha || null) : null,
+    acuerdo_monto: promesa ? (datos.acuerdo_monto || null) : null,
   }
   const { data, error } = await supabase.from('cartera_gestion').insert(fila).select()
   if (error) throw error

@@ -1016,7 +1016,6 @@ export default function ProgramacionesView({
                 <th>Tela</th>
                 <SortTh label="En proceso" col="proceso" {...thProps} />
                 <SortTh label="Seguimiento" col="obs" {...thProps} />
-                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -1125,13 +1124,9 @@ export default function ProgramacionesView({
                         ) : <span className="prog-seg-vacio">+ anotar</span>}
                       </button>
                     </td>
-                    <td>
-                      <button className="prog-quitar" aria-label={`Quitar ${f.id}`}
-                        title={`Quitar ${f.id} de programaciones`}
-                        onClick={() => {
-                          if (window.confirm(`¿Quitar ${f.id} de programaciones?`)) onBorrar(f.id)
-                        }}>✕</button>
-                    </td>
+                    {/* La ✕ de quitar se retiró: un clic de más borraba la
+                        referencia con sus movimientos y seguimiento. Lo que
+                        sobre se quita al recargar el reporte de pedidos. */}
                   </tr>
                 )
               })}

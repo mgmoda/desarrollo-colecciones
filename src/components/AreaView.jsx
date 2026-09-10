@@ -18,6 +18,7 @@ import RendimientoCorte from './RendimientoCorte.jsx'
 import RendimientoRevision from './RendimientoRevision.jsx'
 import TalleresView from './TalleresView.jsx'
 import MedidasModal from './MedidasModal.jsx'
+import DiaCorte from './DiaCorte.jsx'
 import EnviarExternoModal from './EnviarExternoModal.jsx'
 import EntradaBodegaModal from './EntradaBodegaModal.jsx'
 import { pendientesDe, resumenFalta } from '../lib/entradasBodega.js'
@@ -216,7 +217,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
   const rows = useMemo(() => {
     let list = enEtapa
     if (tallerSel) list = list.filter((o) => tallerDe(o) === tallerSel)
-    if (donde) list = list.filter((o) => (donde === 'diego') === estaFuera(procesos[o.orden]))
+    if (donde === 'diego') list = list.filter((o) => estaFuera(procesos[o.orden]))
     const term = q.trim().toLowerCase()
     if (term) {
       list = list.filter((o) =>
@@ -360,7 +361,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
             : <RendimientoCorte orders={orders} procesos={procesos} />
       ) : (
       <>
-      {showProcesos && (fuera.n > 0 || donde) && (
+      {showProcesos && (
         <div className="dis-filtros" style={{ marginBottom: 14 }}>
           <button type="button" className={'proc-f-btn' + (!donde ? ' on' : '')}
             onClick={() => setDonde('')}>Todas <b>{enEtapa.length}</b></button>
@@ -369,10 +370,18 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
             onClick={() => setDonde(donde === 'diego' ? '' : 'diego')}>
             Corte externo <b>{fuera.n}</b>
           </button>
+          {/* Qué se tendió y qué se cortó un día, con cantidades y cortador. */}
+          <button type="button" className={'proc-f-btn' + (donde === 'dia' ? ' on' : '')}
+            title="Qué se tendió y qué se cortó cada día"
+            onClick={() => setDonde(donde === 'dia' ? '' : 'dia')}>
+            Por día
+          </button>
         </div>
       )}
 
-      {showProcesos && donde === 'diego' && fuera.n > 0 ? (
+      {showProcesos && donde === 'dia' ? (
+        <DiaCorte orders={orders} procesos={procesos} onVerCurva={(o) => o && setCurvaDe(o)} />
+      ) : showProcesos && donde === 'diego' && fuera.n > 0 ? (
         <div className="prog-kpis">
           <div className="prog-kpi"><span>Órdenes afuera</span><b>{fuera.n}</b>
             <em>de {enEtapa.length} en la mesa</em></div>
@@ -410,7 +419,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
           onViewImage={onViewImage} onOpenRef={onOpenRef} />
       )}
 
-      {rows.length === 0 ? (
+      {showProcesos && donde === 'dia' ? null : rows.length === 0 ? (
         <div className="empty-state">
           <p>No hay órdenes en esta etapa.</p>
           <p className="muted">Importa los archivos del sistema para ver datos aquí.</p>

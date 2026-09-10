@@ -5929,6 +5929,11 @@ select.filtro-taller { flex: none; width: 215px; }
 .tal-foto.sin { background: var(--bg); cursor: default; border: 1px dashed var(--hairline-strong); }
 .tal-nota { color: var(--muted); font-size: 11px; margin: 8px 0 0; }
 
+/* ---------- Corte por día ---------- */
+.dc-wrap .rend-card { margin-top: 14px; }
+.dc-fecha { width: 150px; padding: 5px 8px; font-size: 12px; }
+.dc-tabla td { padding-top: 6px; padding-bottom: 6px; }
+
 /* ---------- Cartera: contactos compartidos ---------- */
 .ct-cli-ciu { display: block; font-size: 10.5px; color: var(--muted); margin-top: 1px; }
 tr.ct-espera > td { color: var(--muted); }

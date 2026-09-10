@@ -87,17 +87,18 @@ function fechaHora(iso) {
   })
 }
 
-// La lista abre en "Para llamar hoy": nadie los ha contactado en los últimos
-// días o su promesa venció sin abono. Los contactados hace poco quedan "en
+// La lista abre en "Todos", de mayor a menor deuda; de ahí se escoge el
+// filtro. "Para llamar hoy" son los que nadie ha contactado en los últimos
+// días o con promesa vencida sin abono; los contactados hace poco quedan "en
 // espera" para que la otra persona no los vuelva a llamar.
 const CHIPS = [
+  { key: 'todos', label: 'Todos' },
   { key: 'llamar', label: 'Para llamar hoy', tono: 'bad' },
   { key: 'espera', label: 'En espera' },
   { key: 'promesa', label: 'Con promesa' },
   { key: 'critico', label: 'Crítico +90d' },
   { key: 'sinpago', label: 'Sin pago +30d' },
   { key: 'seguidos', label: '★ Seguimiento' },
-  { key: 'todos', label: 'Todos' },
 ]
 const haceTxt = (d) => (d == null ? '' : d === 0 ? 'hoy' : d === 1 ? 'ayer' : `hace ${d} d`)
 
@@ -110,12 +111,9 @@ export default function CarteraView({ usuario, cargarDatos = cargarCartera }) {
   const [q, setQ] = useState('')
   const [ciudad, setCiudad] = useState('')
   const [coleccion, setColeccion] = useState('')
-  const [chip, setChip] = useState('llamar')
+  const [chip, setChip] = useState('todos')
   const [sortKey, setSortKey] = useState('total')
   const [sortDir, setSortDir] = useState('desc')
-  // Mientras nadie toque una columna, las promesas vencidas van primero.
-  // En cuanto se ordena a mano, manda ese orden y nada más.
-  const [sortManual, setSortManual] = useState(false)
   const [abierto, setAbierto] = useState(null)   // cliente_key del detalle
   const [contactoDe, setContactoDe] = useState(null) // cliente_key del "Contacté"
 
@@ -253,21 +251,15 @@ export default function CarteraView({ usuario, cargarDatos = cargarCartera }) {
     }
     const signo = sortDir === 'asc' ? 1 : -1
     return [...out].sort((a, b) => {
-      // En "Para llamar hoy" las promesas vencidas van primero: son lo más
-      // urgente, sin importar el monto.
-      if (chip === 'llamar' && !sortManual && a.promesa_vencida !== b.promesa_vencida) {
-        return a.promesa_vencida ? -1 : 1
-      }
       const va = valor(a), vb = valor(b)
       if (typeof va === 'string') return signo * va.localeCompare(vb, 'es')
       return signo * (va - vb)
     })
-  }, [clientes, q, ciudad, coleccion, chip, seguidos, sortKey, sortDir, sortManual, antesDe])
+  }, [clientes, q, ciudad, coleccion, chip, seguidos, sortKey, sortDir, antesDe])
 
   const totalFiltrado = filas.reduce((a, c) => a + c.total, 0)
 
   function ordenar(col) {
-    setSortManual(true)
     if (col === sortKey) setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
     else { setSortKey(col); setSortDir(col === 'cliente' || col === 'ciudad' ? 'asc' : 'desc') }
   }

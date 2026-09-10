@@ -113,6 +113,9 @@ export default function CarteraView({ usuario, cargarDatos = cargarCartera }) {
   const [chip, setChip] = useState('llamar')
   const [sortKey, setSortKey] = useState('total')
   const [sortDir, setSortDir] = useState('desc')
+  // Mientras nadie toque una columna, las promesas vencidas van primero.
+  // En cuanto se ordena a mano, manda ese orden y nada más.
+  const [sortManual, setSortManual] = useState(false)
   const [abierto, setAbierto] = useState(null)   // cliente_key del detalle
   const [contactoDe, setContactoDe] = useState(null) // cliente_key del "Contacté"
 
@@ -252,18 +255,19 @@ export default function CarteraView({ usuario, cargarDatos = cargarCartera }) {
     return [...out].sort((a, b) => {
       // En "Para llamar hoy" las promesas vencidas van primero: son lo más
       // urgente, sin importar el monto.
-      if (chip === 'llamar' && sortKey === 'total' && a.promesa_vencida !== b.promesa_vencida) {
+      if (chip === 'llamar' && !sortManual && a.promesa_vencida !== b.promesa_vencida) {
         return a.promesa_vencida ? -1 : 1
       }
       const va = valor(a), vb = valor(b)
       if (typeof va === 'string') return signo * va.localeCompare(vb, 'es')
       return signo * (va - vb)
     })
-  }, [clientes, q, ciudad, coleccion, chip, seguidos, sortKey, sortDir, antesDe])
+  }, [clientes, q, ciudad, coleccion, chip, seguidos, sortKey, sortDir, sortManual, antesDe])
 
   const totalFiltrado = filas.reduce((a, c) => a + c.total, 0)
 
   function ordenar(col) {
+    setSortManual(true)
     if (col === sortKey) setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
     else { setSortKey(col); setSortDir(col === 'cliente' || col === 'ciudad' ? 'asc' : 'desc') }
   }

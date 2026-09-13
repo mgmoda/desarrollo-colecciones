@@ -307,11 +307,18 @@ export async function dbLoadPedidosDeCliente(cliente) {
   return data || []
 }
 
+// La última revisión del servidor (cada 2 min) y la última vez que el
+// informe de verdad cambió: son dos fechas distintas y las dos importan.
 export async function dbLoadPedidosSync() {
-  const { data, error } = await supabase.from('pedidos_sync_log').select('*')
-    .order('id', { ascending: false }).limit(1)
-  if (error) throw error
-  return (data && data[0]) || null
+  const [rev, cam] = await Promise.all([
+    supabase.from('pedidos_sync_log').select('*').order('id', { ascending: false }).limit(1),
+    supabase.from('pedidos_sync_log').select('*').eq('sin_cambios', false).order('id', { ascending: false }).limit(1),
+  ])
+  if (rev.error) throw rev.error
+  if (cam.error) throw cam.error
+  const ultima = (rev.data && rev.data[0]) || null
+  const cambio = (cam.data && cam.data[0]) || ultima
+  return ultima ? { ...cambio, revisado_en: ultima.creado_en } : null
 }
 
 // Medidas por talla de la ficha técnica de Factory, solo de los productos que

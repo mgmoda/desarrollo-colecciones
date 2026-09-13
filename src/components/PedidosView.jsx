@@ -112,7 +112,9 @@ export default function PedidosView({ stamp, onOpenRef }) {
     return TALLAS.filter((t) => s.has(t))
   }, [detalle])
 
-  const minutos = sync ? haceMin(sync.creado_en) : null
+  const minutos = sync ? haceMin(sync.creado_en) : null      // última novedad (cambio real)
+  const minRev = sync ? haceMin(sync.revisado_en) : null     // última revisión del servidor
+  const haceTxt = (m) => (m == null ? '' : m <= 1 ? 'ahora mismo' : m < 60 ? `hace ${m} min` : m < 48 * 60 ? `hace ${Math.round(m / 60)} h` : `hace ${Math.round(m / 1440)} d`)
   const thProps = { sortKey, sortDir, onSort: toggle }
 
   return (
@@ -132,22 +134,22 @@ export default function PedidosView({ stamp, onOpenRef }) {
       <div className="ct-sync">
         <div>
           <div className="ct-sync-t">
-            {sync ? <>Informe traído {fechaHora(sync.creado_en)}
-              {minutos != null && (
-                <span className={'ct-frescura ' + (minutos <= 10 ? 'ok' : minutos <= 60 ? 'warn' : 'bad')}>
-                  {minutos <= 1 ? 'ahora mismo' : minutos < 60 ? `hace ${minutos} min` : `hace ${Math.round(minutos / 60)} h`}
-                </span>
-              )}
+            {sync ? <>Revisado {haceTxt(minRev)}
+              <span className={'ct-frescura ' + (minRev <= 5 ? 'ok' : minRev <= 30 ? 'warn' : 'bad')}
+                title="Cada 2 minutos el servidor genera el informe en SYD y lo compara con el anterior">
+                {minRev <= 5 ? 'al día' : minRev <= 30 ? 'se atrasó' : 'servidor sin revisar'}
+              </span>
+              <span className="muted"> · última novedad {fechaHora(sync.creado_en)} ({haceTxt(minutos)})</span>
             </> : 'Sin sincronizaciones todavía'}
           </div>
           <div className="ct-sync-s">
             {sync
-              ? `SYD · ${sync.archivo} — ${num(sync.filas)} renglones · ${num(sync.pedidos)} pedidos · ${num(sync.clientes)} clientes`
+              ? `SYD · ${sync.archivo} — ${num(sync.filas)} renglones · ${num(sync.pedidos)} pedidos · ${num(sync.clientes)} clientes. Solo se vuelve a subir cuando el informe cambia.`
               : 'El servidor genera el informe de SYD y lo sube cada 2 minutos.'}
           </div>
         </div>
         <div className="ct-sync-sp" />
-        <span className="ct-live"><i />Sincroniza sola cada 2 min</span>
+        <span className="ct-live"><i />Revisa cada 2 min</span>
       </div>
 
       <div className="prog-kpis">

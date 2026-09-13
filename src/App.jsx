@@ -11,6 +11,7 @@ import SeguimientoView from './components/SeguimientoView.jsx'
 import GeodesicaView from './components/GeodesicaView.jsx'
 import ProgramacionesView from './components/ProgramacionesView.jsx'
 import AsistenciaView from './components/AsistenciaView.jsx'
+import PedidosView from './components/PedidosView.jsx'
 import FotosView from './components/FotosView.jsx'
 import FaltantesView from './components/FaltantesView.jsx'
 import SyncIndicator from './components/SyncIndicator.jsx'
@@ -65,6 +66,7 @@ const TABS = [
   { key: 'geodesica', label: 'Geodésica' },
   { key: 'programaciones', label: 'Programaciones' },
   { key: 'asistencia', label: 'Asistencia' },
+  { key: 'pedidos', label: 'Pedidos' },
 ]
 const AREA_KEYS = ['trazos', 'corte', 'enviar', 'alistamiento', 'talleres', 'entrega', 'revision', 'bodega']
 // Lo que ve quien no es admin: el recorrido de producción y los faltantes.
@@ -134,6 +136,9 @@ export default function App() {
   const stamps = useRef({})
   const [stampDisenos, setStampDisenos] = useState(null)
   const [stampAsistencia, setStampAsistencia] = useState(null)
+  // Pedidos de SYD: la pestaña los carga por su cuenta; aquí solo se le pasa
+  // la marca para que sepa cuándo el servidor subió un informe nuevo.
+  const [stampPedidos, setStampPedidos] = useState(null)
 
   useEffect(() => {
     if (!userId) { setLoaded(false); return }
@@ -150,6 +155,7 @@ export default function App() {
         stamps.current = marcas
         setStampDisenos(marcas.disenos)
         setStampAsistencia(marcas.asistencia)
+        setStampPedidos(marcas.pedidos)
         setFaltantes(fl)
         setPreordenes(po)
         setProgramaciones(pr)
@@ -233,6 +239,7 @@ export default function App() {
       if (cambio('disenos')) setStampDisenos(marcas.disenos)
       // La asistencia la pide su pestaña por período; aquí solo se le avisa.
       if (cambio('asistencia')) setStampAsistencia(marcas.asistencia)
+      if (cambio('pedidos')) setStampPedidos(marcas.pedidos)
       if (cambio('settings') && !formOpen) {
         pedidos.push(dbLoadSettings().then((s) => s && setSettings((a) => ({ ...a, ...s }))))
       }
@@ -390,7 +397,8 @@ export default function App() {
       || (!soloCartera && (
         TABS_OPERACION.includes(t.key)
         || (t.key === 'programaciones' && veProgramaciones)
-        || (t.key === 'asistencia' && veAsistencia))))),
+        || (t.key === 'asistencia' && veAsistencia)
+        || (t.key === 'pedidos' && veProgramaciones))))),
     [esAdmin, veProgramaciones, veAsistencia, veCartera, soloCartera],
   )
 
@@ -1060,6 +1068,9 @@ export default function App() {
         )}
         {tab === 'asistencia' && veAsistencia && (
           <AsistenciaView stamp={stampAsistencia} />
+        )}
+        {tab === 'pedidos' && veProgramaciones && (
+          <PedidosView stamp={stampPedidos} onOpenRef={(ref) => { const f = refMap.get(ref); if (f) openEdit(f) }} />
         )}
       </main>
 

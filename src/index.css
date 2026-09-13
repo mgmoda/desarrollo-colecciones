@@ -5929,6 +5929,14 @@ select.filtro-taller { flex: none; width: 215px; }
 .tal-foto.sin { background: var(--bg); cursor: default; border: 1px dashed var(--hairline-strong); }
 .tal-nota { color: var(--muted); font-size: 11px; margin: 8px 0 0; }
 
+/* ---------- Pedidos (SYD) ---------- */
+.ped-obs { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ped-ref { border: 0; background: transparent; padding: 0; font: inherit; text-align: left; cursor: pointer; color: inherit; }
+.ped-ref b { display: block; }
+.ped-desc { display: block; font-size: 10.5px; color: var(--muted); white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.ped-det tr.ped-ref-inicio td { border-top: 2px solid var(--hairline-strong); }
+.ped-det td:first-child { vertical-align: top; }
+
 /* ---------- Corte por día ---------- */
 .dc-wrap .rend-card { margin-top: 14px; }
 .dc-fecha { width: 150px; padding: 5px 8px; font-size: 12px; }

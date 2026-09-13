@@ -280,6 +280,39 @@ export async function dbUpsertEntradaBodega(orden, registro) {
   if (error) throw error
 }
 
+// Pedidos de SYD ("Pendientes por Clientes y Referencias"): los sube el
+// servidor cada 2 minutos a pedidos_syd. La pestaña carga el resumen por
+// pedido (una vista) y el detalle de un pedido solo al abrirlo.
+async function paginar(consulta) {
+  const PAGINA = 1000
+  const out = []
+  for (let desde = 0; ; desde += PAGINA) {
+    const { data, error } = await consulta().range(desde, desde + PAGINA - 1)
+    if (error) throw error
+    ;(data || []).forEach((r) => out.push(r))
+    if (!data || data.length < PAGINA) break
+  }
+  return out
+}
+
+export async function dbLoadPedidosResumen() {
+  return paginar(() => supabase.from('pedidos_syd_resumen').select('*').order('pedido'))
+}
+
+export async function dbLoadPedidoDetalle(pedido) {
+  const { data, error } = await supabase.from('pedidos_syd').select('*')
+    .eq('pedido', pedido).order('referencia').order('color')
+  if (error) throw error
+  return data || []
+}
+
+export async function dbLoadPedidosSync() {
+  const { data, error } = await supabase.from('pedidos_sync_log').select('*')
+    .order('id', { ascending: false }).limit(1)
+  if (error) throw error
+  return (data && data[0]) || null
+}
+
 // Medidas por talla de la ficha técnica de Factory, solo de los productos que
 // las tienen. Se indexan por el nombre interno (MG-B872) y por la referencia
 // (M5254), que es como vienen las órdenes.

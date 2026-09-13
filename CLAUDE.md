@@ -183,6 +183,31 @@ correo**.
 
 ---
 
+## 6b. Módulo Pedidos (sep-2026)
+
+Lo que los clientes tienen pedido y pendiente por despachar, desde SYD.
+**Fuente**: el informe "Pendientes por Clientes y Referencias" (el mismo de
+*separados* que alimenta Programaciones). El servidor corre
+`M:\SYD\dat\MATMG\PEDIDOS.EXE` (tarea `PedidosSyncSYD`, cada 2 min, como
+SYSTEM), toma el `.LIS` de `...\MATMG\PEDIDOS`, lo parsea y lo sube con
+`reemplazar_pedidos()` a `pedidos_syd` solo cuando cambió (hash). Script:
+`E:\factorysync\ps.ps1`; log `pedidos_sync_log.txt`.
+
+**Gotchas que ya costaron:** el EXE abre sus archivos por ruta desde la raíz
+del disco (`\SYD\DAT\MG\...`), así que **tiene que correr con `M:` como
+unidad actual** (bajo SYSTEM se crea con `subst M: E:\Programa`); si falla
+saca diálogos modales COBOL y se cuelga — el script lo mata a los 100 s.
+`ConvertTo-Json` con 8.000 renglones tarda más de 10 min: el JSON se arma a
+mano. El `.LIS` está en código de página DOS 850 (así sale la Ñ). El
+PowerShell de 64 bits necesita `Tls12` explícito para hablar con Supabase.
+Cada `.LIS` pesa 12 MB y el EXE deja uno por corrida: se conservan 3.
+
+**App**: `PedidosView.jsx` (visible para Diego y Ninfa) lee la vista
+`pedidos_syd_resumen` (un renglón por pedido) y el detalle por pedido al
+abrirlo; se refresca con la marca `pedidos` de `dev_sync`.
+
+---
+
 ## 7. Gotchas que ya costaron caro
 
 - **`delete` sin `WHERE` lo rechaza Supabase** ("DELETE requires a WHERE

@@ -295,13 +295,14 @@ async function paginar(consulta) {
   return out
 }
 
-export async function dbLoadPedidosResumen() {
-  return paginar(() => supabase.from('pedidos_syd_resumen').select('*').order('pedido'))
+// Un renglón por cliente, con todos sus pedidos sumados.
+export async function dbLoadPedidosClientes() {
+  return paginar(() => supabase.from('pedidos_syd_clientes').select('*').order('cliente'))
 }
 
-export async function dbLoadPedidoDetalle(pedido) {
+export async function dbLoadPedidosDeCliente(cliente) {
   const { data, error } = await supabase.from('pedidos_syd').select('*')
-    .eq('pedido', pedido).order('referencia').order('color')
+    .eq('cliente', cliente).order('referencia').order('pedido').order('color')
   if (error) throw error
   return data || []
 }

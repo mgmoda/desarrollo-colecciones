@@ -3,7 +3,7 @@ import Modal from './Modal.jsx'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { dbLoadPedidoDetalle, dbLoadPedidosResumen, dbLoadPedidosSync } from '../lib/db.js'
+import { dbLoadPedidosDeCliente, dbLoadPedidosClientes, dbLoadPedidosSync } from '../lib/db.js'
 import { formatPrice } from '../lib/constants.js'
 
 // ════════════════════════════════════════════════════════════════════════
@@ -11,8 +11,8 @@ import { formatPrice } from '../lib/constants.js'
 // ────────────────────────────────────────────────────────────────────────
 // Sale del informe "Pendientes por Clientes y Referencias" de SYD, que el
 // servidor genera y sube cada 2 minutos (E:\factorysync\ps.ps1). Acá solo se
-// lee: un renglón por pedido en la tabla y, al abrirlo, el detalle por
-// referencia, color y talla. Primera versión: la organización final la
+// lee: un renglón por CLIENTE en la tabla (todos sus pedidos sumados) y, al
+// abrirlo, el detalle por referencia, color y talla, con el pedido de cada una. Primera versión: la organización final la
 // define Diego viendo los datos.
 // ════════════════════════════════════════════════════════════════════════
 
@@ -39,7 +39,7 @@ export default function PedidosView({ stamp, onOpenRef }) {
   const [sync, setSync] = useState(null)
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
-  const [abierto, setAbierto] = useState(null) // { pedido, cliente, ... }
+  const [abierto, setAbierto] = useState(null) // fila del cliente abierto
   const [detalle, setDetalle] = useState(null)
   const { sortKey, sortDir, toggle } = useSort('total', 'desc')
 
@@ -47,7 +47,7 @@ export default function PedidosView({ stamp, onOpenRef }) {
   // marca "pedidos" en dev_sync se mueve y App la pasa como `stamp`).
   useEffect(() => {
     let vivo = true
-    Promise.all([dbLoadPedidosResumen(), dbLoadPedidosSync()])
+    Promise.all([dbLoadPedidosClientes(), dbLoadPedidosSync()])
       .then(([f, s]) => { if (vivo) { setFilas(f); setSync(s); setError('') } })
       .catch((e) => { if (vivo) setError(e.message || String(e)) })
     return () => { vivo = false }
@@ -56,7 +56,7 @@ export default function PedidosView({ stamp, onOpenRef }) {
   useEffect(() => {
     if (!abierto) { setDetalle(null); return undefined }
     let vivo = true
-    dbLoadPedidoDetalle(abierto.pedido)
+    dbLoadPedidosDeCliente(abierto.cliente)
       .then((d) => { if (vivo) setDetalle(d) })
       .catch((e) => { if (vivo) setError(e.message || String(e)) })
     return () => { vivo = false }
@@ -65,8 +65,8 @@ export default function PedidosView({ stamp, onOpenRef }) {
   const kpi = useMemo(() => {
     const l = filas || []
     return {
-      pedidos: l.length,
-      clientes: new Set(l.map((f) => f.cliente)).size,
+      pedidos: l.reduce((n, f) => n + (Number(f.pedidos) || 0), 0),
+      clientes: l.length,
       unidades: l.reduce((n, f) => n + (Number(f.unidades) || 0), 0),
       total: l.reduce((n, f) => n + (Number(f.total) || 0), 0),
       inactivos: l.filter((f) => f.inactiva).length,
@@ -77,11 +77,11 @@ export default function PedidosView({ stamp, onOpenRef }) {
     const term = q.trim().toLowerCase()
     let l = filas || []
     if (term) {
-      l = l.filter((f) => [f.pedido, f.cliente, f.ciudad, f.codigo_cliente]
+      l = l.filter((f) => [f.lista_pedidos, f.cliente, f.ciudad, f.codigo_cliente]
         .some((v) => String(v || '').toLowerCase().includes(term)))
     }
     const accessors = {
-      pedido: (f) => Number(f.pedido) || f.pedido,
+      pedidos: (f) => Number(f.pedidos) || 0,
       cliente: (f) => f.cliente,
       ciudad: (f) => f.ciudad || '',
       referencias: (f) => Number(f.referencias) || 0,
@@ -96,7 +96,8 @@ export default function PedidosView({ stamp, onOpenRef }) {
     if (!detalle) return []
     const m = new Map()
     detalle.forEach((r) => {
-      if (!m.has(r.referencia)) m.set(r.referencia, { referencia: r.referencia, descripcion: r.descripcion, tipo: r.tipo, colores: [], unid: 0, total: 0 })
+      if (!m.has(r.referencia)) m.set(r.referencia, { referencia: r.referencia, descripcion: r.descripcion, tipo: r.tipo, colores: [], unid: 0, total: 0, pedidos: new Set() })
+      m.get(r.referencia).pedidos.add(r.pedido)
       const g = m.get(r.referencia)
       g.colores.push(r)
       g.unid += Number(r.unid) || 0
@@ -150,10 +151,10 @@ export default function PedidosView({ stamp, onOpenRef }) {
       </div>
 
       <div className="prog-kpis">
-        <div className="prog-kpi"><span>Pedidos</span><b>{num(kpi.pedidos)}</b><em>{num(kpi.clientes)} clientes</em></div>
+        <div className="prog-kpi"><span>Clientes</span><b>{num(kpi.clientes)}</b><em>{num(kpi.pedidos)} pedidos</em></div>
         <div className="prog-kpi"><span>Unidades pendientes</span><b>{num(kpi.unidades)}</b><em>por despachar</em></div>
         <div className="prog-kpi"><span>Valor</span><b>{formatPrice(kpi.total) || '$ 0'}</b><em>a precio de lista</em></div>
-        <div className="prog-kpi"><span>Clientes inactivos</span><b>{num(kpi.inactivos)}</b><em>pedidos marcados inactivos en SYD</em></div>
+        <div className="prog-kpi"><span>Clientes inactivos</span><b>{num(kpi.inactivos)}</b><em>marcados inactivos en SYD</em></div>
       </div>
 
       {filas === null ? (
@@ -165,9 +166,9 @@ export default function PedidosView({ stamp, onOpenRef }) {
           <table className="data-table">
             <thead>
               <tr>
-                <SortTh label="Pedido" col="pedido" {...thProps} />
                 <SortTh label="Cliente" col="cliente" {...thProps} />
                 <SortTh label="Ciudad" col="ciudad" {...thProps} />
+                <SortTh label="Pedidos" col="pedidos" {...thProps} />
                 <SortTh label="Referencias" col="referencias" className="num" {...thProps} />
                 <SortTh label="Unidades" col="unidades" className="num" {...thProps} />
                 <SortTh label="Valor" col="total" className="num" {...thProps} />
@@ -176,11 +177,11 @@ export default function PedidosView({ stamp, onOpenRef }) {
             </thead>
             <tbody>
               {lista.map((f) => (
-                <tr key={f.pedido} className={'row-click' + (f.inactiva ? ' ct-espera' : '')}
-                  onClick={() => setAbierto(f)} title="Ver el detalle del pedido">
-                  <td className="mono">{f.pedido}</td>
+                <tr key={f.cliente} className={'row-click' + (f.inactiva ? ' ct-espera' : '')}
+                  onClick={() => setAbierto(f)} title="Ver las referencias que tiene pedidas">
                   <td className="strong">{f.cliente}{f.inactiva && <span className="tag tag-warn" style={{ marginLeft: 6 }}>Inactivo</span>}</td>
                   <td className="muted">{f.ciudad || '—'}</td>
+                  <td className="mono" title={f.lista_pedidos}>{Number(f.pedidos) === 1 ? f.lista_pedidos : `${f.pedidos} · ${f.lista_pedidos}`}</td>
                   <td className="num">{num(f.referencias)}</td>
                   <td className="num strong">{num(f.unidades)}</td>
                   <td className="num">{formatPrice(f.total) || '—'}</td>
@@ -190,7 +191,7 @@ export default function PedidosView({ stamp, onOpenRef }) {
             </tbody>
           </table>
           <div className="ct-foot">
-            <span>{num(lista.length)} de {num((filas || []).length)} pedidos</span>
+            <span>{num(lista.length)} de {num((filas || []).length)} clientes</span>
             <span><b>{num(lista.reduce((n, f) => n + (Number(f.unidades) || 0), 0))}</b> unidades · <b>{formatPrice(lista.reduce((n, f) => n + (Number(f.total) || 0), 0)) || '$ 0'}</b></span>
           </div>
         </div>
@@ -200,9 +201,9 @@ export default function PedidosView({ stamp, onOpenRef }) {
         <Modal open onClose={() => setAbierto(null)} size="xl">
           <div className="modal-head">
             <div>
-              <h2 className="modal-title">Pedido {abierto.pedido} · {abierto.cliente}</h2>
+              <h2 className="modal-title">{abierto.cliente}</h2>
               <p className="eb-meta">
-                {abierto.ciudad ? `${abierto.ciudad} · ` : ''}{num(abierto.referencias)} referencias · {num(abierto.unidades)} unidades · {formatPrice(abierto.total) || '$ 0'}
+                {abierto.ciudad ? `${abierto.ciudad} · ` : ''}{Number(abierto.pedidos) === 1 ? 'pedido ' : 'pedidos '}{abierto.lista_pedidos} · {num(abierto.referencias)} referencias · {num(abierto.unidades)} unidades · {formatPrice(abierto.total) || '$ 0'}
                 {abierto.observacion ? ` · "${abierto.observacion}"` : ''}
               </p>
             </div>
@@ -214,7 +215,7 @@ export default function PedidosView({ stamp, onOpenRef }) {
                 <table className="med-tabla ped-det">
                   <thead>
                     <tr>
-                      <th>Referencia</th><th>Color</th>
+                      <th>Referencia</th><th>Pedido</th><th>Color</th>
                       {tallasDetalle.map((t) => <th key={t} className="num">{t}</th>)}
                       <th className="num">Unid</th><th className="num">Precio</th><th className="num">Total</th>
                     </tr>
@@ -231,6 +232,7 @@ export default function PedidosView({ stamp, onOpenRef }) {
                             </button>
                           ) : ''}
                         </td>
+                        <td className="mono muted">{r.pedido}</td>
                         <td>{r.color}</td>
                         {tallasDetalle.map((t) => (
                           <td key={t} className="num">{r.tallas && r.tallas[t] ? r.tallas[t] : <span className="muted">·</span>}</td>

@@ -1067,7 +1067,7 @@ export default function App() {
           <AsistenciaView stamp={stampAsistencia} />
         )}
         {tab === 'pedidos' && vePedidos && (
-          <PedidosView stamp={stampPedidos} stampDespachos={stampDespachos} usuario={emailSesion} onOpenRef={(ref) => { const f = refMap.get(ref); if (f) openEdit(f) }} />
+          <PedidosView stamp={stampPedidos} stampDespachos={stampDespachos} usuario={emailSesion} refMap={refMap} onViewImage={setLightbox} onOpenRef={(ref) => { const f = refMap.get(ref); if (f) openEdit(f) }} />
         )}
       </main>
 

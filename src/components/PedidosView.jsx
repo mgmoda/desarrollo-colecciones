@@ -3,7 +3,8 @@ import Modal from './Modal.jsx'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { dbLoadPedidosDeCliente, dbLoadPedidosClientes, dbLoadPedidosSync } from '../lib/db.js'
+import { dbLoadPedidosDeCliente, dbLoadPedidosClientes, dbLoadPedidosObservaciones, dbLoadPedidosSync } from '../lib/db.js'
+import { esPedidoEspecial, especialesPorCliente } from '../lib/pedidos.js'
 import { formatPrice } from '../lib/constants.js'
 import DespachosView from './DespachosView.jsx'
 
@@ -35,11 +36,14 @@ function marcaDe(ref) {
   return l === 'C' ? 'Casania' : l === 'M' ? 'Mariset' : 'Otra'
 }
 
-export default function PedidosView({ stamp, stampDespachos, usuario, onOpenRef }) {
+export default function PedidosView({ stamp, stampDespachos, usuario, refMap, onViewImage, onOpenRef }) {
   // Dos formas de mirar lo mismo: los pedidos tal como vienen de SYD, o el
   // tablero de despachos (separado, facturado, faltante) por cliente.
   const [vista, setVista] = useState('pedidos')
   const [filas, setFilas] = useState(null)
+  // Líneas con pedido especial (cinturón, sin fajón, top…) por cliente.
+  const [especiales, setEspeciales] = useState(new Map())
+  const [soloEspeciales, setSoloEspeciales] = useState(false)
   const [sync, setSync] = useState(null)
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
@@ -51,8 +55,8 @@ export default function PedidosView({ stamp, stampDespachos, usuario, onOpenRef 
   // marca "pedidos" en dev_sync se mueve y App la pasa como `stamp`).
   useEffect(() => {
     let vivo = true
-    Promise.all([dbLoadPedidosClientes(), dbLoadPedidosSync()])
-      .then(([f, s]) => { if (vivo) { setFilas(f); setSync(s); setError('') } })
+    Promise.all([dbLoadPedidosClientes(), dbLoadPedidosSync(), dbLoadPedidosObservaciones()])
+      .then(([f, s, o]) => { if (vivo) { setFilas(f); setSync(s); setEspeciales(especialesPorCliente(o)); setError('') } })
       .catch((e) => { if (vivo) setError(e.message || String(e)) })
     return () => { vivo = false }
   }, [stamp])
@@ -80,6 +84,7 @@ export default function PedidosView({ stamp, stampDespachos, usuario, onOpenRef 
   const lista = useMemo(() => {
     const term = q.trim().toLowerCase()
     let l = filas || []
+    if (soloEspeciales) l = l.filter((f) => especiales.has(f.cliente))
     if (term) {
       l = l.filter((f) => [f.lista_pedidos, f.cliente, f.ciudad, f.codigo_cliente]
         .some((v) => String(v || '').toLowerCase().includes(term)))
@@ -93,7 +98,7 @@ export default function PedidosView({ stamp, stampDespachos, usuario, onOpenRef 
       total: (f) => Number(f.total) || 0,
     }
     return sortRows(l, accessors[sortKey] || accessors.total, sortDir)
-  }, [filas, q, sortKey, sortDir])
+  }, [filas, q, soloEspeciales, especiales, sortKey, sortDir])
 
   // Detalle agrupado por referencia, con sus colores debajo.
   const porRef = useMemo(() => {
@@ -137,7 +142,18 @@ export default function PedidosView({ stamp, stampDespachos, usuario, onOpenRef 
             <button type="button" className={'proc-f-btn' + (vista === 'despachos' ? ' on' : '')}
               onClick={() => setVista('despachos')}>Despachos</button>
           </div>
-          {vista === 'pedidos' && <SearchInput value={q} onChange={setQ} placeholder="Pedido, cliente o ciudad…" />}
+          {vista === 'pedidos' && (
+            <>
+              <div className="dis-filtros">
+                <button type="button" className={'proc-f-btn' + (!soloEspeciales ? ' on' : '')}
+                  onClick={() => setSoloEspeciales(false)}>Todos <b>{(filas || []).length}</b></button>
+                <button type="button" className={'proc-f-btn' + (soloEspeciales ? ' on' : '')}
+                  title="Clientes con alguna línea que pide algo distinto al color: cinturón, sin fajón, top…"
+                  onClick={() => setSoloEspeciales(true)}>Pedidos especiales <b>{especiales.size}</b></button>
+              </div>
+              <SearchInput value={q} onChange={setQ} placeholder="Pedido, cliente o ciudad…" />
+            </>
+          )}
         </div>
       </div>
 
@@ -191,7 +207,7 @@ export default function PedidosView({ stamp, stampDespachos, usuario, onOpenRef 
                 <SortTh label="Referencias" col="referencias" className="num" {...thProps} />
                 <SortTh label="Unidades" col="unidades" className="num" {...thProps} />
                 <SortTh label="Valor" col="total" className="num" {...thProps} />
-                <th>Observación</th>
+                {soloEspeciales && <th>Pedido especial</th>}
               </tr>
             </thead>
             <tbody>
@@ -204,7 +220,13 @@ export default function PedidosView({ stamp, stampDespachos, usuario, onOpenRef 
                   <td className="num">{num(f.referencias)}</td>
                   <td className="num strong">{num(f.unidades)}</td>
                   <td className="num">{formatPrice(f.total) || '—'}</td>
-                  <td className="muted ped-obs" title={f.observacion || ''}>{f.observacion || ''}</td>
+                  {soloEspeciales && (
+                    <td className="ped-esp-cel">
+                      {(especiales.get(f.cliente) || []).map((e, i) => (
+                        <span key={i} className="ped-esp-ln"><b>{e.referencia}</b> {e.color} · {e.observacion} <span className="muted">({num(e.unid)})</span></span>
+                      ))}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -223,7 +245,7 @@ export default function PedidosView({ stamp, stampDespachos, usuario, onOpenRef 
               <h2 className="modal-title">{abierto.cliente}</h2>
               <p className="eb-meta">
                 {abierto.ciudad ? `${abierto.ciudad} · ` : ''}{Number(abierto.pedidos) === 1 ? 'pedido ' : 'pedidos '}{abierto.lista_pedidos} · {num(abierto.referencias)} referencias · {num(abierto.unidades)} unidades · {formatPrice(abierto.total) || '$ 0'}
-                {abierto.observacion ? ` · "${abierto.observacion}"` : ''}
+                {especiales.has(abierto.cliente) ? <span className="tag ped-esp" style={{ marginLeft: 8 }}>{especiales.get(abierto.cliente).length} pedido{especiales.get(abierto.cliente).length === 1 ? '' : 's'} especial{especiales.get(abierto.cliente).length === 1 ? '' : 'es'}</span> : ''}
               </p>
             </div>
             <button className="icon-btn" onClick={() => setAbierto(null)} aria-label="Cerrar">✕</button>
@@ -234,14 +256,24 @@ export default function PedidosView({ stamp, stampDespachos, usuario, onOpenRef 
                 <table className="med-tabla ped-det">
                   <thead>
                     <tr>
-                      <th>Referencia</th><th>Pedido</th><th>Color</th>
+                      <th>Foto</th><th>Referencia</th><th>Pedido</th><th>Color</th>
                       {tallasDetalle.map((t) => <th key={t} className="num">{t}</th>)}
-                      <th className="num">Unid</th><th className="num">Precio</th><th className="num">Total</th>
+                      <th className="num">Unid</th><th className="num">Precio</th><th className="num">Total</th><th>Observación</th>
                     </tr>
                   </thead>
                   <tbody>
                     {porRef.map((g) => g.colores.map((r, i) => (
                       <tr key={r.id} className={i === 0 ? 'ped-ref-inicio' : ''}>
+                        <td className="ped-foto">
+                          {i === 0 && (() => {
+                            const ficha = refMap && refMap.get(g.referencia)
+                            const img = ficha && ficha.image
+                            return img
+                              ? <img src={img} alt={g.referencia} className="thumb" title="Ampliar foto"
+                                onClick={() => onViewImage && onViewImage(img)} />
+                              : <span className="thumb empty" title="Sin foto en la ficha">—</span>
+                          })()}
+                        </td>
                         <td>
                           {i === 0 ? (
                             <button type="button" className="ped-ref" onClick={() => onOpenRef && onOpenRef(g.referencia)}
@@ -259,6 +291,11 @@ export default function PedidosView({ stamp, stampDespachos, usuario, onOpenRef 
                         <td className="num strong">{num(r.unid)}</td>
                         <td className="num muted">{formatPrice(r.precio) || '—'}</td>
                         <td className="num">{formatPrice(r.total) || '—'}</td>
+                        <td className="ped-obs-cel">
+                          {r.observacion
+                            ? <span className={esPedidoEspecial(r.observacion) ? 'tag ped-esp' : 'ped-obs-txt'}>{r.observacion}</span>
+                            : ''}
+                        </td>
                       </tr>
                     )))}
                   </tbody>

@@ -315,6 +315,14 @@ export async function dbLoadPedidosTodos() {
     .order('id'))
 }
 
+// Solo las líneas con observación (unas 4.400): de ahí salen los pedidos
+// especiales (lib/pedidos.js).
+export async function dbLoadPedidosObservaciones() {
+  return paginar(() => supabase.from('pedidos_syd')
+    .select('cliente, pedido, referencia, descripcion, color, unid, observacion')
+    .not('observacion', 'is', null).neq('observacion', '').order('id'))
+}
+
 // Separados, facturados, referencias cerradas y novedades (dev_despachos),
 // como mapa id → data. Ver lib/despachos.js para las clases de id.
 export async function dbLoadDespachos() {

@@ -208,6 +208,13 @@ Cada `.LIS` pesa 12 MB y el EXE deja uno por corrida: se conservan 3.
 `pedidos_syd_resumen` (un renglón por pedido) y el detalle por pedido al
 abrirlo; se refresca con la marca `pedidos` de `dev_sync`.
 
+**Pedidos especiales**: la observación de cada línea casi siempre es un
+color (o "SIN CRUDO"); `lib/pedidos.js` marca como especial la que trae una
+modificación (cinturón, fajón, forro, top, "1 de cada color"…) por lista de
+palabras, que se amplía cuando aparezca una nueva. El detalle del cliente
+muestra foto (de `dev_refs`) y observación por línea; el chip "Pedidos
+especiales" filtra los clientes que tienen alguna.
+
 **Despachos (14-sep-2026)**: segunda vista de la pestaña Pedidos
 (`DespachosView.jsx`, cuentas en `lib/despachos.js`). Vendido y pendiente
 salen de `pedidos_syd`; separado, facturado, referencias cerradas ("no

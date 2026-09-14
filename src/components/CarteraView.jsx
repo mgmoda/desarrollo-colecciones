@@ -95,6 +95,7 @@ const CHIPS = [
   { key: 'todos', label: 'Todos' },
   { key: 'llamar', label: 'Para llamar hoy', tono: 'bad' },
   { key: 'espera', label: 'En espera' },
+  { key: 'vendedor', label: 'Con vendedor' },
   { key: 'promesa', label: 'Con promesa' },
   { key: 'critico', label: 'Crítico +90d' },
   { key: 'sinpago', label: 'Sin pago +30d' },
@@ -205,6 +206,7 @@ export default function CarteraView({ usuario, cargarDatos = cargarCartera }) {
       conPromesa: clientes.filter((c) => c.promesa && !c.promesa.cumplida).length,
       paraLlamar: clientes.filter((c) => c.para_llamar).length,
       enEspera: clientes.filter((c) => c.en_espera).length,
+      conVendedor: clientes.filter((c) => c.con_vendedor).length,
       noLlamar: clientes.filter((c) => c.no_llamar).length,
       semana: contactosSemana(clientes),
     }
@@ -230,6 +232,7 @@ export default function CarteraView({ usuario, cargarDatos = cargarCartera }) {
       if (coleccion === '2' && c.t2 <= 0) return false
       if (chip === 'llamar' && !c.para_llamar) return false
       if (chip === 'espera' && !c.en_espera) return false
+      if (chip === 'vendedor' && !c.con_vendedor) return false
       if (chip === 'promesa' && !(c.promesa && !c.promesa.cumplida)) return false
       if (chip === 'critico' && c.dias_max <= 90) return false
       if (chip === 'sinpago' && !(c.dias_ult_pago === null || c.dias_ult_pago > 30)) return false
@@ -447,6 +450,7 @@ export default function CarteraView({ usuario, cargarDatos = cargarCartera }) {
             const n = ch.key === 'todos' ? clientes.length
               : ch.key === 'llamar' ? kpi.paraLlamar
               : ch.key === 'espera' ? kpi.enEspera
+              : ch.key === 'vendedor' ? kpi.conVendedor
               : ch.key === 'promesa' ? kpi.conPromesa
               : ch.key === 'critico' ? kpi.criticos
               : ch.key === 'sinpago' ? kpi.sinPago
@@ -544,10 +548,18 @@ export default function CarteraView({ usuario, cargarDatos = cargarCartera }) {
                             <span className={'ct-av' + (inicial === 'K' ? ' k' : '')}>{inicial || '?'}</span>
                             {haceTxt(c.dias_contacto)}
                           </span>
-                          <span className="ct-uc-s">
-                            {etiquetaResultado(res)}{g.canal ? ` · ${g.canal}` : ''}
-                            {g.texto && g.texto !== etiquetaResultado(res) ? ` · "${g.texto}"` : ''}
-                          </span>
+                          {c.con_vendedor ? (
+                            <span className="ct-uc-s">
+                              <span className={'ct-res r-vendedor' + (c.vendedor_tarde ? ' tarde' : '')}>
+                                {c.vendedor_tarde ? `${c.con_vendedor} sin responder · ${c.dias_contacto} d` : `Con ${c.con_vendedor} · esperando respuesta`}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="ct-uc-s">
+                              {etiquetaResultado(res)}{g.canal === 'Vendedor' ? ' · por el vendedor' : g.canal ? ` · ${g.canal}` : ''}
+                              {g.texto && g.texto !== etiquetaResultado(res) ? ` · "${g.texto}"` : ''}
+                            </span>
+                          )}
                         </>
                       ) : <span className="ct-res r-no_llamar" style={{ background: '#fbeceb' }}>Sin contacto</span>}
                     </td>
@@ -570,6 +582,10 @@ export default function CarteraView({ usuario, cargarDatos = cargarCartera }) {
                         <button type="button" className="btn ct-btn-contacto espera"
                           title="Marcado como no volver a llamar; registrar un contacto lo reactiva"
                           onClick={() => setContactoDe(c.cliente_key)}>No llamar</button>
+                      ) : c.con_vendedor ? (
+                        <button type="button" className="btn ct-btn-contacto amb"
+                          title={`Anotar qué respondió ${c.con_vendedor}, o registrar otro contacto`}
+                          onClick={() => setContactoDe(c.cliente_key)}>Respuesta</button>
                       ) : (
                         <button type="button"
                           className={'btn ct-btn-contacto' + (c.en_espera ? ' espera' : ' btn-primary')}

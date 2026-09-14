@@ -62,6 +62,12 @@ export const etiquetaColeccion = (temp) => (temp === 1 ? 'Madres' : 'Diciembre')
 export const ESPERA_DIAS = 7
 
 export const CANALES = ['WhatsApp', 'Llamada', 'Visita']
+// Cobro pedido a un vendedor: queda registrado a quién y desde cuándo, y la
+// respuesta se anota después, cuando llega. Va como canal 'Vendedor',
+// resultado 'vendedor' y el nombre en remitido_a. La respuesta es otra fila
+// con el mismo canal, el resultado real y el vendedor como autor.
+export const CANAL_VENDEDOR = 'Vendedor'
+export const VENDEDORES = ['Jorge', 'Nancy', 'Samuel', 'Estela', 'Adriana']
 export const RESULTADOS = [
   { k: 'sin_respuesta', label: 'Sin respuesta' },
   { k: 'promesa', label: 'Promete pagar' },
@@ -78,7 +84,9 @@ export function resultadoDe(g) {
   if (g.tipo === 'pendiente') return 'sin_respuesta'
   return 'reclamo'
 }
-export const etiquetaResultado = (k) => ((RESULTADOS.find((r) => r.k === k) || {}).label || 'Novedad')
+export const etiquetaResultado = (k) => (k === 'vendedor' ? 'Pedido al vendedor'
+  : (RESULTADOS.find((r) => r.k === k) || {}).label || 'Novedad')
+export const esPedidoVendedor = (g) => !!g && resultadoDe(g) === 'vendedor'
 
 /** Quién registra, dicho corto: "kelly@mgmoda.local" → "Kelly". */
 export function autorDe(usuario) {
@@ -318,6 +326,10 @@ export function agrupar(facturas, gestion, pagosAcum) {
     c.ult_contacto = ult
     c.dias_contacto = ult ? diasHasta(String(ult.creado_en || '').slice(0, 10)) : null
     c.no_llamar = !!(ult && resultadoDe(ult) === 'no_llamar')
+    // En manos de un vendedor: espera su respuesta; si tarda más de la
+    // espera normal, vuelve a "para llamar" con el nombre del vendedor.
+    c.con_vendedor = esPedidoVendedor(ult) ? (ult.remitido_a || 'vendedor') : ''
+    c.vendedor_tarde = !!(c.con_vendedor && c.dias_contacto >= ESPERA_DIAS)
     const conFecha = c.gestion.find((g) => g.acuerdo_fecha) || null
     if (conFecha) {
       const desdeP = String(conFecha.creado_en || '').slice(0, 10)
@@ -399,14 +411,19 @@ export async function guardarGestion(cliente, datos, autor) {
  */
 export async function guardarContacto(cliente, datos, autor) {
   const promesa = datos.resultado === 'promesa'
+  const vendedor = datos.vendedor || null
   const fila = {
     cliente_key: normKey(cliente.cliente),
     cliente: cliente.cliente,
     tipo: 'contacto',
     resultado: datos.resultado || 'sin_respuesta',
-    texto: (datos.texto || '').trim() || etiquetaResultado(datos.resultado),
-    autor: autor || null,
+    texto: (datos.texto || '').trim() || (datos.resultado === 'vendedor' && vendedor ? `Pedido a ${vendedor}` : etiquetaResultado(datos.resultado)),
+    // La respuesta del vendedor se firma con su nombre; quien la tecleó
+    // queda en cerrado_por.
+    autor: (datos.respuesta && vendedor) ? vendedor : (autor || null),
+    cerrado_por: (datos.respuesta && vendedor) ? (autor || null) : null,
     canal: datos.canal || null,
+    remitido_a: vendedor,
     estado: 'cerrada',
     acuerdo_fecha: promesa ? (datos.acuerdo_fecha || null) : null,
     acuerdo_monto: promesa ? (datos.acuerdo_monto || null) : null,

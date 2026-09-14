@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import Modal from './Modal.jsx'
 import {
-  CANALES, ESPERA_DIAS, RESULTADOS, autorDe, etiquetaResultado, guardarContacto, resultadoDe,
+  CANALES, CANAL_VENDEDOR, ESPERA_DIAS, RESULTADOS, VENDEDORES, autorDe, esPedidoVendedor,
+  etiquetaResultado, guardarContacto, resultadoDe,
 } from '../lib/cartera.js'
 import { formatPrice } from '../lib/constants.js'
 
@@ -39,9 +40,10 @@ export function LineaContacto({ g }) {
       <span className="ct-ln-f">{fechaCorta(g.creado_en)}</span>
       <b className="ct-ln-q">{g.autor || '—'}</b>
       <span className="ct-ln-t">
-        <span className={'ct-res r-' + r}>{etiquetaResultado(r)}</span>
+        <span className={'ct-res r-' + r}>{r === 'vendedor' ? `Pedido a ${g.remitido_a || 'vendedor'}` : etiquetaResultado(r)}</span>
         {g.acuerdo_fecha && <> · paga el {fechaCorta(g.acuerdo_fecha)}{g.acuerdo_monto ? ` · ${formatPrice(g.acuerdo_monto)}` : ''}</>}
-        {g.canal && <> · {g.canal}</>}
+        {g.canal === CANAL_VENDEDOR && r !== 'vendedor' && <> · respuesta del vendedor{g.cerrado_por ? ` (la anotó ${g.cerrado_por})` : ''}</>}
+        {g.canal && g.canal !== CANAL_VENDEDOR && <> · {g.canal}</>}
         {g.texto && g.texto !== etiquetaResultado(r) && <> · <i>"{g.texto}"</i></>}
       </span>
     </div>
@@ -50,28 +52,42 @@ export function LineaContacto({ g }) {
 
 export function FormContacto({ cliente, usuario, onGuardado, onCancelar, compacto }) {
   const [canal, setCanal] = useState('WhatsApp')
+  const [vendedor, setVendedor] = useState('')
   const [resultado, setResultado] = useState('')
   const [fecha, setFecha] = useState('')
   const [monto, setMonto] = useState('')
   const [texto, setTexto] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
+  // Si el cliente está en manos de un vendedor, lo primero es anotar su
+  // respuesta; con un clic se puede registrar otro contacto en su lugar.
+  const enVendedor = cliente && cliente.con_vendedor
+  const [otroContacto, setOtroContacto] = useState(false)
+  const modoRespuesta = !!enVendedor && !otroContacto
+  const esVendedor = canal === CANAL_VENDEDOR
 
   useEffect(() => {
-    setCanal('WhatsApp'); setResultado(''); setFecha(''); setMonto(''); setTexto(''); setError('')
+    setCanal('WhatsApp'); setVendedor(''); setResultado(''); setFecha(''); setMonto(''); setTexto(''); setError(''); setOtroContacto(false)
   }, [cliente && cliente.cliente_key])
 
   const autor = autorDe(usuario)
 
   async function guardar() {
-    if (!resultado) { setError('Marca qué quedó del contacto.'); return }
+    if (modoRespuesta) {
+      if (!resultado) { setError('Marca qué respondió ' + enVendedor + '.'); return }
+    } else if (esVendedor) {
+      if (!vendedor) { setError('¿A cuál vendedor se lo pediste?'); return }
+    } else if (!resultado) { setError('Marca qué quedó del contacto.'); return }
     if (resultado === 'promesa' && !fecha) { setError('Si promete pagar, ¿para qué día?'); return }
     setGuardando(true)
     setError('')
     try {
-      await guardarContacto(cliente, {
-        canal, resultado, texto, acuerdo_fecha: fecha || null, acuerdo_monto: montoNumero(monto),
-      }, autor)
+      const datos = modoRespuesta
+        ? { canal: CANAL_VENDEDOR, vendedor: enVendedor, respuesta: true, resultado, texto, acuerdo_fecha: fecha || null, acuerdo_monto: montoNumero(monto) }
+        : esVendedor
+          ? { canal: CANAL_VENDEDOR, vendedor, resultado: 'vendedor', texto }
+          : { canal, resultado, texto, acuerdo_fecha: fecha || null, acuerdo_monto: montoNumero(monto) }
+      await guardarContacto(cliente, datos, autor)
       if (onGuardado) await onGuardado()
     } catch (e) {
       setError('No se pudo guardar: ' + ((e && e.message) || e))
@@ -80,7 +96,13 @@ export function FormContacto({ cliente, usuario, onGuardado, onCancelar, compact
     }
   }
 
-  const resumen = !resultado ? ''
+  const resumen = esVendedor && !modoRespuesta
+    ? (vendedor ? `Queda con ${vendedor} desde hoy · si en ${ESPERA_DIAS} días no hay respuesta vuelve a "Para llamar"` : '')
+    : !resultado ? ''
+    : modoRespuesta && resultado === 'promesa'
+      ? `Queda: contactado por ${enVendedor}${fecha ? ` · promesa para el ${fechaCorta(fecha)}` : ''}`
+    : modoRespuesta
+      ? `Queda: contactado por ${enVendedor} · ${etiquetaResultado(resultado).toLowerCase()}`
     : resultado === 'promesa'
       ? `Queda contactado hoy por ${autor}${fecha ? ` · promesa para el ${fechaCorta(fecha)}` : ''}`
       : resultado === 'no_llamar'
@@ -90,24 +112,71 @@ export function FormContacto({ cliente, usuario, onGuardado, onCancelar, compact
   return (
     <div className={'ct-form' + (compacto ? ' compacto' : '')}>
       {error && <div className="ct-error">{error}</div>}
-      <div className="ct-fld">
-        <label>Cómo</label>
-        <div className="ct-opts">
-          {CANALES.map((c) => (
-            <button key={c} type="button" className={'ct-opt' + (canal === c ? ' on' : '')}
-              onClick={() => setCanal(c)}>{c}</button>
-          ))}
+      {modoRespuesta ? (
+        <div className="ct-fld">
+          <label>Respuesta de {enVendedor}
+            <button type="button" className="ct-link" onClick={() => { setOtroContacto(true); setResultado('') }}>
+              o registrar otro contacto
+            </button>
+          </label>
+          <div className="ct-opts">
+            {RESULTADOS.map((r) => (
+              <button key={r.k} type="button" className={'ct-opt' + (resultado === r.k ? ' on' : '')}
+                onClick={() => setResultado(r.k)}>{r.label}</button>
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="ct-fld">
-        <label>Qué quedó</label>
-        <div className="ct-opts">
-          {RESULTADOS.map((r) => (
-            <button key={r.k} type="button" className={'ct-opt' + (resultado === r.k ? ' on' : '')}
-              onClick={() => setResultado(r.k)}>{r.label}</button>
-          ))}
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className="ct-fld">
+            <label>Cómo
+              {enVendedor && (
+                <button type="button" className="ct-link" onClick={() => { setOtroContacto(false); setResultado('') }}>
+                  o anotar la respuesta de {enVendedor}
+                </button>
+              )}
+            </label>
+            <div className="ct-opts">
+              {CANALES.map((c) => (
+                <button key={c} type="button" className={'ct-opt' + (canal === c ? ' on' : '')}
+                  onClick={() => setCanal(c)}>{c}</button>
+              ))}
+              <button type="button" className={'ct-opt' + (esVendedor ? ' on' : '')}
+                onClick={() => { setCanal(CANAL_VENDEDOR); setResultado('') }}>Pedí al vendedor</button>
+            </div>
+          </div>
+          {esVendedor ? (
+            <>
+              <div className="ct-fld">
+                <label>A quién</label>
+                <div className="ct-opts">
+                  {VENDEDORES.map((v) => (
+                    <button key={v} type="button" className={'ct-opt ct-opt-v' + (vendedor === v ? ' on' : '')}
+                      onClick={() => setVendedor(v)}><span className="ct-av-op">{v.charAt(0)}</span>{v}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="ct-fld">
+                <label>Qué quedó</label>
+                <div className="ct-auto">
+                  ⏳ <span><b>Esperando la respuesta{vendedor ? ` de ${vendedor}` : ' del vendedor'}.</b> Cuando responda,
+                  se anota con el botón "Respuesta" en la fila del cliente.</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="ct-fld">
+              <label>Qué quedó</label>
+              <div className="ct-opts">
+                {RESULTADOS.map((r) => (
+                  <button key={r.k} type="button" className={'ct-opt' + (resultado === r.k ? ' on' : '')}
+                    onClick={() => setResultado(r.k)}>{r.label}</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
       {resultado === 'promesa' && (
         <div className="ct-fld-row">
           <div className="ct-fld">
@@ -131,7 +200,8 @@ export function FormContacto({ cliente, usuario, onGuardado, onCancelar, compact
       <div className="ct-form-foot">
         <span className="ct-form-res">{resumen}</span>
         {onCancelar && <button className="btn btn-ghost" onClick={onCancelar}>Cancelar</button>}
-        <button className="btn btn-primary" onClick={guardar} disabled={guardando || !resultado}>
+        <button className="btn btn-primary" onClick={guardar}
+          disabled={guardando || (esVendedor && !modoRespuesta ? !vendedor : !resultado)}>
           {guardando ? 'Guardando…' : 'Guardar'}
         </button>
       </div>
@@ -150,7 +220,9 @@ export default function CarteraContacto({ cliente, usuario, onClose, onGuardado 
           <p className="eb-meta">
             {cliente.ciudad ? `${cliente.ciudad} · ` : ''}debe <b>{formatPrice(cliente.total) || '$ 0'}</b>
             {cliente.ult_pago ? ` · último pago ${fechaCorta(cliente.ult_pago)}` : ' · sin pagos'}
-            {ult ? ` · último contacto ${haceTxt(cliente.dias_contacto)} (${ult.autor || '—'}: ${etiquetaResultado(resultadoDe(ult)).toLowerCase()})` : ' · sin contactos'}
+            {cliente.con_vendedor
+              ? <> · con <b>{cliente.con_vendedor}</b> desde {haceTxt(cliente.dias_contacto)}</>
+              : ult ? ` · último contacto ${haceTxt(cliente.dias_contacto)} (${ult.autor || '—'}: ${etiquetaResultado(resultadoDe(ult)).toLowerCase()})` : ' · sin contactos'}
           </p>
         </div>
         <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>

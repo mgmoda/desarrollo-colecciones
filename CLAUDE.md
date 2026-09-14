@@ -165,6 +165,14 @@ select count(*) from public.cartera_facturas;
   Cada contacto es una fila de `cartera_gestion` con `tipo='contacto'`,
   `canal` (WhatsApp/Llamada/Visita) y `resultado` (sin_respuesta, promesa,
   abono, reclamo, no_llamar); si es promesa, `acuerdo_fecha`/`acuerdo_monto`.
+  **Pedí al vendedor (14-sep-2026)**: cuarto botón en "Cómo"; guarda
+  `canal='Vendedor'`, `resultado='vendedor'`, `remitido_a=<nombre>`
+  (`VENDEDORES` en `lib/cartera.js`). El cliente queda `con_vendedor` (en
+  espera); pasados `ESPERA_DIAS` sin respuesta es `vendedor_tarde` y vuelve a
+  "Para llamar". La respuesta es otra fila con el resultado real, el vendedor
+  como `autor` y quien la anotó en `cerrado_por`; el formulario la pide
+  primero cuando el cliente está con vendedor (enlace para registrar otro
+  contacto). Chip "Con vendedor" en la tabla.
   Las gestiones viejas siguen contando como contactos por su fecha
   (`resultadoDe()` en `lib/cartera.js`). Por cliente, `agrupar()` deriva
   `ult_contacto`, `dias_contacto`, `promesa` (vigente/vencida/cumplida: se

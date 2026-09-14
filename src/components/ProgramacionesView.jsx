@@ -5,8 +5,7 @@ import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import {
   ESTADOS_PROG, colorProducidoDe, cortesDe, esConjunto, estadoProg, faltaPorColor,
-  indiceCodigos, indiceConjuntos, leerArchivo, leerPegado, piezaQueFalta,
-  programadoDe, telasDe,
+  indiceCodigos, indiceConjuntos, piezaQueFalta, programadoDe, telasDe,
 } from '../lib/programaciones.js'
 import { formatDate } from '../lib/constants.js'
 import { diasDesde, diasEntre } from '../lib/dates.js'
@@ -582,99 +581,13 @@ function FaltaModal({ fila, cortes, onClose }) {
   )
 }
 
-// Carga del reporte de Factory. Lo normal es soltar el archivo tal como sale;
-// pegar las filas queda como salida por si algún día el archivo no abre.
-function CargarModal({ marca, onConfirmar, onSeparados, onClose }) {
-  const [texto, setTexto] = useState('')
-  const [leyendo, setLeyendo] = useState(false)
-  const [err, setErr] = useState('')
-  const [delArchivo, setDelArchivo] = useState(null) // { filas, marca, nombre }
-  const pegado = useMemo(() => leerPegado(texto, marca), [texto, marca])
-  const filas = delArchivo ? (delArchivo.filas || []) : pegado.filas
-  const marcaFinal = delArchivo ? delArchivo.marca : marca
-
-  async function tomar(file) {
-    if (!file) return
-    setErr(''); setLeyendo(true); setDelArchivo(null)
-    try {
-      const r = await leerArchivo(file)
-      if (r.tipo === 'separados') {
-        setDelArchivo({ sep: r.desglose, refs: r.refs, nombre: file.name })
-        return
-      }
-      if (!r.marca) { setErr('No pude saber si es de Casania o de Mariset. Renombra el archivo o pega las filas.'); return }
-      setDelArchivo({ filas: r.filas, marca: r.marca, nombre: file.name })
-    } catch (e) {
-      setErr(e.message || 'No pude leer el archivo.')
-    } finally { setLeyendo(false) }
-  }
-
-  return (
-    <Modal open onClose={onClose} size="md">
-      <div className="modal-head">
-        <h2 className="modal-title">Cargar pedidos</h2>
-        <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
-      </div>
-      <div className="modal-body">
-        <p className="field-hint" style={{ marginTop: 0 }}>
-          El reporte de <b>separados</b> (Pendientes por Clientes y Referencias), tal
-          como sale de Factory. Trae todo: referencias, pedido y el detalle por color
-          y talla de las dos marcas. Lo programado lo cuenta el sistema de sus
-          órdenes de corte.
-        </p>
-
-        <label className="import-drop"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => { e.preventDefault(); tomar(e.dataTransfer.files && e.dataTransfer.files[0]) }}>
-          <input type="file" hidden
-            accept=".xls,.xlsx,.xlsm,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            onChange={(e) => tomar(e.target.files && e.target.files[0])} />
-          <span>
-            {leyendo ? 'Leyendo…'
-              : delArchivo ? `${delArchivo.nombre} · ${delArchivo.sep ? 'Separados' : delArchivo.marca}`
-                : 'Arrastra el archivo aquí o haz clic para buscarlo'}
-          </span>
-        </label>
-
-        {err && <p className="form-err">{err}</p>}
-
-        <details className="prog-pegar">
-          <summary>O pegar las filas a mano</summary>
-          <textarea className="input prog-ta" rows={6} value={texto}
-            onChange={(e) => { setTexto(e.target.value); setDelArchivo(null) }}
-            placeholder="C6848&#9;VESTIDO ALGODON CON CINTURON&#9;3&#9;121&#9;61&#9;60" />
-        </details>
-
-        {delArchivo && delArchivo.sep ? (
-          <p className="field-hint">
-            <b>{delArchivo.refs}</b> referencias con su pedido y su desglose por
-            color y talla. Lo ya cargado conserva su seguimiento.
-          </p>
-        ) : filas.length > 0 && (
-          <p className="field-hint">
-            Se van a cargar <b>{filas.length}</b> referencias de <b>{marcaFinal}</b>.
-            Las que ya existan actualizan sus cifras; el seguimiento no se pierde.
-          </p>
-        )}
-      </div>
-      <div className="modal-foot">
-        <button className="btn" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-primary"
-          disabled={leyendo || (delArchivo && delArchivo.sep ? false : !filas.length)}
-          onClick={() => {
-            if (delArchivo && delArchivo.sep) onSeparados(delArchivo.sep)
-            else onConfirmar(filas.map((f) => ({ ...f, marca: marcaFinal })), marcaFinal)
-          }}>
-          Cargar {delArchivo && delArchivo.sep ? delArchivo.refs : (filas.length || '')}
-        </button>
-      </div>
-    </Modal>
-  )
-}
-
+// El pedido ya no se carga a mano: llega del informe de separados de SYD
+// (pedidos_syd) y la función sincronizar_programaciones() lo pasa a cada
+// referencia —pedido, desglose por color y talla, descripción— cada vez que
+// el informe cambia. Lo que sale del informe queda con pedido 0 y sinPedido.
 export default function ProgramacionesView({
   programaciones, orders, refMap, refs, telas, usuario,
-  onGuardar, onGuardarVarias, onBorrar, onViewImage, onOpenRef,
+  onGuardar, onBorrar, onViewImage, onOpenRef,
 }) {
   const [marca, setMarca] = useState('Casania')
   const [q, setQ] = useState('')
@@ -685,7 +598,8 @@ export default function ProgramacionesView({
   // agrupando las referencias que usan cada una y los metros que necesitan.
   const [vista, setVista] = useState('ref')
   const [telaF, setTelaF] = useState('')
-  const [cargar, setCargar] = useState(false)
+  // Las que salieron del informe (pedido 0) se esconden salvo que se pidan.
+  const [verSinPedido, setVerSinPedido] = useState(false)
   const [obsDe, setObsDe] = useState(null)
   const [movDe, setMovDe] = useState(null)
   const [desgDe, setDesgDe] = useState(null)
@@ -746,6 +660,7 @@ export default function ProgramacionesView({
         piezas,
         estado: p.estado || '',
         estadoColor: p.estadoColor || '',
+        sinPedido: !!p.sinPedido,
         obs: (p.observaciones || []).filter((o) => o.texto).length,
         ultimaObs: (p.observaciones || []).filter((o) => o.texto).slice(-1)[0] || null,
         ...enProceso(p.movimientos, pendiente),
@@ -754,6 +669,9 @@ export default function ProgramacionesView({
 
   const rows = useMemo(() => {
     let list = filas
+    // Sin pedido en SYD: fuera de la lista, salvo que tenga algo andando
+    // (tela pedida, Textampa) que Ninfa todavía tiene que cerrar.
+    if (!verSinPedido) list = list.filter((f) => !f.sinPedido || f.movAbiertos.length > 0)
     if (soloPendientes) list = list.filter((f) => f.pendiente > 0)
     if (soloProceso) list = list.filter((f) => f.movAbiertos.length > 0)
     if (estadoF) list = list.filter((f) => f.estado === estadoF)
@@ -777,7 +695,7 @@ export default function ProgramacionesView({
       obs: (f) => f.obs,
     }
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [filas, q, soloPendientes, soloProceso, estadoF, sortKey, sortDir])
+  }, [filas, q, verSinPedido, soloPendientes, soloProceso, estadoF, sortKey, sortDir])
 
   const tot = useMemo(() => rows.reduce((a, f) => ({
     pedido: a.pedido + f.pedido,
@@ -805,6 +723,9 @@ export default function ProgramacionesView({
   const sinFichaTela = useMemo(() => rows.filter((f) => !(f.telasRef || []).length), [rows])
   const totMetros = useMemo(() => grupos.reduce((n, g) => n + g.metros, 0), [grupos])
 
+  const ultimaSync = useMemo(() => (programaciones || [])
+    .reduce((m, p) => Math.max(m, Number(p.desgloseAt) || 0), 0), [programaciones])
+
   const thProps = { sortKey, sortDir, onSort: toggle }
   const num = (n) => n.toLocaleString('es-CO')
   const dec = (n) => n.toLocaleString('es-CO', { maximumFractionDigits: 2 })
@@ -823,7 +744,7 @@ export default function ProgramacionesView({
           {MARCAS.map((m) => (
             <button key={m} type="button" className={'proc-f-btn' + (marca === m ? ' on' : '')}
               onClick={() => setMarca(m)}>
-              {m} <b>{(programaciones || []).filter((p) => p.marca === m).length}</b>
+              {m} <b>{(programaciones || []).filter((p) => p.marca === m && !p.sinPedido).length}</b>
             </button>
           ))}
           <button type="button" className={'proc-f-btn' + (soloPendientes ? ' on' : '')}
@@ -841,6 +762,17 @@ export default function ProgramacionesView({
               </button>
             )
           })()}
+          {(() => {
+            const n = filas.filter((f) => f.sinPedido).length
+            if (!n && !verSinPedido) return null
+            return (
+              <button type="button" className={'proc-f-btn' + (verSinPedido ? ' on' : '')}
+                title="Referencias que ya no aparecen en el informe de pedidos de SYD"
+                onClick={() => setVerSinPedido(!verSinPedido)}>
+                Sin pedido <b>{n}</b>
+              </button>
+            )
+          })()}
           {ESTADOS_PROG.map((e) => {
             const n = filas.filter((f) => f.estado === e.key).length
             if (!n && estadoF !== e.key) return null
@@ -855,7 +787,11 @@ export default function ProgramacionesView({
           })}
         </div>
         <SearchInput value={q} onChange={setQ} placeholder="Buscar referencia…" />
-        <button className="btn btn-primary" onClick={() => setCargar(true)}>Cargar pedidos</button>
+        {ultimaSync > 0 && (
+          <span className="prog-sync" title="El pedido llega solo del informe de separados de SYD, cada 2 minutos">
+            Pedidos de SYD · {fechaHora(ultimaSync)}
+          </span>
+        )}
       </div>
 
       {vista === 'tela' ? (
@@ -877,9 +813,9 @@ export default function ProgramacionesView({
       {rows.length === 0 ? (
         <div className="empty-state">
           <p>{(programaciones || []).length === 0
-            ? 'Todavía no hay pedidos cargados.'
+            ? 'Todavía no han llegado pedidos de SYD.'
             : 'Sin referencias en este filtro.'}</p>
-          <p className="muted">Carga el reporte de Factory con “Cargar pedidos”.</p>
+          <p className="muted">El pedido se sincroniza solo desde SYD cada 2 minutos.</p>
         </div>
       ) : vista === 'tela' ? (
         <>
@@ -1044,7 +980,9 @@ export default function ProgramacionesView({
                       {f.tipoFicha && <span className="prog-tipo">{f.tipoFicha}</span>}
                     </td>
                     <td className="num strong">
-                      {f.desglose ? (
+                      {f.sinPedido ? (
+                        <span className="tag prog-sin" title="Ya no está en el informe de pedidos de SYD">Sin pedido</span>
+                      ) : f.desglose ? (
                         <button type="button" className="prog-ped"
                           onClick={() => setDesgDe(f)}
                           title="Ver el pedido por color y talla">
@@ -1126,7 +1064,7 @@ export default function ProgramacionesView({
                     </td>
                     {/* La ✕ de quitar se retiró: un clic de más borraba la
                         referencia con sus movimientos y seguimiento. Lo que
-                        sobre se quita al recargar el reporte de pedidos. */}
+                        sale del informe de SYD queda como "Sin pedido". */}
                   </tr>
                 )
               })}
@@ -1149,49 +1087,6 @@ export default function ProgramacionesView({
           cortes={cortesDe(faltaDe, ordenesPorRef, codigos,
             faltaDe.desglose.colores.map((c) => c.color))}
           onClose={() => setFaltaDe(null)} />
-      )}
-
-      {cargar && (
-        <CargarModal marca={marca} onClose={() => setCargar(false)}
-          onSeparados={(desglose) => {
-            // El reporte de separados trae todo: referencias, descripción,
-            // pedido y desglose, de las dos marcas a la vez. Es el único que
-            // hay que cargar. Lo que ya existía conserva su seguimiento.
-            const previas = new Map((programaciones || []).map((p) => [p.id, p]))
-            const filasNuevas = Object.entries(desglose).map(([id, d]) => {
-              const previa = previas.get(id) || {}
-              const ficha = refMap.get(id)
-              const marca = (ficha && ficha.marca)
-                || previa.marca
-                || (id.startsWith('C') ? 'Casania' : 'Mariset')
-              return {
-                ...previa,
-                id,
-                marca,
-                descripcion: d.descripcion || previa.descripcion || '',
-                pedido: d.total,
-                desglose: d,
-                desgloseAt: Date.now(),
-                observaciones: previa.observaciones || [],
-                actualizadoAt: Date.now(),
-              }
-            })
-            onGuardarVarias(filasNuevas)
-            setCargar(false)
-          }}
-          onConfirmar={(nuevas, marcaCargada) => {
-            // Del reporte solo llegan las cifras y la descripción: el
-            // seguimiento que ya tenga la referencia se conserva.
-            const previas = new Map((programaciones || []).map((p) => [p.id, p]))
-            onGuardarVarias(nuevas.map((n) => ({
-              ...(previas.get(n.id) || {}),
-              ...n,
-              observaciones: (previas.get(n.id) || {}).observaciones || [],
-              actualizadoAt: Date.now(),
-            })))
-            if (marcaCargada) setMarca(marcaCargada)
-            setCargar(false)
-          }} />
       )}
 
       {obsDe && (

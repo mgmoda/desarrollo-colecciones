@@ -206,6 +206,16 @@ Cada `.LIS` pesa 12 MB y el EXE deja uno por corrida: se conservan 3.
 `pedidos_syd_resumen` (un renglón por pedido) y el detalle por pedido al
 abrirlo; se refresca con la marca `pedidos` de `dev_sync`.
 
+**Programaciones se alimenta de aquí (13-sep-2026).** Ya no existe "Cargar
+pedidos": `reemplazar_pedidos()` llama a `sincronizar_programaciones()`, que
+escribe en `dev_programaciones` el pedido, el desglose por color y talla y la
+descripción de cada referencia (`origenPedido: 'syd'`, `desgloseAt`), sin
+tocar movimientos, estado ni seguimiento. La referencia que sale del informe
+no se borra: queda `pedido: 0, sinPedido: true` y la vista la esconde salvo
+que se toque el chip "Sin pedido" o tenga movimientos abiertos. Los conteos
+por marca excluyen las `sinPedido`. El importador viejo (`leerArchivo`,
+`leerSeparadosDeFilas` en `programaciones.js`) sigue en el código sin uso.
+
 ---
 
 ## 7. Gotchas que ya costaron caro

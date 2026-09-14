@@ -35,7 +35,7 @@ import {
   dbUpsertRef, dbDeleteRef, dbReplaceOrders, dbSaveSettings, dbLog,
   dbLoadFaltantes, dbUpsertFaltante, dbDeleteFaltante,
   dbLoadPreordenes, dbUpsertPreorden, dbDeletePreorden,
-  dbLoadProgramaciones, dbUpsertProgramacion, dbUpsertProgramaciones, dbDeleteProgramacion,
+  dbLoadProgramaciones, dbUpsertProgramacion, dbDeleteProgramacion,
   dbLoadTelas, dbLoadProcesos, dbUpsertProceso, dbLoadEntradasBodega, dbUpsertEntradaBodega, dbLoadMedidas,
 } from './lib/db.js'
 import { buildRefIndex, emptyRef, refTracks, normalizeTelas, buildTopLinks, buildConjuntoLinks } from './lib/domain.js'
@@ -517,15 +517,6 @@ export default function App() {
       const n = [...l]; n[i] = p; return n
     })
     dbUpsertProgramacion(p).catch((e) => { console.error(e); alert('No se pudo guardar: ' + e.message) })
-  }
-
-  function guardarProgramaciones(lista) {
-    setProgramaciones((l) => {
-      const m = new Map(l.map((x) => [x.id, x]))
-      lista.forEach((p) => m.set(p.id, p))
-      return [...m.values()]
-    })
-    dbUpsertProgramaciones(lista).catch((e) => { console.error(e); alert('No se pudo cargar: ' + e.message) })
   }
 
   // Doblado y corte: se pinta de una y se guarda detrás, para que abrir o
@@ -1062,7 +1053,7 @@ export default function App() {
           <ProgramacionesView
             programaciones={programaciones} orders={orders} refMap={refMap} refs={refIndex}
             telas={telasFicha} usuario={emailSesion}
-            onGuardar={guardarProgramacion} onGuardarVarias={guardarProgramaciones}
+            onGuardar={guardarProgramacion}
             onBorrar={borrarProgramacion}
             onViewImage={setLightbox} onOpenRef={openEdit} />
         )}

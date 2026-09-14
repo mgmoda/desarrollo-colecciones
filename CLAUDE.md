@@ -202,7 +202,9 @@ mano. El `.LIS` está en código de página DOS 850 (así sale la Ñ). El
 PowerShell de 64 bits necesita `Tls12` explícito para hablar con Supabase.
 Cada `.LIS` pesa 12 MB y el EXE deja uno por corrida: se conservan 3.
 
-**App**: `PedidosView.jsx` (visible para Diego y Ninfa) lee la vista
+**App**: `PedidosView.jsx` (**solo Diego**: pestaña por `vePedidos` y RLS
+`pedidos_autorizado()` en `pedidos_syd`/`pedidos_sync_log`; las vistas son
+`security_invoker`) lee la vista
 `pedidos_syd_resumen` (un renglón por pedido) y el detalle por pedido al
 abrirlo; se refresca con la marca `pedidos` de `dev_sync`.
 

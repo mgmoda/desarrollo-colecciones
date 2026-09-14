@@ -389,6 +389,9 @@ export default function App() {
   // La cartera la ven Diego y Kelly, la encargada de cobranza. Kelly es de
   // cartera y no de producción: para ella es la única pestaña. El acceso real
   // a los datos lo controla cartera_autorizado() en la base, no esta lista.
+  // Pedidos (lo que los clientes tienen pendiente) lo ve solo Diego; la base
+  // lo respalda con RLS (pedidos_autorizado()).
+  const vePedidos = esAdmin
   const veCartera = ['kelly@mgmoda.local', ...ADMINS].includes(emailSesion)
   const soloCartera = emailSesion === 'kelly@mgmoda.local'
   const tabsVisibles = useMemo(
@@ -398,8 +401,8 @@ export default function App() {
         TABS_OPERACION.includes(t.key)
         || (t.key === 'programaciones' && veProgramaciones)
         || (t.key === 'asistencia' && veAsistencia)
-        || (t.key === 'pedidos' && veProgramaciones))))),
-    [esAdmin, veProgramaciones, veAsistencia, veCartera, soloCartera],
+        || (t.key === 'pedidos' && vePedidos))))),
+    [esAdmin, veProgramaciones, vePedidos, veAsistencia, veCartera, soloCartera],
   )
 
   // Si quedó guardada una pestaña que este usuario no puede ver, se lo lleva a
@@ -1060,7 +1063,7 @@ export default function App() {
         {tab === 'asistencia' && veAsistencia && (
           <AsistenciaView stamp={stampAsistencia} />
         )}
-        {tab === 'pedidos' && veProgramaciones && (
+        {tab === 'pedidos' && vePedidos && (
           <PedidosView stamp={stampPedidos} onOpenRef={(ref) => { const f = refMap.get(ref); if (f) openEdit(f) }} />
         )}
       </main>

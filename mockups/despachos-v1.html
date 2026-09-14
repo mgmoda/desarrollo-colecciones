@@ -50,27 +50,25 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,
 .prog-kpi.ok b{color:#1f7a44}
 .table-wrap{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius);overflow:auto}
 .data-table{width:100%;border-collapse:collapse;font-size:13px}
-.data-table th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:11px 12px;border-bottom:1px solid var(--hairline);white-space:nowrap;background:#faf9f6}
-.data-table td{padding:10px 12px;border-bottom:1px solid var(--hairline);vertical-align:middle;font-variant-numeric:tabular-nums}
+.data-table th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:9px 12px;border-bottom:1px solid var(--hairline);white-space:nowrap;background:#faf9f6}
+.data-table td{padding:7px 12px;border-bottom:1px solid var(--hairline);vertical-align:middle;font-variant-numeric:tabular-nums}
 .data-table tr:last-child td{border-bottom:0}
 .data-table .num{text-align:center}
 .data-table .strong{font-weight:600}
 .data-table .muted{color:var(--muted)}
 .row-click{cursor:pointer}.row-click:hover td{background:#faf9f6}
-.dsp-cli small{display:block;color:var(--muted);font-size:11.5px;font-weight:400}
+.dsp-cli{white-space:nowrap}
+.dsp-cli small{color:var(--muted);font-size:11.5px;font-weight:400;margin-left:8px}
 .dsp-cli .tag{margin-left:6px}
 .tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--hairline);background:#f1f0ee;color:var(--muted);vertical-align:middle}
 .tag.rojo{background:#fbe9e7;color:#8c2f28;border-color:#f0c4bf}
 .tag.ambar{background:#faeeda;color:#633806;border-color:#fac775}
 .tag.verde{background:#e3f3e8;color:#1f7a44;border-color:#b9e0c6}
 .tag.azul{background:#e8eef8;color:#2b4a7e;border-color:#c6d3ea}
-/* grupos de columnas: lo que dice SYD | lo que mide el sistema */
-th.g1,td.g1{border-left:1px solid var(--hairline)}
-.data-table thead .grp th{padding:6px 12px;border-bottom:1px solid var(--hairline);color:#8a857e;font-size:10.5px;text-align:center;background:#f4f2ed}
 .dsp-sep{color:#2b4a7e;font-weight:600}
 .dsp-falt{color:#8c2f28;font-weight:600}
 .dsp-cero{color:#c9c5bd}
-.dsp-bar{display:flex;align-items:center;gap:8px;min-width:130px}
+.dsp-bar{display:flex;align-items:center;gap:8px;width:150px}
 .dsp-bar i{flex:1;height:6px;border-radius:3px;background:#ece9e1;position:relative;overflow:hidden}
 .dsp-bar i b{position:absolute;left:0;top:0;bottom:0;background:#1f7a44;border-radius:3px}
 .dsp-bar i b.sep{background:#2b4a7e}
@@ -132,7 +130,7 @@ th.g1,td.g1{border-left:1px solid var(--hairline)}
   <div class="ct-sync">
     <div>
       <div class="ct-sync-t">Revisado hace 1 min <span class="ct-live" style="margin-left:8px"><i></i>al día</span> <span style="color:var(--muted);font-weight:400"> · última novedad 14 sep, 9:12 a. m.</span></div>
-      <div class="ct-sync-s">Vendido y pendiente vienen de SYD. Separado y facturado se registran en el sistema (ver nota al final).</div>
+      <div class="ct-sync-s">Vendido y pendiente vienen de SYD. Separado, facturado y referencias cerradas se registran en el sistema.</div>
     </div>
     <div class="ct-sync-sp"></div>
     <span class="ct-live"><i></i>Revisa cada 2 min</span>
@@ -147,17 +145,14 @@ th.g1,td.g1{border-left:1px solid var(--hairline)}
   <div class="table-wrap">
     <table class="data-table">
       <thead>
-        <tr class="grp">
-          <th colspan="1"></th>
-          <th colspan="3" class="g1">Según SYD</th>
-          <th colspan="5" class="g1">Lo que mide el sistema (por cliente + referencia + color)</th>
-          <th colspan="2" class="g1"></th>
-        </tr>
         <tr>
           <th>Cliente</th>
-          <th class="num g1">Vendido</th><th class="num">Facturado</th><th class="num">Pendiente</th>
-          <th class="num g1">Separado vigente</th><th class="num">Cerrado s/cubrir</th><th class="num">Abierto real</th><th class="num">Faltante real</th><th class="num">Valor faltante</th>
-          <th class="g1">Cubierto</th><th>Decisión</th>
+          <th class="num">Pendiente</th>
+          <th class="num">Separado</th>
+          <th class="num">Faltante real</th>
+          <th class="num">Valor faltante</th>
+          <th>Cubierto</th>
+          <th>Decisión</th>
         </tr>
       </thead>
       <tbody id="filas"></tbody>
@@ -166,10 +161,10 @@ th.g1,td.g1{border-left:1px solid var(--hairline)}
   </div>
 
   <div class="dsp-leyenda">
-    <span><b>Separado vigente</b> = separado − facturado del mismo color (nunca negativo).</span>
-    <span><b>Cerrado s/cubrir</b> = vendido de referencias que se cerraron ("no sale") y no se facturaron.</span>
-    <span><b>Abierto real</b> = vendido sin separar ni facturar, de referencias abiertas.</span>
-    <span><b>Faltante real</b> = separado por facturar + abierto real (lo cerrado no cuenta).</span>
+    <span><b>Pendiente</b> = vendido − facturado, según SYD.</span>
+    <span><b>Separado</b> = separado − facturado del mismo color (nunca negativo).</span>
+    <span><b>Faltante real</b> = separado por facturar + abierto real; lo cerrado ("no sale") no cuenta.</span>
+    <span><b>Cubierto</b> = separado sobre lo pendiente que sí sale.</span>
   </div>
 </div>
 
@@ -298,16 +293,12 @@ function pintar() {
   const lista = DATA.filter(CHIPS[chip][1]).sort((a, b) => b.separadoVig - a.separadoVig || b.pendiente - a.pendiente);
   document.getElementById('filas').innerHTML = lista.map((c, i) => `
     <tr class="row-click" onclick="abrir('${c.nombre.replace(/'/g, "\\'")}')">
-      <td class="strong dsp-cli">${c.nombre}${c.novedad ? `<span class="tag rojo">${c.novedad}</span>` : ''}<small>${c.ciudad}</small></td>
-      <td class="num g1">${num(c.vendido)}</td>
-      <td class="num">${cel(c.facturado)}</td>
-      <td class="num strong">${num(c.pendiente)}</td>
-      <td class="num g1">${cel(c.separadoVig, 'dsp-sep')}</td>
-      <td class="num">${cel(c.cerrado, 'muted')}</td>
-      <td class="num">${cel(c.abierto)}</td>
+      <td class="strong dsp-cli">${c.nombre}<small>${c.ciudad}</small>${c.novedad ? `<span class="tag rojo">${c.novedad}</span>` : ''}</td>
+      <td class="num strong" title="${num(c.vendido)} vendidas − ${num(c.facturado)} facturadas">${num(c.pendiente)}</td>
+      <td class="num">${cel(c.separadoVig, 'dsp-sep')}</td>
       <td class="num">${cel(c.faltante, 'dsp-falt')}</td>
       <td class="num muted">${c.faltante ? cop(c.valorFalt) : '<span class="dsp-cero">·</span>'}</td>
-      <td class="g1"><div class="dsp-bar"><i><b class="sep" style="width:${Math.min(100, Math.round(c.cubierto * 100))}%"></b></i><em>${Math.round(Math.min(1, c.cubierto) * 100)} %</em></div></td>
+      <td><div class="dsp-bar"><i><b class="sep" style="width:${Math.min(100, Math.round(c.cubierto * 100))}%"></b></i><em>${Math.round(Math.min(1, c.cubierto) * 100)} %</em></div></td>
       <td class="dsp-decision"><span class="tag ${c.decision[0]}">${c.decision[1]}</span> <span class="muted" style="font-size:11.5px">${c.decision[2]}</span></td>
     </tr>`).join('');
   document.getElementById('foot').innerHTML = `<span>${lista.length} de ${DATA.length} clientes</span><span><b>${num(lista.reduce((n, c) => n + c.separadoVig, 0))}</b> separadas · <b>${num(lista.reduce((n, c) => n + c.faltante, 0))}</b> faltante real</span>`;

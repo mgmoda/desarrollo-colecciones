@@ -51,12 +51,14 @@ export function armarDespachos(filasSyd, registros) {
       c.lineas.set(k, {
         id: idLinea(nombre, ref, color), ref, color,
         descripcion: r.descripcion || '', precio: Number(r.precio) || 0,
-        vendido: 0, valor: 0, tallas: {},
+        vendido: 0, valor: 0, tallas: {}, pedidos: [], obs: '',
       })
     }
     const l = c.lineas.get(k)
     l.vendido += n0(r.unid)
     l.valor += Number(r.total) || 0
+    if (r.pedido && !l.pedidos.includes(r.pedido)) l.pedidos.push(r.pedido)
+    if (!l.obs && r.observacion) l.obs = r.observacion
     if (!l.descripcion && r.descripcion) l.descripcion = r.descripcion
     Object.entries(r.tallas || {}).forEach(([t, v]) => { l.tallas[t] = (l.tallas[t] || 0) + (Number(v) || 0) })
   })
@@ -70,6 +72,10 @@ function medirCliente(c, reg) {
   const factPorRef = {}
   lineas.forEach((l) => {
     const d = reg[l.id] || {}
+    // Separado y facturado se registran por talla; el total se guarda
+    // también, para las cuentas y para lo registrado antes sin tallas.
+    l.sepTallas = d.sepTallas || {}
+    l.factTallas = d.factTallas || {}
     l.separado = n0(d.separado)
     l.facturado = n0(d.facturado)
     l.registro = d
@@ -133,4 +139,10 @@ export function totales(lista) {
     if (c.decision.key === 'despachar') t.listos += 1
   })
   return t
+}
+
+export const sumaTallas = (t) => Object.values(t || {}).reduce((n, v) => n + (Number(v) || 0), 0)
+export const marcaDe = (ref) => {
+  const l = String(ref || '').trim().charAt(0).toUpperCase()
+  return l === 'C' ? 'Casania' : l === 'M' ? 'Mariset' : 'Otra'
 }

@@ -311,7 +311,7 @@ export async function dbLoadPedidosDeCliente(cliente) {
 // cliente + referencia + color, así que las necesita completas.
 export async function dbLoadPedidosTodos() {
   return paginar(() => supabase.from('pedidos_syd')
-    .select('cliente, codigo_cliente, ciudad, referencia, descripcion, color, unid, precio, total, tallas, observacion, inactiva')
+    .select('cliente, codigo_cliente, ciudad, pedido, referencia, descripcion, color, unid, precio, total, tallas, observacion, inactiva')
     .order('id'))
 }
 

@@ -6000,6 +6000,16 @@ select.filtro-taller { flex: none; width: 215px; }
 .dsp-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--hairline); font-size: 12.5px; color: var(--muted); }
 .dsp-nota-in { max-width: 320px; padding: 7px 10px; font-size: 13px; }
 .dsp-ultimo { margin-left: auto; }
+.dsp-det tr.dsp-sub td { border-top: 0; padding-top: 2px; padding-bottom: 2px; background: #fcfbf8; font-size: 12px; }
+.dsp-det tr.dsp-sub.editando td { background: #f4f6fa; }
+.dsp-sub-et span { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.dsp-fact { color: #27500a; font-weight: 600; }
+.dsp-pend { color: #8c2f28; font-weight: 600; }
+.dsp-in-t { width: 40px; padding: 2px 4px; text-align: center; font-size: 12px; font-variant-numeric: tabular-nums; }
+.dsp-acc { white-space: nowrap; }
+.dsp-acc .dsp-cerrar { margin-left: 6px; }
+.dsp-btn { padding: 3px 9px; font-size: 11.5px; border-radius: 8px; margin-right: 4px; }
+.dsp-det tr.dsp-con td { background: #fcfbf8; }
 
 /* ---------- Corte por día ---------- */
 .dc-wrap .rend-card { margin-top: 14px; }

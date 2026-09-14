@@ -181,7 +181,7 @@ export default function PedidosView({
       </div>
 
       {vista === 'despachos' && (
-        <DespachosView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} onOpenRef={onOpenRef} />
+        <DespachosView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
       )}
       {vista === 'despachos' ? null : <>
 

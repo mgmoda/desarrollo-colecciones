@@ -234,6 +234,10 @@ la llave es cliente + referencia + color; separado vigente = max(separado −
 facturado, 0) por llave; pendiente = vendido − facturado; abierto real solo
 si la referencia no está cerrada y no tiene nada facturado para ese cliente;
 faltante real = separado vigente + abierto real (lo cerrado no cuenta).
+El detalle del cliente es la misma tabla de Pedidos (foto, pedido, curva
+por talla, precio, observación), por marca y referencia ascendente; debajo
+de cada línea van Separado, Facturado y Pendiente por talla (`sepTallas`,
+`factTallas` en el registro; `separado`/`facturado` guardan el total).
 Cerrar una referencia aplica a todos los clientes. Pendiente por confirmar
 con Diego: si al facturar la línea desaparece del informe de SYD, lo
 facturado registrado a mano se descontaría dos veces.

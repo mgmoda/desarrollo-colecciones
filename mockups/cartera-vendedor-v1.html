@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Cartera: pedir al vendedor</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Mockup autocontenido con el sistema visual de la app. Tres cuadros:
+   1) el formulario "Contacté" con la opción nueva "Pedí al vendedor",
+   2) cómo se ve en la tabla mientras el vendedor responde,
+   3) el formulario para registrar la respuesta cuando llega. */
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--ink-soft:#3f3d3a;--muted:#6b6660;--radius:14px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13.5px;line-height:1.4;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 24px}
+.paso{display:flex;align-items:center;gap:10px;margin:26px 0 10px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.paso i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:11px}
+.modal{background:var(--surface);border-radius:var(--radius);width:min(620px,100%);box-shadow:0 10px 40px rgba(0,0,0,.12);border:1px solid var(--hairline)}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 24px 12px}
+.modal-title{font-family:Fraunces,serif;font-weight:500;font-size:22px;margin:0}
+.eb-meta{color:var(--ink-soft);margin:3px 0 0;font-size:12.5px}
+.icon-btn{border:1px solid var(--hairline);background:var(--surface);border-radius:9px;width:32px;height:32px;cursor:pointer;color:var(--muted)}
+.modal-body{padding:0 24px 22px}
+.ct-form{border:1px solid var(--hairline-strong);border-radius:12px;padding:16px;background:#faf8f3;margin-top:12px}
+.ct-fld{margin-bottom:14px}
+.ct-fld>label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:7px}
+.ct-opts{display:flex;flex-wrap:wrap;gap:6px}
+.ct-opt{border:1px solid var(--hairline-strong);background:var(--surface);color:var(--ink-soft);border-radius:999px;padding:6px 13px;font:inherit;font-size:12.5px;font-weight:500;cursor:pointer}
+.ct-opt.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.ct-opt.vend{padding-left:9px}
+.ct-opt .av{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#1c4f6e;color:#fff;font-size:10px;font-weight:700;margin-right:6px;vertical-align:-4px}
+.ct-opt.on .av{background:#fff;color:var(--ink)}
+.input{width:100%;border:1px solid var(--hairline-strong);border-radius:9px;padding:9px 12px;font:inherit;font-size:13px;background:var(--surface)}
+.input::placeholder{color:#a8a39b}
+.ct-form-foot{display:flex;justify-content:flex-end;align-items:center;gap:10px}
+.ct-form-res{flex:1;color:var(--ink-soft);font-size:12px}
+.btn{border:1px solid var(--hairline-strong);background:var(--surface);border-radius:10px;padding:9px 16px;font:inherit;font-size:13px;cursor:pointer}
+.btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.amb{background:#faeeda;color:#633806;border-color:#fac775;font-weight:600}
+.btn-ghost{border-color:transparent;color:var(--muted)}
+.auto{display:flex;align-items:center;gap:10px;background:#eef3f7;border:1px solid #c9d8e4;color:#1c4f6e;border-radius:10px;padding:10px 12px;font-size:12.5px}
+.auto b{font-weight:600}
+/* tabla */
+.table-wrap{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius);overflow:auto;max-width:1180px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:10px 12px;border-bottom:1px solid var(--hairline);white-space:nowrap;background:#faf9f6}
+td{padding:9px 12px;border-bottom:1px solid var(--hairline);vertical-align:middle;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.num{text-align:center;font-variant-numeric:tabular-nums}
+.strong{font-weight:600}.muted{color:var(--muted)}
+.ct-espera td{background:#fafaf8;color:var(--muted)}
+.ct-espera td.strong{color:var(--ink-soft)}
+small{display:block;color:var(--muted);font-size:11px;font-weight:400}
+.ct-av{display:inline-flex;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;align-items:center;justify-content:center;color:#fff;background:#1c4f6e;margin-right:6px;flex:none}
+.ct-av.v{background:#8a5326}
+.ct-res{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:600;background:var(--bg);color:var(--ink-soft)}
+.ct-res.r-vendedor{background:#faeeda;color:#633806}
+.ct-res.r-vendedor.tarde{background:#fbeceb;color:#8c2f28}
+.ct-res.r-promesa{background:#faeeda;color:#633806}
+.ct-res.r-abono{background:#eaf3de;color:#27500a}
+.ct-res.r-sin_respuesta{background:var(--bg);color:var(--muted)}
+.ct-btn-contacto{padding:4px 10px;font-size:11.5px;white-space:nowrap;border-radius:9px}
+.ct-btn-contacto.espera{background:transparent;color:var(--muted);border-color:var(--hairline)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.chip{border:1px solid var(--hairline-strong);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:12px;color:var(--ink-soft)}
+.chip b{margin-left:4px;color:var(--muted)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}.chip.on b{color:#ddd}
+.chip.nuevo{border-style:dashed;border-color:#8a5326;color:#8a5326}
+/* historial */
+.ct-ln{display:grid;grid-template-columns:64px 72px 1fr;gap:8px;padding:4px 0;font-size:12px;color:var(--ink-soft);align-items:baseline}
+.ct-ln-f{color:var(--muted)}.ct-ln-q{color:var(--ink);font-weight:600}.ct-ln-t i{color:var(--muted)}
+.hist{margin-top:14px;border-top:1px solid var(--hairline);padding-top:10px}
+.hist h4{margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;max-width:1280px}
+.nota{background:#fdf6ee;border:1px solid #e7c9aa;color:#8a5326;border-radius:10px;padding:10px 14px;font-size:12.5px;max-width:620px;margin-top:10px}
+.mock-nota{position:fixed;right:14px;bottom:14px;background:#1c1c22;color:#fff;font-size:11.5px;padding:8px 12px;border-radius:999px;opacity:.85}
+</style>
+</head>
+<body>
+<h1>Cartera · pedirle el cobro a un vendedor</h1>
+<p class="sub">Un contacto puede ser tuyo (WhatsApp, llamada, visita) o puedes pasárselo a un vendedor. Queda registrado quién lo tiene y desde cuándo, y la respuesta se anota después, cuando llegue.</p>
+
+<div class="paso"><i>1</i> Contacté → "Pedí al vendedor"</div>
+<div class="modal">
+  <div class="modal-head">
+    <div><h2 class="modal-title">LUDYS ELENA DIAZ ARRIETA</h2>
+      <p class="eb-meta">AYAPEL-CORDOBA · debe <b>$ 3.611.432</b> · último pago 14 jul · sin contactos</p></div>
+    <button class="icon-btn">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="ct-form">
+      <div class="ct-fld"><label>Cómo</label>
+        <div class="ct-opts">
+          <button class="ct-opt">WhatsApp</button><button class="ct-opt">Llamada</button><button class="ct-opt">Visita</button>
+          <button class="ct-opt on">Pedí al vendedor</button>
+        </div></div>
+      <div class="ct-fld"><label>A quién</label>
+        <div class="ct-opts">
+          <button class="ct-opt vend on"><span class="av">J</span>Jorge</button>
+          <button class="ct-opt vend"><span class="av">N</span>Nancy</button>
+          <button class="ct-opt vend"><span class="av">S</span>Samuel</button>
+          <button class="ct-opt vend"><span class="av">E</span>Estela</button>
+          <button class="ct-opt vend"><span class="av">A</span>Adriana</button>
+        </div></div>
+      <div class="ct-fld"><label>Qué quedó</label>
+        <div class="auto">⏳ <span><b>Esperando la respuesta de Jorge.</b> No hay que marcar nada más: cuando responda, se registra con el botón "Respuesta" en la fila del cliente.</span></div>
+      </div>
+      <div class="ct-fld"><label>Nota (opcional)</label>
+        <input class="input" value="Le mandé el mensaje de cobro por WhatsApp, que lo llame esta semana" /></div>
+      <div class="ct-form-foot">
+        <span class="ct-form-res">Queda con Jorge desde hoy · si en 7 días no hay respuesta vuelve a "Para llamar"</span>
+        <button class="btn btn-ghost">Cancelar</button><button class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="paso"><i>2</i> Así se ve en la tabla mientras tanto</div>
+<div class="chips">
+  <span class="chip on">Todos <b>184</b></span><span class="chip">Para llamar <b>41</b></span><span class="chip">En espera <b>23</b></span>
+  <span class="chip nuevo">Con vendedor <b>6</b></span><span class="chip">Con promesa <b>12</b></span><span class="chip">Críticos <b>9</b></span>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Cliente</th><th class="num">Total debe</th><th class="num">Vencido</th><th>Último contacto</th><th>Promesa</th><th></th></tr></thead>
+    <tbody>
+      <tr class="ct-espera">
+        <td class="strong">LUDYS ELENA DIAZ ARRIETA<small>AYAPEL-CORDOBA</small></td>
+        <td class="num">$ 3.611.432</td><td class="num">$ 3.611.432</td>
+        <td><span class="ct-av">D</span>hoy · <span class="ct-res r-vendedor">Con Jorge · esperando respuesta</span></td>
+        <td class="muted">—</td>
+        <td><button class="btn ct-btn-contacto amb">Respuesta</button></td>
+      </tr>
+      <tr class="ct-espera">
+        <td class="strong">CARMEN ACOSTA OSIO SAS<small>BARRANQUILLA</small></td>
+        <td class="num">$ 8.240.000</td><td class="num">$ 2.100.000</td>
+        <td><span class="ct-av">D</span>hace 3 d · <span class="ct-res r-vendedor">Con Nancy · esperando respuesta</span></td>
+        <td class="muted">—</td>
+        <td><button class="btn ct-btn-contacto amb">Respuesta</button></td>
+      </tr>
+      <tr>
+        <td class="strong">MIRIAM ANGULO CELORIO<small>BUENAVENTURA</small></td>
+        <td class="num">$ 5.902.300</td><td class="num">$ 5.902.300</td>
+        <td><span class="ct-av">D</span>hace 9 d · <span class="ct-res r-vendedor tarde">Samuel sin responder · 9 d</span></td>
+        <td class="muted">—</td>
+        <td><button class="btn ct-btn-contacto btn-primary">Contacté</button> <button class="btn ct-btn-contacto amb">Respuesta</button></td>
+      </tr>
+      <tr class="ct-espera">
+        <td class="strong">JOSE MARIA MESTRA MADERA<small>MONTERIA</small></td>
+        <td class="num">$ 6.130.000</td><td class="num">$ 0</td>
+        <td><span class="ct-av v">E</span>ayer · <span class="ct-res r-promesa">Promete pagar</span> · por Estela</td>
+        <td><span class="ct-res r-promesa">20 sep · $ 3.000.000</span></td>
+        <td><button class="btn ct-btn-contacto espera">En espera</button></td>
+      </tr>
+      <tr class="ct-espera">
+        <td class="strong">LENIS MARIA PEREZ CARMONA<small>BANCO MAGDALENA</small></td>
+        <td class="num">$ 2.480.900</td><td class="num">$ 0</td>
+        <td><span class="ct-av v">A</span>hace 2 d · <span class="ct-res r-abono">Abonó</span> · por Adriana</td>
+        <td class="muted">—</td>
+        <td><button class="btn ct-btn-contacto espera">En espera</button></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div class="nota">Mientras el vendedor tiene el cliente, la fila queda en gris (en espera) y no aparece en "Para llamar". A los 7 días sin respuesta vuelve a la lista, marcada en rojo con el nombre del vendedor, para que lo persigas a él o lo contactes tú.</div>
+
+<div class="paso"><i>3</i> Llegó la respuesta → botón "Respuesta"</div>
+<div class="dos">
+<div class="modal">
+  <div class="modal-head">
+    <div><h2 class="modal-title">CARMEN ACOSTA OSIO SAS</h2>
+      <p class="eb-meta">BARRANQUILLA · debe <b>$ 8.240.000</b> · con <b>Nancy</b> desde hace 3 días</p></div>
+    <button class="icon-btn">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="ct-form">
+      <div class="ct-fld"><label>Respuesta de Nancy</label>
+        <div class="ct-opts">
+          <button class="ct-opt">Sin respuesta</button><button class="ct-opt on">Promete pagar</button><button class="ct-opt">Abonó</button>
+          <button class="ct-opt">Reclamo / novedad</button><button class="ct-opt">No volver a llamar</button>
+        </div></div>
+      <div class="ct-fld" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label>Paga el</label><input class="input" type="date" value="2026-09-20" /></div>
+        <div><label>Cuánto (opcional)</label><input class="input" value="$ 2.100.000" /></div>
+      </div>
+      <div class="ct-fld"><label>Nota (opcional)</label><input class="input" placeholder="Ej. dice que consigna el sábado" /></div>
+      <div class="ct-form-foot">
+        <span class="ct-form-res">Queda: contactado por Nancy · promesa para el 20 sep</span>
+        <button class="btn btn-ghost">Cancelar</button><button class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+    <div class="hist">
+      <h4>Historial</h4>
+      <div class="ct-ln"><span class="ct-ln-f">11 sep</span><b class="ct-ln-q">Diego</b><span class="ct-ln-t"><span class="ct-res r-vendedor">Pedido a Nancy</span> · WhatsApp · <i>"que la llame esta semana"</i></span></div>
+      <div class="ct-ln"><span class="ct-ln-f">2 sep</span><b class="ct-ln-q">Kelly</b><span class="ct-ln-t"><span class="ct-res r-sin_respuesta">Sin respuesta</span> · Llamada</span></div>
+    </div>
+  </div>
+</div>
+<div>
+  <div class="nota" style="margin-top:0"><b>Qué se guarda.</b> Un solo contacto con dos momentos: el día que se lo pediste al vendedor (con tu nombre) y el día que respondió (con el nombre del vendedor y el resultado). Los KPIs de "contactos de la semana" cuentan los dos.</div>
+  <div class="nota"><b>Qué cambia para el equipo.</b> Nada nuevo que aprender: la misma ventana "Contacté" con una opción más. Kelly también puede pedirle a un vendedor y registrar respuestas.</div>
+  <div class="nota"><b>Lo que NO hace esta versión.</b> No le manda el mensaje al vendedor por WhatsApp; eso sigue siendo manual desde tu celular. Cuando definamos Háblame/WhatsApp se le puede conectar.</div>
+</div>
+</div>
+<div class="mock-nota">Mockup · datos de ejemplo</div>
+</body>
+</html>

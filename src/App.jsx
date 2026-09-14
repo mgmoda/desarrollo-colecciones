@@ -139,6 +139,7 @@ export default function App() {
   // Pedidos de SYD: la pestaña los carga por su cuenta; aquí solo se le pasa
   // la marca para que sepa cuándo el servidor subió un informe nuevo.
   const [stampPedidos, setStampPedidos] = useState(null)
+  const [stampDespachos, setStampDespachos] = useState(null)
 
   useEffect(() => {
     if (!userId) { setLoaded(false); return }
@@ -156,6 +157,7 @@ export default function App() {
         setStampDisenos(marcas.disenos)
         setStampAsistencia(marcas.asistencia)
         setStampPedidos(marcas.pedidos)
+        setStampDespachos(marcas.despachos)
         setFaltantes(fl)
         setPreordenes(po)
         setProgramaciones(pr)
@@ -240,6 +242,7 @@ export default function App() {
       // La asistencia la pide su pestaña por período; aquí solo se le avisa.
       if (cambio('asistencia')) setStampAsistencia(marcas.asistencia)
       if (cambio('pedidos')) setStampPedidos(marcas.pedidos)
+      if (cambio('despachos')) setStampDespachos(marcas.despachos)
       if (cambio('settings') && !formOpen) {
         pedidos.push(dbLoadSettings().then((s) => s && setSettings((a) => ({ ...a, ...s }))))
       }
@@ -1064,7 +1067,7 @@ export default function App() {
           <AsistenciaView stamp={stampAsistencia} />
         )}
         {tab === 'pedidos' && vePedidos && (
-          <PedidosView stamp={stampPedidos} onOpenRef={(ref) => { const f = refMap.get(ref); if (f) openEdit(f) }} />
+          <PedidosView stamp={stampPedidos} stampDespachos={stampDespachos} usuario={emailSesion} onOpenRef={(ref) => { const f = refMap.get(ref); if (f) openEdit(f) }} />
         )}
       </main>
 

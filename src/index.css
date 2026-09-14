@@ -5937,6 +5937,47 @@ select.filtro-taller { flex: none; width: 215px; }
 .ped-det tr.ped-ref-inicio td { border-top: 2px solid var(--hairline-strong); }
 .ped-det td:first-child { vertical-align: top; }
 
+/* ── Despachos (segunda vista de Pedidos) ─────────────────────────────── */
+.dsp-kpis { grid-template-columns: repeat(5, 1fr); }
+.dsp-kpi b, .prog-kpi .dsp-sep { color: #2b4a7e; }
+.prog-kpi.dsp-ok b { color: #1f7a44; }
+.dsp-sep { color: #2b4a7e; font-weight: 600; }
+.dsp-falt { color: #8c2f28; font-weight: 600; }
+.dsp-cero { color: #c9c5bd; }
+.dsp-tabla td { padding-top: 7px; padding-bottom: 7px; }
+.dsp-cli { white-space: nowrap; }
+.dsp-ciu { white-space: nowrap; max-width: 190px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.dsp-tag { margin-left: 6px; vertical-align: middle; }
+.tag.dsp-tag.rojo { background: #fbe9e7; color: #8c2f28; border: 1px solid #f0c4bf; }
+.tag.dsp-tag.ambar { background: #faeeda; color: #633806; border: 1px solid #fac775; }
+.tag.dsp-tag.verde { background: #e3f3e8; color: #1f7a44; border: 1px solid #b9e0c6; }
+.tag.dsp-tag.azul { background: #e8eef8; color: #2b4a7e; border: 1px solid #c6d3ea; }
+.dsp-decision { white-space: nowrap; }
+.dsp-decision .dsp-tag { margin-left: 0; }
+.dsp-motivo { font-size: 11.5px; margin-left: 6px; }
+.dsp-ciudad { max-width: 220px; padding: 7px 10px; font-size: 13px; }
+.dsp-leyenda { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 10px 2px 0; }
+.dsp-leyenda b { color: var(--ink); font-weight: 600; }
+.dsp-nota { background: #fdf6ee; border: 1px solid #e7c9aa; color: #8a5326; border-radius: 10px; padding: 10px 14px; font-size: 12.5px; margin: 6px 0 12px; }
+.dsp-resumen { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: 12px; overflow: hidden; margin: 6px 0 14px; }
+.dsp-resumen div { background: var(--surface); padding: 10px 14px; }
+.dsp-resumen span { display: block; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.dsp-resumen b { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.dsp-resumen b.muted { color: var(--muted); }
+.dsp-resumen em { display: block; font-style: normal; font-size: 11px; color: var(--muted); }
+.dsp-det .ped-ref-inicio td { border-top: 2px solid var(--hairline-strong); }
+.dsp-det td:first-child { vertical-align: top; }
+.dsp-refcel { display: flex; align-items: flex-start; gap: 8px; }
+.dsp-cerrar { border: 1px dashed var(--hairline-strong); background: transparent; border-radius: 999px; font: inherit; font-size: 10.5px; padding: 1px 8px; color: var(--muted); cursor: pointer; white-space: nowrap; margin-top: 2px; }
+.dsp-cerrar:hover { color: var(--ink); border-style: solid; }
+.dsp-cerrar.on { background: #f1f0ee; border-style: solid; color: var(--ink); }
+.dsp-tallas { font-size: 11px; color: var(--muted); letter-spacing: .02em; }
+.dsp-in { width: 64px; padding: 3px 6px; text-align: center; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.dsp-in:disabled { background: #f4f2ed; color: var(--muted); }
+.dsp-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--hairline); font-size: 12.5px; color: var(--muted); }
+.dsp-nota-in { max-width: 320px; padding: 7px 10px; font-size: 13px; }
+.dsp-ultimo { margin-left: auto; }
+
 /* ---------- Corte por día ---------- */
 .dc-wrap .rend-card { margin-top: 14px; }
 .dc-fecha { width: 150px; padding: 5px 8px; font-size: 12px; }

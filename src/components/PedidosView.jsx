@@ -5,6 +5,7 @@ import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { dbLoadPedidosDeCliente, dbLoadPedidosClientes, dbLoadPedidosSync } from '../lib/db.js'
 import { formatPrice } from '../lib/constants.js'
+import DespachosView from './DespachosView.jsx'
 
 // ════════════════════════════════════════════════════════════════════════
 // PEDIDOS — lo que los clientes tienen pedido y pendiente por despachar.
@@ -34,7 +35,10 @@ function marcaDe(ref) {
   return l === 'C' ? 'Casania' : l === 'M' ? 'Mariset' : 'Otra'
 }
 
-export default function PedidosView({ stamp, onOpenRef }) {
+export default function PedidosView({ stamp, stampDespachos, usuario, onOpenRef }) {
+  // Dos formas de mirar lo mismo: los pedidos tal como vienen de SYD, o el
+  // tablero de despachos (separado, facturado, faltante) por cliente.
+  const [vista, setVista] = useState('pedidos')
   const [filas, setFilas] = useState(null)
   const [sync, setSync] = useState(null)
   const [error, setError] = useState('')
@@ -122,12 +126,25 @@ export default function PedidosView({ stamp, onOpenRef }) {
       <div className="view-head">
         <div>
           <h1 className="view-title">Pedidos</h1>
-          <p className="view-sub">Pendientes por cliente y referencia — SYD</p>
+          <p className="view-sub">{vista === 'despachos'
+            ? 'Despachos — qué tiene separado cada cliente y qué le falta'
+            : 'Pendientes por cliente y referencia — SYD'}</p>
         </div>
         <div className="view-actions">
-          <SearchInput value={q} onChange={setQ} placeholder="Pedido, cliente o ciudad…" />
+          <div className="dis-filtros">
+            <button type="button" className={'proc-f-btn' + (vista === 'pedidos' ? ' on' : '')}
+              onClick={() => setVista('pedidos')}>Pedidos</button>
+            <button type="button" className={'proc-f-btn' + (vista === 'despachos' ? ' on' : '')}
+              onClick={() => setVista('despachos')}>Despachos</button>
+          </div>
+          {vista === 'pedidos' && <SearchInput value={q} onChange={setQ} placeholder="Pedido, cliente o ciudad…" />}
         </div>
       </div>
+
+      {vista === 'despachos' && (
+        <DespachosView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} onOpenRef={onOpenRef} />
+      )}
+      {vista === 'despachos' ? null : <>
 
       {error && <div className="ct-error">{error}</div>}
 
@@ -251,6 +268,7 @@ export default function PedidosView({ stamp, onOpenRef }) {
           </div>
         </Modal>
       )}
+      </>}
     </div>
   )
 }

@@ -307,6 +307,28 @@ export async function dbLoadPedidosDeCliente(cliente) {
   return data || []
 }
 
+// Todas las líneas del informe (unas 8.000): la vista Despachos las cruza por
+// cliente + referencia + color, así que las necesita completas.
+export async function dbLoadPedidosTodos() {
+  return paginar(() => supabase.from('pedidos_syd')
+    .select('cliente, codigo_cliente, ciudad, referencia, descripcion, color, unid, precio, total, tallas, observacion, inactiva')
+    .order('id'))
+}
+
+// Separados, facturados, referencias cerradas y novedades (dev_despachos),
+// como mapa id → data. Ver lib/despachos.js para las clases de id.
+export async function dbLoadDespachos() {
+  const filas = await paginar(() => supabase.from('dev_despachos').select('id, data').order('id'))
+  const m = {}
+  filas.forEach((r) => { m[r.id] = r.data || {} })
+  return m
+}
+
+export async function dbUpsertDespacho(id, data) {
+  const { error } = await supabase.from('dev_despachos').upsert({ id, data })
+  if (error) throw error
+}
+
 // La última revisión del servidor (cada 2 min) y la última vez que el
 // informe de verdad cambió: son dos fechas distintas y las dos importan.
 export async function dbLoadPedidosSync() {

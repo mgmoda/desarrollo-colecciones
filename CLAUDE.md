@@ -208,6 +208,21 @@ Cada `.LIS` pesa 12 MB y el EXE deja uno por corrida: se conservan 3.
 `pedidos_syd_resumen` (un renglón por pedido) y el detalle por pedido al
 abrirlo; se refresca con la marca `pedidos` de `dev_sync`.
 
+**Despachos (14-sep-2026)**: segunda vista de la pestaña Pedidos
+(`DespachosView.jsx`, cuentas en `lib/despachos.js`). Vendido y pendiente
+salen de `pedidos_syd`; separado, facturado, referencias cerradas ("no
+sale") y novedades del cliente se registran en `dev_despachos` (misma RLS
+que pedidos, marca `despachos` en `dev_sync`) con ids `l|CLIENTE|REF|COLOR`,
+`r|REF` y `c|CLIENTE`. Las reglas vienen del archivo de pendientes que se
+llevaba en Codex (`~/Downloads/reglas_migracion_pendientes_para_claude.pdf`):
+la llave es cliente + referencia + color; separado vigente = max(separado −
+facturado, 0) por llave; pendiente = vendido − facturado; abierto real solo
+si la referencia no está cerrada y no tiene nada facturado para ese cliente;
+faltante real = separado vigente + abierto real (lo cerrado no cuenta).
+Cerrar una referencia aplica a todos los clientes. Pendiente por confirmar
+con Diego: si al facturar la línea desaparece del informe de SYD, lo
+facturado registrado a mano se descontaría dos veces.
+
 **Programaciones se alimenta de aquí (13-sep-2026).** Ya no existe "Cargar
 pedidos": `reemplazar_pedidos()` llama a `sincronizar_programaciones()`, que
 escribe en `dev_programaciones` el pedido, el desglose por color y talla y la

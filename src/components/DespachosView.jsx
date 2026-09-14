@@ -234,7 +234,7 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, onOpenRef, on
           <div><span>Decisión</span><b><span className={'tag dsp-tag ' + (CHIP_DECISION[c.decision.key] || '')}>{c.decision.label}</span></b><em>{c.decision.motivo}</em></div>
         </div>
 
-        <div className="med-wrap">
+        <div className="med-wrap dsp-scroll">
           <table className="med-tabla dsp-det">
             <thead>
               <tr>

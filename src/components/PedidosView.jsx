@@ -252,7 +252,7 @@ export default function PedidosView({ stamp, stampDespachos, usuario, refMap, on
           </div>
           <div className="modal-body tal-modal-body">
             {!detalle ? <div className="empty-state"><p>Cargando…</p></div> : (
-              <div className="med-wrap">
+              <div className="med-wrap ped-scroll">
                 <table className="med-tabla ped-det">
                   <thead>
                     <tr>

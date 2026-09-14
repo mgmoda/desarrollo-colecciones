@@ -124,7 +124,11 @@ export default function PedidosView({
       g.unid += Number(r.unid) || 0
       g.total += Number(r.total) || 0
     })
-    return [...m.values()].sort((a, b) => b.unid - a.unid)
+    // Por marca (Casania, Mariset) y dentro de cada una por referencia
+    // ascendente: así se lee como el catálogo.
+    const orden = { Casania: 0, Mariset: 1, Otra: 2 }
+    return [...m.values()].sort((a, b) => (orden[marcaDe(a.referencia)] - orden[marcaDe(b.referencia)])
+      || a.referencia.localeCompare(b.referencia, 'es', { numeric: true }))
   }, [detalle])
 
   const tallasDetalle = useMemo(() => {
@@ -323,7 +327,16 @@ export default function PedidosView({
                     </tr>
                   </thead>
                   <tbody>
-                    {porRef.map((g) => g.colores.map((r, i) => (
+                    {porRef.map((g, gi) => [
+                      (gi === 0 || marcaDe(porRef[gi - 1].referencia) !== marcaDe(g.referencia)) && (
+                        <tr key={'m' + g.referencia} className="ped-marca">
+                          <td colSpan={7 + tallasDetalle.length}>
+                            {marcaDe(g.referencia)}
+                            <span className="muted"> · {porRef.filter((x) => marcaDe(x.referencia) === marcaDe(g.referencia)).length} referencias · {num(porRef.filter((x) => marcaDe(x.referencia) === marcaDe(g.referencia)).reduce((n, x) => n + x.unid, 0))} unidades</span>
+                          </td>
+                        </tr>
+                      ),
+                      ...g.colores.map((r, i) => (
                       <tr key={r.id} className={i === 0 ? 'ped-ref-inicio' : ''}>
                         <td className="ped-foto">
                           {i === 0 && (() => {
@@ -358,7 +371,8 @@ export default function PedidosView({
                             : ''}
                         </td>
                       </tr>
-                    )))}
+                      )),
+                    ])}
                   </tbody>
                 </table>
               </div>

@@ -4,7 +4,7 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { dbLoadPedidosDeCliente, dbLoadPedidosClientes, dbLoadPedidosObservaciones, dbLoadPedidosSync } from '../lib/db.js'
-import { esPedidoEspecial, especialesPorCliente } from '../lib/pedidos.js'
+import { agruparEspeciales, esPedidoEspecial, especialesPorCliente } from '../lib/pedidos.js'
 import { formatPrice } from '../lib/constants.js'
 import DespachosView from './DespachosView.jsx'
 
@@ -36,7 +36,15 @@ function marcaDe(ref) {
   return l === 'C' ? 'Casania' : l === 'M' ? 'Mariset' : 'Otra'
 }
 
-export default function PedidosView({ stamp, stampDespachos, usuario, refMap, onViewImage, onOpenRef }) {
+export default function PedidosView({
+  stamp, stampDespachos, usuario, refMap, onViewImage, onOpenRef,
+  // Inyectables para probar la vista con datos fijos, sin sesión.
+  cargar = {},
+}) {
+  const cargarClientes = cargar.clientes || dbLoadPedidosClientes
+  const cargarSync = cargar.sync || dbLoadPedidosSync
+  const cargarObs = cargar.observaciones || dbLoadPedidosObservaciones
+  const cargarDetalle = cargar.detalle || dbLoadPedidosDeCliente
   // Dos formas de mirar lo mismo: los pedidos tal como vienen de SYD, o el
   // tablero de despachos (separado, facturado, faltante) por cliente.
   const [vista, setVista] = useState('pedidos')
@@ -55,7 +63,7 @@ export default function PedidosView({ stamp, stampDespachos, usuario, refMap, on
   // marca "pedidos" en dev_sync se mueve y App la pasa como `stamp`).
   useEffect(() => {
     let vivo = true
-    Promise.all([dbLoadPedidosClientes(), dbLoadPedidosSync(), dbLoadPedidosObservaciones()])
+    Promise.all([cargarClientes(), cargarSync(), cargarObs()])
       .then(([f, s, o]) => { if (vivo) { setFilas(f); setSync(s); setEspeciales(especialesPorCliente(o)); setError('') } })
       .catch((e) => { if (vivo) setError(e.message || String(e)) })
     return () => { vivo = false }
@@ -64,7 +72,7 @@ export default function PedidosView({ stamp, stampDespachos, usuario, refMap, on
   useEffect(() => {
     if (!abierto) { setDetalle(null); return undefined }
     let vivo = true
-    dbLoadPedidosDeCliente(abierto.cliente)
+    cargarDetalle(abierto.cliente)
       .then((d) => { if (vivo) setDetalle(d) })
       .catch((e) => { if (vivo) setError(e.message || String(e)) })
     return () => { vivo = false }
@@ -96,6 +104,10 @@ export default function PedidosView({ stamp, stampDespachos, usuario, refMap, on
       referencias: (f) => Number(f.referencias) || 0,
       unidades: (f) => Number(f.unidades) || 0,
       total: (f) => Number(f.total) || 0,
+      especiales: (f) => (especiales.get(f.cliente) || []).reduce((n, e) => n + (Number(e.unid) || 0), 0),
+    }
+    if (soloEspeciales && !['cliente', 'ciudad', 'especiales'].includes(sortKey)) {
+      return sortRows(l, accessors.especiales, 'desc')
     }
     return sortRows(l, accessors[sortKey] || accessors.total, sortDir)
   }, [filas, q, soloEspeciales, especiales, sortKey, sortDir])
@@ -125,6 +137,13 @@ export default function PedidosView({ stamp, stampDespachos, usuario, refMap, on
   const minRev = sync ? haceMin(sync.revisado_en) : null     // última revisión del servidor
   const haceTxt = (m) => (m == null ? '' : m <= 1 ? 'ahora mismo' : m < 60 ? `hace ${m} min` : m < 48 * 60 ? `hace ${Math.round(m / 60)} h` : `hace ${Math.round(m / 1440)} d`)
   const thProps = { sortKey, sortDir, onSort: toggle }
+
+  // Clic en una referencia: la foto grande si la ficha la tiene; si no, la ficha.
+  function verReferencia(ref) {
+    const ficha = refMap && refMap.get(ref)
+    if (ficha && ficha.image && onViewImage) onViewImage(ficha.image)
+    else if (onOpenRef) onOpenRef(ref)
+  }
 
   return (
     <div className="view">
@@ -197,6 +216,55 @@ export default function PedidosView({ stamp, stampDespachos, usuario, refMap, on
       ) : lista.length === 0 ? (
         <div className="empty-state"><p>{filas.length ? 'Ningún pedido coincide con la búsqueda.' : 'Todavía no hay pedidos sincronizados.'}</p></div>
       ) : (
+        soloEspeciales ? (
+        <div className="table-wrap">
+          <table className="data-table ped-esp-tabla">
+            <thead>
+              <tr>
+                <SortTh label="Cliente" col="cliente" {...thProps} />
+                <SortTh label="Ciudad" col="ciudad" {...thProps} />
+                <th>Referencia</th>
+                <th>Modificación</th>
+                <th>Colores y unidades</th>
+                <SortTh label="Unid." col="especiales" className="num" {...thProps} />
+              </tr>
+            </thead>
+            <tbody>
+              {lista.map((f) => {
+                const grupos = agruparEspeciales(especiales.get(f.cliente))
+                const totalEsp = grupos.reduce((n, g) => n + g.unid, 0)
+                return grupos.map((g, i) => (
+                  <tr key={f.cliente + g.referencia + g.observacion}
+                    className={'row-click' + (i === 0 ? ' ped-esp-inicio' : '')}
+                    onClick={() => setAbierto(f)} title="Ver todo el pedido del cliente">
+                    <td className="strong ped-esp-cli">{i === 0 ? f.cliente : ''}</td>
+                    <td className="muted">{i === 0 ? (f.ciudad || '—') : ''}</td>
+                    <td>
+                      <button type="button" className="ped-ref ped-esp-ref"
+                        onClick={(e) => { e.stopPropagation(); verReferencia(g.referencia) }}
+                        title="Ver la foto de la referencia">
+                        <b>{g.referencia}</b>
+                        <span className="ped-desc">{g.descripcion}</span>
+                      </button>
+                    </td>
+                    <td><span className="tag ped-esp">{g.observacion}</span></td>
+                    <td className="ped-esp-col">
+                      {g.colores.map((c, j) => (
+                        <span key={c.color}>{j > 0 && <i>·</i>}{c.color} <b>{num(c.unid)}</b></span>
+                      ))}
+                    </td>
+                    <td className="num strong">{i === 0 ? num(totalEsp) : ''}</td>
+                  </tr>
+                ))
+              })}
+            </tbody>
+          </table>
+          <div className="ct-foot">
+            <span>{num(lista.length)} clientes con pedido especial</span>
+            <span><b>{num(lista.reduce((n, f) => n + (especiales.get(f.cliente) || []).reduce((m, e) => m + (Number(e.unid) || 0), 0), 0))}</b> unidades con alguna modificación</span>
+          </div>
+        </div>
+        ) : (
         <div className="table-wrap">
           <table className="data-table">
             <thead>
@@ -207,7 +275,6 @@ export default function PedidosView({ stamp, stampDespachos, usuario, refMap, on
                 <SortTh label="Referencias" col="referencias" className="num" {...thProps} />
                 <SortTh label="Unidades" col="unidades" className="num" {...thProps} />
                 <SortTh label="Valor" col="total" className="num" {...thProps} />
-                {soloEspeciales && <th>Pedido especial</th>}
               </tr>
             </thead>
             <tbody>
@@ -220,13 +287,6 @@ export default function PedidosView({ stamp, stampDespachos, usuario, refMap, on
                   <td className="num">{num(f.referencias)}</td>
                   <td className="num strong">{num(f.unidades)}</td>
                   <td className="num">{formatPrice(f.total) || '—'}</td>
-                  {soloEspeciales && (
-                    <td className="ped-esp-cel">
-                      {(especiales.get(f.cliente) || []).map((e, i) => (
-                        <span key={i} className="ped-esp-ln"><b>{e.referencia}</b> {e.color} · {e.observacion} <span className="muted">({num(e.unid)})</span></span>
-                      ))}
-                    </td>
-                  )}
                 </tr>
               ))}
             </tbody>
@@ -236,6 +296,7 @@ export default function PedidosView({ stamp, stampDespachos, usuario, refMap, on
             <span><b>{num(lista.reduce((n, f) => n + (Number(f.unidades) || 0), 0))}</b> unidades · <b>{formatPrice(lista.reduce((n, f) => n + (Number(f.total) || 0), 0)) || '$ 0'}</b></span>
           </div>
         </div>
+        )
       )}
 
       {abierto && (
@@ -277,7 +338,7 @@ export default function PedidosView({ stamp, stampDespachos, usuario, refMap, on
                         <td>
                           {i === 0 ? (
                             <button type="button" className="ped-ref" onClick={() => onOpenRef && onOpenRef(g.referencia)}
-                              title={onOpenRef ? 'Abrir la ficha de la referencia' : ''}>
+                              title="Abrir la ficha de la referencia">
                               <b>{g.referencia}</b>
                               <span className="ped-desc">{g.descripcion}{g.tipo ? ` · ${g.tipo}` : ''} · {marcaDe(g.referencia)}</span>
                             </button>

@@ -5948,9 +5948,15 @@ select.filtro-taller { flex: none; width: 215px; }
 .ped-obs-cel { max-width: 200px; }
 .ped-obs-txt { font-size: 11.5px; color: var(--muted); }
 .tag.ped-esp { background: #faeeda; color: #633806; border: 1px solid #fac775; white-space: nowrap; }
-.ped-esp-cel { font-size: 12px; }
-.ped-esp-ln { display: block; white-space: nowrap; }
-.ped-esp-ln b { font-weight: 600; }
+.ped-esp-tabla td { padding-top: 6px; padding-bottom: 6px; }
+.ped-esp-tabla tr.ped-esp-inicio td { border-top: 2px solid var(--hairline-strong); }
+.ped-esp-tabla tr:first-child.ped-esp-inicio td { border-top: 0; }
+.ped-esp-cli { white-space: nowrap; }
+.ped-esp-ref { white-space: nowrap; }
+.ped-esp-ref:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.ped-esp-col { white-space: nowrap; font-size: 12.5px; }
+.ped-esp-col b { font-weight: 600; margin-right: 2px; }
+.ped-esp-col i { font-style: normal; color: var(--muted); margin: 0 7px; }
 
 /* ── Despachos (segunda vista de Pedidos) ─────────────────────────────── */
 .dsp-kpis { grid-template-columns: repeat(5, 1fr); }

@@ -27,3 +27,20 @@ export function especialesPorCliente(filas) {
   })
   return m
 }
+
+// Junta las líneas de un cliente por referencia + modificación: los colores
+// y sus unidades quedan en una sola fila ("NEGRO 10 · AZUL 10").
+export function agruparEspeciales(lineas) {
+  const m = new Map()
+  ;(lineas || []).forEach((r) => {
+    const k = `${r.referencia}|${normObs(r.observacion)}`
+    if (!m.has(k)) m.set(k, { referencia: r.referencia, descripcion: r.descripcion || '', observacion: normObs(r.observacion), colores: new Map(), unid: 0 })
+    const g = m.get(k)
+    const c = String(r.color || '').trim()
+    g.colores.set(c, (g.colores.get(c) || 0) + (Number(r.unid) || 0))
+    g.unid += Number(r.unid) || 0
+  })
+  return [...m.values()]
+    .map((g) => ({ ...g, colores: [...g.colores.entries()].map(([color, unid]) => ({ color, unid })) }))
+    .sort((a, b) => a.referencia.localeCompare(b.referencia))
+}

@@ -147,8 +147,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,
       <thead>
         <tr>
           <th>Cliente</th>
-          <th class="num">Pendiente</th>
+          <th class="num">Vendido</th>
           <th class="num">Separado</th>
+          <th class="num">Facturado</th>
+          <th class="num">Pendiente</th>
           <th class="num">Faltante real</th>
           <th class="num">Valor faltante</th>
           <th>Cubierto</th>
@@ -161,8 +163,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,
   </div>
 
   <div class="dsp-leyenda">
-    <span><b>Pendiente</b> = vendido − facturado, según SYD.</span>
-    <span><b>Separado</b> = separado − facturado del mismo color (nunca negativo).</span>
+    <span><b>Separado</b> = separado vigente: separado − facturado del mismo color, referencia por referencia (nunca negativo).</span>
+    <span><b>Pendiente</b> = vendido − facturado.</span>
     <span><b>Faltante real</b> = separado por facturar + abierto real; lo cerrado ("no sale") no cuenta.</span>
     <span><b>Cubierto</b> = separado sobre lo pendiente que sí sale.</span>
   </div>
@@ -294,8 +296,10 @@ function pintar() {
   document.getElementById('filas').innerHTML = lista.map((c, i) => `
     <tr class="row-click" onclick="abrir('${c.nombre.replace(/'/g, "\\'")}')">
       <td class="strong dsp-cli">${c.nombre}<small>${c.ciudad}</small>${c.novedad ? `<span class="tag rojo">${c.novedad}</span>` : ''}</td>
-      <td class="num strong" title="${num(c.vendido)} vendidas − ${num(c.facturado)} facturadas">${num(c.pendiente)}</td>
+      <td class="num">${num(c.vendido)}</td>
       <td class="num">${cel(c.separadoVig, 'dsp-sep')}</td>
+      <td class="num">${cel(c.facturado)}</td>
+      <td class="num strong" title="vendido − facturado">${num(c.pendiente)}</td>
       <td class="num">${cel(c.faltante, 'dsp-falt')}</td>
       <td class="num muted">${c.faltante ? cop(c.valorFalt) : '<span class="dsp-cero">·</span>'}</td>
       <td><div class="dsp-bar"><i><b class="sep" style="width:${Math.min(100, Math.round(c.cubierto * 100))}%"></b></i><em>${Math.round(Math.min(1, c.cubierto) * 100)} %</em></div></td>

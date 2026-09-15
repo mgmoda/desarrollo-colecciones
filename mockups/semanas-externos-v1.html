@@ -42,47 +42,46 @@ thead tr.grp th{padding:5px 10px;text-align:center;background:#f4f2ed;color:#8a8
 </head>
 <body>
 <h1>Corte por semana · MG, Diego y Juan Carlos</h1>
-<p class="sub">Hoy la celda de Corte va "MG – Externo" con lo de afuera en azul, sumando a los dos. Dos formas de partirlo por persona.</p>
+<p class="sub">Opción B ajustada: el total al final, y el desglose solo en la pestaña Corte.</p>
 
-<div class="paso"><i>A</i> Misma celda: el total arriba y el desglose debajo, cada uno con su color</div>
-<div class="sem-wrap">
-<table>
-  <thead><tr>
-    <th>Semana</th><th>Orden de corte</th><th>Trazos</th>
-    <th class="on">Corte<span class="leg"><span class="mg">MG</span> · <span class="dg">Diego</span> · <span class="jc">Juan Carlos</span></span></th>
-    <th>Alistamiento</th><th>Enviado a taller</th><th>Entrega ensamble</th><th>Entrada a bodega</th>
-  </tr></thead>
-  <tbody>
-    <tr><th scope="row">14 sep – 20 sep<span class="chip">en curso</span></th><td>412</td><td>380</td><td class="on">795<span class="sub2">MG 690 · <span class="dg">Diego 65</span> · <span class="jc">Juan Carlos 40</span></span></td><td>720</td><td>655</td><td>190</td><td>0</td></tr>
-    <tr><th scope="row">7 sep – 13 sep</th><td>655</td><td>612</td><td class="on">1.010<span class="sub2">MG 812 · <span class="dg">Diego 198</span></span></td><td>988</td><td>901</td><td>402</td><td>0</td></tr>
-    <tr><th scope="row">31 ago – 6 sep</th><td>598</td><td>640</td><td class="on">880<span class="sub2">MG 880</span></td><td>857</td><td>780</td><td>213</td><td>0</td></tr>
-    <tr><th scope="row">24 ago – 30 ago</th><td>690</td><td>702</td><td class="on">771<span class="sub2">MG 626 · <span class="dg">Diego 145</span></span></td><td>857</td><td>780</td><td>213</td><td>0</td></tr>
-    <tr><th scope="row">17 ago – 23 ago</th><td>796</td><td>861</td><td class="on">816<span class="sub2">MG 816</span></td><td>686</td><td>624</td><td>98</td><td>0</td></tr>
-  </tbody>
-</table>
-</div>
-
-<div class="paso"><i>B</i> La columna Corte se abre en tres, más el total</div>
+<div class="paso"><i>1</i> Pestaña Corte: la columna se abre en MG, Diego, Juan Carlos y el total al final</div>
 <div class="sem-wrap">
 <table>
   <thead>
     <tr class="grp"><th></th><th></th><th></th><th colspan="4" class="g">Corte</th><th class="g"></th><th></th><th></th><th></th></tr>
     <tr>
       <th>Semana</th><th>Orden de corte</th><th>Trazos</th>
-      <th class="g on">Total</th><th>MG</th><th class="dg">Diego</th><th class="jc">Juan Carlos</th>
+      <th class="g">MG</th><th class="dg">Diego</th><th class="jc">Juan Carlos</th><th class="on">Total</th>
       <th class="g">Alistamiento</th><th>Enviado a taller</th><th>Entrega ensamble</th><th>Entrada a bodega</th>
     </tr>
   </thead>
   <tbody>
-    <tr><th scope="row">14 sep – 20 sep<span class="chip">en curso</span></th><td>412</td><td>380</td><td class="g on">795</td><td>690</td><td class="dg">65</td><td class="jc">40</td><td class="g">720</td><td>655</td><td>190</td><td>0</td></tr>
-    <tr><th scope="row">7 sep – 13 sep</th><td>655</td><td>612</td><td class="g on">1.010</td><td>812</td><td class="dg">198</td><td class="dot">·</td><td class="g">988</td><td>901</td><td>402</td><td>0</td></tr>
-    <tr><th scope="row">31 ago – 6 sep</th><td>598</td><td>640</td><td class="g on">880</td><td>880</td><td class="dot">·</td><td class="dot">·</td><td class="g">857</td><td>780</td><td>213</td><td>0</td></tr>
-    <tr><th scope="row">24 ago – 30 ago</th><td>690</td><td>702</td><td class="g on">771</td><td>626</td><td class="dg">145</td><td class="dot">·</td><td class="g">857</td><td>780</td><td>213</td><td>0</td></tr>
-    <tr><th scope="row">17 ago – 23 ago</th><td>796</td><td>861</td><td class="g on">816</td><td>816</td><td class="dot">·</td><td class="dot">·</td><td class="g">686</td><td>624</td><td>98</td><td>0</td></tr>
+    <tr><th scope="row">14 sep – 20 sep<span class="chip">en curso</span></th><td>412</td><td>380</td><td class="g">690</td><td class="dg">65</td><td class="jc">40</td><td class="on">795</td><td class="g">720</td><td>655</td><td>190</td><td>0</td></tr>
+    <tr><th scope="row">7 sep – 13 sep</th><td>655</td><td>612</td><td class="g">812</td><td class="dg">198</td><td class="dot">·</td><td class="on">1.010</td><td class="g">988</td><td>901</td><td>402</td><td>0</td></tr>
+    <tr><th scope="row">31 ago – 6 sep</th><td>598</td><td>640</td><td class="g">880</td><td class="dot">·</td><td class="dot">·</td><td class="on">880</td><td class="g">857</td><td>780</td><td>213</td><td>0</td></tr>
+    <tr><th scope="row">24 ago – 30 ago</th><td>690</td><td>702</td><td class="g">626</td><td class="dg">145</td><td class="dot">·</td><td class="on">771</td><td class="g">857</td><td>780</td><td>213</td><td>0</td></tr>
+    <tr><th scope="row">17 ago – 23 ago</th><td>796</td><td>861</td><td class="g">816</td><td class="dot">·</td><td class="dot">·</td><td class="on">816</td><td class="g">686</td><td>624</td><td>98</td><td>0</td></tr>
   </tbody>
 </table>
 </div>
-<div class="nota"><b>Mi recomendación: A.</b> El cuadro no crece y el total de la semana sigue siendo el número grande, que es el que se compara con las otras columnas. Debajo va cuánto puso cada uno, con un color fijo por persona (Diego azul, Juan Carlos morado), y las semanas sin corte externo solo dicen "MG". La opción B es mejor si lo que más se va a mirar es el ranking entre Diego y Juan Carlos semana a semana, pero le mete tres columnas a un cuadro que ya va justo de ancho.</div>
+
+<div class="paso"><i>2</i> Cualquier otra pestaña (Trazos, Alistamiento…): el cuadro sigue igual, Corte es una sola columna con el total</div>
+<div class="sem-wrap">
+<table>
+  <thead><tr>
+    <th>Semana</th><th>Orden de corte</th><th class="on">Trazos</th><th>Corte</th>
+    <th>Alistamiento</th><th>Enviado a taller</th><th>Entrega ensamble</th><th>Entrada a bodega</th>
+  </tr></thead>
+  <tbody>
+    <tr><th scope="row">14 sep – 20 sep<span class="chip">en curso</span></th><td>412</td><td class="on">380</td><td>795</td><td>720</td><td>655</td><td>190</td><td>0</td></tr>
+    <tr><th scope="row">7 sep – 13 sep</th><td>655</td><td class="on">612</td><td>1.010</td><td>988</td><td>901</td><td>402</td><td>0</td></tr>
+    <tr><th scope="row">31 ago – 6 sep</th><td>598</td><td class="on">640</td><td>880</td><td>857</td><td>780</td><td>213</td><td>0</td></tr>
+    <tr><th scope="row">24 ago – 30 ago</th><td>690</td><td class="on">702</td><td>771</td><td>857</td><td>780</td><td>213</td><td>0</td></tr>
+    <tr><th scope="row">17 ago – 23 ago</th><td>796</td><td class="on">861</td><td>816</td><td>686</td><td>624</td><td>98</td><td>0</td></tr>
+  </tbody>
+</table>
+</div>
+<div class="nota">Solo la pestaña Corte abre la columna. En las demás pestañas Corte queda como una sola cifra, sin el azul de "MG – Externo" que hoy se ve en todas.</div>
 <div class="mock-nota">Mockup · cifras de ejemplo</div>
 </body>
 </html>

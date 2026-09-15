@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Sobrante en talla que la orden no cortó</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Caso C6921: la última orden (11274) no cortó talla 18, así que hoy la
+   columna 18 ni aparece y el sobrante solo se lee en la nota. Propuesta: la
+   columna de la talla que sobra se agrega igual, con el −1 en rojo. */
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--muted:#6b6660;--radius:14px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13.5px;line-height:1.4;padding:28px;display:flex;justify-content:center}
+.modal{background:var(--surface);border-radius:var(--radius);box-shadow:0 10px 40px rgba(0,0,0,.12);border:1px solid var(--hairline);width:600px}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 24px 12px;border-bottom:1px solid var(--hairline)}
+.modal-title{font-family:Fraunces,serif;font-weight:500;font-size:22px;margin:0}
+.icon-btn{border:1px solid var(--hairline);background:var(--surface);border-radius:9px;width:32px;height:32px;cursor:pointer;color:var(--muted)}
+.modal-body{padding:16px 24px 8px}
+.modal-foot{display:flex;justify-content:flex-end;padding:12px 24px 18px}
+.btn{border:1px solid var(--hairline-strong);background:var(--surface);border-radius:10px;padding:9px 16px;font:inherit;font-size:13px;cursor:pointer}
+.hint{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.cab{display:flex;align-items:center;gap:8px;margin:14px 0 6px;font-size:13px;flex-wrap:wrap}
+.cab b{font-weight:600}
+.cab span{color:var(--muted)}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#f1f0ee;color:var(--muted);border:1px solid var(--hairline)}
+.tag.rojo{background:#fbeceb;color:#b23121;border-color:#f0c4bf}
+table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--hairline);border-radius:8px;overflow:hidden}
+th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:center;padding:7px 8px;background:#faf9f6;border-bottom:1px solid var(--hairline)}
+th:first-child,td:first-child{text-align:left}
+th.rojo{background:#fbeceb;color:#b23121}
+td{padding:6px 8px;text-align:center;border-bottom:1px solid #efece5;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.dot{color:#c9c5bd}
+.sob{color:#b23121;font-weight:700}
+td.rojo{background:#fbeceb}
+.pie{font-size:12px;color:#8c2f28;margin:6px 0 0;display:flex;gap:6px;align-items:flex-start}
+.pie b{font-weight:700}
+.mock-nota{position:fixed;right:14px;bottom:14px;background:#1c1c22;color:#fff;font-size:11.5px;padding:8px 12px;border-radius:999px;opacity:.85}
+</style>
+</head>
+<body>
+<div class="modal">
+  <div class="modal-head"><h2 class="modal-title">C6921 · programado por color y talla</h2><button class="icon-btn">✕</button></div>
+  <div class="modal-body">
+    <p class="hint">Vestido camisero con franjas</p>
+
+    <div class="cab"><b>Orden 10920</b><span class="tag">Muestra</span><span>25/06/2026</span><span>· 6 unidades</span></div>
+    <table><thead><tr><th>Color</th><th>10</th><th>Total</th></tr></thead>
+      <tbody><tr><td>CRUDO</td><td>6</td><td><b>6</b></td></tr></tbody></table>
+
+    <div class="cab"><b>Orden 11045</b><span>16/07/2026</span><span>· 44 unidades</span></div>
+    <table>
+      <thead><tr><th>Color</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>Total</th></tr></thead>
+      <tbody><tr><td>CRUDO</td><td>3</td><td>2</td><td>10</td><td>13</td><td>10</td><td>6</td><td><b>44</b></td></tr></tbody>
+    </table>
+
+    <div class="cab"><b>Orden 11274</b><span>15/09/2026</span><span>· 47 unidades</span><span class="tag rojo">sobran 1 frente al pedido</span></div>
+    <table>
+      <thead><tr><th>Color</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th class="rojo">18</th><th>20</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><td>CRUDO</td><td>2</td><td>8</td><td>13</td><td>12</td><td>5</td><td>3</td><td class="rojo"><span class="sob">−1</span></td><td>4</td><td><b>47</b></td></tr>
+      </tbody>
+    </table>
+    <p class="pie">⚠ <span><b>CRUDO talla 18: sobran 1</b> (pedido 5, cortadas 6). No hay que cortar más de esa talla.</span></p>
+  </div>
+  <div class="modal-foot"><button class="btn">Cerrar</button></div>
+</div>
+<div class="mock-nota">Mockup · datos reales de C6921</div>
+</body>
+</html>

@@ -396,7 +396,13 @@ function TablaColores({ colores, tallas, nombreDe, sobra }) {
   // celda, aunque este corte no haya cortado esa talla.
   const claveDe = (c) => c.colorPedido || c.color
   const sobraDe = (c, t) => (sobra && sobra.get(claveDe(c) + '|' + t)) || 0
-  const conDato = tallas.filter((t) => colores.some((c) => (c.tallas[t] || 0) > 0 || sobraDe(c, t) > 0))
+  // Las tallas de este corte más las que sobran frente al pedido, aunque
+  // este corte no las haya cortado: la columna sale igual, en rojo.
+  const conSobra = new Set()
+  if (sobra) sobra.forEach((n, k) => { if (n > 0) conSobra.add(k.split('|')[1]) })
+  const todas = [...new Set([...tallas, ...conSobra])].sort((a, b) => Number(a) - Number(b))
+  const conDato = todas.filter((t) => colores.some((c) => (c.tallas[t] || 0) > 0 || sobraDe(c, t) > 0))
+  const tallaSobra = (t) => colores.some((c) => sobraDe(c, t) > 0)
   const totalPorTalla = (t) => colores.reduce((n, c) => n + (c.tallas[t] || 0), 0)
   const total = colores.reduce((n, c) => n + c.unid, 0)
   const num = (n) => n.toLocaleString('es-CO')
@@ -406,7 +412,7 @@ function TablaColores({ colores, tallas, nombreDe, sobra }) {
         <thead>
           <tr>
             <th>Color</th>
-            {conDato.map((t) => <th key={t} className="num">{t}</th>)}
+            {conDato.map((t) => <th key={t} className={'num' + (tallaSobra(t) ? ' desg-sob-th' : '')}>{t}</th>)}
             <th className="num">Total</th>
           </tr>
         </thead>

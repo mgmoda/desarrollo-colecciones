@@ -6616,6 +6616,7 @@ tr.row-parcial > td { background: #fffaf0; }
 .desg-corte-cab b { color: var(--ink); }
 .desg-otro { color: #8c2f28; }
 .desg-table td.desg-sob { background: #fbeceb; }
+.desg-table th.desg-sob-th { background: #fbeceb; color: #b23121; }
 .desg-sobra { color: #b23121; font-weight: 700; margin-left: 4px; }
 .tag.desg-tag-sobra { background: #fbeceb; color: #b23121; border: 1px solid #f0c4bf; }
 .desg-sobra-nota { display: flex; gap: 6px; align-items: flex-start; font-size: 12px; color: #8c2f28; margin: 6px 0 0; }

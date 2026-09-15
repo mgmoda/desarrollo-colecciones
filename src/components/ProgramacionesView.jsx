@@ -390,8 +390,13 @@ function DesgloseModal({ fila, onClose }) {
 }
 
 // Tabla de color por talla, compartida por el pedido y por cada corte.
-function TablaColores({ colores, tallas, nombreDe }) {
-  const conDato = tallas.filter((t) => colores.some((c) => (c.tallas[t] || 0) > 0))
+function TablaColores({ colores, tallas, nombreDe, sobra }) {
+  // `sobra` (solo en el último corte): color del pedido|talla → unidades
+  // cortadas de más frente al pedido. Se pinta en rojo y negativo en la
+  // celda, aunque este corte no haya cortado esa talla.
+  const claveDe = (c) => c.colorPedido || c.color
+  const sobraDe = (c, t) => (sobra && sobra.get(claveDe(c) + '|' + t)) || 0
+  const conDato = tallas.filter((t) => colores.some((c) => (c.tallas[t] || 0) > 0 || sobraDe(c, t) > 0))
   const totalPorTalla = (t) => colores.reduce((n, c) => n + (c.tallas[t] || 0), 0)
   const total = colores.reduce((n, c) => n + c.unid, 0)
   const num = (n) => n.toLocaleString('es-CO')
@@ -409,11 +414,16 @@ function TablaColores({ colores, tallas, nombreDe }) {
           {colores.map((c, i) => (
             <tr key={i}>
               <td className="strong">{nombreDe ? nombreDe(c) : c.color}</td>
-              {conDato.map((t) => (
-                <td key={t} className="num">
-                  {c.tallas[t] ? num(c.tallas[t]) : <span className="muted">·</span>}
-                </td>
-              ))}
+              {conDato.map((t) => {
+                const sb = sobraDe(c, t)
+                return (
+                  <td key={t} className={'num' + (sb ? ' desg-sob' : '')}
+                    title={sb ? `Sobran ${num(sb)} frente al pedido en ${claveDe(c)} talla ${t}` : undefined}>
+                    {c.tallas[t] ? num(c.tallas[t]) : (sb ? '' : <span className="muted">·</span>)}
+                    {sb ? <span className="desg-sobra">−{num(sb)}</span> : null}
+                  </td>
+                )
+              })}
               <td className="num strong">{num(c.unid)}</td>
             </tr>
           ))}
@@ -434,9 +444,36 @@ function TablaColores({ colores, tallas, nombreDe }) {
 // tallas del pedido. El color real es el del pedido: si el nombre de la orden
 // empata con uno del pedido se muestra ese; si no empata, se deja el de la
 // orden con su aviso, porque esa diferencia es justo lo que hay que ver.
+// Lo cortado de más frente al pedido, acumulando los cortes por fecha
+// (muestra incluida) y solo en los colores que el pedido tiene. Se muestra en
+// el último corte para que quien programa el siguiente lo tenga presente.
+function sobranteDe(fila, cortes) {
+  const pedido = new Map(((fila.desglose && fila.desglose.colores) || []).map((c) => [c.color, c.tallas || {}]))
+  const acum = new Map()
+  cortes.forEach((c) => c.colores.forEach((col) => {
+    if (!col.colorPedido) return
+    const t = acum.get(col.colorPedido) || {}
+    Object.entries(col.tallas || {}).forEach(([talla, n]) => { t[talla] = (t[talla] || 0) + (Number(n) || 0) })
+    acum.set(col.colorPedido, t)
+  }))
+  const sobra = new Map()
+  const lista = []
+  acum.forEach((tallas, color) => {
+    const ped = pedido.get(color) || {}
+    Object.entries(tallas).forEach(([talla, n]) => {
+      const s = n - (Number(ped[talla]) || 0)
+      if (s > 0) { sobra.set(color + '|' + talla, s); lista.push({ color, talla, sobra: s, pedido: Number(ped[talla]) || 0, cortado: n }) }
+    })
+  })
+  lista.sort((a, b) => a.color.localeCompare(b.color) || Number(a.talla) - Number(b.talla))
+  return { sobra, lista, total: lista.reduce((n, x) => n + x.sobra, 0) }
+}
+
 function ProgramadoModal({ fila, cortes, onClose }) {
   if (!fila) return null
   const num = (n) => n.toLocaleString('es-CO')
+  const sob = fila.desglose ? sobranteDe(fila, cortes) : { sobra: new Map(), lista: [], total: 0 }
+  const iUltimo = cortes.length - 1
   const nombreDe = (c) => c.colorPedido || (
     <span className="desg-otro" title="Este color no está en el pedido">{c.color} ⚠</span>
   )
@@ -464,9 +501,26 @@ function ProgramadoModal({ fila, cortes, onClose }) {
                   se mandaron a cortar {num(c.programada)}
                 </span>
               )}
+              {i === iUltimo && sob.total > 0 && (
+                <span className="tag desg-tag-sobra" title="Acumulando todos los cortes, incluida la muestra">
+                  sobran {num(sob.total)} frente al pedido
+                </span>
+              )}
             </p>
             {c.colores.length ? (
-              <TablaColores colores={c.colores} tallas={c.tallas} nombreDe={nombreDe} />
+              <>
+                <TablaColores colores={c.colores} tallas={c.tallas} nombreDe={nombreDe}
+                  sobra={i === iUltimo ? sob.sobra : null} />
+                {i === iUltimo && sob.lista.length > 0 && (
+                  <p className="desg-sobra-nota">
+                    ⚠ <span>
+                      {sob.lista.map((x, k) => (
+                        <Fragment key={k}>{k > 0 ? ' · ' : ''}<b>{x.color} talla {x.talla}: sobran {num(x.sobra)}</b> (pedido {num(x.pedido)}, cortadas {num(x.cortado)})</Fragment>
+                      ))}. No hay que cortar más de {sob.lista.length === 1 ? 'esa talla' : 'esas tallas'}.
+                    </span>
+                  </p>
+                )}
+              </>
             ) : (
               <p className="muted" style={{ fontSize: 12.5 }}>
                 Esta orden es anterior al sistema y no trae el detalle de colores.

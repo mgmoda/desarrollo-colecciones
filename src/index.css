@@ -5891,6 +5891,15 @@ select.filtro-taller { flex: none; width: 215px; }
 /* Corte: "MG – Diego" en la misma celda; lo de afuera va en el azul de
    "Donde Diego" para que se lea igual en toda la pestaña. */
 .sem-ext { color: #1c4f6e; font-weight: 600; }
+/* Pestaña Corte: la columna abierta en MG · Diego · Juan Carlos · Total */
+.sem-tabla thead tr.sem-grupo th { padding: 3px 10px; font-size: 9.5px; text-align: center; color: #8a857e; background: var(--bg); border-bottom: 1px solid var(--hairline); }
+.sem-tabla thead tr.sem-grupo th.sem-grupo-corte { border-left: 1px solid var(--hairline); border-right: 1px solid var(--hairline); }
+.sem-tabla .sem-sub-ini { border-left: 1px solid var(--hairline); }
+.sem-tabla .sem-sub-fin { border-right: 1px solid var(--hairline); }
+.sem-tabla th.sem-ext-a, .sem-tabla td.sem-ext-a .sem-valor { color: #1c4f6e; font-weight: 600; }
+.sem-tabla th.sem-ext-b, .sem-tabla td.sem-ext-b .sem-valor { color: #7a3d8f; font-weight: 600; }
+.sem-tabla th.sem-ext-c, .sem-tabla td.sem-ext-c .sem-valor { color: #8a5326; font-weight: 600; }
+.sem-tabla td .sem-valor.muted { color: #c9c5bd; font-weight: 400; }
 .sem-ext-leyenda {
   display: block;
   margin-top: 1px;

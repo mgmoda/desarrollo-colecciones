@@ -259,8 +259,10 @@ por marca excluyen las `sinPedido`. El importador viejo (`leerArchivo`,
 La tela puede salir a cortar afuera donde **Diego** o **Juan Carlos**
 (`EXTERNOS` en `lib/procesos.js`; `EXTERNO` es el primero, por defecto). Se
 escoge en `EnviarExternoModal` y queda en `procesos[orden].corte.quien` con
-`externo: true`. La tabla semanal lo muestra como "MG – Externo"; "Por día"
-separa a cada uno.
+`externo: true`. En la tabla semanal (`TablaSemanas.jsx`) **solo la pestaña
+Corte** abre la columna en MG · Diego · Juan Carlos · Total (el desglose por
+persona viene en `celda.externos` de `unidadesPorSemana`); en las demás
+pestañas Corte es una sola cifra. "Por día" separa a cada uno.
 
 ---
 

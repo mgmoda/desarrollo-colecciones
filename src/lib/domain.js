@@ -801,11 +801,12 @@ export const MODULOS_FLUJO = [
 // Unidades cerradas en cada módulo, semana por semana, con el desglose por
 // marca de cada celda.
 //
-// En Corte la cifra se parte en dos: lo que cortó la mesa de MG y lo que se
-// cortó afuera, donde Diego. Factory no distingue —para él todo es entrega de
-// corte—; lo sabe el sistema por el movimiento de "Enviar donde Diego" que
-// queda en `procesos`. La celda lleva el total en `unidades` y aparte
-// `externo`, para mostrarlo al lado sin abrir otra columna.
+// En Corte la cifra se parte: lo que cortó la mesa de MG y lo que se cortó
+// afuera, donde Diego o Juan Carlos. Factory no distingue —para él todo es
+// entrega de corte—; lo sabe el sistema por el movimiento de "Enviar a corte
+// externo" que queda en `procesos`. La celda lleva el total en `unidades`,
+// `externo` (todo lo de afuera) y `externos` (por persona), para que la
+// pestaña Corte abra la columna en MG · Diego · Juan Carlos · Total.
 export function unidadesPorSemana(orders, refMap, semanas, procesos) {
   return semanas.map((dias) => {
     const desde = dias[0]
@@ -820,6 +821,15 @@ export function unidadesPorSemana(orders, refMap, semanas, procesos) {
       if (m.key === 'corte' && procesos) {
         const afuera = dentro.filter((o) => corteExterno(procesos[o.orden]))
         celda.externo = desglosePorMarca(afuera, refMap, m.etapa)
+        // Y quién cortó afuera: Diego o Juan Carlos, cada uno con su cifra.
+        const porQuien = {}
+        afuera.forEach((o) => {
+          const q = (procesos[o.orden].corte.quien || 'Diego').trim()
+          if (!porQuien[q]) porQuien[q] = []
+          porQuien[q].push(o)
+        })
+        celda.externos = Object.fromEntries(Object.entries(porQuien)
+          .map(([q, os]) => [q, desglosePorMarca(os, refMap, m.etapa)]))
       }
       modulos[m.key] = celda
     })

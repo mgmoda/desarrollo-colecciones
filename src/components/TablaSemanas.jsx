@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { MODULOS_FLUJO, unidadesPorSemana } from '../lib/domain.js'
+import { EXTERNOS } from '../lib/procesos.js'
 import { isoLocal, rangoSemana, ultimasSemanas } from '../lib/dates.js'
 
 // Doce semanas de historia, pero la tarjeta no crece: se desplaza por dentro.
@@ -23,12 +24,17 @@ export default function TablaSemanas({ orders, refMap, procesos, destacado }) {
     () => unidadesPorSemana(orders, refMap, semanas, procesos),
     [orders, refMap, semanas, procesos],
   )
-  // Si en estas semanas hubo corte afuera, la cabecera lo anuncia una sola
-  // vez; la celda va "MG – Externo", con lo de afuera en azul.
-  const hayExterno = useMemo(
-    () => datos.some((d) => ((d.modulos.corte.externo || {}).unidades || 0) > 0),
-    [datos],
-  )
+  // Solo la pestaña Corte abre la columna en MG · Diego · Juan Carlos ·
+  // Total; en las demás, Corte es una sola cifra. Se listan los externos
+  // fijos y cualquier otro nombre que aparezca en los datos.
+  const abrirCorte = columna === 'corte'
+  const externos = useMemo(() => {
+    const vistos = new Set(EXTERNOS)
+    datos.forEach((d) => Object.keys(d.modulos.corte.externos || {}).forEach((q) => vistos.add(q)))
+    return [...vistos]
+  }, [datos])
+  const num = (n) => (n || 0).toLocaleString('es-CO')
+  const claseDe = (i) => (i === 0 ? 'sem-ext-a' : i === 1 ? 'sem-ext-b' : 'sem-ext-c')
 
   // Máximo de cada columna, para la barra de fondo que da la proporción.
   const topes = useMemo(() => {
@@ -43,18 +49,28 @@ export default function TablaSemanas({ orders, refMap, procesos, destacado }) {
     <div className="sem-wrap">
       <table className="sem-tabla">
         <thead>
+          {abrirCorte && (
+            <tr className="sem-grupo">
+              <th />
+              {MODULOS_FLUJO.map((m) => (m.key === 'corte'
+                ? <th key={m.key} colSpan={2 + externos.length} className="sem-grupo-corte">Corte</th>
+                : <th key={m.key} />))}
+            </tr>
+          )}
           <tr>
             <th>Semana</th>
-            {MODULOS_FLUJO.map((m) => (
-              <th key={m.key} className={'num' + (m.key === columna ? ' sem-col-on' : '')}>
-                {m.label}
-                {m.key === 'corte' && hayExterno && (
-                  <span className="sem-ext-leyenda" title="MG – corte externo (Diego o Juan Carlos)">
-                    MG <span className="sem-ext">– Externo</span>
-                  </span>
-                )}
-              </th>
-            ))}
+            {MODULOS_FLUJO.map((m) => {
+              if (m.key === 'corte' && abrirCorte) {
+                return [
+                  <th key="mg" className="num sem-sub sem-sub-ini">MG</th>,
+                  ...externos.map((q, i) => <th key={q} className={'num sem-sub ' + claseDe(i)}>{q}</th>),
+                  <th key="total" className="num sem-col-on sem-sub-fin">Total</th>,
+                ]
+              }
+              return (
+                <th key={m.key} className={'num' + (m.key === columna ? ' sem-col-on' : '')}>{m.label}</th>
+              )
+            })}
           </tr>
         </thead>
         <tbody>
@@ -66,19 +82,26 @@ export default function TablaSemanas({ orders, refMap, procesos, destacado }) {
               </th>
               {MODULOS_FLUJO.map((m) => {
                 const v = d.modulos[m.key].unidades
-                const ext = (d.modulos[m.key].externo || {}).unidades || 0
                 const pct = Math.round((v / topes[m.key]) * 100)
-                const titulo = ext
-                  ? `MG ${(v - ext).toLocaleString('es-CO')} · corte externo ${ext.toLocaleString('es-CO')} · total ${v.toLocaleString('es-CO')}`
-                  : ''
+                if (m.key === 'corte' && abrirCorte) {
+                  const ext = (d.modulos.corte.externo || {}).unidades || 0
+                  const porQuien = d.modulos.corte.externos || {}
+                  const celda = (k, n, cls, on) => (
+                    <td key={k} className={'num sem-celda ' + cls + (on ? ' sem-col-on' : '')}>
+                      {on && <span className="sem-barra" style={{ width: `${pct}%` }} aria-hidden="true" />}
+                      <span className={'sem-valor' + (n === 0 ? ' muted' : '')}>{n === 0 && !on ? '·' : num(n)}</span>
+                    </td>
+                  )
+                  return [
+                    celda('mg', v - ext, 'sem-sub-ini'),
+                    ...externos.map((q, i) => celda(q, (porQuien[q] || {}).unidades || 0, claseDe(i))),
+                    celda('total', v, 'sem-sub-fin', true),
+                  ]
+                }
                 return (
-                  <td key={m.key} className={'num sem-celda' + (m.key === columna ? ' sem-col-on' : '')}
-                    title={titulo}>
+                  <td key={m.key} className={'num sem-celda' + (m.key === columna ? ' sem-col-on' : '')}>
                     <span className="sem-barra" style={{ width: `${pct}%` }} aria-hidden="true" />
-                    <span className={'sem-valor' + (v === 0 ? ' muted' : '')}>
-                      {(v - ext).toLocaleString('es-CO')}
-                      {ext > 0 && <span className="sem-ext"> – {ext.toLocaleString('es-CO')}</span>}
-                    </span>
+                    <span className={'sem-valor' + (v === 0 ? ' muted' : '')}>{num(v)}</span>
                   </td>
                 )
               })}

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Programado con sobrantes</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Mockup autocontenido: el modal "programado por color y talla" de M5283 con
+   datos reales (pedido de SYD y los tres cortes), mostrando dónde se pasó
+   del pedido. Dos propuestas en la misma pantalla, A y B. */
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--ink-soft:#3f3d3a;--muted:#6b6660;--radius:14px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13.5px;line-height:1.4;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 22px;max-width:900px}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start;max-width:1320px}
+.paso{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.paso i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:11px}
+.modal{background:var(--surface);border-radius:var(--radius);box-shadow:0 10px 40px rgba(0,0,0,.12);border:1px solid var(--hairline)}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 24px 12px;border-bottom:1px solid var(--hairline)}
+.modal-title{font-family:Fraunces,serif;font-weight:500;font-size:22px;margin:0}
+.icon-btn{border:1px solid var(--hairline);background:var(--surface);border-radius:9px;width:32px;height:32px;cursor:pointer;color:var(--muted)}
+.modal-body{padding:16px 24px 8px}
+.modal-foot{display:flex;justify-content:flex-end;padding:12px 24px 18px}
+.btn{border:1px solid var(--hairline-strong);background:var(--surface);border-radius:10px;padding:9px 16px;font:inherit;font-size:13px;cursor:pointer}
+.hint{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.cab{display:flex;align-items:center;gap:8px;margin:14px 0 6px;font-size:13px}
+.cab b{font-weight:600}
+.cab span{color:var(--muted)}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#f1f0ee;color:var(--muted);border:1px solid var(--hairline)}
+table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--hairline);border-radius:8px;overflow:hidden}
+th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:center;padding:7px 8px;background:#faf9f6;border-bottom:1px solid var(--hairline)}
+th:first-child,td:first-child{text-align:left}
+td{padding:6px 8px;text-align:center;border-bottom:1px solid #efece5;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tr.tot td{border-top:2px solid var(--hairline-strong);font-weight:600}
+.dot{color:#c9c5bd}
+.sob{color:#b23121;font-weight:700}
+.fal{color:#8a5326;font-weight:600}
+.ok{color:#1f7a44;font-weight:600}
+.cel{position:relative;display:inline-block;min-width:22px}
+.cel sup{position:absolute;top:-9px;right:-16px;font-size:10px;color:#b23121;font-weight:700}
+td.rojo{background:#fbeceb}
+td.rojo b{color:#b23121}
+.aviso{display:flex;gap:10px;align-items:flex-start;background:#fbeceb;border:1px solid #f0c4bf;color:#8c2f28;border-radius:10px;padding:10px 12px;font-size:12.5px;margin:0 0 12px}
+.aviso b{font-weight:700}
+.leyenda{font-size:11.5px;color:var(--muted);margin:8px 0 0}
+.leyenda .sob,.leyenda .fal{font-size:11.5px}
+.nota{background:#fdf6ee;border:1px solid #e7c9aa;color:#8a5326;border-radius:10px;padding:10px 14px;font-size:12.5px;margin-top:14px}
+.mock-nota{position:fixed;right:14px;bottom:14px;background:#1c1c22;color:#fff;font-size:11.5px;padding:8px 12px;border-radius:999px;opacity:.85}
+</style>
+</head>
+<body>
+<h1>Programado por color y talla · avisar lo que sobra</h1>
+<p class="sub">Caso real M5283: el pedido de SYD pide 2 unidades de BLANCO talla 18, pero la orden 11127 cortó 6. Quien programó la 11273 no tenía cómo verlo. Dos formas de mostrarlo; se pueden combinar.</p>
+
+<div class="dos">
+<div>
+  <div class="paso"><i>A</i> Cuadro "Pedido vs programado" arriba, y la celda culpable en rojo</div>
+  <div class="modal">
+    <div class="modal-head"><h2 class="modal-title">M5283 · programado por color y talla</h2><button class="icon-btn">✕</button></div>
+    <div class="modal-body">
+      <p class="hint">Vestido con pespuntes</p>
+
+      <div class="aviso">⚠ <span><b>Sobran 4 unidades</b> frente al pedido: BLANCO talla 18 (pedido 2, cortadas 6). Faltan 3: BLANCO 14 (1) y 16 (2).</span></div>
+
+      <p class="hint" style="margin-top:12px">Pedido vs programado · 85 pedidas · 86 cortadas</p>
+      <table>
+        <thead><tr><th>Color</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>20</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>BLANCO · pedido</td><td>1</td><td>10</td><td>14</td><td>17</td><td>13</td><td>11</td><td>2</td><td>1</td><td><b>69</b></td></tr>
+          <tr><td class="dot" style="color:var(--muted)">cortado</td><td>1</td><td>10</td><td>14</td><td>17</td><td>12</td><td>9</td><td class="rojo"><b>6</b></td><td>1</td><td><b>70</b></td></tr>
+          <tr><td style="color:var(--muted)">diferencia</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="fal">1</td><td class="fal">2</td><td class="sob">−4</td><td class="dot">·</td><td><span class="fal">3</span> / <span class="sob">−4</span></td></tr>
+          <tr><td>CAQUI · pedido</td><td>1</td><td class="dot">·</td><td>4</td><td>4</td><td>3</td><td>2</td><td>1</td><td>1</td><td><b>16</b></td></tr>
+          <tr><td style="color:var(--muted)">cortado</td><td>1</td><td class="dot">·</td><td>4</td><td>4</td><td>3</td><td>2</td><td>1</td><td>1</td><td><b>16</b></td></tr>
+          <tr><td style="color:var(--muted)">diferencia</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="ok">completo</td></tr>
+        </tbody>
+      </table>
+      <p class="leyenda"><span class="fal">Naranja</span> = falta por cortar · <span class="sob">rojo negativo</span> = se cortó de más</p>
+
+      <div class="cab"><b>Orden 11062</b><span class="tag">Muestra</span><span>21/07/2026</span><span>· 6 unidades</span></div>
+      <table><thead><tr><th>Color</th><th>10</th><th>Total</th></tr></thead>
+        <tbody><tr><td>BLANCO</td><td>6</td><td><b>6</b></td></tr></tbody></table>
+
+      <div class="cab"><b>Orden 11127</b><span>14/08/2026</span><span>· 43 unidades</span></div>
+      <table>
+        <thead><tr><th>Color</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>20</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>BLANCO</td><td>2</td><td class="dot">·</td><td>8</td><td>10</td><td>9</td><td class="rojo"><span class="cel"><b>6</b><sup>−4</sup></span></td><td>1</td><td><b>36</b></td></tr>
+          <tr><td>CAQUI</td><td class="dot">·</td><td>1</td><td>3</td><td>2</td><td>1</td><td class="dot">·</td><td class="dot">·</td><td><b>7</b></td></tr>
+          <tr class="tot"><td>Total</td><td>2</td><td>1</td><td>11</td><td>12</td><td>10</td><td>6</td><td>1</td><td>43</td></tr>
+        </tbody>
+      </table>
+
+      <div class="cab"><b>Orden 11273</b><span>15/09/2026</span><span>· 37 unidades</span></div>
+      <table>
+        <thead><tr><th>Color</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>20</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>BLANCO</td><td>1</td><td>8</td><td>8</td><td>9</td><td>2</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td><b>28</b></td></tr>
+          <tr><td>CAQUI</td><td>1</td><td class="dot">·</td><td>3</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td><b>9</b></td></tr>
+          <tr class="tot"><td>Total</td><td>2</td><td>8</td><td>11</td><td>10</td><td>3</td><td>1</td><td>1</td><td>1</td><td>37</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-foot"><button class="btn">Cerrar</button></div>
+  </div>
+</div>
+
+<div>
+  <div class="paso"><i>B</i> Solo una fila "Sobra" en rojo debajo de cada orden que se pasó</div>
+  <div class="modal">
+    <div class="modal-head"><h2 class="modal-title">M5283 · programado por color y talla</h2><button class="icon-btn">✕</button></div>
+    <div class="modal-body">
+      <p class="hint">Vestido con pespuntes · pedido 85 · cortadas 86 · <span class="sob">sobran 4</span> · <span class="fal">faltan 3</span></p>
+
+      <div class="cab"><b>Orden 11062</b><span class="tag">Muestra</span><span>21/07/2026</span><span>· 6 unidades</span></div>
+      <table><thead><tr><th>Color</th><th>10</th><th>Total</th></tr></thead>
+        <tbody><tr><td>BLANCO</td><td>6</td><td><b>6</b></td></tr></tbody></table>
+
+      <div class="cab"><b>Orden 11127</b><span>14/08/2026</span><span>· 43 unidades</span></div>
+      <table>
+        <thead><tr><th>Color</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>20</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>BLANCO</td><td>2</td><td class="dot">·</td><td>8</td><td>10</td><td>9</td><td class="rojo"><b>6</b></td><td>1</td><td><b>36</b></td></tr>
+          <tr><td class="sob" style="text-align:left">↳ sobra vs pedido</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="sob">−4</td><td class="dot">·</td><td class="sob">−4</td></tr>
+          <tr><td>CAQUI</td><td class="dot">·</td><td>1</td><td>3</td><td>2</td><td>1</td><td class="dot">·</td><td class="dot">·</td><td><b>7</b></td></tr>
+          <tr class="tot"><td>Total</td><td>2</td><td>1</td><td>11</td><td>12</td><td>10</td><td>6</td><td>1</td><td>43</td></tr>
+        </tbody>
+      </table>
+
+      <div class="cab"><b>Orden 11273</b><span>15/09/2026</span><span>· 37 unidades</span></div>
+      <table>
+        <thead><tr><th>Color</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>20</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>BLANCO</td><td>1</td><td>8</td><td>8</td><td>9</td><td>2</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td><b>28</b></td></tr>
+          <tr><td>CAQUI</td><td>1</td><td class="dot">·</td><td>3</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td><b>9</b></td></tr>
+          <tr class="tot"><td>Total</td><td>2</td><td>8</td><td>11</td><td>10</td><td>3</td><td>1</td><td>1</td><td>1</td><td>37</td></tr>
+        </tbody>
+      </table>
+
+      <p class="hint" style="margin-top:14px">Acumulado al día de hoy</p>
+      <table>
+        <thead><tr><th>Color</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>20</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>BLANCO · falta / sobra</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="fal">1</td><td class="fal">2</td><td class="sob">−4</td><td class="dot">·</td><td><span class="fal">3</span> / <span class="sob">−4</span></td></tr>
+          <tr><td>CAQUI · falta / sobra</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="dot">·</td><td class="ok">completo</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-foot"><button class="btn">Cerrar</button></div>
+  </div>
+  <div class="nota"><b>En las dos propuestas</b> el sobrante se calcula acumulando los cortes en orden de fecha, incluida la muestra, y se marca en la orden donde se pasó del pedido. Así quien programa el siguiente corte ve de una que la 18 blanca ya no hay que cortarla. Lo mismo se puede reflejar en el modal de "falta", que hoy nettea el sobrante contra lo que falta.</div>
+</div>
+</div>
+<div class="mock-nota">Mockup · datos reales de M5283</div>
+</body>
+</html>

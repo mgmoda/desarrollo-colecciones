@@ -15,7 +15,10 @@ import { diasDesde, diasEntre } from './dates.js'
 // una orden, se le MANDA la tela, y eso es un movimiento de varias órdenes a
 // la vez con su propia fecha de salida.
 export const CORTADORES = ['Fabián', 'Janet', 'Mónica', 'Carlos']
-export const EXTERNO = 'Diego'
+// Los que cortan afuera. Al mandar la tela se escoge a cuál; Diego sigue
+// siendo el de siempre y queda como nombre por defecto.
+export const EXTERNOS = ['Diego', 'Juan Carlos']
+export const EXTERNO = EXTERNOS[0]
 
 // Una orden está afuera cuando su corte está abierto y es tercerizado.
 export const estaFuera = (proc) => {
@@ -28,10 +31,11 @@ export const estaFuera = (proc) => {
 // Diego y no la mesa de MG, y así hay que contarla.
 export const corteExterno = (proc) => !!(proc && proc.corte && proc.corte.externo)
 
-// Manda la orden donde Diego: el corte arranca ahí mismo, porque desde que
+// Manda la orden a corte externo (Diego o Juan Carlos): el corte arranca ahí
+// mismo, porque desde que
 // sale la tela ya está en sus manos. `iso` permite registrar una salida de
 // ayer; sin él queda la de hoy.
-export function enviarExterno(proc, usuario, iso) {
+export function enviarExterno(proc, usuario, iso, quien = EXTERNO) {
   let desde = Date.now()
   if (iso) {
     const [a, m, d] = iso.split('-').map(Number)
@@ -40,7 +44,7 @@ export function enviarExterno(proc, usuario, iso) {
       desde = new Date(a, m - 1, d, ahora.getHours(), ahora.getMinutes()).getTime()
     }
   }
-  return { ...(proc || {}), corte: { desde, usuario, quien: EXTERNO, externo: true } }
+  return { ...(proc || {}), corte: { desde, usuario, quien: quien || EXTERNO, externo: true } }
 }
 
 // Quien marca, dicho corto: "monica@mgmoda.local" → "Monica".

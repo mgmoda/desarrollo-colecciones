@@ -327,7 +327,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
           {selected.size > 0 && showProcesos && puedeProcesos && donde !== 'diego' && (
             <button className="btn btn-ext"
               onClick={() => setEnviando(rows.filter((o) => selected.has(o.id)))}>
-              Enviar donde {EXTERNO} ({selected.size})
+              Enviar a corte externo ({selected.size})
             </button>
           )}
           {selected.size > 0 && (
@@ -366,7 +366,7 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
           <button type="button" className={'proc-f-btn' + (!donde ? ' on' : '')}
             onClick={() => setDonde('')}>Todas <b>{enEtapa.length}</b></button>
           <button type="button" className={'proc-f-btn ext' + (donde === 'diego' ? ' on' : '')}
-            title={`La tela está donde ${EXTERNO}`}
+            title="La tela está afuera, donde Diego o Juan Carlos"
             onClick={() => setDonde(donde === 'diego' ? '' : 'diego')}>
             Corte externo <b>{fuera.n}</b>
           </button>
@@ -497,8 +497,8 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                     <td className="strong">
                       {o.referencia}
                       {showProcesos && estaFuera(procesos[o.orden]) && (
-                        <span className="tag tag-ext" title={`La tela está donde ${EXTERNO}`}>
-                          Donde {EXTERNO}
+                        <span className="tag tag-ext" title={`La tela está donde ${procesos[o.orden].corte.quien || EXTERNO}`}>
+                          Donde {procesos[o.orden].corte.quien || EXTERNO}
                         </span>
                       )}
                       {medidasDeOrden(o) && (
@@ -692,9 +692,9 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
 
       {enviando && (
         <EnviarExternoModal ordenes={enviando}
-          onConfirmar={(iso) => {
+          onConfirmar={(iso, quien) => {
             enviando.forEach((o) => onGuardarProceso(
-              o.orden, enviarExterno(procesos[o.orden], usuario, iso),
+              o.orden, enviarExterno(procesos[o.orden], usuario, iso, quien),
             ))
             setEnviando(null)
             setSelected(new Set())

@@ -254,6 +254,16 @@ por marca excluyen las `sinPedido`. El importador viejo (`leerArchivo`,
 
 ---
 
+## 6c. Corte externo (sep-2026)
+
+La tela puede salir a cortar afuera donde **Diego** o **Juan Carlos**
+(`EXTERNOS` en `lib/procesos.js`; `EXTERNO` es el primero, por defecto). Se
+escoge en `EnviarExternoModal` y queda en `procesos[orden].corte.quien` con
+`externo: true`. La tabla semanal lo muestra como "MG – Externo"; "Por día"
+separa a cada uno.
+
+---
+
 ## 7. Gotchas que ya costaron caro
 
 - **`delete` sin `WHERE` lo rechaza Supabase** ("DELETE requires a WHERE

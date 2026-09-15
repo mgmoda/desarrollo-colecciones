@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { MODULOS_FLUJO, unidadesPorSemana } from '../lib/domain.js'
 import { isoLocal, rangoSemana, ultimasSemanas } from '../lib/dates.js'
-import { EXTERNO } from '../lib/procesos.js'
 
 // Doce semanas de historia, pero la tarjeta no crece: se desplaza por dentro.
 const SEMANAS = 12
@@ -25,7 +24,7 @@ export default function TablaSemanas({ orders, refMap, procesos, destacado }) {
     [orders, refMap, semanas, procesos],
   )
   // Si en estas semanas hubo corte afuera, la cabecera lo anuncia una sola
-  // vez; la celda va "MG – Diego", con lo de afuera en azul.
+  // vez; la celda va "MG – Externo", con lo de afuera en azul.
   const hayExterno = useMemo(
     () => datos.some((d) => ((d.modulos.corte.externo || {}).unidades || 0) > 0),
     [datos],
@@ -50,8 +49,8 @@ export default function TablaSemanas({ orders, refMap, procesos, destacado }) {
               <th key={m.key} className={'num' + (m.key === columna ? ' sem-col-on' : '')}>
                 {m.label}
                 {m.key === 'corte' && hayExterno && (
-                  <span className="sem-ext-leyenda" title={`MG – corte externo (${EXTERNO})`}>
-                    MG <span className="sem-ext">– {EXTERNO}</span>
+                  <span className="sem-ext-leyenda" title="MG – corte externo (Diego o Juan Carlos)">
+                    MG <span className="sem-ext">– Externo</span>
                   </span>
                 )}
               </th>
@@ -70,7 +69,7 @@ export default function TablaSemanas({ orders, refMap, procesos, destacado }) {
                 const ext = (d.modulos[m.key].externo || {}).unidades || 0
                 const pct = Math.round((v / topes[m.key]) * 100)
                 const titulo = ext
-                  ? `MG ${(v - ext).toLocaleString('es-CO')} · corte externo (${EXTERNO}) ${ext.toLocaleString('es-CO')} · total ${v.toLocaleString('es-CO')}`
+                  ? `MG ${(v - ext).toLocaleString('es-CO')} · corte externo ${ext.toLocaleString('es-CO')} · total ${v.toLocaleString('es-CO')}`
                   : ''
                 return (
                   <td key={m.key} className={'num sem-celda' + (m.key === columna ? ' sem-col-on' : '')}

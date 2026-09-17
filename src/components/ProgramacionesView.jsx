@@ -568,9 +568,26 @@ function FaltaModal({ fila, cortes, onClose }) {
   // colores del pedido que aún deben unidades; la unidad es m/und o m/conj
   // según sea prenda suelta o conjunto.
   const telas = fila.telasRef || []
-  const porColor = f.colores.filter((c) => c.delPedido && c.unid > 0)
+  // Por color: lo que falta (solo positivos) y lo que sobra (los negativos),
+  // por separado. El total neto es el de la columna de la tabla; acá se
+  // muestran las dos cifras para que la suma de la fila cuadre a la vista.
+  const filasF = f.colores.map((c) => {
+    let falta = 0, sobra = 0
+    Object.values(c.tallas || {}).forEach((n) => { if (n > 0) falta += n; else if (n < 0) sobra -= n })
+    return { ...c, falta, sobra }
+  })
+  const tallasVis = f.tallas.filter((t) => f.colores.some((c) => (c.tallas[t] || 0) !== 0))
+  const soloSobra = (t) => !f.colores.some((c) => (c.tallas[t] || 0) > 0)
+  const totFalta = filasF.reduce((n, c) => n + c.falta, 0)
+  const totSobra = filasF.reduce((n, c) => n + c.sobra, 0)
+  const faltaTalla = (t) => f.colores.reduce((n, c) => n + Math.max(0, c.tallas[t] || 0), 0)
+  const sobrantes = []
+  filasF.forEach((c) => Object.entries(c.tallas || {}).forEach(([t, n]) => { if (n < 0) sobrantes.push({ color: c.color, talla: t, n: -n }) }))
+  sobrantes.sort((a, b) => a.color.localeCompare(b.color) || Number(a.talla) - Number(b.talla))
+  const porColor = filasF.filter((c) => c.delPedido && c.falta > 0)
   const dec = (n) => n.toLocaleString('es-CO', { maximumFractionDigits: 2 })
   const mts = (n) => n.toLocaleString('es-CO', { maximumFractionDigits: 1 }) + ' m'
+  const celda = (n) => (n > 0 ? num(n) : n < 0 ? <span className="desg-sobra">−{num(-n)}</span> : <span className="muted">·</span>)
   return (
     <Modal open onClose={onClose} size="md">
       <div className="modal-head">
@@ -580,8 +597,60 @@ function FaltaModal({ fila, cortes, onClose }) {
       <div className="modal-body">
         <p className="field-hint" style={{ marginTop: 0 }}>
           {fila.descripcion || '—'} · pedido menos programado
+          {totSobra > 0 && (
+            <span className="tag desg-tag-sobra" style={{ marginLeft: 8 }}>sobran {num(totSobra)} frente al pedido</span>
+          )}
         </p>
-        <TablaColores colores={f.colores} tallas={f.tallas} nombreDe={nombreDe} />
+        <div className="table-wrap">
+          <table className="data-table desg-table">
+            <thead>
+              <tr>
+                <th>Color</th>
+                {tallasVis.map((t) => <th key={t} className={'num' + (soloSobra(t) ? ' desg-sob-th' : '')}>{t}</th>)}
+                <th className="num">Falta</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filasF.map((c, i) => (
+                <tr key={i}>
+                  <td className="strong">{nombreDe(c)}</td>
+                  {tallasVis.map((t) => (
+                    <td key={t} className={'num' + ((c.tallas[t] || 0) < 0 ? ' desg-sob' : '')}>{celda(c.tallas[t] || 0)}</td>
+                  ))}
+                  <td className="num strong desg-falta-tot">
+                    {num(c.falta)}
+                    {c.sobra > 0 && <small>sobran {num(c.sobra)}</small>}
+                  </td>
+                </tr>
+              ))}
+              {filasF.length > 1 && (
+                <tr className="desg-total">
+                  <td>Falta</td>
+                  {tallasVis.map((t) => <td key={t} className="num">{faltaTalla(t) > 0 ? num(faltaTalla(t)) : <span className="muted">·</span>}</td>)}
+                  <td className="num strong desg-falta-tot">
+                    {num(totFalta)}
+                    {totSobra > 0 && <small>sobran {num(totSobra)}</small>}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        {sobrantes.length > 0 && (
+          <p className="desg-sobra-nota">
+            ⚠ <span>
+              <b>Sobran {num(totSobra)} frente al pedido:</b>{' '}
+              {sobrantes.map((x, k) => `${k > 0 ? ' · ' : ''}${x.color} ${x.talla} (${num(x.n)})`).join('')}.
+              Ya no hay que cortar {sobrantes.length === 1 ? 'esa talla' : 'esas tallas'}.
+            </span>
+          </p>
+        )}
+        {totSobra > 0 && (
+          <p className="field-hint">
+            <b>Falta</b> suma solo lo que queda por cortar. La columna Falta de la tabla sigue neta
+            ({num(totFalta)} − {num(totSobra)} = <b>{num(totFalta - totSobra - (f.sinDetalle || 0))}</b>), porque es la que cuadra con pedido menos programado.
+          </p>
+        )}
         {f.sinDetalle > 0 && (
           <p className="field-hint">
             Ya se descontaron además <b>{num(f.sinDetalle)}</b> unidades de cortes
@@ -611,7 +680,7 @@ function FaltaModal({ fila, cortes, onClose }) {
                     <tr key={c.color}>
                       <td className="strong">{c.color}</td>
                       {telas.map((t) => (
-                        <td key={t.tela} className="num">{mts(c.unid * t.prom)}</td>
+                        <td key={t.tela} className="num">{mts(c.falta * t.prom)}</td>
                       ))}
                     </tr>
                   ))}
@@ -620,7 +689,7 @@ function FaltaModal({ fila, cortes, onClose }) {
                       <td>Total</td>
                       {telas.map((t) => (
                         <td key={t.tela} className="num">
-                          {mts(porColor.reduce((n, c) => n + c.unid, 0) * t.prom)}
+                          {mts(porColor.reduce((n, c) => n + c.falta, 0) * t.prom)}
                         </td>
                       ))}
                     </tr>

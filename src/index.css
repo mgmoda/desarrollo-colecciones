@@ -6630,6 +6630,8 @@ tr.row-parcial > td { background: #fffaf0; }
 .tag.desg-tag-sobra { background: #fbeceb; color: #b23121; border: 1px solid #f0c4bf; }
 .desg-sobra-nota { display: flex; gap: 6px; align-items: flex-start; font-size: 12px; color: #8c2f28; margin: 6px 0 0; }
 .desg-sobra-nota b { font-weight: 700; }
+.desg-falta-tot { white-space: nowrap; }
+.desg-falta-tot small { font-size: 11px; font-weight: 600; color: #b23121; margin-left: 5px; }
 /* Cuando alistamiento no dio lo que la orden mandó a cortar. */
 .desg-ajuste {
   font-size: 11.5px; color: var(--muted); border: 1px solid var(--hairline-strong);

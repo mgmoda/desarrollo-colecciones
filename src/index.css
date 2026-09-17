@@ -5945,6 +5945,12 @@ select.filtro-taller { flex: none; width: 215px; }
 .ped-desc { display: block; font-size: 10.5px; color: var(--muted); white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
 .ped-det tr.ped-ref-inicio td { border-top: 2px solid var(--hairline-strong); }
 .ped-det td:first-child { vertical-align: top; }
+/* Conmutador Pedidos · Despachos: control segmentado, fijo en la cabecera */
+.ped-vista { display: inline-flex; border: 1px solid var(--hairline-strong); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.ped-vista button { border: 0; background: transparent; padding: 7px 16px; font: inherit; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: background .14s ease, color .14s ease; }
+.ped-vista button + button { border-left: 1px solid var(--hairline); }
+.ped-vista button:hover { background: #faf8f3; color: var(--ink); }
+.ped-vista button.on { background: var(--ink); color: #fff; }
 .ped-det tr.ped-marca td { background: #f4f2ed; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); padding: 6px 10px; border-top: 2px solid var(--hairline-strong); position: static; }
 .ped-det tr.ped-marca td .muted { font-weight: 500; letter-spacing: 0; text-transform: none; }
 /* El que se desplaza es el cuadro de la tabla, no el cuerpo del modal: así

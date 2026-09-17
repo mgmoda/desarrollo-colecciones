@@ -159,31 +159,17 @@ export default function PedidosView({
             : 'Pendientes por cliente y referencia — SYD'}</p>
         </div>
         <div className="view-actions">
-          <div className="dis-filtros">
-            <button type="button" className={'proc-f-btn' + (vista === 'pedidos' ? ' on' : '')}
-              onClick={() => setVista('pedidos')}>Pedidos</button>
-            <button type="button" className={'proc-f-btn' + (vista === 'despachos' ? ' on' : '')}
-              onClick={() => setVista('despachos')}>Despachos</button>
+          {/* El conmutador va solo en la cabecera, siempre en el mismo sitio:
+              los filtros de cada vista van abajo, en su propia fila, para que
+              al cambiar de vista no se mueva nada de arriba. */}
+          <div className="ped-vista" role="tablist">
+            <button type="button" role="tab" aria-selected={vista === 'pedidos'}
+              className={vista === 'pedidos' ? 'on' : ''} onClick={() => setVista('pedidos')}>Pedidos</button>
+            <button type="button" role="tab" aria-selected={vista === 'despachos'}
+              className={vista === 'despachos' ? 'on' : ''} onClick={() => setVista('despachos')}>Despachos</button>
           </div>
-          {vista === 'pedidos' && (
-            <>
-              <div className="dis-filtros">
-                <button type="button" className={'proc-f-btn' + (!soloEspeciales ? ' on' : '')}
-                  onClick={() => setSoloEspeciales(false)}>Todos <b>{(filas || []).length}</b></button>
-                <button type="button" className={'proc-f-btn' + (soloEspeciales ? ' on' : '')}
-                  title="Clientes con alguna línea que pide algo distinto al color: cinturón, sin fajón, top…"
-                  onClick={() => setSoloEspeciales(true)}>Pedidos especiales <b>{especiales.size}</b></button>
-              </div>
-              <SearchInput value={q} onChange={setQ} placeholder="Pedido, cliente o ciudad…" />
-            </>
-          )}
         </div>
       </div>
-
-      {vista === 'despachos' && (
-        <DespachosView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
-      )}
-      {vista === 'despachos' ? null : <>
 
       {error && <div className="ct-error">{error}</div>}
 
@@ -208,11 +194,27 @@ export default function PedidosView({
         <span className="ct-live"><i />Revisa cada 2 min</span>
       </div>
 
+      {vista === 'despachos' && (
+        <DespachosView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
+      )}
+      {vista === 'despachos' ? null : <>
+
       <div className="prog-kpis">
         <div className="prog-kpi"><span>Clientes</span><b>{num(kpi.clientes)}</b><em>{num(kpi.pedidos)} pedidos</em></div>
         <div className="prog-kpi"><span>Unidades pendientes</span><b>{num(kpi.unidades)}</b><em>por despachar</em></div>
         <div className="prog-kpi"><span>Valor</span><b>{formatPrice(kpi.total) || '$ 0'}</b><em>a precio de lista</em></div>
         <div className="prog-kpi"><span>Clientes inactivos</span><b>{num(kpi.inactivos)}</b><em>marcados inactivos en SYD</em></div>
+      </div>
+
+      <div className="view-actions" style={{ marginBottom: 12 }}>
+        <div className="dis-filtros">
+          <button type="button" className={'proc-f-btn' + (!soloEspeciales ? ' on' : '')}
+            onClick={() => setSoloEspeciales(false)}>Todos <b>{(filas || []).length}</b></button>
+          <button type="button" className={'proc-f-btn' + (soloEspeciales ? ' on' : '')}
+            title="Clientes con alguna línea que pide algo distinto al color: cinturón, sin fajón, top…"
+            onClick={() => setSoloEspeciales(true)}>Pedidos especiales <b>{especiales.size}</b></button>
+        </div>
+        <SearchInput value={q} onChange={setQ} placeholder="Pedido, cliente o ciudad…" />
       </div>
 
       {filas === null ? (

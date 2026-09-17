@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Falta por color y talla con sobrantes</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Caso real C6922: hoy el modal esconde las tallas 16 y 18 (solo negativos)
+   y el total neta lo que sobra contra lo que falta. Propuesta: toda talla con
+   valor se dibuja, los negativos en rojo, el total es lo que falta por cortar
+   y al lado va lo que sobra. */
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--muted:#6b6660;--radius:14px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13.5px;line-height:1.4;padding:28px}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start;max-width:1240px}
+.paso{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.paso i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:11px}
+.modal{background:var(--surface);border-radius:var(--radius);box-shadow:0 10px 40px rgba(0,0,0,.12);border:1px solid var(--hairline)}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 24px 12px;border-bottom:1px solid var(--hairline)}
+.modal-title{font-family:Fraunces,serif;font-weight:500;font-size:22px;margin:0}
+.icon-btn{border:1px solid var(--hairline);background:var(--surface);border-radius:9px;width:32px;height:32px;cursor:pointer;color:var(--muted)}
+.modal-body{padding:16px 24px 8px}
+.modal-foot{display:flex;justify-content:flex-end;padding:12px 24px 18px}
+.btn{border:1px solid var(--hairline-strong);background:var(--surface);border-radius:10px;padding:9px 16px;font:inherit;font-size:13px;cursor:pointer}
+.hint{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--hairline);border-radius:8px;overflow:hidden}
+th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:center;padding:7px 8px;background:#faf9f6;border-bottom:1px solid var(--hairline)}
+th:first-child,td:first-child{text-align:left}
+td{padding:7px 8px;text-align:center;border-bottom:1px solid #efece5;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tr.tot td{border-top:2px solid var(--hairline-strong);font-weight:600}
+.dot{color:#c9c5bd}
+.sob{color:#b23121;font-weight:700}
+td.rojo{background:#fbeceb}
+th.rojo{background:#fbeceb;color:#b23121}
+.tot-cel{white-space:nowrap}
+.tot-cel small{font-size:11px;font-weight:600;color:#b23121;margin-left:5px}
+.pie{font-size:12px;color:#8c2f28;margin:8px 0 0;display:flex;gap:6px;align-items:flex-start}
+.pie b{font-weight:700}
+.ley{font-size:11.5px;color:var(--muted);margin:8px 0 0}
+.nota{background:#fdf6ee;border:1px solid #e7c9aa;color:#8a5326;border-radius:10px;padding:10px 14px;font-size:12.5px;margin-top:14px}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#fbeceb;color:#b23121;border:1px solid #f0c4bf;margin-left:8px;vertical-align:middle}
+.mock-nota{position:fixed;right:14px;bottom:14px;background:#1c1c22;color:#fff;font-size:11.5px;padding:8px 12px;border-radius:999px;opacity:.85}
+</style>
+</head>
+<body>
+<div class="dos">
+<div>
+  <div class="paso"><i>Hoy</i> Tallas 16 y 18 escondidas; el total neta lo que sobra</div>
+  <div class="modal">
+    <div class="modal-head"><h2 class="modal-title">C6922 · falta por color y talla</h2><button class="icon-btn">✕</button></div>
+    <div class="modal-body">
+      <p class="hint">Blusa estampada de escote en V · pedido menos programado</p>
+      <table>
+        <thead><tr><th>Color</th><th>8</th><th>10</th><th>12</th><th>14</th><th>20</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>CAFE</td><td>4</td><td>7</td><td>6</td><td>4</td><td>2</td><td><b>20</b></td></tr>
+          <tr><td>VERDE</td><td>-1</td><td>4</td><td>3</td><td>1</td><td>1</td><td><b>7</b></td></tr>
+          <tr class="tot"><td>Total</td><td>3</td><td>11</td><td>9</td><td>5</td><td>3</td><td>27</td></tr>
+        </tbody>
+      </table>
+      <p class="ley">Café suma 23 en pantalla pero dice 20; Verde suma 8 y dice 7. Las tallas 16 y 18, que están en negativo, no se dibujan.</p>
+    </div>
+    <div class="modal-foot"><button class="btn">Cerrar</button></div>
+  </div>
+</div>
+
+<div>
+  <div class="paso"><i>✓</i> Propuesta: todo a la vista, negativos en rojo, y el total dice cuánto falta y cuánto sobra</div>
+  <div class="modal">
+    <div class="modal-head">
+      <div><h2 class="modal-title">C6922 · falta por color y talla</h2></div>
+      <button class="icon-btn">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="hint">Blusa estampada de escote en V · pedido menos programado <span class="tag">sobran 5 frente al pedido</span></p>
+      <table>
+        <thead><tr><th>Color</th><th>8</th><th>10</th><th>12</th><th>14</th><th class="rojo">16</th><th class="rojo">18</th><th>20</th><th>Falta</th></tr></thead>
+        <tbody>
+          <tr><td>CAFE</td><td>4</td><td>7</td><td>6</td><td>4</td><td class="rojo"><span class="sob">−1</span></td><td class="rojo"><span class="sob">−2</span></td><td>2</td><td class="tot-cel"><b>23</b><small>sobran 3</small></td></tr>
+          <tr><td>VERDE</td><td class="rojo"><span class="sob">−1</span></td><td>4</td><td>3</td><td>1</td><td class="rojo"><span class="sob">−1</span></td><td class="dot">·</td><td>1</td><td class="tot-cel"><b>9</b><small>sobran 2</small></td></tr>
+          <tr class="tot"><td>Falta</td><td>4</td><td>11</td><td>9</td><td>5</td><td class="dot">·</td><td class="dot">·</td><td>3</td><td class="tot-cel">32<small>sobran 5</small></td></tr>
+        </tbody>
+      </table>
+      <p class="pie">⚠ <span><b>Sobran 5 frente al pedido:</b> Café 16 (1) y 18 (2), Verde 8 (1) y 16 (1). Ya no hay que cortar esas tallas.</span></p>
+      <p class="ley"><b>Falta</b> suma solo lo que queda por cortar. La columna Falta de la tabla de Programaciones sigue neta (32 − 5 = <b>27</b>), porque es la que cuadra con pedido menos programado.</p>
+    </div>
+    <div class="modal-foot"><button class="btn">Cerrar</button></div>
+  </div>
+  <div class="nota"><b>Con esto queda resuelto también M5277</b>, donde el total decía 4 y la talla 10 mostraba 10: se vería "10 · sobran 6" y la talla en negativo en rojo.</div>
+</div>
+</div>
+<div class="mock-nota">Mockup · datos reales de C6922</div>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { indiceConjuntos } from './lib/programaciones.js'
 import Login from './components/Login.jsx'
 import { nombreDeSesion } from './lib/usuarios.js'
 import DashboardView from './components/DashboardView.jsx'
@@ -422,6 +423,18 @@ export default function App() {
     })
     return m
   }, [refIndex])
+  // Para Pedidos y Despachos: el mismo índice más los códigos de CONJUNTO
+  // (C6852, M5279…), que no son una ficha propia sino un dato de la blusa en
+  // Costos. Su foto es la del conjunto completo, no la de la blusa sola.
+  const refMapFotos = useMemo(() => {
+    const m = new Map(refMap)
+    indiceConjuntos(refs).forEach((c, codigo) => {
+      if (!c.image || m.has(codigo)) return
+      const blusa = refMap.get(c.piezas[0])
+      m.set(codigo, { ...(blusa || {}), image: c.image, esConjunto: true, piezas: c.piezas })
+    })
+    return m
+  }, [refMap, refs])
   const tracksByRef = useMemo(() => {
     const m = new Map()
     refIndex.forEach((r) => m.set(r.id, refTracks(orders, r.codigos || r.id)))
@@ -1067,7 +1080,7 @@ export default function App() {
           <AsistenciaView stamp={stampAsistencia} />
         )}
         {tab === 'pedidos' && vePedidos && (
-          <PedidosView stamp={stampPedidos} stampDespachos={stampDespachos} usuario={emailSesion} refMap={refMap} onViewImage={setLightbox} onOpenRef={(ref) => { const f = refMap.get(ref); if (f) openEdit(f) }} />
+          <PedidosView stamp={stampPedidos} stampDespachos={stampDespachos} usuario={emailSesion} refMap={refMapFotos} onViewImage={setLightbox} onOpenRef={(ref) => { const f = refMap.get(ref) || refMap.get(((refMapFotos.get(ref) || {}).piezas || [])[0]); if (f) openEdit(f) }} />
         )}
       </main>
 

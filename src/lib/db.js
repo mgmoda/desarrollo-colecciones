@@ -301,8 +301,10 @@ export async function dbLoadPedidosClientes() {
 }
 
 export async function dbLoadPedidosDeCliente(cliente) {
+  // Solo lo vendido: SYD también manda líneas "Separado" y "Facturado" de esas
+  // mismas unidades, que son de Despachos y aquí se contarían dos veces.
   const { data, error } = await supabase.from('pedidos_syd').select('*')
-    .eq('cliente', cliente).order('referencia').order('pedido').order('color')
+    .eq('cliente', cliente).eq('estado', 'vendido').order('referencia').order('pedido').order('color')
   if (error) throw error
   return data || []
 }
@@ -311,7 +313,7 @@ export async function dbLoadPedidosDeCliente(cliente) {
 // cliente + referencia + color, así que las necesita completas.
 export async function dbLoadPedidosTodos() {
   return paginar(() => supabase.from('pedidos_syd')
-    .select('cliente, codigo_cliente, ciudad, pedido, referencia, descripcion, color, unid, precio, total, tallas, observacion, inactiva')
+    .select('cliente, codigo_cliente, ciudad, pedido, referencia, descripcion, color, tipo, estado, unid, precio, total, tallas, observacion, inactiva')
     .order('id'))
 }
 
@@ -320,7 +322,7 @@ export async function dbLoadPedidosTodos() {
 export async function dbLoadPedidosObservaciones() {
   return paginar(() => supabase.from('pedidos_syd')
     .select('cliente, pedido, referencia, descripcion, color, unid, observacion')
-    .not('observacion', 'is', null).neq('observacion', '').order('id'))
+    .eq('estado', 'vendido').not('observacion', 'is', null).neq('observacion', '').order('id'))
 }
 
 // Separados, facturados, referencias cerradas y novedades (dev_despachos),

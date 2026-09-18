@@ -223,6 +223,16 @@ palabras, que se amplía cuando aparezca una nueva. El detalle del cliente
 muestra foto (de `dev_refs`) y observación por línea; el chip "Pedidos
 especiales" filtra los clientes que tienen alguna.
 
+**Estado de cada línea de SYD (18-sep-2026).** `pedidos_syd.estado` es una
+columna generada con la regla del archivo de pendientes sobre Combin + Tipo:
+`pendiente` (subtotal), `facturado`, `separado` o `vendido`. Desde ese día SYD
+manda líneas con Tipo "Separado" (con pedido, color y tallas) de unidades que
+TAMBIÉN están en su línea vendida: **todo lo que cuente unidades vendidas debe
+filtrar `estado='vendido'`** (vista `pedidos_syd_vendido`, las vistas de
+clientes/resumen, `sincronizar_programaciones()`, el detalle de Pedidos). En
+Despachos lo separado y lo facturado de SYD mandan; lo manual de
+`dev_despachos` solo aplica en la línea donde SYD no trae nada.
+
 **Despachos (14-sep-2026)**: segunda vista de la pestaña Pedidos
 (`DespachosView.jsx`, cuentas en `lib/despachos.js`). Vendido y pendiente
 salen de `pedidos_syd`; separado, facturado, referencias cerradas ("no
@@ -242,9 +252,8 @@ de color es el mismo en todo Despachos. Las acciones van en el menú ⋯ de la
 fila: "Separar por talla" abre las casillas (`sepTallas`, `factTallas` en el
 registro; `separado`/`facturado` guardan el total), ficha, foto y "no sale".
 El modal se ensancha solo con `.modal-xl:has(.dsp-densa)`.
-Cerrar una referencia aplica a todos los clientes. Pendiente por confirmar
-con Diego: si al facturar la línea desaparece del informe de SYD, lo
-facturado registrado a mano se descontaría dos veces.
+Cerrar una referencia aplica a todos los clientes. Falta ver cómo manda SYD
+lo facturado cuando empiecen a facturar (se espera Tipo "Facturado").
 
 **Programaciones se alimenta de aquí (13-sep-2026).** Ya no existe "Cargar
 pedidos": `reemplazar_pedidos()` llama a `sincronizar_programaciones()`, que

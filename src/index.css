@@ -6072,6 +6072,7 @@ select.filtro-taller { flex: none; width: 215px; }
 .dsp-menu button { border: 0; background: transparent; text-align: left; font: inherit; font-size: 12.5px; padding: 7px 10px; border-radius: 7px; cursor: pointer; color: var(--ink); }
 .dsp-menu button:hover { background: #f4f2ed; }
 .dsp-menu button.rojo { color: #b23121; }
+.dsp-menu-nota { font-size: 11px; color: var(--muted); padding: 6px 10px 4px; }
 .dsp-edit-acc { text-align: left; white-space: nowrap; }
 
 /* ---------- Corte por día ---------- */

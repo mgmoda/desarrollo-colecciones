@@ -2,9 +2,14 @@
 // DESPACHOS — cuánto tiene separado cada cliente, cuánto se le facturó y
 // cuánto le falta de verdad.
 // ────────────────────────────────────────────────────────────────────────
-// Lo vendido sale del informe de SYD (pedidos_syd). Lo separado, lo
-// facturado, las referencias cerradas y las novedades del cliente se
-// registran acá, en dev_despachos, con tres clases de renglón:
+// Todo sale del informe de SYD (pedidos_syd): cada línea trae su `estado`
+// —vendido, separado, facturado o pendiente (subtotal)— clasificado por la
+// regla del archivo de pendientes (texto de Combin + Tipo). Desde el 18 de
+// septiembre de 2026 SYD manda las líneas "Separado" con pedido, color y
+// tallas, así que lo separado y lo facturado de SYD MANDAN; lo registrado a
+// mano en dev_despachos solo se usa en la línea donde SYD no trae nada.
+// Las referencias cerradas y las novedades del cliente sí se registran acá,
+// en dev_despachos, con tres clases de renglón:
 //   l|CLIENTE|REF|COLOR → { separado, facturado, usuario, at }
 //   r|REF               → { cerrada, usuario, at }
 //   c|CLIENTE           → { novedad, nota, usuario, at }
@@ -55,6 +60,15 @@ export function armarDespachos(filasSyd, registros) {
       })
     }
     const l = c.lineas.get(k)
+    const estado = r.estado || 'vendido'
+    if (estado === 'pendiente') return // subtotal del informe, no es una línea
+    if (estado === 'separado' || estado === 'facturado') {
+      const destino = estado === 'separado' ? 'sydSep' : 'sydFact'
+      if (!l[destino]) l[destino] = {}
+      Object.entries(r.tallas || {}).forEach(([t, v]) => { l[destino][t] = (l[destino][t] || 0) + (Number(v) || 0) })
+      if (!l.descripcion && r.descripcion) l.descripcion = r.descripcion
+      return
+    }
     l.vendido += n0(r.unid)
     l.valor += Number(r.total) || 0
     if (r.pedido && !l.pedidos.includes(r.pedido)) l.pedidos.push(r.pedido)
@@ -74,10 +88,22 @@ function medirCliente(c, reg) {
     const d = reg[l.id] || {}
     // Separado y facturado se registran por talla; el total se guarda
     // también, para las cuentas y para lo registrado antes sin tallas.
-    l.sepTallas = d.sepTallas || {}
-    l.factTallas = d.factTallas || {}
-    l.separado = n0(d.separado)
-    l.facturado = n0(d.facturado)
+    // Si SYD trae separado o facturado de esta línea, eso manda. Se sigue la
+    // regla del archivo de pendientes: separado vigente = separado −
+    // facturado del mismo color (nunca negativo).
+    const deSyd = !!(l.sydSep || l.sydFact)
+    l.deSyd = deSyd
+    if (deSyd) {
+      l.factTallas = { ...(l.sydFact || {}) }
+      l.sepTallas = { ...(l.sydSep || {}) }
+      l.separado = Object.values(l.sepTallas).reduce((a, b) => a + b, 0)
+      l.facturado = Object.values(l.factTallas).reduce((a, b) => a + b, 0)
+    } else {
+      l.sepTallas = d.sepTallas || {}
+      l.factTallas = d.factTallas || {}
+      l.separado = n0(d.separado)
+      l.facturado = n0(d.facturado)
+    }
     l.registro = d
     l.cerrada = !!((reg[idRef(l.ref)] || {}).cerrada)
     factPorRef[l.ref] = (factPorRef[l.ref] || 0) + l.facturado

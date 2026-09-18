@@ -448,7 +448,8 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
                           <>
                             <div className="dsp-menu-fondo" onClick={() => setMenuDe(null)} />
                             <div className="dsp-menu">
-                              {!r.cerrada && <button type="button" onClick={() => empezar(l)}>Separar por talla…</button>}
+                              {!r.cerrada && !l.deSyd && <button type="button" onClick={() => empezar(l)}>Separar por talla…</button>}
+                              {l.deSyd && <span className="dsp-menu-nota">Separado y facturado vienen de SYD</span>}
                               <button type="button" onClick={() => { setMenuDe(null); if (onOpenRef) onOpenRef(r.ref) }}>Ver ficha</button>
                               {img && <button type="button" onClick={() => { setMenuDe(null); if (onViewImage) onViewImage(img) }}>Ampliar foto</button>}
                               <button type="button" className="rojo" onClick={() => cerrarRef(r.ref, !r.cerrada)}>

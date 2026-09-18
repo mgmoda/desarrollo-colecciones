@@ -6784,6 +6784,7 @@ tr.row-parcial > td { background: #fffaf0; }
   margin-left: 7px; background: #e8f1f7; color: #1c4f6e; border-color: #b9d7e8;
   font-size: 10px; font-weight: 600;
 }
+.tag.tag-ext.tag-ext-vuelta { background: transparent; border: 1px dashed #9db4c9; color: #1c4f6e; }
 tr.row-ext > td { background: #f7fbfd; }
 /* Doblado y corte cerrados: la orden está alistando. Toda la fila en verde
    con franja a la izquierda, para verla desde lejos sin leer nada. */

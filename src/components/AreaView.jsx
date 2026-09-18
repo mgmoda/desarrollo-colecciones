@@ -23,7 +23,7 @@ import EnviarExternoModal from './EnviarExternoModal.jsx'
 import EntradaBodegaModal from './EntradaBodegaModal.jsx'
 import { pendientesDe, resumenFalta } from '../lib/entradasBodega.js'
 import {
-  EXTERNO, alistandoDesde, desdeTxt, duracion, enviarExterno, estaAlistando, estaAndando,
+  EXTERNO, corteExterno, alistandoDesde, desdeTxt, duracion, enviarExterno, estaAlistando, estaAndando,
   estaFuera, estaListo,
 } from '../lib/procesos.js'
 
@@ -496,9 +496,18 @@ export default function AreaView({ areaKey, orders, refMap, onViewImage, onOpenR
                     <td className="mono">{o.orden}</td>
                     <td className="strong">
                       {o.referencia}
+                      {/* Corte externo: mientras la tela está afuera dice "Donde X";
+                          cuando ya volvió (alistando) sigue marcada con quién la
+                          cortó, para saber de quién era. */}
                       {showProcesos && estaFuera(procesos[o.orden]) && (
                         <span className="tag tag-ext" title={`La tela está donde ${procesos[o.orden].corte.quien || EXTERNO}`}>
                           Donde {procesos[o.orden].corte.quien || EXTERNO}
+                        </span>
+                      )}
+                      {showProcesos && !estaFuera(procesos[o.orden]) && corteExterno(procesos[o.orden]) && (
+                        <span className="tag tag-ext tag-ext-vuelta"
+                          title={`Corte externo: la cortó ${procesos[o.orden].corte.quien || EXTERNO} y ya volvió`}>
+                          Cortó {procesos[o.orden].corte.quien || EXTERNO}
                         </span>
                       )}
                       {medidasDeOrden(o) && (

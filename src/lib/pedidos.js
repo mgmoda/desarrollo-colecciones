@@ -44,3 +44,23 @@ export function agruparEspeciales(lineas) {
     .map((g) => ({ ...g, colores: [...g.colores.entries()].map(([color, unid]) => ({ color, unid })) }))
     .sort((a, b) => a.referencia.localeCompare(b.referencia))
 }
+
+// Categoría de la prenda, por la primera palabra de la descripción de SYD.
+// Las cuatro que importan para filtrar; lo demás (short, falda, top) va en
+// "Otros" con su nombre real en la etiqueta.
+export const CATEGORIAS = [
+  { key: 'vestido', label: 'Vestido' },
+  { key: 'conjunto', label: 'Conjunto' },
+  { key: 'pantalon', label: 'Pantalón' },
+  { key: 'blusa', label: 'Blusa' },
+  { key: 'otros', label: 'Otros' },
+]
+export function categoriaDe(descripcion) {
+  const p = normObs(descripcion).split(' ')[0] || ''
+  if (p.startsWith('VESTIDO')) return { key: 'vestido', label: 'Vestido' }
+  if (p.startsWith('CONJUNTO')) return { key: 'conjunto', label: 'Conjunto' }
+  if (p.startsWith('PANTALO')) return { key: 'pantalon', label: 'Pantalón' }
+  if (p.startsWith('BLUS')) return { key: 'blusa', label: 'Blusa' }
+  const nombre = p ? p.charAt(0) + p.slice(1).toLowerCase() : 'Otros'
+  return { key: 'otros', label: nombre }
+}

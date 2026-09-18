@@ -6046,6 +6046,12 @@ select.filtro-taller { flex: none; width: 215px; }
 .dsp-densa td.dsp-foto .thumb.empty { display: grid; place-items: center; background: #f1f0ee; color: var(--muted); font-size: 11px; cursor: default; }
 .dsp-refd { white-space: nowrap; }
 .dsp-refd b { font-weight: 700; }
+.dsp-cat { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: 10px; font-weight: 600; line-height: 16px; vertical-align: 1px; background: #f1f0ee; color: #6b6660; border: 1px solid var(--hairline); }
+.dsp-cat.c-vestido { background: #f3ecf8; color: #6a3d8a; border-color: #dccbe9; }
+.dsp-cat.c-conjunto { background: #fdf1e3; color: #8a5326; border-color: #efd3b0; }
+.dsp-cat.c-pantalon { background: #e8eef8; color: #2b4a7e; border-color: #c6d3ea; }
+.dsp-cat.c-blusa { background: #e9f5ee; color: #1f6b4a; border-color: #bfe0cd; }
+.dsp-cats { padding-left: 8px; border-left: 1px solid var(--hairline); }
 .dsp-refd-d { color: var(--muted); font-size: 11px; margin-left: 6px; display: inline-block; max-width: 190px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
 .dsp-refd .dsp-tag { margin-left: 6px; }
 .dsp-punto { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; background: #e5e2da; }

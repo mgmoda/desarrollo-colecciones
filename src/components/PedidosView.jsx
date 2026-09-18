@@ -4,7 +4,7 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { dbLoadPedidosDeCliente, dbLoadPedidosClientes, dbLoadPedidosObservaciones, dbLoadPedidosSync } from '../lib/db.js'
-import { agruparEspeciales, esPedidoEspecial, especialesPorCliente } from '../lib/pedidos.js'
+import { CATEGORIAS, agruparEspeciales, categoriaDe, esPedidoEspecial, especialesPorCliente } from '../lib/pedidos.js'
 import { formatPrice } from '../lib/constants.js'
 import DespachosView from './DespachosView.jsx'
 
@@ -58,6 +58,7 @@ export default function PedidosView({
   const [abierto, setAbierto] = useState(null) // fila del cliente abierto
   const [detalle, setDetalle] = useState(null)
   const [qRef, setQRef] = useState('') // buscador dentro del detalle del cliente
+  const [catRef, setCatRef] = useState('') // categoría dentro del detalle
   const { sortKey, sortDir, toggle } = useSort('total', 'desc')
 
   // Se carga al entrar y cada vez que el servidor sube un informe nuevo (la
@@ -71,7 +72,7 @@ export default function PedidosView({
   }, [stamp])
 
   useEffect(() => {
-    setQRef('')
+    setQRef(''); setCatRef('')
     if (!abierto) { setDetalle(null); return undefined }
     let vivo = true
     cargarDetalle(abierto.cliente)
@@ -131,12 +132,23 @@ export default function PedidosView({
     const orden = { Casania: 0, Mariset: 1, Otra: 2 }
     const term = qRef.trim().toLowerCase()
     return [...m.values()]
+      .map((g) => ({ ...g, categoria: categoriaDe(g.descripcion) }))
+      .filter((g) => !catRef || g.categoria.key === catRef)
       .filter((g) => !term || g.referencia.toLowerCase().includes(term)
         || (g.descripcion || '').toLowerCase().includes(term)
+        || g.categoria.label.toLowerCase().includes(term)
         || g.colores.some((r) => String(r.color || '').toLowerCase().includes(term)))
       .sort((a, b) => (orden[marcaDe(a.referencia)] - orden[marcaDe(b.referencia)])
         || a.referencia.localeCompare(b.referencia, 'es', { numeric: true }))
-  }, [detalle, qRef])
+  }, [detalle, qRef, catRef])
+
+  const catsDetalle = useMemo(() => {
+    const porRefCat = new Map()
+    ;(detalle || []).forEach((r) => { if (!porRefCat.has(r.referencia)) porRefCat.set(r.referencia, categoriaDe(r.descripcion).key) })
+    const n = {}
+    porRefCat.forEach((k) => { n[k] = (n[k] || 0) + 1 })
+    return n
+  }, [detalle])
 
   const tallasDetalle = useMemo(() => {
     const s = new Set()
@@ -328,7 +340,13 @@ export default function PedidosView({
             {!detalle ? <div className="empty-state"><p>Cargando…</p></div> : (
               <>
               <div className="dsp-tool">
-                <SearchInput value={qRef} onChange={setQRef} placeholder="Referencia, descripción o color…" className="dsp-buscar" />
+                <SearchInput value={qRef} onChange={setQRef} placeholder="Referencia, categoría, descripción o color…" className="dsp-buscar" />
+                <div className="dis-filtros dsp-cats">
+                  {CATEGORIAS.map((k) => (catsDetalle[k.key] ? (
+                    <button key={k.key} type="button" className={'proc-f-btn' + (catRef === k.key ? ' on' : '')}
+                      onClick={() => setCatRef(catRef === k.key ? '' : k.key)}>{k.label} <b>{catsDetalle[k.key]}</b></button>
+                  ) : null))}
+                </div>
                 <span className="dsp-ley"><span className="dsp-ley-n" style={{ border: 0, padding: 0 }}>{porRef.length} referencias{qRef ? ' encontradas' : ''}</span></span>
               </div>
               <div className="med-wrap ped-scroll">
@@ -366,7 +384,7 @@ export default function PedidosView({
                           {i === 0 ? (
                             <button type="button" className="ped-ref" onClick={() => onOpenRef && onOpenRef(g.referencia)}
                               title="Abrir la ficha de la referencia">
-                              <b>{g.referencia}</b>
+                              <b>{g.referencia}<span className={'dsp-cat c-' + g.categoria.key}>{g.categoria.label}</span></b>
                               <span className="ped-desc">{g.descripcion}{g.tipo ? ` · ${g.tipo}` : ''} · {marcaDe(g.referencia)}</span>
                             </button>
                           ) : ''}

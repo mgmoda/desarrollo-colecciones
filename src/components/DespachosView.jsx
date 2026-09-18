@@ -6,7 +6,7 @@ import { useSort, sortRows } from '../lib/sort.js'
 import { dbLoadPedidosTodos, dbLoadDespachos, dbUpsertDespacho } from '../lib/db.js'
 import { formatPrice } from '../lib/constants.js'
 import { nombreDe } from '../lib/procesos.js'
-import { esPedidoEspecial } from '../lib/pedidos.js'
+import { CATEGORIAS, categoriaDe, esPedidoEspecial } from '../lib/pedidos.js'
 import {
   FILTROS, NOVEDAD_NO_RECIBE, TALLAS, armarDespachos, idCliente, idRef, marcaDe, sumaTallas, totales,
 } from '../lib/despachos.js'
@@ -211,6 +211,7 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
   const [nota, setNota] = useState(c.novedadNota || '')
   const [q, setQ] = useState('')
   const [filtro, setFiltro] = useState('todas')
+  const [cat, setCat] = useState('') // categoría: vestido, conjunto, pantalón, blusa
   const [menuDe, setMenuDe] = useState(null)   // id de la línea con el menú abierto
   const [editando, setEditando] = useState(null) // id de la línea en edición
   const [edit, setEdit] = useState({ sep: {}, fact: {} })
@@ -220,7 +221,7 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
   const refs = useMemo(() => {
     const m = new Map()
     c.lineas.forEach((l) => {
-      if (!m.has(l.ref)) m.set(l.ref, { ref: l.ref, descripcion: l.descripcion, marca: marcaDe(l.ref), cerrada: l.cerrada, lineas: [], vendido: 0, separado: 0, facturado: 0 })
+      if (!m.has(l.ref)) m.set(l.ref, { ref: l.ref, descripcion: l.descripcion, categoria: categoriaDe(l.descripcion), marca: marcaDe(l.ref), cerrada: l.cerrada, lineas: [], vendido: 0, separado: 0, facturado: 0 })
       const r = m.get(l.ref)
       r.lineas.push(l); r.vendido += l.vendido; r.separado += l.separado; r.facturado += l.facturado
     })
@@ -239,10 +240,11 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
   const visibles = useMemo(() => {
     const term = q.trim().toLowerCase()
     const fn = (FILTROS_REF.find((f) => f.key === filtro) || FILTROS_REF[0]).f
-    return refs.filter(fn).filter((r) => !term
+    return refs.filter(fn).filter((r) => !cat || r.categoria.key === cat).filter((r) => !term
       || r.ref.toLowerCase().includes(term) || (r.descripcion || '').toLowerCase().includes(term)
+      || r.categoria.label.toLowerCase().includes(term)
       || r.lineas.some((l) => l.color.toLowerCase().includes(term)))
-  }, [refs, q, filtro])
+  }, [refs, q, filtro, cat])
 
   const tallas = useMemo(() => {
     const st = new Set()
@@ -355,7 +357,7 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
         </div>
 
         <div className="dsp-tool">
-          <SearchInput value={q} onChange={setQ} placeholder="Referencia, descripción o color…" className="dsp-buscar" />
+          <SearchInput value={q} onChange={setQ} placeholder="Referencia, categoría, descripción o color…" className="dsp-buscar" />
           <div className="dis-filtros">
             {FILTROS_REF.map((f) => {
               const n = refs.filter(f.f).length
@@ -363,6 +365,16 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
               return (
                 <button key={f.key} type="button" className={'proc-f-btn' + (filtro === f.key ? ' on' : '')}
                   onClick={() => setFiltro(f.key)}>{f.label} <b>{n}</b></button>
+              )
+            })}
+          </div>
+          <div className="dis-filtros dsp-cats">
+            {CATEGORIAS.map((k) => {
+              const n = refs.filter((r) => r.categoria.key === k.key).length
+              if (!n) return null
+              return (
+                <button key={k.key} type="button" className={'proc-f-btn' + (cat === k.key ? ' on' : '')}
+                  onClick={() => setCat(cat === k.key ? '' : k.key)}>{k.label} <b>{n}</b></button>
               )
             })}
           </div>
@@ -412,6 +424,7 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
                           <>
                             <span className={'dsp-punto ' + r.punto} title={{ gris: 'No sale', verde: 'Todo facturado', azul: 'Todo lo pendiente está separado', ambar: 'Separado en parte', vacio: 'Nada separado' }[r.punto]} />
                             <b>{r.ref}</b>
+                            <span className={'dsp-cat c-' + r.categoria.key}>{r.categoria.label}</span>
                             <span className="dsp-refd-d" title={r.descripcion}>{r.descripcion}</span>
                             {r.cerrada && <span className="tag dsp-tag">No sale</span>}
                           </>

@@ -6025,6 +6025,48 @@ select.filtro-taller { flex: none; width: 215px; }
 .dsp-acc .dsp-cerrar { margin-left: 6px; }
 .dsp-btn { padding: 3px 9px; font-size: 11.5px; border-radius: 8px; margin-right: 4px; }
 .dsp-det tr.dsp-con td { background: #fcfbf8; }
+/* Detalle denso: barra de búsqueda, celdas por estado y menú de acciones */
+.dsp-tool { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
+.dsp-buscar { min-width: 260px; }
+.dsp-ley { margin-left: auto; display: inline-flex; gap: 12px; align-items: center; font-size: 11.5px; color: var(--muted); }
+.dsp-ley i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.dsp-ley i.s { background: #e3ebf8; box-shadow: inset 0 0 0 1px #b9c9e6; }
+.dsp-ley i.f { background: #e1f1df; box-shadow: inset 0 0 0 1px #b5d8b0; }
+.dsp-ley i.p { background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline-strong); }
+.dsp-ley-n { padding-left: 12px; border-left: 1px solid var(--hairline); }
+.dsp-densa { font-size: 12px; }
+.med-tabla.dsp-densa td, .med-tabla.dsp-densa th { padding-left: 6px; padding-right: 6px; }
+.med-tabla.dsp-densa td { padding-top: 3px; padding-bottom: 3px; }
+/* El detalle denso necesita más ancho que el modal xl normal */
+.modal-xl:has(.dsp-densa) { max-width: 1240px; }
+.dsp-densa tr.ped-marca td { background: #f4f2ed; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); padding: 5px 8px; border-top: 2px solid var(--hairline-strong); position: static; }
+.dsp-densa tr.ped-marca td .muted { font-weight: 500; letter-spacing: 0; text-transform: none; }
+.dsp-densa td.dsp-foto { padding: 2px 6px; width: 46px; position: static; }
+.dsp-densa td.dsp-foto .thumb { width: 34px; height: 42px; object-fit: cover; border-radius: 6px; display: block; cursor: zoom-in; }
+.dsp-densa td.dsp-foto .thumb.empty { display: grid; place-items: center; background: #f1f0ee; color: var(--muted); font-size: 11px; cursor: default; }
+.dsp-refd { white-space: nowrap; }
+.dsp-refd b { font-weight: 700; }
+.dsp-refd-d { color: var(--muted); font-size: 11px; margin-left: 6px; display: inline-block; max-width: 190px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+.dsp-refd .dsp-tag { margin-left: 6px; }
+.dsp-punto { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; background: #e5e2da; }
+.dsp-punto.azul { background: #2b4a7e; } .dsp-punto.verde { background: #1f6b2e; }
+.dsp-punto.ambar { background: #e0a030; } .dsp-punto.gris { background: #a8a39b; }
+.dsp-ped { color: var(--muted); font-size: 10.5px; }
+.dsp-densa td.dsp-c-sep { background: #e3ebf8; color: #2b4a7e; font-weight: 700; }
+.dsp-densa td.dsp-c-fact { background: #e1f1df; color: #1f6b2e; font-weight: 700; }
+.dsp-mix { display: inline-flex; border-radius: 4px; overflow: hidden; font-weight: 700; font-size: 11.5px; }
+.dsp-mix span { padding: 0 5px; min-width: 16px; }
+.dsp-mix .s { background: #e3ebf8; color: #2b4a7e; } .dsp-mix .f { background: #e1f1df; color: #1f6b2e; } .dsp-mix .p { background: #fbeceb; color: #a3362c; }
+.dsp-densa tr.dsp-cerrada td { color: var(--muted); }
+.dsp-densa .dsp-acc { position: relative; width: 34px; text-align: right; }
+.dsp-kebab { border: 0; background: transparent; color: #b5b0a8; font-size: 16px; line-height: 1; cursor: pointer; padding: 0 5px; border-radius: 5px; }
+.dsp-densa tr:hover .dsp-kebab, .dsp-kebab:focus { color: var(--ink); background: #f1f0ee; }
+.dsp-menu-fondo { position: fixed; inset: 0; z-index: 8; }
+.dsp-menu { position: absolute; right: 6px; top: 22px; z-index: 9; background: var(--surface); border: 1px solid var(--hairline-strong); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.14); padding: 5px; min-width: 190px; display: flex; flex-direction: column; }
+.dsp-menu button { border: 0; background: transparent; text-align: left; font: inherit; font-size: 12.5px; padding: 7px 10px; border-radius: 7px; cursor: pointer; color: var(--ink); }
+.dsp-menu button:hover { background: #f4f2ed; }
+.dsp-menu button.rojo { color: #b23121; }
+.dsp-edit-acc { text-align: left; white-space: nowrap; }
 
 /* ---------- Corte por día ---------- */
 .dc-wrap .rend-card { margin-top: 14px; }

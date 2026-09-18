@@ -184,30 +184,77 @@ export default function DespachosView({
   )
 }
 
-// ── Detalle del cliente: la misma tabla de Pedidos (foto, referencia,
-//    pedido, color, curva por talla, unid, precio, total, observación), por
-//    marca y referencia ascendente. Debajo de cada línea van Separado,
-//    Facturado y Pendiente con la misma curva por talla; "Separar" abre las
-//    casillas para registrar por talla. ─────────────────────────────────
+// ── Detalle del cliente: tabla densa, una fila por referencia y color.
+//    La celda de cada talla dice en qué va esa unidad: azul separada, verde
+//    facturada, sin color pendiente; si la talla está repartida, la celda se
+//    parte. Buscador y chips arriba; las acciones (separar por talla, ficha,
+//    no sale) van en el menú ⋯ de cada fila. ─────────────────────────────
+const FILTROS_REF = [
+  { key: 'todas', label: 'Todas', f: () => true },
+  { key: 'Casania', label: 'Casania', f: (r) => r.marca === 'Casania' },
+  { key: 'Mariset', label: 'Mariset', f: (r) => r.marca === 'Mariset' },
+  { key: 'conSep', label: 'Con separado', f: (r) => r.separado > 0 },
+  { key: 'porSep', label: 'Por separar', f: (r) => !r.cerrada && r.pendSinSep > 0 },
+  { key: 'noSale', label: 'No salen', f: (r) => r.cerrada },
+]
+
+// Cómo se reparte lo vendido de una talla: facturado, separado vigente (lo
+// separado que aún no se factura) y pendiente sin separar.
+function partesDe(l, t) {
+  const v = l.tallas[t] || 0
+  const f = Math.min(v, l.factTallas[t] || 0)
+  const sp = Math.max(0, Math.min(v, l.sepTallas[t] || 0) - f)
+  return { v, f, s: sp, p: v - f - sp }
+}
+
 function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onViewImage, onOpenRef, onClose }) {
   const [nota, setNota] = useState(c.novedadNota || '')
+  const [q, setQ] = useState('')
+  const [filtro, setFiltro] = useState('todas')
+  const [menuDe, setMenuDe] = useState(null)   // id de la línea con el menú abierto
   const [editando, setEditando] = useState(null) // id de la línea en edición
   const [edit, setEdit] = useState({ sep: {}, fact: {} })
   const ultimo = c.lineas.map((l) => l.registro).filter((r) => r && r.at).sort((a, b) => b.at - a.at)[0]
 
-  const orden = { Casania: 0, Mariset: 1, Otra: 2 }
-  const lineas = useMemo(() => [...c.lineas].sort((a, b) => (orden[marcaDe(a.ref)] - orden[marcaDe(b.ref)])
-    || a.ref.localeCompare(b.ref, 'es', { numeric: true }) || a.color.localeCompare(b.color)), [c.lineas])
+  // Referencias con sus líneas y sus totales, por marca y código ascendente.
+  const refs = useMemo(() => {
+    const m = new Map()
+    c.lineas.forEach((l) => {
+      if (!m.has(l.ref)) m.set(l.ref, { ref: l.ref, descripcion: l.descripcion, marca: marcaDe(l.ref), cerrada: l.cerrada, lineas: [], vendido: 0, separado: 0, facturado: 0 })
+      const r = m.get(l.ref)
+      r.lineas.push(l); r.vendido += l.vendido; r.separado += l.separado; r.facturado += l.facturado
+    })
+    const orden = { Casania: 0, Mariset: 1, Otra: 2 }
+    return [...m.values()].map((r) => {
+      const sepVig = r.lineas.reduce((n, l) => n + l.sepVig, 0)
+      const pend = Math.max(r.vendido - r.facturado, 0)
+      return {
+        ...r, sepVig, pend, pendSinSep: Math.max(pend - sepVig, 0),
+        // Mismo código de color que las celdas: verde facturado, azul separado.
+        punto: r.cerrada ? 'gris' : r.facturado >= r.vendido ? 'verde' : sepVig >= pend && sepVig > 0 ? 'azul' : r.separado > 0 ? 'ambar' : 'vacio',
+      }
+    }).sort((a, b) => (orden[a.marca] - orden[b.marca]) || a.ref.localeCompare(b.ref, 'es', { numeric: true }))
+  }, [c.lineas])
+
+  const visibles = useMemo(() => {
+    const term = q.trim().toLowerCase()
+    const fn = (FILTROS_REF.find((f) => f.key === filtro) || FILTROS_REF[0]).f
+    return refs.filter(fn).filter((r) => !term
+      || r.ref.toLowerCase().includes(term) || (r.descripcion || '').toLowerCase().includes(term)
+      || r.lineas.some((l) => l.color.toLowerCase().includes(term)))
+  }, [refs, q, filtro])
+
   const tallas = useMemo(() => {
     const st = new Set()
-    lineas.forEach((l) => Object.keys(l.tallas || {}).forEach((t) => st.add(t)))
+    c.lineas.forEach((l) => Object.keys(l.tallas || {}).forEach((t) => st.add(t)))
     return TALLAS.filter((t) => st.has(t))
-  }, [lineas])
-  const pedidos = useMemo(() => [...new Set(lineas.flatMap((l) => l.pedidos))].sort(), [lineas])
-  const valorTotal = lineas.reduce((n, l) => n + l.valor, 0)
-  const nCols = 9 + tallas.length
+  }, [c.lineas])
+  const pedidos = useMemo(() => [...new Set(c.lineas.flatMap((l) => l.pedidos))].sort(), [c.lineas])
+  const valorTotal = c.lineas.reduce((n, l) => n + l.valor, 0)
+  const nCols = 10 + tallas.length
 
   function empezar(l) {
+    setMenuDe(null)
     setEditando(l.id)
     setEdit({ sep: { ...(l.sepTallas || {}) }, fact: { ...(l.factTallas || {}) } })
   }
@@ -222,6 +269,7 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
     setEditando(null)
   }
   function cerrarRef(ref, cerrada) {
+    setMenuDe(null)
     const previo = registros[idRef(ref)] || {}
     onGuardar(idRef(ref), { ...previo, cerrada, usuario, at: Date.now() })
   }
@@ -230,33 +278,54 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
     onGuardar(idCliente(c.cliente), { ...previo, novedad: valor, nota: nota.trim(), usuario, at: Date.now() })
   }
 
-  // Una fila secundaria con la curva por talla: Separado, Facturado o Pendiente.
-  function SubFila({ l, etiqueta, valores, campo, cls }) {
-    const editable = editando === l.id && campo
-    const total = sumaTallas(valores)
+  // La celda de una talla, pintada según en qué van sus unidades.
+  function celdaTalla(l, t) {
+    const x = partesDe(l, t)
+    if (!x.v) return <td key={t} className="num"><span className="dsp-cero">·</span></td>
+    const estados = (x.f ? 1 : 0) + (x.s ? 1 : 0) + (x.p ? 1 : 0)
+    const titulo = `${x.v} vendidas · ${x.f} facturadas · ${x.s} separadas · ${x.p} pendientes`
+    if (estados === 1) {
+      return <td key={t} title={titulo} className={'num ' + (x.s ? 'dsp-c-sep' : x.f ? 'dsp-c-fact' : '')}>{x.v}</td>
+    }
     return (
-      <tr className={'dsp-sub' + (editable ? ' editando' : '')}>
+      <td key={t} className="num" title={titulo}>
+        <span className="dsp-mix">
+          {x.f > 0 && <span className="f">{x.f}</span>}
+          {x.s > 0 && <span className="s">{x.s}</span>}
+          {x.p > 0 && <span className="p">{x.p}</span>}
+        </span>
+      </td>
+    )
+  }
+
+  // Fila de edición por talla (Separado o Facturado) de la línea abierta.
+  function FilaEdicion({ l, etiqueta, campo, cls }) {
+    return (
+      <tr className="dsp-sub editando">
         <td /><td />
         <td className="dsp-sub-et"><span className={cls}>{etiqueta}</span></td>
-        <td />
         {tallas.map((t) => (
           <td key={t} className="num">
-            {editable ? (
-              l.tallas[t] ? (
-                <input type="number" min="0" max={l.tallas[t]} className="input dsp-in-t" value={edit[campo][t] || ''}
-                  placeholder="·" onChange={(e) => poner(campo, t, e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') guardarEdicion(l); if (e.key === 'Escape') setEditando(null) }} />
-              ) : <span className="dsp-cero">·</span>
-            ) : (valores[t] ? <span className={cls}>{num(valores[t])}</span> : <span className="dsp-cero">·</span>)}
+            {l.tallas[t] ? (
+              <input type="number" min="0" max={l.tallas[t]} className="input dsp-in-t" value={edit[campo][t] || ''}
+                placeholder="·" onChange={(e) => poner(campo, t, e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') guardarEdicion(l); if (e.key === 'Escape') { e.stopPropagation(); setEditando(null) } }} />
+            ) : <span className="dsp-cero">·</span>}
           </td>
         ))}
-        <td className="num"><Cel n={editable ? sumaTallas(edit[campo]) : total} cls={cls} /></td>
-        <td colSpan={4} />
+        <td className="num"><Cel n={sumaTallas(edit[campo])} cls={cls} /></td>
+        <td colSpan={6} className="dsp-edit-acc">
+          {campo === 'fact' && (
+            <>
+              <button type="button" className="btn btn-primary dsp-btn" onClick={() => guardarEdicion(l)}>Guardar</button>
+              <button type="button" className="btn dsp-btn" onClick={() => setEditando(null)}>Cancelar</button>
+            </>
+          )}
+        </td>
       </tr>
     )
   }
 
-  let refPrevia = ''
   let marcaPrevia = ''
   return (
     <Modal open onClose={onClose} size="xl">
@@ -285,92 +354,104 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
           <div><span>Decisión</span><b><span className={'tag dsp-tag ' + (CHIP_DECISION[c.decision.key] || '')}>{c.decision.label}</span></b><em>{c.decision.motivo}</em></div>
         </div>
 
+        <div className="dsp-tool">
+          <SearchInput value={q} onChange={setQ} placeholder="Referencia, descripción o color…" className="dsp-buscar" />
+          <div className="dis-filtros">
+            {FILTROS_REF.map((f) => {
+              const n = refs.filter(f.f).length
+              if (!n && filtro !== f.key && f.key !== 'todas') return null
+              return (
+                <button key={f.key} type="button" className={'proc-f-btn' + (filtro === f.key ? ' on' : '')}
+                  onClick={() => setFiltro(f.key)}>{f.label} <b>{n}</b></button>
+              )
+            })}
+          </div>
+          <span className="dsp-ley">
+            <span><i className="s" />separado</span><span><i className="f" />facturado</span><span><i className="p" />pendiente</span>
+            <span className="dsp-ley-n">{visibles.length} de {refs.length}</span>
+          </span>
+        </div>
+
         <div className="med-wrap dsp-scroll">
-          <table className="med-tabla ped-det dsp-det">
+          <table className="med-tabla dsp-det dsp-densa">
             <thead>
               <tr>
-                <th>Foto</th><th>Referencia</th><th>Pedido</th><th>Color</th>
+                <th /><th>Referencia</th><th>Color</th>
                 {tallas.map((t) => <th key={t} className="num">{t}</th>)}
-                <th className="num">Unid</th><th className="num">Precio</th><th className="num">Total</th><th>Observación</th><th></th>
+                <th className="num">Unid</th><th className="num">Precio</th><th className="num">Total</th>
+                <th className="num dsp-sep">Sep.</th><th className="num dsp-fact">Fact.</th><th className="num dsp-pend">Pend.</th><th />
               </tr>
             </thead>
             <tbody>
-              {lineas.map((l) => {
-                const marca = marcaDe(l.ref)
-                const nuevaMarca = marca !== marcaPrevia
-                marcaPrevia = marca
-                const primera = l.ref !== refPrevia
-                refPrevia = l.ref
-                const et = ETIQUETA_LINEA[l.estado]
-                const ficha = refMap && refMap.get(l.ref)
-                const img = ficha && ficha.image
-                const conDatos = l.separado > 0 || l.facturado > 0 || editando === l.id
-                const pendTallas = Object.fromEntries(tallas.map((t) => [t, Math.max(0, (l.tallas[t] || 0) - (l.factTallas[t] || 0))]).filter(([, v]) => v > 0))
+              {visibles.length === 0 && (
+                <tr><td colSpan={nCols} className="muted" style={{ padding: 18, textAlign: 'center' }}>Ninguna referencia coincide.</td></tr>
+              )}
+              {visibles.map((r) => {
                 const filas = []
-                if (nuevaMarca) {
-                  const delGrupo = lineas.filter((x) => marcaDe(x.ref) === marca)
+                if (r.marca !== marcaPrevia) {
+                  marcaPrevia = r.marca
+                  const delGrupo = visibles.filter((x) => x.marca === r.marca)
                   filas.push(
-                    <tr key={'m' + marca} className="ped-marca">
-                      <td colSpan={nCols}>{marca}<span className="muted"> · {new Set(delGrupo.map((x) => x.ref)).size} referencias · {num(delGrupo.reduce((n, x) => n + x.vendido, 0))} unidades</span></td>
+                    <tr key={'m' + r.marca} className="ped-marca">
+                      <td colSpan={nCols}>{r.marca}<span className="muted"> · {delGrupo.length} referencias · {num(delGrupo.reduce((n, x) => n + x.vendido, 0))} unidades</span></td>
                     </tr>,
                   )
                 }
-                filas.push(
-                  <tr key={l.id} className={(primera ? 'ped-ref-inicio' : '') + (conDatos ? ' dsp-con' : '')}>
-                    <td className="ped-foto">
-                      {primera && (img
-                        ? <img src={img} alt={l.ref} className="thumb" title="Ampliar foto" onClick={() => onViewImage && onViewImage(img)} />
-                        : <span className="thumb empty" title="Sin foto en la ficha">—</span>)}
-                    </td>
-                    <td>
-                      {primera && (
-                        <div className="dsp-refcel">
-                          <button type="button" className="ped-ref" onClick={() => onOpenRef && onOpenRef(l.ref)} title="Abrir la ficha de la referencia">
-                            <b>{l.ref}</b>
-                            <span className="ped-desc">{l.descripcion} · {marca}</span>
-                          </button>
-                          <button type="button" className={'dsp-cerrar' + (l.cerrada ? ' on' : '')}
-                            title={l.cerrada ? 'La referencia está cerrada (no sale). Clic para reabrirla.' : 'Cerrar la referencia: no sale, y lo vendido deja de contar como faltante'}
-                            onClick={() => cerrarRef(l.ref, !l.cerrada)}>
-                            {l.cerrada ? 'Reabrir' : 'No sale'}
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                    <td className="mono muted">{l.pedidos.join(', ')}</td>
-                    <td>{l.color}</td>
-                    {tallas.map((t) => (
-                      <td key={t} className="num">{l.tallas[t] ? l.tallas[t] : <span className="muted">·</span>}</td>
-                    ))}
-                    <td className="num strong">{num(l.vendido)}</td>
-                    <td className="num muted">{formatPrice(l.precio) || '—'}</td>
-                    <td className="num">{formatPrice(l.valor) || '—'}</td>
-                    <td className="ped-obs-cel">
-                      {l.obs ? <span className={esPedidoEspecial(l.obs) ? 'tag ped-esp' : 'ped-obs-txt'}>{l.obs}</span> : ''}
-                    </td>
-                    <td className="dsp-acc" onClick={(e) => e.stopPropagation()}>
-                      {editando === l.id ? (
-                        <>
-                          <button type="button" className="btn btn-primary dsp-btn" onClick={() => guardarEdicion(l)}>Guardar</button>
-                          <button type="button" className="btn dsp-btn" onClick={() => setEditando(null)}>Cancelar</button>
-                        </>
-                      ) : (
-                        <>
-                          {et && <span className={'tag dsp-tag ' + et[0]}>{et[1]}</span>}
-                          {!l.cerrada && (
-                            <button type="button" className="dsp-cerrar" title="Registrar por talla lo separado y lo facturado"
-                              onClick={() => empezar(l)}>{conDatos ? 'Editar' : 'Separar'}</button>
-                          )}
-                        </>
-                      )}
-                    </td>
-                  </tr>,
-                )
-                if (conDatos) {
-                  filas.push(<SubFila key={l.id + 's'} l={l} etiqueta="Separado" valores={l.sepTallas} campo="sep" cls="dsp-sep" />)
-                  filas.push(<SubFila key={l.id + 'f'} l={l} etiqueta="Facturado" valores={l.factTallas} campo="fact" cls="dsp-fact" />)
-                  filas.push(<SubFila key={l.id + 'p'} l={l} etiqueta="Pendiente" valores={pendTallas} cls="dsp-pend" />)
-                }
+                const ficha = refMap && refMap.get(r.ref)
+                const img = ficha && ficha.image
+                r.lineas.forEach((l, i) => {
+                  filas.push(
+                    <tr key={l.id} className={(i === 0 ? 'ped-ref-inicio' : '') + (r.cerrada ? ' dsp-cerrada' : '')}>
+                      <td className="dsp-foto">
+                        {i === 0 && (img
+                          ? <img src={img} alt={r.ref} className="thumb" title="Ampliar foto" onClick={() => onViewImage && onViewImage(img)} />
+                          : <span className="thumb empty" title="Sin foto en la ficha">—</span>)}
+                      </td>
+                      <td className="dsp-refd">
+                        {i === 0 && (
+                          <>
+                            <span className={'dsp-punto ' + r.punto} title={{ gris: 'No sale', verde: 'Todo facturado', azul: 'Todo lo pendiente está separado', ambar: 'Separado en parte', vacio: 'Nada separado' }[r.punto]} />
+                            <b>{r.ref}</b>
+                            <span className="dsp-refd-d" title={r.descripcion}>{r.descripcion}</span>
+                            {r.cerrada && <span className="tag dsp-tag">No sale</span>}
+                          </>
+                        )}
+                      </td>
+                      <td>
+                        {l.color}<span className="dsp-ped"> · {l.pedidos.join(', ')}</span>
+                        {l.obs && esPedidoEspecial(l.obs) && <span className="tag ped-esp dsp-tag" title="Pedido especial">{l.obs}</span>}
+                      </td>
+                      {tallas.map((t) => celdaTalla(l, t))}
+                      <td className="num strong">{num(l.vendido)}</td>
+                      <td className="num muted">{formatPrice(l.precio) || '—'}</td>
+                      <td className="num">{formatPrice(l.valor) || '—'}</td>
+                      <td className="num"><Cel n={l.sepVig} cls="dsp-sep" /></td>
+                      <td className="num"><Cel n={l.facturado} cls="dsp-fact" /></td>
+                      <td className="num dsp-pend">{num(Math.max(l.vendido - l.facturado, 0))}</td>
+                      <td className="dsp-acc">
+                        <button type="button" className="dsp-kebab" aria-label="Acciones" title="Separar por talla · ficha · no sale"
+                          onClick={() => setMenuDe(menuDe === l.id ? null : l.id)}>⋯</button>
+                        {menuDe === l.id && (
+                          <>
+                            <div className="dsp-menu-fondo" onClick={() => setMenuDe(null)} />
+                            <div className="dsp-menu">
+                              {!r.cerrada && <button type="button" onClick={() => empezar(l)}>Separar por talla…</button>}
+                              <button type="button" onClick={() => { setMenuDe(null); if (onOpenRef) onOpenRef(r.ref) }}>Ver ficha</button>
+                              {img && <button type="button" onClick={() => { setMenuDe(null); if (onViewImage) onViewImage(img) }}>Ampliar foto</button>}
+                              <button type="button" className="rojo" onClick={() => cerrarRef(r.ref, !r.cerrada)}>
+                                {r.cerrada ? 'Reabrir la referencia' : 'Marcar "no sale"'}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </td>
+                    </tr>,
+                  )
+                  if (editando === l.id) {
+                    filas.push(<FilaEdicion key={l.id + 's'} l={l} etiqueta="Separado" campo="sep" cls="dsp-sep" />)
+                    filas.push(<FilaEdicion key={l.id + 'f'} l={l} etiqueta="Facturado" campo="fact" cls="dsp-fact" />)
+                  }
+                })
                 return filas
               })}
             </tbody>

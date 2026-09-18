@@ -57,6 +57,7 @@ export default function PedidosView({
   const [q, setQ] = useState('')
   const [abierto, setAbierto] = useState(null) // fila del cliente abierto
   const [detalle, setDetalle] = useState(null)
+  const [qRef, setQRef] = useState('') // buscador dentro del detalle del cliente
   const { sortKey, sortDir, toggle } = useSort('total', 'desc')
 
   // Se carga al entrar y cada vez que el servidor sube un informe nuevo (la
@@ -70,6 +71,7 @@ export default function PedidosView({
   }, [stamp])
 
   useEffect(() => {
+    setQRef('')
     if (!abierto) { setDetalle(null); return undefined }
     let vivo = true
     cargarDetalle(abierto.cliente)
@@ -127,9 +129,14 @@ export default function PedidosView({
     // Por marca (Casania, Mariset) y dentro de cada una por referencia
     // ascendente: así se lee como el catálogo.
     const orden = { Casania: 0, Mariset: 1, Otra: 2 }
-    return [...m.values()].sort((a, b) => (orden[marcaDe(a.referencia)] - orden[marcaDe(b.referencia)])
-      || a.referencia.localeCompare(b.referencia, 'es', { numeric: true }))
-  }, [detalle])
+    const term = qRef.trim().toLowerCase()
+    return [...m.values()]
+      .filter((g) => !term || g.referencia.toLowerCase().includes(term)
+        || (g.descripcion || '').toLowerCase().includes(term)
+        || g.colores.some((r) => String(r.color || '').toLowerCase().includes(term)))
+      .sort((a, b) => (orden[marcaDe(a.referencia)] - orden[marcaDe(b.referencia)])
+        || a.referencia.localeCompare(b.referencia, 'es', { numeric: true }))
+  }, [detalle, qRef])
 
   const tallasDetalle = useMemo(() => {
     const s = new Set()
@@ -319,6 +326,11 @@ export default function PedidosView({
           </div>
           <div className="modal-body tal-modal-body">
             {!detalle ? <div className="empty-state"><p>Cargando…</p></div> : (
+              <>
+              <div className="dsp-tool">
+                <SearchInput value={qRef} onChange={setQRef} placeholder="Referencia, descripción o color…" className="dsp-buscar" />
+                <span className="dsp-ley"><span className="dsp-ley-n" style={{ border: 0, padding: 0 }}>{porRef.length} referencias{qRef ? ' encontradas' : ''}</span></span>
+              </div>
               <div className="med-wrap ped-scroll">
                 <table className="med-tabla ped-det">
                   <thead>
@@ -378,6 +390,7 @@ export default function PedidosView({
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
         </Modal>

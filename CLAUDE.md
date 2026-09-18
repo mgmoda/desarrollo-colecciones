@@ -234,10 +234,14 @@ la llave es cliente + referencia + color; separado vigente = max(separado −
 facturado, 0) por llave; pendiente = vendido − facturado; abierto real solo
 si la referencia no está cerrada y no tiene nada facturado para ese cliente;
 faltante real = separado vigente + abierto real (lo cerrado no cuenta).
-El detalle del cliente es la misma tabla de Pedidos (foto, pedido, curva
-por talla, precio, observación), por marca y referencia ascendente; debajo
-de cada línea van Separado, Facturado y Pendiente por talla (`sepTallas`,
-`factTallas` en el registro; `separado`/`facturado` guardan el total).
+El detalle del cliente es una tabla densa (una fila por referencia y
+color, por marca y referencia ascendente) con buscador y chips. La celda de
+cada talla dice en qué va: azul separada, verde facturada, sin color
+pendiente, y se parte si la talla está repartida (`partesDe`). Ese código
+de color es el mismo en todo Despachos. Las acciones van en el menú ⋯ de la
+fila: "Separar por talla" abre las casillas (`sepTallas`, `factTallas` en el
+registro; `separado`/`facturado` guardan el total), ficha, foto y "no sale".
+El modal se ensancha solo con `.modal-xl:has(.dsp-densa)`.
 Cerrar una referencia aplica a todos los clientes. Pendiente por confirmar
 con Diego: si al facturar la línea desaparece del informe de SYD, lo
 facturado registrado a mano se descontaría dos veces.

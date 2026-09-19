@@ -127,6 +127,15 @@ document.getElementById('lista').innerHTML=filas.map(f=>{ const w=(x)=>Math.roun
 
 // ── detalle C6911 ──
 document.getElementById('foto').src=D.foto;
+// Factory y SYD no siempre llaman igual al color ("VINO TINTO 2" es el ROJO
+// del pedido). Los que no coinciden se empatan con el color del pedido que
+// queda libre; en la app esto ya existe (empatarColor en programaciones).
+const sydCols=[...new Set(D.lineas.map(l=>l.color))];
+const facCols=[...new Set(D.curva.map(c=>c.color))];
+const libresSyd=sydCols.filter(c=>!facCols.includes(c));
+const alias={}; facCols.filter(c=>!sydCols.includes(c)).forEach((c,i)=>{ if(libresSyd[i]) alias[c]=libresSyd[i]; });
+const nombreFactory={}; Object.entries(alias).forEach(([f,sy])=>{ nombreFactory[sy]=f; });
+D.curva.forEach(c=>{ if(alias[c.color]) c.color=alias[c.color]; });
 const colores=[...new Set(D.curva.map(c=>c.color))];
 const entroCT={}, sepCT={};
 D.curva.forEach(c=>{ const t=String(c.talla).replace(/^0+/,''); entroCT[c.color+'|'+t]=(entroCT[c.color+'|'+t]||0)+(Number(c.corte)||0); });
@@ -141,7 +150,7 @@ document.getElementById('mk').innerHTML=`<div><span>Entró</span><b>${entroT}</b
 const demCT={}; porCliente.forEach(c=>Object.entries(c.ven).forEach(([k,v])=>{ const f=v-(c.sep[k]||0); if(f>0) demCT[k]=(demCT[k]||0)+f; }));
 let m=`<thead><tr><th>Color</th>${tallas.map(t=>`<th class="n">${t}</th>`).join('')}<th class="n">Total</th></tr></thead><tbody>`;
 colores.forEach(col=>{ const fila=(et,src,cls,f)=>`<tr><td style="color:var(--muted);font-size:11px;padding-left:18px">${et}</td>${tallas.map(t=>{const v=src[col+'|'+t]||0; return `<td class="n ${v?(f||''):'cero'}">${v?`<span class="${cls}">${v}</span>`:'·'}</td>`;}).join('')}<td class="n ${cls}">${tallas.reduce((n,t)=>n+(src[col+'|'+t]||0),0)}</td></tr>`;
-  m+=`<tr class="grp"><td colspan="${tallas.length+2}">${col}</td></tr>`+fila('entró',entroCT,'')+fila('separado',sepCT,'sepc')+fila('libre',libreCT,'okc','lib')+fila('lo piden',demCT,'pendc'); });
+  m+=`<tr class="grp"><td colspan="${tallas.length+2}">${col}${nombreFactory[col]?` <span style="font-weight:500;color:var(--muted);font-size:11px">· en Factory "${nombreFactory[col]}"</span>`:''}</td></tr>`+fila('entró',entroCT,'')+fila('separado',sepCT,'sepc')+fila('libre',libreCT,'okc','lib')+fila('lo piden',demCT,'pendc'); });
 document.getElementById('matriz').innerHTML=m+'</tbody>';
 // clientes en orden de turno
 const PRIOR=new Set(['QUESSEP DE FERNANDEZ Y CÍA','JOSE MARIA MESTRA MADERA']);

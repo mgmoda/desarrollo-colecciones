@@ -7,6 +7,7 @@ import { dbLoadPedidosDeCliente, dbLoadPedidosClientes, dbLoadPedidosObservacion
 import { CATEGORIAS, agruparEspeciales, categoriaDe, esPedidoEspecial, especialesPorCliente } from '../lib/pedidos.js'
 import { formatPrice } from '../lib/constants.js'
 import DespachosView from './DespachosView.jsx'
+import PorReferenciaView from './PorReferenciaView.jsx'
 
 // ════════════════════════════════════════════════════════════════════════
 // PEDIDOS — lo que los clientes tienen pedido y pendiente por despachar.
@@ -37,7 +38,7 @@ function marcaDe(ref) {
 }
 
 export default function PedidosView({
-  stamp, stampDespachos, usuario, refMap, onViewImage, onOpenRef,
+  stamp, stampDespachos, usuario, refMap, orders, refs, onViewImage, onOpenRef,
   // Inyectables para probar la vista con datos fijos, sin sesión.
   cargar = {},
 }) {
@@ -175,7 +176,9 @@ export default function PedidosView({
           <h1 className="view-title">Pedidos</h1>
           <p className="view-sub">{vista === 'despachos'
             ? 'Despachos — qué tiene separado cada cliente y qué le falta'
-            : 'Pendientes por cliente y referencia — SYD'}</p>
+            : vista === 'referencia'
+              ? 'Por referencia — lo que entró a bodega, a quién se separó y qué queda libre'
+              : 'Pendientes por cliente y referencia — SYD'}</p>
         </div>
         <div className="view-actions">
           {/* El conmutador va solo en la cabecera, siempre en el mismo sitio:
@@ -186,6 +189,8 @@ export default function PedidosView({
               className={vista === 'pedidos' ? 'on' : ''} onClick={() => setVista('pedidos')}>Pedidos</button>
             <button type="button" role="tab" aria-selected={vista === 'despachos'}
               className={vista === 'despachos' ? 'on' : ''} onClick={() => setVista('despachos')}>Despachos</button>
+            <button type="button" role="tab" aria-selected={vista === 'referencia'}
+              className={vista === 'referencia' ? 'on' : ''} onClick={() => setVista('referencia')}>Por referencia</button>
           </div>
         </div>
       </div>
@@ -216,7 +221,10 @@ export default function PedidosView({
       {vista === 'despachos' && (
         <DespachosView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
       )}
-      {vista === 'despachos' ? null : <>
+      {vista === 'referencia' && (
+        <PorReferenciaView stamp={stamp} orders={orders} refs={refs} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
+      )}
+      {vista !== 'pedidos' ? null : <>
 
       <div className="prog-kpis">
         <div className="prog-kpi"><span>Clientes</span><b>{num(kpi.clientes)}</b><em>{num(kpi.pedidos)} pedidos</em></div>

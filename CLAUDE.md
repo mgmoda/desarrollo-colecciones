@@ -233,6 +233,19 @@ clientes/resumen, `sincronizar_programaciones()`, el detalle de Pedidos). En
 Despachos lo separado y lo facturado de SYD mandan; lo manual de
 `dev_despachos` solo aplica en la línea donde SYD no trae nada.
 
+**Por referencia (19-sep-2026)**: tercera vista de Pedidos
+(`PorReferenciaView.jsx`, cuentas en `lib/porReferencia.js`). Cruza la
+entrada a bodega de las órdenes (`stages.entradaBodega`, sin premuestras),
+el pedido de SYD y lo separado/facturado de SYD. Libre en bodega = entró −
+max(separado, facturado); falta producir = pedido − entró. El conjunto toma
+la entrada de la prenda que MENOS ha entrado (órdenes CONJUNTO de cada
+pieza). "Revisar entrada" avisa cuando hay más separado que entrado. Al
+abrir una referencia: a qué clientes se les separó y cuánto les falta.
+Pendiente (mockups `libres-en-bodega-v1`, `separacion-surtido-v2`): sugerir
+a quién asignar lo libre, surtido vs color fijo por la observación, y ★ de
+prioridad por cliente. Ojo: Factory y SYD no siempre nombran igual el color
+("VINO TINTO 2" = ROJO); reusar `empatarColor` de programaciones.
+
 **Despachos (14-sep-2026)**: segunda vista de la pestaña Pedidos
 (`DespachosView.jsx`, cuentas en `lib/despachos.js`). Vendido y pendiente
 salen de `pedidos_syd`; separado, facturado, referencias cerradas ("no

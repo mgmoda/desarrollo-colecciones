@@ -6021,6 +6021,13 @@ select.filtro-taller { flex: none; width: 215px; }
 .pr-entro b { font-weight: 600; }
 .pr-entro .muted { font-size: 11.5px; }
 .pr-libre { color: #1f6b2e; font-weight: 700; }
+/* Varios lotes de entrada: pastilla con el detalle al pasar el mouse o enfocarla */
+.pr-lotes { position: relative; display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: 10.5px; font-weight: 600; line-height: 17px; background: #f1f0ee; color: #4a4642; border: 1px solid var(--hairline-strong); cursor: default; outline: none; }
+.pr-lotes:hover, .pr-lotes:focus, .pr-lotes.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.pr-lotes-caja { position: fixed; z-index: 60; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--hairline-strong); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.14); padding: 8px 10px; min-width: 240px; font-weight: 400; }
+.pr-lote { display: grid; grid-template-columns: 46px 1fr 44px; gap: 8px; padding: 3px 0; font-size: 12px; line-height: 1.35; }
+.pr-lote b { text-align: right; font-variant-numeric: tabular-nums; }
+.pr-lote-tot { border-top: 1px solid var(--hairline); margin-top: 3px; padding-top: 5px; font-weight: 600; }
 .pr-bar { display: flex; height: 7px; width: 170px; border-radius: 4px; overflow: hidden; background: #ece9e1; }
 .pr-bar b { display: block; height: 7px; }
 .pr-s { background: #2b4a7e; } .pr-l { background: #9fb6dc; } .pr-f { background: #e3b3ae; }

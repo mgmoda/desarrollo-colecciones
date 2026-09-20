@@ -26,6 +26,9 @@ export default function PorReferenciaView({
   const [q, setQ] = useState('')
   const [filtro, setFiltro] = useState('entrada')
   const [abierta, setAbierta] = useState(null)
+  // Globo con los lotes de entrada: va con posición fija para que el borde
+  // de la tabla (que desplaza a lo ancho) no lo recorte.
+  const [lotes, setLotes] = useState(null) // { ref, x, y, arriba }
   const { sortKey, sortDir, toggle } = useSort('ref', 'asc')
 
   useEffect(() => {
@@ -51,6 +54,14 @@ export default function PorReferenciaView({
     }
     return sortRows(l, acc[sortKey] || acc.ref, sortDir)
   }, [todas, filtro, q, sortKey, sortDir])
+
+  function abrirLotes(e, r) {
+    const b = e.currentTarget.getBoundingClientRect()
+    const alto = 34 + r.ordenes.length * 24
+    const arriba = b.bottom + alto + 12 > window.innerHeight
+    setLotes({ ref: r.ref, x: Math.min(b.left, window.innerWidth - 270), y: arriba ? b.top - alto - 6 : b.bottom + 6 })
+  }
+  const refLotes = lotes ? todas.find((r) => r.ref === lotes.ref) : null
 
   const thProps = { sortKey, sortDir, onSort: toggle }
   const ref = abierta ? todas.find((r) => r.ref === abierta) : null
@@ -85,7 +96,7 @@ export default function PorReferenciaView({
       ) : lista.length === 0 ? (
         <div className="empty-state"><p>Ninguna referencia en este filtro.</p></div>
       ) : (
-        <div className="table-wrap">
+        <div className="table-wrap" onScroll={() => setLotes(null)}>
           <table className="data-table dsp-tabla pr-tabla">
             <thead>
               <tr>
@@ -113,9 +124,21 @@ export default function PorReferenciaView({
                       <span className="pr-desc">{r.descripcion}</span>
                     </td>
                     <td className="pr-entro">
-                      {r.entro ? (
-                        <><b>{num(r.entro)}</b><span className="muted"> · {diaMes(r.fechaEntrada)}{ult ? ` · orden ${ult.orden}` : ''}{r.ordenes.length > 1 ? ` +${r.ordenes.length - 1}` : ''}</span></>
-                      ) : <span className="dsp-cero">—</span>}
+                      {!r.entro ? <span className="dsp-cero">—</span> : r.ordenes.length <= 1 ? (
+                        <><b>{num(r.entro)}</b><span className="muted"> · {diaMes(r.fechaEntrada)}{ult ? ` · orden ${ult.orden}` : ''}</span></>
+                      ) : (
+                        // Varios lotes: el total, la fecha del último y una pastilla;
+                        // el detalle sale al pasar el mouse o al tocarla.
+                        <>
+                          <b>{num(r.entro)}</b><span className="muted"> · último {diaMes(r.fechaEntrada)}</span>
+                          <span className={'pr-lotes' + (lotes && lotes.ref === r.ref ? ' on' : '')} tabIndex={0}
+                            onMouseEnter={(e) => abrirLotes(e, r)} onMouseLeave={() => setLotes(null)}
+                            onFocus={(e) => abrirLotes(e, r)} onBlur={() => setLotes(null)}
+                            onClick={(e) => { e.stopPropagation(); abrirLotes(e, r) }}>
+                            {r.ordenes.length} lotes
+                          </span>
+                        </>
+                      )}
                     </td>
                     <td className="num">{num(r.pedido)}</td>
                     <td className="num">{r.separado ? <span className="dsp-sep">{num(r.separado)}</span> : <span className="dsp-cero">·</span>}</td>
@@ -144,6 +167,19 @@ export default function PorReferenciaView({
             <span>{num(lista.length)} de {num(todas.length)} referencias</span>
             <span><b>{num(lista.reduce((n, r) => n + r.libre, 0))}</b> libres · <b>{num(lista.reduce((n, r) => n + r.separado, 0))}</b> separadas</span>
           </div>
+        </div>
+      )}
+
+      {refLotes && (
+        <div className="pr-lotes-caja" style={{ left: lotes.x, top: lotes.y }}>
+          {refLotes.ordenes.map((o) => (
+            <span key={o.orden} className="pr-lote">
+              <span className="muted">{diaMes(o.fecha)}</span>
+              <span>orden {o.orden}{o.muestra ? ' · muestra' : ''}</span>
+              <b>{num(o.cant)}</b>
+            </span>
+          ))}
+          <span className="pr-lote pr-lote-tot"><span /><span>Total</span><b>{num(refLotes.entro)}</b></span>
         </div>
       )}
 

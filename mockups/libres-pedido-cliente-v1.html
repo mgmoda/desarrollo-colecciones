@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Ver el pedido del cliente desde Libres</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Desde la ventana de libres: tocar un cliente abre, ahí mismo, lo que pidió
+   de esa referencia. Datos reales de C6857 y Ruth López Rojas. */
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--ink-soft:#3f3d3a;--muted:#6b6660;--ok:#1f6b2e;--ok-bg:#e1f1df}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13.5px;line-height:1.4;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 8px;max-width:940px}
+.opinion{background:#eef3f7;border:1px solid #c9d8e4;color:#1c4f6e;border-radius:10px;padding:12px 16px;max-width:1040px;margin:8px 0 18px}
+.nota{background:#fdf6ee;border:1px solid #e7c9aa;color:#8a5326;border-radius:10px;padding:10px 14px;font-size:13px;max-width:1040px;margin-top:12px}
+.modal{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;max-width:1040px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.12)}
+.mh{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 20px;border-bottom:1px solid var(--hairline)}
+.mh h2{font-family:Fraunces,serif;font-weight:500;font-size:21px;margin:0}
+.mh p{margin:3px 0 0;color:var(--muted);font-size:12.5px}
+.x{border:1px solid var(--hairline);background:var(--surface);border-radius:9px;width:32px;height:32px;color:var(--muted)}
+.cuerpo{padding:14px 20px 16px}
+.caja{border:1px solid var(--hairline);border-radius:10px;overflow:hidden}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+col.c0{width:36%} col.cf{width:11%}
+th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:7px 6px;text-align:center;background:#faf9f6;border-bottom:1px solid var(--hairline)}
+th:first-child,td:first-child{text-align:left;padding-left:12px}
+td{padding:7px 6px;text-align:center;border-bottom:1px solid #f0ede7;font-variant-numeric:tabular-nums;vertical-align:middle}
+tr.libre td{background:#f6faf5;font-weight:700;color:var(--ok);font-size:14px}
+tr.libre td:first-child{color:var(--ink)}
+tr.tot td{background:#eef6ec;font-weight:700}
+tr.sep td{background:#faf9f6;padding:9px 12px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);font-weight:700;text-align:left;border-top:2px solid var(--hairline-strong)}
+tr.sep td small{font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted)}
+tr.queda td{background:#f4f2ed;font-weight:700;border-top:2px solid var(--hairline-strong)}
+tr.queda td:first-child{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+.cero{color:#c9c5bd;font-weight:400}
+.punto{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2f5fa8;margin-right:7px;vertical-align:-1px}
+.pz{display:inline-block;min-width:20px;padding:0 6px;border-radius:999px;font-size:12px;font-weight:700;line-height:18px;background:#e6eefa;color:#23478a;border:1px solid #c3d4ef}
+.tag{display:inline-block;font-size:10.5px;font-weight:600;padding:1px 8px;border-radius:999px;border:1px solid #b5d8b0;background:var(--ok-bg);color:var(--ok)}
+.tag.gris{background:#f1f0ee;color:#4a4642;border-color:#d8d4c9}
+.cl{display:flex;align-items:flex-start;gap:4px;cursor:pointer}
+.cl b{font-size:12.5px;display:block}
+.cl .s{display:block;color:var(--muted);font-size:11px}
+.est{color:#c9c5bd;font-size:15px}
+.chev{color:var(--muted);font-size:11px;margin-left:auto;padding-left:8px}
+tr.fila:hover td{background:#faf9f6}
+tr.abierta td{background:#f7f9fd}
+tr.abierta td:first-child{box-shadow:inset 3px 0 0 #2b4a7e}
+tr.det td{background:#f7f9fd;padding:0 12px 12px 12px;text-align:left;border-bottom:2px solid #c6d3ea}
+tr.det td:first-child{box-shadow:inset 3px 0 0 #2b4a7e}
+.ped{background:var(--surface);border:1px solid #d5deee;border-radius:9px;overflow:hidden}
+.ped-h{display:flex;gap:16px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--hairline);font-size:12px;color:var(--muted);flex-wrap:wrap}
+.ped-h b{color:var(--ink)}
+.ped-h .sp{flex:1}
+.link{color:#1c4f6e;font-weight:600;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.ped table{table-layout:fixed}
+.ped th{background:transparent;border-bottom:1px solid #efece5;font-size:10px}
+.ped td{border-bottom:1px solid #f3f1ec;font-size:12.5px}
+.ped tr:last-child td{border-bottom:0}
+.ped td.et{color:var(--muted);font-size:11px;text-align:left;padding-left:22px}
+.az{color:#2b4a7e;font-weight:700}.ve{color:var(--ok);font-weight:700}
+.barra{display:inline-block;width:120px;height:6px;border-radius:3px;background:#ece9e1;overflow:hidden;vertical-align:1px;margin:0 6px}
+.barra i{display:block;height:6px;background:#2b4a7e}
+.mock-nota{position:fixed;right:14px;bottom:14px;background:#1c1c22;color:#fff;font-size:11.5px;padding:8px 12px;border-radius:999px;opacity:.85}
+</style>
+</head>
+<body>
+<h1>Ver el pedido del cliente desde Libres</h1>
+<p class="sub">Tocar el nombre de un cliente en la ventana de libres despliega, ahí mismo, lo que pidió de esa referencia. Sin abrir otra ventana encima.</p>
+<div class="opinion"><b>Por qué así.</b> Lo que quieres confirmar es corto: qué pidió Ruth de esta referencia, en qué pedido, en qué color y tallas, y si eso es lo mismo que se le va a separar. Eso cabe en un renglón desplegable justo debajo de su nombre, alineado con las mismas columnas de talla. Si quieres ver <i>todo</i> su pedido, hay un enlace que abre su detalle completo de Despachos.</div>
+
+<div class="modal">
+  <div class="mh"><div><h2>C6857 · libres en bodega</h2><p>PANTALON CHAMBRAY BORDADO · Casania · entraron 39 · 0 ya separadas · 39 libres · 6 clientes la esperan</p></div><button class="x">✕</button></div>
+  <div class="cuerpo"><div class="caja">
+  <table>
+    <colgroup><col class="c0"><col><col><col><col><col><col><col><col class="cf"></colgroup>
+    <thead><tr><th>Libres en bodega</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>Total</th><th></th></tr></thead>
+    <tbody>
+      <tr class="libre"><td><span class="punto"></span>Azul</td><td>3</td><td>7</td><td>9</td><td>10</td><td>7</td><td>3</td><td>39</td><td></td></tr>
+      <tr class="tot"><td>Total libres</td><td>3</td><td>7</td><td>9</td><td>10</td><td>7</td><td>3</td><td>39</td><td></td></tr>
+      <tr class="sep"><td colspan="9">Se pueden asignar en curva completa <small>· 5 clientes · 11 unidades · toca un cliente para ver su pedido</small></td></tr>
+
+      <tr class="fila abierta"><td><div class="cl"><span class="est">★</span><span><b>RUTH LOPEZ ROJAS</b><span class="s">FLORENCIA-CAQUETA · pedido 7856 · pidió 2</span></span><span class="chev">▾</span></div></td><td class="cero">·</td><td><span class="pz">1</span></td><td><span class="pz">1</span></td><td class="cero">·</td><td class="cero">·</td><td class="cero">·</td><td><b>2</b></td><td><span class="tag">completo</span></td></tr>
+      <tr class="det"><td colspan="9">
+        <div class="ped">
+          <div class="ped-h"><span>Su pedido de <b>C6857</b></span><span>pedido <b>7856</b></span><span>precio <b>$ 99.900</b> · total <b>$ 199.800</b></span><span><span class="tag gris">Color fijo</span> "AZUL"</span><span class="sp"></span>
+            <span>Todo su despacho: <b>64</b> unidades en 25 referencias<span class="barra"><i style="width:3%"></i></span><b>2</b> separadas</span><span class="link">Ver todo su pedido →</span></div>
+          <table>
+            <colgroup><col class="c0"><col><col><col><col><col><col><col><col class="cf"></colgroup>
+            <tbody>
+              <tr><td class="et">Pidió · azul</td><td class="cero">·</td><td>1</td><td>1</td><td class="cero">·</td><td class="cero">·</td><td class="cero">·</td><td><b>2</b></td><td></td></tr>
+              <tr><td class="et">Ya separado</td><td class="cero">·</td><td class="cero">·</td><td class="cero">·</td><td class="cero">·</td><td class="cero">·</td><td class="cero">·</td><td class="cero">·</td><td></td></tr>
+              <tr><td class="et">Se le separaría</td><td class="cero">·</td><td class="ve">1</td><td class="ve">1</td><td class="cero">·</td><td class="cero">·</td><td class="cero">·</td><td class="ve">2</td><td><span class="tag">queda completo</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </td></tr>
+
+      <tr class="fila"><td><div class="cl"><span class="est">★</span><span><b>LIGIA ROSA FUENTES LOZANO</b><span class="s">TOLU (SUCRE) · pedido 7840 · pidió 2</span></span><span class="chev">▸</span></div></td><td class="cero">·</td><td><span class="pz">1</span></td><td class="cero">·</td><td><span class="pz">1</span></td><td class="cero">·</td><td class="cero">·</td><td><b>2</b></td><td><span class="tag">completo</span></td></tr>
+      <tr class="fila"><td><div class="cl"><span class="est">★</span><span><b>NUBIA PERDOMO VALENCIA</b><span class="s">ALGECIRAS-HUILA · pedido 6414 · pidió 3</span></span><span class="chev">▸</span></div></td><td><span class="pz">1</span></td><td><span class="pz">1</span></td><td><span class="pz">1</span></td><td class="cero">·</td><td class="cero">·</td><td class="cero">·</td><td><b>3</b></td><td><span class="tag">completo</span></td></tr>
+      <tr class="fila"><td><div class="cl"><span class="est">★</span><span><b>ADRIANA ARISTIZABAL CASTAÑO</b><span class="s">FLORENCIA-CAQUETA · pedido 7851 · pidió 3</span></span><span class="chev">▸</span></div></td><td class="cero">·</td><td><span class="pz">1</span></td><td><span class="pz">1</span></td><td><span class="pz">1</span></td><td class="cero">·</td><td class="cero">·</td><td><b>3</b></td><td><span class="tag">completo</span></td></tr>
+      <tr class="fila"><td><div class="cl"><span class="est">★</span><span><b>AIDE BALLESTEROS ARMENTA</b><span class="s">SANTA MARTA · pedido 7815 · pidió 1</span></span><span class="chev">▸</span></div></td><td class="cero">·</td><td class="cero">·</td><td><span class="pz">1</span></td><td class="cero">·</td><td class="cero">·</td><td class="cero">·</td><td><b>1</b></td><td><span class="tag">completo</span></td></tr>
+      <tr class="queda"><td>Quedarían libres</td><td><span class="pz">2</span></td><td><span class="pz">3</span></td><td><span class="pz">5</span></td><td><span class="pz">8</span></td><td><span class="pz">7</span></td><td><span class="pz">3</span></td><td>28</td><td></td></tr>
+    </tbody>
+  </table>
+  </div></div>
+</div>
+<div class="nota"><b>Lo que muestra el desplegable.</b> El número de pedido, el precio y el total de esa referencia; si el color es fijo o surtido, con el texto original de la observación; tres renglones alineados con las tallas —lo que pidió, lo que ya tiene separado y lo que se le separaría— y, a la derecha, cómo va todo su despacho (64 unidades, 2 separadas) con el enlace a su pedido completo. Se abre uno a la vez; otro clic lo cierra.</div>
+<div class="mock-nota">Mockup · datos reales de C6857</div>
+</body>
+</html>

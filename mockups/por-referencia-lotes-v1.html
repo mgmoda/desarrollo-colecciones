@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Varios lotes en "Entró a bodega"</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Cómo mostrar la columna "Entró a bodega" cuando una referencia ha entrado
+   en varios lotes, sin saturar la fila. Tres variantes sobre las mismas
+   cuatro referencias (una con 1 lote, otras con 2, 3 y 5). */
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--ink-soft:#3f3d3a;--muted:#6b6660}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.35;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:24px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 6px;max-width:900px}
+.paso{display:flex;align-items:center;gap:10px;margin:28px 0 8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.paso i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:11px}
+.paso small{font-weight:500;letter-spacing:0;text-transform:none;margin-left:6px}
+.wrap{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;max-width:1080px;overflow:visible}
+table{width:100%;border-collapse:collapse}
+th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:9px 14px;text-align:left;background:#faf9f6;border-bottom:1px solid var(--hairline)}
+th:first-child{border-radius:14px 0 0 0} th:last-child{border-radius:0 14px 0 0}
+td{padding:8px 14px;border-bottom:1px solid #f0ede7;vertical-align:middle;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.n{text-align:center}
+.cat{display:inline-block;margin-left:6px;padding:0 7px;border-radius:999px;font-size:10px;font-weight:600;line-height:16px;background:#e9f5ee;color:#1f6b4a;border:1px solid #bfe0cd}
+.desc{color:var(--muted);font-size:11.5px;margin-left:8px}
+.m{color:var(--muted);font-size:11.5px}
+.lib{color:#1f6b2e;font-weight:700}.sep{color:#2b4a7e;font-weight:700}
+.lotes{display:inline-block;margin-left:6px;padding:0 7px;border-radius:999px;font-size:10.5px;font-weight:600;line-height:17px;background:#f1f0ee;color:#4a4642;border:1px solid var(--hairline-strong);cursor:default}
+.pop{position:relative;display:inline-block}
+.pop .caja{position:absolute;left:0;top:24px;z-index:5;background:var(--surface);border:1px solid var(--hairline-strong);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:8px 10px;min-width:230px}
+.pop .caja div{display:grid;grid-template-columns:70px 1fr 40px;gap:8px;padding:3px 0;font-size:12px}
+.pop .caja div b{text-align:right}
+.pop .caja .tot{border-top:1px solid var(--hairline);margin-top:3px;padding-top:5px;font-weight:600}
+.pz{display:inline-block;margin-left:4px;padding:0 6px;border-radius:5px;font-size:11px;font-weight:600;line-height:17px;background:#eef3f7;color:#1c4f6e}
+.pz.mas{background:transparent;color:var(--muted)}
+.dos b{display:block;font-weight:600}
+.dos span{display:block;color:var(--muted);font-size:11px;margin-top:1px}
+.opinion{background:#eef3f7;border:1px solid #c9d8e4;color:#1c4f6e;border-radius:10px;padding:12px 16px;font-size:13px;max-width:1080px;margin:12px 0 0}
+.nota{background:#fdf6ee;border:1px solid #e7c9aa;color:#8a5326;border-radius:10px;padding:9px 13px;font-size:12.5px;max-width:1080px;margin-top:10px}
+.mock-nota{position:fixed;right:14px;bottom:14px;background:#1c1c22;color:#fff;font-size:11.5px;padding:8px 12px;border-radius:999px;opacity:.85}
+</style>
+</head>
+<body>
+<h1>"Entró a bodega" cuando hay varios lotes</h1>
+<p class="sub">La fila debe seguir diciendo una sola cosa: cuánto ha entrado en total. Los lotes son detalle, y el detalle se pide, no se impone.</p>
+<div class="opinion"><b>Mi recomendación: la 1.</b> En la celda va el total, la fecha del último lote y, solo si hay más de uno, una pastilla pequeña "3 lotes". Al pasar el mouse (o tocarla) sale la lista de lotes con fecha, orden y cantidad. La fila no crece ni un píxel y quien quiere el detalle lo tiene a un gesto. Además, el desglose completo queda en la ventana de la referencia.</div>
+
+<div class="paso"><i>1</i> Total + pastilla "N lotes" <small>· el detalle sale al pasar el mouse — aquí se muestra abierto en C6931</small></div>
+<div class="wrap"><table>
+<thead><tr><th>Referencia</th><th>Entró a bodega</th><th class="n">Pedido</th><th class="n">Separado</th><th class="n">Libre en bodega</th></tr></thead>
+<tbody>
+<tr><td><b>C6911</b><span class="cat">Blusa</span><span class="desc">BLUSA DE RAPAS ESTAMPADA</span></td><td><b>51</b> <span class="m">· 09/09</span></td><td class="n">81</td><td class="n sep">27</td><td class="n lib">24</td></tr>
+<tr><td><b>C6894</b><span class="cat">Blusa</span><span class="desc">BLUSA ESTAMPADA CON HOJAS</span></td><td><b>108</b> <span class="m">· último 18/09</span><span class="lotes">2 lotes</span></td><td class="n">185</td><td class="n sep">37</td><td class="n lib">71</td></tr>
+<tr><td><b>C6931</b><span class="cat">Blusa</span><span class="desc">BLUSA CAMISERA FLORAL</span></td><td><b>231</b> <span class="m">· último 19/09</span><span class="pop"><span class="lotes">3 lotes</span><span class="caja"><div><span class="m">19/09</span><span>orden 11238</span><b>96</b></div><div><span class="m">14/09</span><span>orden 11094</span><b>92</b></div><div><span class="m">02/09</span><span>orden 10936 · muestra</span><b>43</b></div><div class="tot"><span></span><span>Total</span><b>231</b></div></span></span></td><td class="n">283</td><td class="n sep">36</td><td class="n lib">195</td></tr>
+<tr><td><b>C6888</b><span class="cat">Blusa</span><span class="desc">BLUSA BORDADA CON MANGA GLOBO</span></td><td><b>310</b> <span class="m">· último 20/09</span><span class="lotes">5 lotes</span></td><td class="n">354</td><td class="n sep">42</td><td class="n lib">268</td></tr>
+</tbody></table></div>
+<div style="height:70px"></div>
+
+<div class="paso"><i>2</i> Total + las cantidades de los últimos lotes a la vista <small>· máximo tres, el resto como "+2"</small></div>
+<div class="wrap"><table>
+<thead><tr><th>Referencia</th><th>Entró a bodega</th><th class="n">Pedido</th><th class="n">Separado</th><th class="n">Libre en bodega</th></tr></thead>
+<tbody>
+<tr><td><b>C6911</b><span class="cat">Blusa</span><span class="desc">BLUSA DE RAPAS ESTAMPADA</span></td><td><b>51</b> <span class="m">· 09/09</span></td><td class="n">81</td><td class="n sep">27</td><td class="n lib">24</td></tr>
+<tr><td><b>C6894</b><span class="cat">Blusa</span><span class="desc">BLUSA ESTAMPADA CON HOJAS</span></td><td><b>108</b> <span class="m">· 18/09</span><span class="pz">54</span><span class="pz">54</span></td><td class="n">185</td><td class="n sep">37</td><td class="n lib">71</td></tr>
+<tr><td><b>C6931</b><span class="cat">Blusa</span><span class="desc">BLUSA CAMISERA FLORAL</span></td><td><b>231</b> <span class="m">· 19/09</span><span class="pz">96</span><span class="pz">92</span><span class="pz">43</span></td><td class="n">283</td><td class="n sep">36</td><td class="n lib">195</td></tr>
+<tr><td><b>C6888</b><span class="cat">Blusa</span><span class="desc">BLUSA BORDADA CON MANGA GLOBO</span></td><td><b>310</b> <span class="m">· 20/09</span><span class="pz">80</span><span class="pz">76</span><span class="pz">66</span><span class="pz mas">+2</span></td><td class="n">354</td><td class="n sep">42</td><td class="n lib">268</td></tr>
+</tbody></table></div>
+
+<div class="paso"><i>3</i> Dos renglones en la celda <small>· el total arriba y una frase corta debajo</small></div>
+<div class="wrap"><table>
+<thead><tr><th>Referencia</th><th>Entró a bodega</th><th class="n">Pedido</th><th class="n">Separado</th><th class="n">Libre en bodega</th></tr></thead>
+<tbody>
+<tr><td><b>C6911</b><span class="cat">Blusa</span><span class="desc">BLUSA DE RAPAS ESTAMPADA</span></td><td class="dos"><b>51</b><span>09/09 · orden 10829</span></td><td class="n">81</td><td class="n sep">27</td><td class="n lib">24</td></tr>
+<tr><td><b>C6894</b><span class="cat">Blusa</span><span class="desc">BLUSA ESTAMPADA CON HOJAS</span></td><td class="dos"><b>108</b><span>2 lotes · último 18/09</span></td><td class="n">185</td><td class="n sep">37</td><td class="n lib">71</td></tr>
+<tr><td><b>C6931</b><span class="cat">Blusa</span><span class="desc">BLUSA CAMISERA FLORAL</span></td><td class="dos"><b>231</b><span>3 lotes · último 19/09</span></td><td class="n">283</td><td class="n sep">36</td><td class="n lib">195</td></tr>
+<tr><td><b>C6888</b><span class="cat">Blusa</span><span class="desc">BLUSA BORDADA CON MANGA GLOBO</span></td><td class="dos"><b>310</b><span>5 lotes · último 20/09</span></td><td class="n">354</td><td class="n sep">42</td><td class="n lib">268</td></tr>
+</tbody></table></div>
+<div class="nota">En las tres, el número de orden sale de la fila cuando hay más de un lote —es lo que más ruido mete— y pasa al detalle. La 2 muestra más, pero con cinco lotes ya se recorta. La 3 es clara, pero hace todas las filas más altas aunque la mayoría tenga un solo lote.</div>
+<div class="mock-nota">Mockup · cifras de ejemplo</div>
+</body>
+</html>

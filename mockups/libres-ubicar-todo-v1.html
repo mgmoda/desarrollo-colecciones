@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Ubicar todo lo libre de una referencia cerrada</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Simulación sobre la hoja de libres: quitarle lo separado a un cliente y ver
+   a quién se le completa el pedido con esas unidades. Datos reales de C6930;
+   el resultado "sin Olga" es el que da hoy el cálculo del sistema. */
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--ink:#1c1c22;--muted:#6b6660;--grid:#d0cec8;--head:#efede8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.35;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 12px;max-width:1000px}
+.resp{background:#eef3f7;border:1px solid #c9d8e4;color:#1c4f6e;border-radius:10px;padding:12px 16px;max-width:1080px;margin:0 0 18px}
+.resp p{margin:0 0 6px}.resp p:last-child{margin:0}
+.modal{background:var(--surface);border:1px solid var(--hairline);border-radius:12px;max-width:1080px;box-shadow:0 8px 30px rgba(0,0,0,.10);overflow:hidden}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--hairline)}
+.mh h2{font-family:Fraunces,serif;font-weight:500;font-size:19px;margin:0}
+.mh p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.x{border:1px solid var(--hairline);background:var(--surface);border-radius:8px;width:28px;height:28px;color:var(--muted)}
+.cuerpo{padding:12px 18px 16px}
+.sim{display:none;align-items:center;gap:12px;background:#fff6d8;border:1px solid #e6cf7a;border-radius:8px;padding:9px 12px;margin:0 0 10px;color:#5f4a00}
+.sim.on{display:flex}
+.sim b{font-weight:700}
+.sim .sp{flex:1}
+.btn{border:1px solid #cfc9b6;background:#fff;border-radius:7px;padding:5px 11px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.btn.neg{background:var(--ink);color:#fff;border-color:var(--ink)}
+table.x1{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums}
+.x1 th,.x1 td{border:1px solid var(--grid);padding:3px 3px;text-align:center;height:25px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.x1 th{background:var(--head);font-size:11px;font-weight:600;color:#4a4642}
+.x1 .l{text-align:left;padding-left:6px}
+.x1 td.l:first-child{font-size:11.5px;letter-spacing:-.01em}
+.x1 tr.tot td{background:var(--head);font-weight:700}
+.x1 tr.band td{background:#1c1c22;color:#fff;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;text-align:left;padding-left:8px}
+.x1 tr.band.q td{background:#7a5c00}
+.x1 tr.band td small{font-weight:400;letter-spacing:0;text-transform:none;opacity:.8}
+.x1 td.s{background:#d8e4f6;color:#23478a;font-weight:700}
+.x1 td.v{background:#d9ecd5;color:#1f6b2e;font-weight:700}
+.x1 td.a{background:#fdeecb;color:#8a5a0a;font-weight:700}
+.x1 td.r{background:#fbe3e0;color:#b23121;font-weight:700}
+.x1 td.k{background:repeating-linear-gradient(135deg,#fff6d8,#fff6d8 4px,#fbe9a6 4px,#fbe9a6 8px);color:#5f4a00;font-weight:700}
+.x1 td.g{color:#b9b5ad}
+.x1 td.x{background:#f1f0ee;color:#a09b93;text-decoration:line-through}
+.x1 td.e{background:#fff;color:#4a4642;font-size:11.5px;white-space:normal;line-height:1.2}
+.x1 td.m{color:var(--muted);font-size:12px}
+.x1 td.sur{color:#a09b93;font-style:italic;font-size:12px}
+.x1 tr.c1 td{border-top:1.5px solid #9d9a93}
+.x1 td .mas{color:#1f6b2e;font-size:10px;font-weight:700;margin-left:1px}
+.pt{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.pt.az{background:#2f5fa8}.pt.te{background:#b3622a}
+.q-btn{border:1px solid #c9c5bd;background:#fff;border-radius:5px;font:inherit;font-size:10.5px;padding:0 5px;cursor:pointer;color:#4a4642;margin-left:4px}
+.q-btn:hover{background:#1c1c22;color:#fff;border-color:#1c1c22}
+.nuevo{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:#1f6b2e;color:#fff;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:1px}
+.ley{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--muted);margin:10px 0 0}
+.ley i{display:inline-block;width:12px;height:12px;border:1px solid var(--grid);vertical-align:-2px;margin-right:5px;background:#fff}
+.instr{display:none;margin-top:12px;border:1px solid var(--grid);border-radius:8px;overflow:hidden}
+.instr.on{display:block}
+.instr h3{margin:0;padding:7px 12px;background:var(--head);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#4a4642}
+.instr pre{margin:0;padding:10px 12px;font:12.5px/1.55 Inter,system-ui,sans-serif;white-space:pre-wrap}
+.mock-nota{position:fixed;right:14px;bottom:14px;background:#1c1c22;color:#fff;font-size:11.5px;padding:8px 12px;border-radius:999px;opacity:.85}
+
+.modo{display:inline-flex;border:1px solid #cfc9b6;border-radius:8px;overflow:hidden;margin:0 0 10px}
+.modo button{border:0;background:#fff;font:inherit;font-size:12.5px;padding:6px 14px;cursor:pointer;color:#4a4642}
+.modo button.on{background:var(--ink);color:#fff}
+.res{background:#e9f4e6;border:1px solid #b5d8b0;color:#1f4f27;border-radius:8px;padding:9px 12px;margin:0 0 10px}
+.res.n{background:#f6f5f1;border-color:var(--grid);color:#4a4642}
+.regla{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;max-width:1080px;margin:0 0 18px}
+.regla div{background:#fff;border:1px solid var(--hairline);border-radius:10px;padding:10px 12px}
+.regla b{display:block;margin-bottom:4px}
+.regla .c{display:inline-block;min-width:24px;text-align:center;border:1px solid var(--grid);padding:1px 4px;margin-right:-1px;font-variant-numeric:tabular-nums}
+.regla .c.v{background:#d9ecd5;color:#1f6b2e;font-weight:700}.regla .c.x{background:#f1f0ee;color:#a09b93;text-decoration:line-through}.regla .c.r{background:#fbe3e0;color:#b23121;font-weight:700}
+.ok{color:#1f6b2e;font-weight:700}.no{color:#b23121;font-weight:700}
+</style>
+</head>
+<body>
+<h1>Ubicar todo lo libre · referencia que ya no produce más</h1>
+<p class="sub">Segundo modo de reparto en la hoja de libres. Datos reales de C6930. Prueba los dos botones de arriba de la tabla.</p>
+
+<div class="regla">
+  <div><b>Se vale <span class="ok">✓</span> · falta una punta</b>Pidió 8-10-12-14 y no hay 8:<br><span class="c x">8</span><span class="c v">10</span><span class="c v">12</span><span class="c v">14</span></div>
+  <div><b>Se vale <span class="ok">✓</span> · faltan las dos puntas</b>Pidió 12 a 20 y no hay 12 ni 20:<br><span class="c x">12</span><span class="c v">14</span><span class="c v">16</span><span class="c v">18</span><span class="c x">20</span></div>
+  <div><b>No se vale <span class="no">✕</span> · hueco en la mitad</b>Pidió 8-10-12-14 y no hay 12:<br><span class="c v">8</span><span class="c v">10</span><span class="c r">12</span><span class="c v">14</span></div>
+</div>
+<div class="resp">
+  <p><b>Cómo lo entiendo.</b> Lo que se le manda a un cliente tiene que ser un tramo <b>seguido</b> de las tallas que pidió. Se le pueden recortar tallas de las puntas (la primera, la última o ambas), nunca una del medio. Si pidió color fijo, la regla va por cada color; si va surtido, por todo su pedido de la referencia y le sirve cualquier color en la misma talla.</p>
+  <p><b>Qué hace el sistema.</b> No reparte por turno a ciegas: prueba las combinaciones y se queda con la que <b>ubica más unidades</b>; si empatan, gana la que deja más clientes completos y luego el turno (★ primero). Ejemplo real abajo: la única terracota 12 le servía a Matilde (1 de 3) o a Alexandra, y en Alexandra permite armar 10-12-14. Por eso va para Alexandra.</p>
+</div>
+
+<div class="modal">
+  <div class="mh"><div><h2>C6930 · libres en bodega</h2><p>VESTIDO ESTAMPADO CON CINTURON · Casania · entraron 50 · 38 ya separadas · 21 clientes la pidieron</p></div><button class="x">✕</button></div>
+  <div class="cuerpo">
+    <div class="modo"><button id="m1" onclick="pinta(false)">Solo curvas completas</button><button id="m2" onclick="pinta(true)">Ubicar todo · ya no sale más</button></div>
+    <div class="res" id="res"></div>
+    <table class="x1">
+      <colgroup><col style="width:23%"><col style="width:9%"><col style="width:6.5%"><col style="width:11.5%"><col style="width:7%"><col><col><col><col><col><col><col><col style="width:4.5%"><col style="width:15%"></colgroup>
+      <thead><tr><th class="l">Cliente</th><th class="l">Ciudad</th><th>Pedido</th><th class="l">Color</th><th class="l">Obs.</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>20</th><th>Total</th><th>Estado</th></tr></thead>
+      <tbody id="tb"></tbody>
+    </table>
+    <div class="ley">
+      <span><i style="background:#d8e4f6"></i>ya separado en SYD</span>
+      <span><i style="background:#d9ecd5"></i>se le separa</span>
+      <span><i style="background:#fdeecb"></i>se le da en otro color (surtidos)</span>
+      <span><i style="background:#f1f0ee"></i><s>8</s> talla de la punta que no se le envía</span>
+      <span><i style="background:#fbe3e0"></i>no hay: no se le puede armar un tramo seguido</span>
+    </div>
+  </div>
+</div>
+<div class="mock-nota">Mockup · datos reales de C6930</div>
+<script>
+const T = ['8','10','12','14','16','18','20']
+// cliente, ciudad, [ [pedido, color, obs, {talla:n}] ... ]
+const C = {
+  yordan:  ['CASA YORDAN LTDA','MEDELLIN',[['7952','TERRACOTA','TERRACOYA',{14:1,16:1}]]],
+  ingrid:  ['INGRID GUARIGLIA','BUCARAMANGA',[['7966','TERRACOTA','TERRACOTA',{12:1,18:1}]]],
+  jose:    ['JOSE MARIA MESTRA MADERA','MONTERIA',[['7835','TERRACOTA','TERRACOTA',{12:1,14:1,16:1}]]],
+  leidy:   ['LEIDY ROCIO CHAVEZ FIGUEROA','PITALITO',[['7865','AZUL','AZUL',{10:1,12:1}],['7865','TERRACOTA','TERRACOTA',{14:1}]]],
+  libia:   ['LIBIA RENTERIA DE GOMEZ','QUIBDO-CHOCO',[['7766','AZUL','',{12:1,16:1}],['7766','TERRACOTA','',{14:1}]]],
+  luz:     ['LUZ PIEDAD OCHOA RUIZ','APARTADO',[['7960','AZUL','',{14:1,18:1}],['7960','TERRACOTA','',{16:1}]]],
+  olga:    ['OLGA PALACIOS CUESTA','QUIBDO-CHOCO',[['8009','AZUL','AZUL',{8:1,10:1,12:1,14:1,16:1,18:1}],['8009','TERRACOTA','TERRA',{8:1,10:1,12:1,14:1,16:1,18:1}]]],
+  sara:    ['SARA ASSERIAS DE MATERON','CALI',[['6623','AZUL','AZUL',{10:1,12:1,14:1,16:1}]]],
+  sirlena: ['SIRLENA JUDITH LASTRE HERRERA','SANTA ANA',[['7843','AZUL','',{20:1}]]],
+  yineth:  ['YINETH QUEZADA','FLORENCIA',[['7853','TERRACOTA','TERRACOTA',{12:1}]]],
+  nilda:   ['NILDA MARIA POTES ROMERO','BUGA',[['6631-2','AZUL','',{10:1,18:1}],['6631-2','TERRACOTA','',{14:1}]]],
+  marina:  ['MARINA DEL CARMEN RODRIGUEZ','BARRANQUILLA',[['7803','AZUL','AZUL',{12:1}]]],
+  ruby:    ['RUBY STELLA CASTILLA FERRO','SANTA MARTA',[['7737','AZUL','',{8:1,12:1,16:1}],['7737','TERRACOTA','',{10:1,14:1}]]],
+  matilde: ['MATILDE TORRES BOADA','CUCUTA',[['7965','TERRACOTA','TERRACOTA',{8:1,10:1,12:1}]]],
+  nuris:   ['NURIS MARIA PADILLA MONTES','CIENAGA DE ORO',[['7829','TERRACOTA','TERRACOTA',{10:1}]]],
+  alex:    ['ALEXANDRA MORALES SERNA','PLATO',[['7732','AZUL','',{8:1,12:1}],['7732','TERRACOTA','',{10:1,14:1}]]],
+  nubia:   ['NUBIA PERDOMO VALENCIA','ALGECIRAS',[['6414','TERRACOTA','TERRACOTA',{14:1}]]],
+  adriana: ['ADRIANA ARISTIZABAL CASTAÑO','FLORENCIA',[['7851','AZUL','AZUL',{8:1}]]],
+  ludibia: ['LUDIBIA TAFUR CAMACHO','NEIVA',[['6407','AZUL','AZUL',{12:1}],['6407','TERRACOTA','',{10:1}]]],
+  yolanda: ['YOLANDA CASAS UBAQUE','SANTA MARTA',[['7735','AZUL','AZUL',{12:1,14:1,16:1,18:1,20:1}]]],
+  marga:   ['MARGARITA MARIA GOMEZ LOPERA','MEDELLIN',[['7953','TERRACOTA','TERRACOTA',{8:1,10:1,12:1,14:1}]]],
+}
+// pintura de casillas por estado: 'linea|talla' -> clase. Lo no listado: todo el cliente con la clase base.
+
+const LIBRE = {AZUL:{10:2,14:4,16:1,18:2}, TERRACOTA:{12:1,16:1,18:1,20:1}}
+const COMPLETAS = {
+  res: '<b>Solo curvas completas:</b> de 13 libres se ubican <b>3</b> en 1 cliente · quedan <b>10</b> sin ubicar.',
+  separar: [['nilda','separar 3 · completo',{'0|10':'v','0|18':'v','1|14':'a'}]],
+  titulo: 'Esperan', nota: 'con lo libre no les sale completo',
+  espera: [['marina',{'0|12':'r'}],['ruby',{'0|8':'r','0|12':'s','0|16':'s','1|10':'s','1|14':'s'}],['matilde',{'0|8':'r','0|10':'r'}],['nuris',{'0|10':'r'}],['alex',{'0|8':'r'}],['nubia',{'0|14':'r'}],['adriana',{'0|8':'r'}],['ludibia',{'0|12':'r'}],['yolanda',{'0|12':'r','0|20':'r'}],['marga',{'0|8':'r','0|10':'r','0|14':'r'}]],
+  queda: {AZUL:{10:1,14:3,16:1,18:1}, TERRACOTA:{12:1,16:1,18:1,20:1}},
+}
+const TODO = {
+  res: '<b>Ubicar todo:</b> de 13 libres se ubican <b>9</b> en 3 clientes (1 completo, 2 sin una o dos tallas de las puntas) · quedan <b>4</b> que nadie pidió en esa talla.',
+  separar: [
+    ['nilda','separar 3 · completo',{'0|10':'v','0|18':'v','1|14':'a'}],
+    ['alex','separar 3 · sin la 8',{'0|8':'x','0|12':'a','1|10':'a','1|14':'a'}],
+    ['yolanda','separar 3 · sin 12 ni 20',{'0|12':'x','0|14':'v','0|16':'v','0|18':'v','0|20':'x'}],
+  ],
+  titulo: 'No se les puede enviar nada', nota: 'no hay de su talla, o quedaría un hueco en la mitad',
+  espera: [['marina',{'0|12':'r'},'no hay azul 12'],['ruby',{'0|8':'r','0|12':'s','0|16':'s','1|10':'s','1|14':'s'},'se va sin la 8 (punta)'],['matilde',{'0|8':'r','0|10':'r','0|12':'r'},'la terracota 12 rinde más en Alexandra'],['nuris',{'0|10':'r'},'no hay terracota 10'],['nubia',{'0|14':'r'},'no hay terracota 14'],['adriana',{'0|8':'r'},'no hay azul 8'],['ludibia',{'0|12':'r','1|10':'r'},'las azul 10 se fueron con Nilda y Alexandra'],['marga',{'0|8':'r','0|10':'r','0|12':'r','0|14':'r'},'no hay de sus tallas']],
+  queda: {AZUL:{14:1}, TERRACOTA:{16:1,18:1,20:1}},
+}
+const pt = (c) => `<i class="pt ${c === 'AZUL' ? 'az' : 'te'}"></i>${c}`
+function filasCliente(id, mapa, estado, cls) {
+  const [nom, ciu, lin] = C[id]
+  return lin.map((l, i) => {
+    const celdas = T.map((t) => { const n = l[3][t]; if (!n) return '<td></td>'; return `<td class="${(mapa && mapa[i + '|' + t]) || ''}">${n}</td>` }).join('')
+    const tot = Object.values(l[3]).reduce((a, b) => a + b, 0)
+    return `<tr class="${i === 0 ? 'c1' : ''}">` +
+      (i === 0 ? `<td class="l" rowspan="${lin.length}">${nom}</td><td class="l m" rowspan="${lin.length}">${ciu}</td>` : '') +
+      `<td>${l[0]}</td><td class="l">${pt(l[1])}</td>` + (l[2] ? `<td class="l m">${l[2]}</td>` : `<td class="l sur">surtido</td>`) +
+      celdas + `<td><b>${tot}</b></td>` + (i === 0 ? `<td class="${cls}" style="white-space:normal;line-height:1.15;font-size:11.5px" rowspan="${lin.length}">${estado}</td>` : '') + '</tr>'
+  }).join('')
+}
+function filasColor(m) {
+  return ['AZUL','TERRACOTA'].map((c, i) => `<tr>${i === 0 ? '<td colspan="3" rowspan="2"></td>' : ''}<td class="l">${pt(c)}</td><td></td>` +
+    T.map((t) => (m[c][t] ? `<td><b>${m[c][t]}</b></td>` : '<td class="g">0</td>')).join('') +
+    `<td><b>${Object.values(m[c]).reduce((a, b) => a + b, 0)}</b></td><td></td></tr>`).join('')
+}
+const suma = (m) => Object.values(m).reduce((a, c) => a + Object.values(c).reduce((x, y) => x + y, 0), 0)
+function pinta(todo) {
+  const E = todo ? TODO : COMPLETAS
+  let h = '<tr class="band"><td colspan="14">Libres en bodega</td></tr>' + filasColor(LIBRE)
+  h += `<tr class="tot"><td class="l" colspan="5">TOTAL LIBRES</td>${T.map((t) => `<td>${(LIBRE.AZUL[t] || 0) + (LIBRE.TERRACOTA[t] || 0)}</td>`).join('')}<td>13</td><td></td></tr>`
+  h += `<tr class="band"><td colspan="14">${todo ? 'Ubicación propuesta' : 'Se pueden separar en curva completa'} <small>· ${E.separar.length} clientes · ${todo ? 9 : 3} unidades</small></td></tr>`
+  E.separar.forEach(([id, est, mapa]) => { h += filasCliente(id, mapa, est, 'v') })
+  h += `<tr class="band"><td colspan="14">${E.titulo} <small>· ${E.espera.length} clientes · ${E.nota}</small></td></tr>`
+  E.espera.forEach(([id, mapa, por]) => { h += filasCliente(id, mapa, por || 'espera', por ? 'e' : 'r') })
+  h += `<tr class="band"><td colspan="14">${todo ? 'Quedan sin dueño' : 'Quedarían libres después de separar'} <small>· ${suma(E.queda)} unidades${todo ? ' · nadie que espere las pidió en esa talla: saldo u ofrecerlas' : ''}</small></td></tr>` + filasColor(E.queda)
+  document.getElementById('tb').innerHTML = h
+  const r = document.getElementById('res'); r.innerHTML = E.res; r.className = 'res' + (todo ? '' : ' n')
+  document.getElementById('m1').className = todo ? '' : 'on'; document.getElementById('m2').className = todo ? 'on' : ''
+}
+pinta(true)
+</script>
+</body>
+</html>

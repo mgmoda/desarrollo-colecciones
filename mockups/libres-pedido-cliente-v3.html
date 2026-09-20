@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Libres tipo Excel con separado y varios colores</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Opción 1 (hoja tipo Excel) llevada a una referencia de dos colores y con
+   unidades ya separadas. Datos reales de C6852: 58 clientes, 20 separadas,
+   25 libres. Un renglón por cliente y color, igual que las líneas de SYD. */
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--ink:#1c1c22;--muted:#6b6660;--grid:#d0cec8;--head:#efede8;
+--verde:#d9ecd5;--verde-t:#1f6b2e;--azul:#d8e4f6;--azul-t:#23478a;--rojo:#fbe3e0;--rojo-t:#b23121;--ambar:#fdeecb;--ambar-t:#8a5a0a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.35;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 14px;max-width:1000px}
+.resp{background:#eef3f7;border:1px solid #c9d8e4;color:#1c4f6e;border-radius:10px;padding:12px 16px;max-width:1080px;margin:0 0 18px}
+.resp p{margin:0 0 6px}.resp p:last-child{margin:0}
+.modal{background:var(--surface);border:1px solid var(--hairline);border-radius:12px;max-width:1080px;box-shadow:0 8px 30px rgba(0,0,0,.10);overflow:hidden}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--hairline)}
+.mh h2{font-family:Fraunces,serif;font-weight:500;font-size:19px;margin:0}
+.mh p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.x{border:1px solid var(--hairline);background:var(--surface);border-radius:8px;width:28px;height:28px;color:var(--muted)}
+.cuerpo{padding:12px 18px 16px}
+.barra{display:flex;gap:6px;align-items:center;margin:0 0 10px;flex-wrap:wrap}
+.chip{border:1px solid var(--grid);background:var(--surface);border-radius:6px;padding:4px 10px;font-size:12px;color:#4a4642}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip b{font-weight:700}
+.busca{margin-left:auto;border:1px solid var(--grid);border-radius:6px;padding:4px 10px;font-size:12px;color:#a09b93;width:200px}
+table.x1{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums}
+.x1 th,.x1 td{border:1px solid var(--grid);padding:3px 6px;text-align:center;height:25px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.x1 th{background:var(--head);font-size:11px;font-weight:600;color:#4a4642}
+.x1 td.l,.x1 th.l{text-align:left}
+.x1 td{font-size:12.5px}
+.x1 tr.tot td{background:var(--head);font-weight:700}
+.x1 tr.band td{background:#1c1c22;color:#fff;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;text-align:left;padding-left:8px}
+.x1 tr.band td small{font-weight:400;letter-spacing:0;text-transform:none;opacity:.75}
+.x1 td.v{background:var(--verde);color:var(--verde-t);font-weight:700}
+.x1 td.s{background:var(--azul);color:var(--azul-t);font-weight:700}
+.x1 td.r{background:var(--rojo);color:var(--rojo-t);font-weight:700}
+.x1 td.a{background:var(--ambar);color:var(--ambar-t);font-weight:700}
+.x1 td.g{color:#b9b5ad}
+.x1 td.m{color:var(--muted);font-size:12px}
+.x1 td.sur{color:#a09b93;font-style:italic;font-size:12px}
+.x1 td.mas{color:var(--muted);font-size:12px;text-align:left;background:#fafaf7}
+.x1 tr.c1 td{border-top:1.5px solid #9d9a93}
+.pt{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
+.pt.az{background:#2f5fa8}.pt.ve{background:#3f8f4f}
+.ley{font-size:11.5px;color:var(--muted);margin:10px 0 0;line-height:1.9}
+.ley span{display:inline-block;width:12px;height:12px;border:1px solid var(--grid);vertical-align:-2px;margin:0 4px 0 12px}
+.ley span:first-child{margin-left:0}
+.aviso{font-size:12px;color:#8a5326;background:#fdf6ee;border:1px solid #e7c9aa;border-radius:6px;padding:6px 10px;margin:10px 0 0}
+.mock-nota{position:fixed;right:14px;bottom:14px;background:#1c1c22;color:#fff;font-size:11.5px;padding:8px 12px;border-radius:999px;opacity:.85}
+</style>
+</head>
+<body>
+<h1>Libres tipo Excel · con lo separado y varios colores</h1>
+<p class="sub">La opción 1 llevada a C6852, que tiene dos colores y 20 unidades ya separadas en SYD.</p>
+<div class="resp">
+  <p><b>Tienes razón:</b> en el mockup anterior no aparecía lo separado (C6857 no tenía ninguna). Aquí va en <b>azul</b>.</p>
+  <p><b>Varios colores:</b> un renglón por cliente y color, igual que las líneas del pedido en SYD. El nombre, la ciudad y el estado se escriben una sola vez. Así la hoja no crece hacia la derecha aunque la referencia tenga 4 o 5 colores: crece hacia abajo.</p>
+  <p><b>Una sola regla de lectura:</b> el número es lo que pidió; el color de la casilla dice qué pasa con esa unidad.</p>
+</div>
+
+<div class="modal">
+  <div class="mh"><div><h2>C6852 · libres en bodega</h2><p>CONJUNTO · entraron 44 · 20 separadas · 25 libres por talla · 58 clientes la pidieron</p></div><button class="x">✕</button></div>
+  <div class="cuerpo">
+    <div class="barra">
+      <span class="chip on">Todos <b>58</b></span><span class="chip">Ya separado <b>8</b></span><span class="chip">Se pueden separar <b>8</b></span><span class="chip">Esperan <b>42</b></span>
+      <span class="busca">Buscar cliente o pedido…</span>
+    </div>
+    <table class="x1">
+      <colgroup><col style="width:28%"><col style="width:13%"><col style="width:6%"><col style="width:8%"><col style="width:8%"><col><col><col><col><col><col><col style="width:5%"><col style="width:9%"></colgroup>
+      <thead><tr><th class="l">Cliente</th><th class="l">Ciudad</th><th>Pedido</th><th class="l">Color</th><th class="l">Obs.</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>Total</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr class="band"><td colspan="13">Libres en bodega</td></tr>
+        <tr><td class="l" colspan="3" rowspan="2"></td><td class="l"><i class="pt az"></i>AZUL</td><td></td><td><b>2</b></td><td class="g">0</td><td><b>4</b></td><td><b>4</b></td><td><b>3</b></td><td><b>1</b></td><td><b>14</b></td><td></td></tr>
+        <tr><td class="l"><i class="pt ve"></i>VERDE</td><td></td><td><b>3</b></td><td><b>2</b></td><td><b>2</b></td><td><b>2</b></td><td><b>1</b></td><td><b>1</b></td><td><b>11</b></td><td></td></tr>
+        <tr class="tot"><td class="l" colspan="5">TOTAL LIBRES</td><td>5</td><td>2</td><td>6</td><td>6</td><td>4</td><td>2</td><td>25</td><td></td></tr>
+
+        <tr class="band"><td colspan="13">Ya separado <small>· 8 clientes · 20 unidades</small></td></tr>
+        <tr class="c1"><td class="l" rowspan="2">MARIA TERESA ECHEVERRI TRUJILL</td><td class="l m" rowspan="2">CERETE</td><td>7830</td><td class="l"><i class="pt az"></i>AZUL</td><td class="l m">AZUL</td><td class="s">1</td><td class="s">1</td><td class="s">1</td><td class="s">1</td><td class="s">1</td><td class="s">1</td><td><b>6</b></td><td class="s" rowspan="2">separado 7</td></tr>
+        <tr><td>7830</td><td class="l"><i class="pt ve"></i>VERDE</td><td class="l m">VERDE</td><td></td><td></td><td class="s">1</td><td></td><td></td><td></td><td><b>1</b></td></tr>
+        <tr class="c1"><td class="l" rowspan="2">LIBIA RENTERIA DE GOMEZ</td><td class="l m" rowspan="2">QUIBDO-CHOCO</td><td>7766</td><td class="l"><i class="pt az"></i>AZUL</td><td class="l sur">surtido</td><td></td><td class="s">1</td><td></td><td class="s">1</td><td></td><td></td><td><b>2</b></td><td class="s" rowspan="2">separado 3</td></tr>
+        <tr><td>7766</td><td class="l"><i class="pt ve"></i>VERDE</td><td class="l sur">surtido</td><td></td><td></td><td class="s">1</td><td></td><td></td><td></td><td><b>1</b></td></tr>
+        <tr class="c1"><td class="l" rowspan="2">NANCY DEL SOCORRO RAMIREZ</td><td class="l m" rowspan="2">BARRANQUILLA</td><td>7805</td><td class="l"><i class="pt az"></i>AZUL</td><td class="l m">AZUL</td><td class="s">1</td><td></td><td></td><td></td><td></td><td></td><td><b>1</b></td><td class="s" rowspan="2">separado 2</td></tr>
+        <tr><td>7804</td><td class="l"><i class="pt ve"></i>VERDE</td><td class="l m">VERDE</td><td></td><td></td><td></td><td class="s">1</td><td></td><td></td><td><b>1</b></td></tr>
+        <tr><td class="mas" colspan="13">… 5 clientes más ya separados: Alexandra Morales, Alicia Flórez, Clara Soto, Maruja Gandur, Sirlena Lastre</td></tr>
+
+        <tr class="band"><td colspan="13">Se pueden separar en curva completa <small>· 8 clientes · 19 unidades · en orden de turno</small></td></tr>
+        <tr class="c1"><td class="l">NURIS ROSARIO LOPEZ CACERES</td><td class="l m">BARRANQUILLA</td><td>7762</td><td class="l"><i class="pt az"></i>AZUL</td><td class="l m">AZUL</td><td class="v">1</td><td></td><td></td><td></td><td></td><td></td><td><b>1</b></td><td class="v">separar 1</td></tr>
+        <tr class="c1"><td class="l" rowspan="2">CILA DEL CARMEN MERCADO NARVAE</td><td class="l m" rowspan="2">SAHAGUN</td><td>7828</td><td class="l"><i class="pt az"></i>AZUL</td><td class="l m">AZUL</td><td></td><td></td><td></td><td class="v">1</td><td class="v">1</td><td></td><td><b>2</b></td><td class="v" rowspan="2">separar 4</td></tr>
+        <tr><td>7828</td><td class="l"><i class="pt ve"></i>VERDE</td><td class="l m">VERDE</td><td></td><td></td><td></td><td class="v">1</td><td class="v">1</td><td></td><td><b>2</b></td></tr>
+        <tr class="c1"><td class="l" rowspan="2">RUBY STELLA CASTILLA FERRO</td><td class="l m" rowspan="2">SANTA MARTA</td><td>7737</td><td class="l"><i class="pt az"></i>AZUL</td><td class="l sur">surtido</td><td class="v">1</td><td></td><td class="v">1</td><td></td><td class="v">1</td><td></td><td><b>3</b></td><td class="v" rowspan="2">separar 5</td></tr>
+        <tr><td>7737</td><td class="l"><i class="pt ve"></i>VERDE</td><td class="l sur">surtido</td><td></td><td class="v">1</td><td></td><td class="v">1</td><td></td><td></td><td><b>2</b></td></tr>
+        <tr class="c1"><td class="l" rowspan="2">BLANCA INES VERGARA FLORES</td><td class="l m" rowspan="2">COROZAL</td><td>7839</td><td class="l"><i class="pt az"></i>AZUL</td><td class="l sur">surtido</td><td></td><td class="a">1</td><td></td><td class="v">1</td><td></td><td></td><td><b>2</b></td><td class="v" rowspan="2">separar 3</td></tr>
+        <tr><td>7839</td><td class="l"><i class="pt ve"></i>VERDE</td><td class="l sur">surtido</td><td></td><td></td><td class="v">1</td><td></td><td></td><td></td><td><b>1</b></td></tr>
+        <tr><td class="mas" colspan="13">… 4 clientes más: Martha Ferrer (2), Virginia Arzuaga (2), Elizabeth Gómez (1), Alcira Guerrero (1)</td></tr>
+
+        <tr class="band"><td colspan="13">Esperan <small>· 42 clientes · con lo libre no les sale completo</small></td></tr>
+        <tr class="c1"><td class="l">ALMACEN BEATRIZ S.A.S.</td><td class="l m">SINCELEJO</td><td>8101</td><td class="l"><i class="pt az"></i>AZUL</td><td class="l m">AZUL</td><td></td><td class="r">1</td><td>1</td><td>1</td><td></td><td></td><td><b>3</b></td><td class="r">espera</td></tr>
+        <tr class="c1"><td class="l" rowspan="2">AURORA DEL CARMEN BURGOS CASTI</td><td class="l m" rowspan="2">MONTERIA</td><td>7834</td><td class="l"><i class="pt az"></i>AZUL</td><td class="l m">AZUL</td><td class="r">1</td><td></td><td></td><td></td><td></td><td></td><td><b>1</b></td><td class="r" rowspan="2">espera</td></tr>
+        <tr><td>7834</td><td class="l"><i class="pt ve"></i>VERDE</td><td class="l m">VERDE</td><td></td><td></td><td>1</td><td></td><td></td><td></td><td><b>1</b></td></tr>
+        <tr><td class="mas" colspan="13">… 40 clientes más</td></tr>
+
+        <tr class="band"><td colspan="13">Quedarían libres después de separar</td></tr>
+        <tr><td class="l" colspan="3" rowspan="2"></td><td class="l"><i class="pt az"></i>AZUL</td><td></td><td class="g">0</td><td class="g">0</td><td><b>1</b></td><td class="g">0</td><td class="g">0</td><td class="g">0</td><td><b>1</b></td><td></td></tr>
+        <tr><td class="l"><i class="pt ve"></i>VERDE</td><td></td><td><b>3</b></td><td class="g">0</td><td><b>1</b></td><td class="g">0</td><td class="g">0</td><td><b>1</b></td><td><b>5</b></td><td></td></tr>
+      </tbody>
+    </table>
+    <p class="ley">
+      <span style="background:var(--azul)"></span>ya separado en SYD
+      <span style="background:var(--verde)"></span>se le puede separar
+      <span style="background:var(--ambar)"></span>se le da en otro color, misma talla (solo surtidos)
+      <span style="background:var(--rojo)"></span>no alcanza: por eso espera
+      <span style="background:#fff"></span>pedido, sin mover
+    </p>
+    <p class="aviso">⚠ AZUL talla 10: hay 3 separadas y solo entró 1. · Blanca Inés pidió azul talla 10; como es surtido, se le daría <b>verde</b> talla 10 (casilla ámbar).</p>
+  </div>
+</div>
+<div class="mock-nota">Mockup · datos reales de C6852</div>
+</body>
+</html>

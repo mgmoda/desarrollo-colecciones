@@ -3,9 +3,10 @@ import Modal from './Modal.jsx'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
-import { dbLoadPedidosTodos } from '../lib/db.js'
+import { dbLoadDespachos, dbLoadPedidosTodos, dbUpsertDespacho } from '../lib/db.js'
 import { formatDate } from '../lib/constants.js'
-import { FILTROS_REF, armarPorReferencia, totalesRef } from '../lib/porReferencia.js'
+import { FILTROS_REF, armarPorReferencia, calcularLibres, totalesRef } from '../lib/porReferencia.js'
+import { idCliente } from '../lib/despachos.js'
 
 // ════════════════════════════════════════════════════════════════════════
 // POR REFERENCIA — tercera vista de Pedidos. Una fila por referencia: lo que
@@ -18,14 +19,18 @@ const num = (n) => Number(n || 0).toLocaleString('es-CO')
 const diaMes = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '')
 
 export default function PorReferenciaView({
-  stamp, orders, refs, refMap, onViewImage, onOpenRef,
-  cargarPedidos = dbLoadPedidosTodos, // inyectable para probar sin sesión
+  stamp, stampDespachos, usuario, orders, refs, refMap, onViewImage, onOpenRef,
+  // Inyectables para probar sin sesión.
+  cargarPedidos = dbLoadPedidosTodos, cargarDespachos = dbLoadDespachos, guardarDespacho = dbUpsertDespacho,
 }) {
   const [filas, setFilas] = useState(null)
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
   const [filtro, setFiltro] = useState('entrada')
   const [abierta, setAbierta] = useState(null)
+  const [libresDe, setLibresDe] = useState(null) // referencia con la ventana de libres abierta
+  // Prioridad (★) por cliente: vive en dev_despachos, en el renglón c|CLIENTE.
+  const [registros, setRegistros] = useState({})
   // Globo con los lotes de entrada: va con posición fija para que el borde
   // de la tabla (que desplaza a lo ancho) no lo recorte.
   const [lotes, setLotes] = useState(null) // { ref, x, y, arriba }
@@ -38,6 +43,27 @@ export default function PorReferenciaView({
       .catch((e) => { if (vivo) setError(e.message || String(e)) })
     return () => { vivo = false }
   }, [stamp, cargarPedidos])
+
+  useEffect(() => {
+    let vivo = true
+    cargarDespachos()
+      .then((r) => { if (vivo) setRegistros(r || {}) })
+      .catch((e) => { if (vivo) setError(e.message || String(e)) })
+    return () => { vivo = false }
+  }, [stampDespachos, cargarDespachos])
+
+  const prioridades = useMemo(() => {
+    const st = new Set()
+    Object.entries(registros).forEach(([id, d]) => { if (id.startsWith('c|') && d && d.prioridad) st.add(id.slice(2)) })
+    return st
+  }, [registros])
+  const esPrioridad = (cliente) => prioridades.has(idCliente(cliente).slice(2))
+  function alternarPrioridad(cliente) {
+    const id = idCliente(cliente)
+    const data = { ...(registros[id] || {}), prioridad: !esPrioridad(cliente), usuario, at: Date.now() }
+    setRegistros((r) => ({ ...r, [id]: data }))
+    guardarDespacho(id, data).catch((e) => { console.error(e); setError('No se pudo guardar: ' + (e.message || e)) })
+  }
 
   const todas = useMemo(() => armarPorReferencia(filas || [], orders, refs), [filas, orders, refs])
   const conEntrada = useMemo(() => todas.filter((r) => r.entro > 0), [todas])
@@ -142,7 +168,12 @@ export default function PorReferenciaView({
                     </td>
                     <td className="num">{num(r.pedido)}</td>
                     <td className="num">{r.separado ? <span className="dsp-sep">{num(r.separado)}</span> : <span className="dsp-cero">·</span>}</td>
-                    <td className="num">{r.entro ? (r.libre ? <span className="pr-libre">{num(r.libre)}</span> : <span className="dsp-cero">·</span>) : <span className="dsp-cero">—</span>}</td>
+                    <td className="num">
+                      {r.entro ? (r.libre ? (
+                        <button type="button" className="pr-libre-btn" title="Ver las libres por talla y color, y a quién se le pueden asignar"
+                          onClick={(e) => { e.stopPropagation(); setLibresDe(r.ref) }}>{num(r.libre)} ↗</button>
+                      ) : <span className="dsp-cero">·</span>) : <span className="dsp-cero">—</span>}
+                    </td>
                     <td className="num">{r.entro ? <span className="dsp-falt">{num(r.faltaProducir)}</span> : <span className="dsp-cero">—</span>}</td>
                     <td>
                       <div className="pr-bar" title={`${num(r.separado)} separadas · ${num(r.libre)} libres · ${num(r.entro ? r.faltaProducir : 0)} por producir`}>
@@ -189,6 +220,12 @@ export default function PorReferenciaView({
         <span>Los conjuntos toman la entrada de la prenda que menos ha entrado.</span>
       </div>
 
+      {libresDe && todas.find((r) => r.ref === libresDe) && (
+        <LibresModal r={todas.find((r) => r.ref === libresDe)} prioridades={prioridades}
+          esPrioridad={esPrioridad} onPrioridad={alternarPrioridad}
+          refMap={refMap} onViewImage={onViewImage} onClose={() => setLibresDe(null)} />
+      )}
+
       {ref && (
         <Modal open onClose={() => setAbierta(null)} size="xl">
           <div className="modal-head">
@@ -230,7 +267,7 @@ export default function PorReferenciaView({
                 <tbody>
                   {[...ref.clientes].sort((a, b) => (b.separado - a.separado) || (b.pidio - a.pidio)).map((c) => (
                     <tr key={c.cliente}>
-                      <td><b>{c.cliente}</b></td>
+                      <td><Estrella on={esPrioridad(c.cliente)} onClick={() => alternarPrioridad(c.cliente)} /><b>{c.cliente}</b></td>
                       <td className="muted pr-corta" title={c.ciudad || ''}>{c.ciudad || '—'}</td>
                       <td className="mono muted">{c.pedidos.join(', ')}</td>
                       <td className="muted pr-corta" title={c.colores.join(' · ')}>{c.colores.join(' · ')}</td>
@@ -251,5 +288,146 @@ export default function PorReferenciaView({
         </Modal>
       )}
     </>
+  )
+}
+
+function Estrella({ on, onClick }) {
+  return (
+    <button type="button" className={'pr-estrella' + (on ? ' on' : '')}
+      title={on ? 'Cliente con prioridad: va primero en el reparto. Clic para quitarla.' : 'Dar prioridad a este cliente en el reparto'}
+      onClick={(e) => { e.stopPropagation(); onClick() }}>★</button>
+  )
+}
+
+// ── Libres de una referencia: se lee de arriba abajo como una cuenta.
+//    Lo que hay libre por color y talla − lo que se le puede dar a cada
+//    cliente en curva completa = lo que de verdad sobra. ─────────────────
+function LibresModal({ r, prioridades, esPrioridad, onPrioridad, refMap, onViewImage, onClose }) {
+  // Las prioridades llegan normalizadas (como en el id c|CLIENTE); el cálculo
+  // compara por nombre de cliente, así que se arma el conjunto con los nombres.
+  const conPrioridad = useMemo(() => new Set(r.clientes.filter((c) => esPrioridad(c.cliente)).map((c) => c.cliente)), [r, prioridades])
+  const L = useMemo(() => calcularLibres(r, conPrioridad), [r, conPrioridad])
+  const ficha = refMap && refMap.get(r.ref)
+  const img = ficha && ficha.image
+  const nombreColor = (c) => c.charAt(0) + c.slice(1).toLowerCase()
+  const tono = (c) => 'pr-tono-' + (L.colores.indexOf(c) % 5)
+  const nCols = L.tallas.length + 3
+
+  function texto() {
+    const lineas = [`${r.ref} · ${r.descripcion} — libres en bodega: ${L.totalLibre}`, '']
+    L.asignables.forEach((a) => lineas.push(`${a.cliente} (${a.ciudad}, pedido ${a.pedidos.join(', ')}) — separar ${a.n}: ${a.dar.map((x) => `${nombreColor(x.color)} ${x.talla}${x.n > 1 ? ' x' + x.n : ''}`).join(', ')}`))
+    if (L.totalQueda) lineas.push('', `Quedarían libres ${L.totalQueda}: ${Object.entries(L.queda).map(([k, v]) => `${nombreColor(k.split('|')[0])} ${k.split('|')[1]} x${v}`).join(', ')}`)
+    return lineas.join('\n')
+  }
+  function copiar() { if (navigator.clipboard) navigator.clipboard.writeText(texto()) }
+  function imprimir() {
+    const w = window.open('', '_blank')
+    if (!w) return
+    w.document.write(`<pre style="font:14px/1.5 -apple-system,Helvetica,Arial,sans-serif;white-space:pre-wrap;padding:24px">${texto().replace(/</g, '&lt;')}</pre>`)
+    w.document.close(); w.focus(); w.print()
+  }
+
+  return (
+    <Modal open onClose={onClose} size="xl">
+      <div className="modal-head">
+        <div className="pr-mh">
+          {img
+            ? <img src={img} alt={r.ref} className="pr-foto" title="Ampliar foto" onClick={() => onViewImage && onViewImage(img)} />
+            : <span className="pr-foto empty">—</span>}
+          <div>
+            <h2 className="modal-title">{r.ref} · libres en bodega</h2>
+            <p className="eb-meta">
+              {r.descripcion} · {r.marca} · entraron {num(r.entro)} · {num(r.separado)} ya separadas · {num(L.totalLibre)} libres · {num(L.esperan)} clientes la esperan
+            </p>
+          </div>
+        </div>
+        <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
+      </div>
+      <div className="modal-body tal-modal-body">
+        {L.avisos.length > 0 && <div className="dsp-nota"><b>Revisar:</b> {L.avisos.join(' · ')}.</div>}
+        {L.totalLibre === 0 ? (
+          <div className="empty-state"><p>No hay unidades libres por talla: todo lo que entró ya tiene nombre.</p></div>
+        ) : (
+          <div className="med-wrap ped-scroll pr-cuenta-wrap">
+            <table className="med-tabla pr-cuenta">
+              <colgroup>
+                <col className="pr-c0" />{L.tallas.map((t) => <col key={t} />)}<col /><col className="pr-cfin" />
+              </colgroup>
+              <thead>
+                <tr><th>Libres en bodega</th>{L.tallas.map((t) => <th key={t} className="num">{t}</th>)}<th className="num">Total</th><th /></tr>
+              </thead>
+              <tbody>
+                {L.colores.map((c) => (
+                  <tr key={c} className="pr-libre-f">
+                    <td><span className={'pr-punto ' + tono(c)} />{nombreColor(c)}</td>
+                    {L.tallas.map((t) => <td key={t} className="num">{L.libre[c + '|' + t] || <span className="dsp-cero">·</span>}</td>)}
+                    <td className="num">{num(L.tallas.reduce((n, t) => n + (L.libre[c + '|' + t] || 0), 0))}</td><td />
+                  </tr>
+                ))}
+                <tr className="pr-total-f">
+                  <td>Total libres</td>
+                  {L.tallas.map((t) => <td key={t} className="num">{num(L.colores.reduce((n, c) => n + (L.libre[c + '|' + t] || 0), 0))}</td>)}
+                  <td className="num">{num(L.totalLibre)}</td><td />
+                </tr>
+                <tr className="pr-sep-f">
+                  <td colSpan={nCols}>
+                    Se pueden asignar en curva completa
+                    <small> · {num(L.asignables.length)} clientes · {num(L.asignadas)} unidades</small>
+                  </td>
+                </tr>
+                {L.asignables.length === 0 && (
+                  <tr><td colSpan={nCols} className="muted" style={{ padding: 14 }}>Con lo libre no se completa el pedido de ningún cliente en esta referencia.</td></tr>
+                )}
+                {L.asignables.map((a) => (
+                  <tr key={a.cliente}>
+                    <td className="pr-cl">
+                      <Estrella on={esPrioridad(a.cliente)} onClick={() => onPrioridad(a.cliente)} />
+                      <span>
+                        <b>{a.cliente}</b>
+                        <span className="pr-cl-s">{a.ciudad} · pedido {a.pedidos.join(', ')} · pidió {num(a.pidio)}{a.tenia ? ` · ya tiene ${num(a.tenia)}` : ''}{a.surtido ? <i> · surtido</i> : ''}</span>
+                      </span>
+                    </td>
+                    {L.tallas.map((t) => {
+                      const xs = a.dar.filter((x) => x.talla === t)
+                      return (
+                        <td key={t} className="num">
+                          {xs.length ? xs.map((x, i) => (
+                            <span key={i} className={'pr-pz ' + tono(x.color) + (x.cambio ? ' cambio' : '')}
+                              title={`${nombreColor(x.color)} talla ${t}${x.cambio ? ' · color distinto al digitado, permitido porque va surtido' : ''}`}>{x.n}</span>
+                          )) : <span className="dsp-cero">·</span>}
+                        </td>
+                      )
+                    })}
+                    <td className="num strong">{num(a.n)}</td>
+                    <td><span className="tag dsp-tag verde">completo</span></td>
+                  </tr>
+                ))}
+                <tr className="pr-queda-f">
+                  <td>Quedarían libres</td>
+                  {L.tallas.map((t) => (
+                    <td key={t} className="num">
+                      {L.colores.some((c) => L.queda[c + '|' + t]) ? L.colores.map((c) => (L.queda[c + '|' + t]
+                        ? <span key={c} className={'pr-pz ' + tono(c)} title={`${nombreColor(c)} talla ${t}`}>{L.queda[c + '|' + t]}</span> : null)) : <span className="dsp-cero">·</span>}
+                    </td>
+                  ))}
+                  <td className="num">{num(L.totalQueda)}</td><td />
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="dsp-leyenda pr-ley-c">
+          {L.colores.map((c) => <span key={c}><span className={'pr-punto ' + tono(c)} />{nombreColor(c).toLowerCase()}</span>)}
+          <span><span className="pr-pz pr-tono-0 cambio">1</span> color distinto al digitado, permitido porque el cliente la pidió surtida</span>
+        </div>
+        <div className="dsp-acciones">
+          <span className="pr-pie-txt">Solo aparecen clientes a los que el pedido de esta referencia les <b>queda completo</b>. Turno: ★ → más cerca de completar su despacho → pedido más antiguo. La separación se hace en SYD.</span>
+          <span className="dsp-ultimo">
+            <button type="button" className="btn" onClick={imprimir}>Imprimir para bodega</button>{' '}
+            <button type="button" className="btn btn-primary" onClick={copiar}>Copiar lista</button>
+          </span>
+        </div>
+      </div>
+    </Modal>
   )
 }

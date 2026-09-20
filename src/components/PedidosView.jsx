@@ -222,7 +222,7 @@ export default function PedidosView({
         <DespachosView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
       )}
       {vista === 'referencia' && (
-        <PorReferenciaView stamp={stamp} orders={orders} refs={refs} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
+        <PorReferenciaView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} orders={orders} refs={refs} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
       )}
       {vista !== 'pedidos' ? null : <>
 

@@ -247,9 +247,19 @@ max(separado, facturado); falta producir = pedido − entró. El conjunto toma
 la entrada de la prenda que MENOS ha entrado (órdenes CONJUNTO de cada
 pieza). "Revisar entrada" avisa cuando hay más separado que entrado. Al
 abrir una referencia: a qué clientes se les separó y cuánto les falta.
-Pendiente (mockups `libres-en-bodega-v1`, `separacion-surtido-v2`): sugerir
-a quién asignar lo libre, surtido vs color fijo por la observación, y ★ de
-prioridad por cliente. Ojo: Factory y SYD no siempre nombran igual el color
+**Libres (20-sep-2026)**: el número de "Libre en bodega" es un botón que abre
+`LibresModal`: una sola tabla que se lee como una cuenta — libres por color
+y talla, menos lo que se le puede asignar a cada cliente en CURVA COMPLETA
+(todo o nada en esa referencia), igual a lo que sobra (`calcularLibres`).
+La primera separación es a criterio de bodega; esto trabaja sobre lo que
+quedó. La curva por talla sale de lo CORTADO de las órdenes con entrada
+(Factory no da la entrada por talla); en conjuntos, la menor de las dos
+prendas por casilla. Turno: ★ (`prioridad` en `c|CLIENTE` de
+`dev_despachos`) → cliente más cerca de completar su despacho → pedido más
+antiguo. Surtido = referencia de varios colores y línea sin observación (le
+sirve cualquier color, nunca otra talla); "SIN X" excluye ese color; otro
+texto es color fijo. Avisa cuando hay más separado que entrado en una
+casilla. La separación se sigue digitando en SYD. Ojo: Factory y SYD no siempre nombran igual el color
 ("VINO TINTO 2" = ROJO); reusar `empatarColor` de programaciones.
 
 **Despachos (14-sep-2026)**: segunda vista de la pestaña Pedidos

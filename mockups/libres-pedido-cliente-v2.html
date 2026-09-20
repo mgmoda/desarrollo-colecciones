@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Pedido del cliente desde Libres · tipo Excel</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Tres opciones tipo hoja de cálculo: cuadrícula, sin píldoras ni etiquetas.
+   Datos reales de C6857 (39 libres, 6 clientes). */
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--ink:#1c1c22;--muted:#6b6660;--grid:#d0cec8;--head:#efede8;--verde:#d9ecd5;--verde-t:#1f6b2e;--rojo:#fbe3e0;--rojo-t:#b23121}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.35;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 6px;max-width:980px}
+.paso{display:flex;align-items:center;gap:10px;margin:30px 0 4px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+.paso i{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:12px}
+.exp{color:var(--muted);margin:0 0 10px;max-width:980px}
+.modal{background:var(--surface);border:1px solid var(--hairline);border-radius:12px;max-width:1040px;box-shadow:0 8px 30px rgba(0,0,0,.10);overflow:hidden}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--hairline)}
+.mh h2{font-family:Fraunces,serif;font-weight:500;font-size:19px;margin:0}
+.mh p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.x{border:1px solid var(--hairline);background:var(--surface);border-radius:8px;width:28px;height:28px;color:var(--muted)}
+.cuerpo{padding:14px 18px 16px}
+.tit{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 5px}
+.tit:first-child{margin-top:0}
+table.x1{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums}
+.x1 th,.x1 td{border:1px solid var(--grid);padding:4px 6px;text-align:center;height:26px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.x1 th{background:var(--head);font-size:11px;font-weight:600;color:#4a4642}
+.x1 td.l,.x1 th.l{text-align:left}
+.x1 tr.tot td{background:var(--head);font-weight:700}
+.x1 td.v{background:var(--verde);color:var(--verde-t);font-weight:700}
+.x1 td.r{background:var(--rojo);color:var(--rojo-t);font-weight:700}
+.x1 td.g{color:#b9b5ad}
+.x1 td.m{color:var(--muted);font-size:12px}
+.x1 tr.sel td{background:#fff8d6}
+.x1 tr.sel td.v{background:#cfe6c9}
+.x1 tr.sub td{background:#fafaf7;color:var(--muted);font-size:12px}
+.x1 tr.sub td.l{padding-left:22px}
+.ley{font-size:11.5px;color:var(--muted);margin:8px 0 0}
+.ley span{display:inline-block;width:12px;height:12px;border:1px solid var(--grid);vertical-align:-2px;margin:0 4px 0 10px}
+.ley span:first-child{margin-left:0}
+.dos{display:grid;grid-template-columns:1fr;gap:0}
+.mini{border:1px solid #bdbab3;border-radius:8px;margin-top:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.10)}
+.mini-h{display:flex;justify-content:space-between;align-items:center;background:var(--head);padding:7px 12px;font-weight:600;font-size:12.5px;border-bottom:1px solid var(--grid)}
+.mini-h small{font-weight:400;color:var(--muted)}
+.mini .pad{padding:10px 12px}
+.link{color:#1c4f6e;text-decoration:underline;text-underline-offset:2px;font-weight:600;font-size:12px}
+.rec{background:#eef3f7;border:1px solid #c9d8e4;color:#1c4f6e;border-radius:10px;padding:12px 16px;max-width:1040px;margin-top:26px}
+.mock-nota{position:fixed;right:14px;bottom:14px;background:#1c1c22;color:#fff;font-size:11.5px;padding:8px 12px;border-radius:999px;opacity:.85}
+</style>
+</head>
+<body>
+<h1>Ver el pedido del cliente desde Libres · tipo Excel</h1>
+<p class="sub">Tres formas sencillas, en cuadrícula, sin adornos. Todas con los datos reales de C6857: 39 libres y 6 clientes que la pidieron.</p>
+
+<!-- ───────── OPCIÓN 1 ───────── -->
+<div class="paso"><i>1</i> Una sola hoja: el número es lo que pidió, el verde es lo que se le puede separar</div>
+<p class="exp">No hay que tocar nada. Cada cliente es un renglón con su pedido, su observación y las tallas que pidió. Si la casilla está en verde, hay libre para dársela. Si está en rojo, de esa talla no hay.</p>
+<div class="modal">
+  <div class="mh"><div><h2>C6857 · libres en bodega</h2><p>PANTALON CHAMBRAY BORDADO · entraron 39 · 0 separadas · 39 libres</p></div><button class="x">✕</button></div>
+  <div class="cuerpo">
+    <table class="x1">
+      <colgroup><col style="width:25%"><col style="width:17%"><col style="width:7%"><col style="width:9%"><col><col><col><col><col><col><col><col style="width:5%"><col style="width:7%"></colgroup>
+      <thead><tr><th class="l">Cliente</th><th class="l">Ciudad</th><th>Pedido</th><th class="l">Observación</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>20</th><th>Total</th><th>Separar</th></tr></thead>
+      <tbody>
+        <tr class="tot"><td class="l" colspan="4">LIBRES EN BODEGA · AZUL</td><td>3</td><td>7</td><td>9</td><td>10</td><td>7</td><td>3</td><td class="g">0</td><td>39</td><td></td></tr>
+        <tr><td class="l">RUTH LOPEZ ROJAS</td><td class="l m">FLORENCIA-CAQUETA</td><td>7856</td><td class="l m">AZUL</td><td></td><td class="v">1</td><td class="v">1</td><td></td><td></td><td></td><td></td><td><b>2</b></td><td class="v">2</td></tr>
+        <tr><td class="l">LIGIA ROSA FUENTES LOZANO</td><td class="l m">TOLU (SUCRE)</td><td>7840</td><td class="l m"></td><td></td><td class="v">1</td><td></td><td class="v">1</td><td></td><td></td><td></td><td><b>2</b></td><td class="v">2</td></tr>
+        <tr><td class="l">NUBIA PERDOMO VALENCIA</td><td class="l m">ALGECIRAS-HUILA</td><td>6414</td><td class="l m">AZUL</td><td class="v">1</td><td class="v">1</td><td class="v">1</td><td></td><td></td><td></td><td></td><td><b>3</b></td><td class="v">3</td></tr>
+        <tr><td class="l">ADRIANA ARISTIZABAL CASTAÑO</td><td class="l m">FLORENCIA-CAQUETA</td><td>7851</td><td class="l m"></td><td></td><td class="v">1</td><td class="v">1</td><td class="v">1</td><td></td><td></td><td></td><td><b>3</b></td><td class="v">3</td></tr>
+        <tr><td class="l">AIDE BALLESTEROS ARMENTA</td><td class="l m">SANTA MARTA</td><td>7815</td><td class="l m"></td><td></td><td></td><td class="v">1</td><td></td><td></td><td></td><td></td><td><b>1</b></td><td class="v">1</td></tr>
+        <tr><td class="l">MARTHA LUCIA TRUJILLO DEVIA</td><td class="l m">NEIVA</td><td>7878</td><td class="l m"></td><td></td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td class="r">1</td><td><b>6</b></td><td class="r">espera</td></tr>
+        <tr class="tot"><td class="l" colspan="4">QUEDARÍAN LIBRES</td><td>2</td><td>3</td><td>5</td><td>8</td><td>7</td><td>3</td><td class="g">0</td><td>28</td><td>11</td></tr>
+      </tbody>
+    </table>
+    <p class="ley"><span style="background:var(--verde)"></span>se le puede separar, queda completo <span style="background:var(--rojo)"></span>no hay de esa talla: no sale completo, espera</p>
+  </div>
+</div>
+
+<!-- ───────── OPCIÓN 2 ───────── -->
+<div class="paso"><i>2</i> Dos renglones por cliente: Pidió y Separar</div>
+<p class="exp">Igual de plano, pero separando las dos cosas: arriba lo que pidió, abajo lo que se le daría. Sirve más cuando el color es surtido y se le cambia un color por otro. Ocupa el doble de alto.</p>
+<div class="modal">
+  <div class="mh"><div><h2>C6857 · libres en bodega</h2><p>PANTALON CHAMBRAY BORDADO · entraron 39 · 0 separadas · 39 libres</p></div><button class="x">✕</button></div>
+  <div class="cuerpo">
+    <table class="x1">
+      <colgroup><col style="width:27%"><col style="width:7%"><col style="width:10%"><col style="width:9%"><col><col><col><col><col><col><col><col style="width:7%"></colgroup>
+      <thead><tr><th class="l">Cliente</th><th>Pedido</th><th class="l">Observación</th><th class="l"></th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>20</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr class="tot"><td class="l" colspan="4">LIBRES EN BODEGA · AZUL</td><td>3</td><td>7</td><td>9</td><td>10</td><td>7</td><td>3</td><td class="g">0</td><td>39</td></tr>
+        <tr><td class="l" rowspan="2">RUTH LOPEZ ROJAS</td><td rowspan="2">7856</td><td class="l m" rowspan="2">AZUL</td><td class="l m">Pidió</td><td></td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td>2</td></tr>
+        <tr><td class="l m">Separar</td><td></td><td class="v">1</td><td class="v">1</td><td></td><td></td><td></td><td></td><td class="v">2</td></tr>
+        <tr><td class="l" rowspan="2">LIGIA ROSA FUENTES LOZANO</td><td rowspan="2">7840</td><td class="l m" rowspan="2"></td><td class="l m">Pidió</td><td></td><td>1</td><td></td><td>1</td><td></td><td></td><td></td><td>2</td></tr>
+        <tr><td class="l m">Separar</td><td></td><td class="v">1</td><td></td><td class="v">1</td><td></td><td></td><td></td><td class="v">2</td></tr>
+        <tr><td class="l" rowspan="2">NUBIA PERDOMO VALENCIA</td><td rowspan="2">6414</td><td class="l m" rowspan="2">AZUL</td><td class="l m">Pidió</td><td>1</td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td>3</td></tr>
+        <tr><td class="l m">Separar</td><td class="v">1</td><td class="v">1</td><td class="v">1</td><td></td><td></td><td></td><td></td><td class="v">3</td></tr>
+        <tr><td class="l" rowspan="2">MARTHA LUCIA TRUJILLO DEVIA</td><td rowspan="2">7878</td><td class="l m" rowspan="2"></td><td class="l m">Pidió</td><td></td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td class="r">1</td><td>6</td></tr>
+        <tr><td class="l m">Separar</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="r">espera</td></tr>
+        <tr><td class="l m" colspan="12">… Adriana Aristizábal y Aide Ballesteros siguen igual</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ───────── OPCIÓN 3 ───────── -->
+<div class="paso"><i>3</i> La tabla queda como está hoy y, al tocar el cliente, sale una hojita con su pedido</div>
+<p class="exp">No cambia nada de la ventana actual. Tocas a Ruth (queda resaltada en amarillo) y debajo aparece un cuadro pequeño, tipo Excel, con sus líneas de esa referencia. Un clic más que en las otras.</p>
+<div class="modal">
+  <div class="mh"><div><h2>C6857 · libres en bodega</h2><p>PANTALON CHAMBRAY BORDADO · entraron 39 · 0 separadas · 39 libres</p></div><button class="x">✕</button></div>
+  <div class="cuerpo">
+    <table class="x1">
+      <colgroup><col style="width:34%"><col><col><col><col><col><col><col style="width:9%"></colgroup>
+      <thead><tr><th class="l">Se pueden asignar en curva completa</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr class="tot"><td class="l">LIBRES EN BODEGA · AZUL</td><td>3</td><td>7</td><td>9</td><td>10</td><td>7</td><td>3</td><td>39</td></tr>
+        <tr class="sel"><td class="l"><b>RUTH LOPEZ ROJAS</b></td><td></td><td class="v">1</td><td class="v">1</td><td></td><td></td><td></td><td><b>2</b></td></tr>
+        <tr><td class="l">LIGIA ROSA FUENTES LOZANO</td><td></td><td class="v">1</td><td></td><td class="v">1</td><td></td><td></td><td><b>2</b></td></tr>
+        <tr><td class="l">NUBIA PERDOMO VALENCIA</td><td class="v">1</td><td class="v">1</td><td class="v">1</td><td></td><td></td><td></td><td><b>3</b></td></tr>
+        <tr><td class="l m">… 2 clientes más</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="mini">
+      <div class="mini-h"><span>RUTH LOPEZ ROJAS · su pedido de C6857 <small>· FLORENCIA-CAQUETA</small></span><span class="link">Ver todo su pedido →</span></div>
+      <div class="pad">
+        <table class="x1">
+          <colgroup><col style="width:9%"><col style="width:10%"><col style="width:14%"><col><col><col><col><col><col><col><col style="width:8%"><col style="width:11%"><col style="width:12%"></colgroup>
+          <thead><tr><th>Pedido</th><th class="l">Color</th><th class="l">Observación</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>20</th><th>Unid.</th><th>Precio</th><th>Total</th></tr></thead>
+          <tbody>
+            <tr><td>7856</td><td class="l">AZUL</td><td class="l m">AZUL</td><td></td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td><b>2</b></td><td>99.900</td><td>199.800</td></tr>
+            <tr class="sub"><td class="l" colspan="3">Ya separado</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>0</td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rec"><b>Mi recomendación: la opción 1.</b> Es la más parecida a una hoja de Excel y contesta la pregunta sin ningún clic: en el mismo renglón ves el pedido de Ruth (7856), lo que escribió en la observación, las tallas que pidió y, por el color de la casilla, si se le puede separar. Además muestra a quien espera y por qué (Martha pidió talla 20 y no hay), que hoy no se ve. La 2 la dejaría solo si quieres ver los cambios de color en referencias surtidas; la 3 si prefieres no tocar la ventana actual.</div>
+<div class="mock-nota">Mockup · datos reales de C6857</div>
+</body>
+</html>

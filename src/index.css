@@ -6064,6 +6064,9 @@ select.filtro-taller { flex: none; width: 215px; }
 .pr-punto.pr-tono-3 { background: #7a3d8f; }
 .pr-punto.pr-tono-4 { background: #6b6660; }
 .pr-pie-txt { flex: 1; min-width: 260px; }
+/* Foto rápida al pasar el mouse por la referencia */
+.pr-foto-caja { position: fixed; z-index: 60; pointer-events: none; background: var(--surface); border: 1px solid var(--hairline-strong); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 5px; }
+.pr-foto-caja img { display: block; height: 288px; width: auto; max-width: 260px; object-fit: cover; border-radius: 8px; }
 /* Varios lotes de entrada: pastilla con el detalle al pasar el mouse o enfocarla */
 .pr-lotes { position: relative; display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: 10.5px; font-weight: 600; line-height: 17px; background: #f1f0ee; color: #4a4642; border: 1px solid var(--hairline-strong); cursor: default; outline: none; }
 .pr-lotes:hover, .pr-lotes:focus, .pr-lotes.on { background: var(--ink); color: #fff; border-color: var(--ink); }

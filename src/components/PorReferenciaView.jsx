@@ -34,6 +34,7 @@ export default function PorReferenciaView({
   // Globo con los lotes de entrada: va con posición fija para que el borde
   // de la tabla (que desplaza a lo ancho) no lo recorte.
   const [lotes, setLotes] = useState(null) // { ref, x, y, arriba }
+  const [foto, setFoto] = useState(null) // { src, ref, x, y }: vista rápida al pasar el mouse por la referencia
   const { sortKey, sortDir, toggle } = useSort('ref', 'asc')
 
   useEffect(() => {
@@ -87,6 +88,23 @@ export default function PorReferenciaView({
     const arriba = b.bottom + alto + 12 > window.innerHeight
     setLotes({ ref: r.ref, x: Math.min(b.left, window.innerWidth - 270), y: arriba ? b.top - alto - 6 : b.bottom + 6 })
   }
+  // Foto al pasar el mouse: caja fija (no la recorta la tabla) debajo de la
+  // fila, o encima si no cabe. Sin foto no se muestra nada.
+  function abrirFoto(e, r) {
+    const ficha = refMap && refMap.get(r.ref)
+    const src = ficha && ficha.image
+    if (!src) return
+    const b = e.currentTarget.getBoundingClientRect()
+    const alto = 300
+    const arriba = b.bottom + alto + 10 > window.innerHeight
+    setFoto({ src, ref: r.ref, x: b.left + 175, y: arriba ? Math.max(8, b.top - alto - 4) : b.bottom + 4 })
+  }
+  useEffect(() => {
+    if (!foto) return undefined
+    const cerrar = () => setFoto(null)
+    window.addEventListener('scroll', cerrar, true)
+    return () => window.removeEventListener('scroll', cerrar, true)
+  }, [foto])
   const refLotes = lotes ? todas.find((r) => r.ref === lotes.ref) : null
 
   const thProps = { sortKey, sortDir, onSort: toggle }
@@ -122,7 +140,7 @@ export default function PorReferenciaView({
       ) : lista.length === 0 ? (
         <div className="empty-state"><p>Ninguna referencia en este filtro.</p></div>
       ) : (
-        <div className="table-wrap" onScroll={() => setLotes(null)}>
+        <div className="table-wrap" onScroll={() => { setLotes(null); setFoto(null) }}>
           <table className="data-table dsp-tabla pr-tabla">
             <thead>
               <tr>
@@ -144,7 +162,7 @@ export default function PorReferenciaView({
                 const ult = r.ordenes[0]
                 return (
                   <tr key={r.ref} className="row-click" onClick={() => setAbierta(r.ref)} title="Ver a qué clientes se les separó">
-                    <td className="dsp-cli">
+                    <td className="dsp-cli" title="" onMouseEnter={(e) => abrirFoto(e, r)} onMouseLeave={() => setFoto(null)}>
                       <b>{r.ref}</b>
                       <span className={'dsp-cat c-' + r.categoria.key}>{r.categoria.label}</span>
                       <span className="pr-desc">{r.descripcion}</span>
@@ -198,6 +216,12 @@ export default function PorReferenciaView({
             <span>{num(lista.length)} de {num(todas.length)} referencias</span>
             <span><b>{num(lista.reduce((n, r) => n + r.libre, 0))}</b> libres · <b>{num(lista.reduce((n, r) => n + r.separado, 0))}</b> separadas</span>
           </div>
+        </div>
+      )}
+
+      {foto && !abierta && !libresDe && (
+        <div className="pr-foto-caja" style={{ left: foto.x, top: foto.y }}>
+          <img src={foto.src} alt={foto.ref} />
         </div>
       )}
 

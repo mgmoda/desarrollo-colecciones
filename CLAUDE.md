@@ -260,9 +260,14 @@ blanco = sin mover. Todo sale de `calcularLibres` (`hoja`, `tallasHoja`,
 `coloresHoja`). Con muchas tallas las columnas de texto se recortan, nunca
 las cifras.
 La primera separación es a criterio de bodega; esto trabaja sobre lo que
-quedó. La curva por talla sale de lo CORTADO de las órdenes con entrada
-(Factory no da la entrada por talla); en conjuntos, la menor de las dos
-prendas por casilla. Turno: ★ (`prioridad` en `c|CLIENTE` de
+quedó. La curva por talla sale de lo RECIBIDO del taller por talla y color
+(`curva[].ent`; desde el 20-sep-2026 el sync lo lee de
+`entradas_talleres_productos_tallas`, porque `temp_terminado_taller` viene
+siempre en cero — antes se creyó, mal, que Factory no lo guardaba); si la
+orden no lo trae, lo cortado. En conjuntos, la menor de las dos prendas por
+casilla. Regla de Diego: una MUESTRA ya entregada por el taller cuenta como
+entrada aunque no tenga entrada a bodega digitada (`entradaDeOrden`); las
+demás órdenes entregadas sin entrada solo salen como aviso. Turno: ★ (`prioridad` en `c|CLIENTE` de
 `dev_despachos`) → cliente más cerca de completar su despacho → pedido más
 antiguo. Surtido = referencia de varios colores y línea sin observación (le
 sirve cualquier color, nunca otra talla); "SIN X" excluye ese color; otro

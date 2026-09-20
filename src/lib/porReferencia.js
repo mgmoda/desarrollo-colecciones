@@ -23,13 +23,25 @@ const marcaDe = (ref) => {
   return l === 'C' ? 'Casania' : l === 'M' ? 'Mariset' : 'Otra'
 }
 
+// Lo que cuenta como entrado de una orden. Regla de Diego (20-sep-2026): una
+// MUESTRA que el taller ya entregó cuenta como entrada aunque nadie le haya
+// digitado la entrada a bodega en Factory (esa mercancía se vende y se separa).
+function entradaDeOrden(o) {
+  const st = o.stages || {}
+  const eb = st.entradaBodega || {}
+  if (n0(eb.cant)) return { cant: n0(eb.cant), fecha: eb.fecha || '' }
+  const ee = st.entregaEnsamble || {}
+  if (o.origen === 'muestra' && n0(ee.cant)) return { cant: n0(ee.cant), fecha: ee.fecha || '', sinDigitar: true }
+  return { cant: 0, fecha: '' }
+}
+
 // Entradas a bodega de una lista de órdenes: total, última fecha y órdenes.
 function entradasDe(ordenes) {
   let entro = 0, fecha = ''
   const lista = []
   ordenes.forEach((o) => {
-    const eb = (o.stages || {}).entradaBodega || {}
-    const n = n0(eb.cant)
+    const eb = entradaDeOrden(o)
+    const n = eb.cant
     if (!n) return
     entro += n
     if ((eb.fecha || '') > fecha) fecha = eb.fecha
@@ -93,11 +105,11 @@ export function armarPorReferencia(filasSyd, orders, refs) {
     // Órdenes que entraron a bodega, agrupadas por prenda (una sola si no es
     // conjunto): de su curva sale lo libre por color y talla.
     let gruposOrdenes
-    const conEntrada = (os) => os.filter((o) => n0(((o.stages || {}).entradaBodega || {}).cant) > 0)
+    const conEntrada = (os) => os.filter((o) => entradaDeOrden(o).cant > 0)
     // Entregadas por el taller pero SIN entrada a bodega en Factory: esa
     // mercancía puede estar ya en la estantería sin contar como entrada.
     const sinEntradaDe = (os) => os
-      .filter((o) => !n0(((o.stages || {}).entradaBodega || {}).cant) && n0(((o.stages || {}).entregaEnsamble || {}).cant) > 0)
+      .filter((o) => !entradaDeOrden(o).cant && n0(((o.stages || {}).entregaEnsamble || {}).cant) > 0)
       .map((o) => ({ orden: o.orden, cant: n0(o.stages.entregaEnsamble.cant), muestra: o.origen === 'muestra' }))
     let recibidasSinEntrada
     if (conj && conj.piezas.length) {
@@ -156,7 +168,11 @@ export function totalesRef(lista) {
 // "SIN X" es surtido menos ese color; cualquier otro texto es color fijo.
 const TALLAS_ORDEN = ['6', '8', '10', '12', '14', '16', '18', '20', '22', '24']
 const tallaLimpia = (t) => String(t || '').replace(/^0+(?=\d)/, '')
-const campoCurva = (o) => (Number((((o.stages || {}).alistamiento) || {}).cant) > 0 ? 'corte' : 'prog')
+// Curva de lo que entró: lo RECIBIDO del taller por talla y color (`ent`, que
+// el sync lee de entradas_talleres_productos_tallas de Factory); si la orden
+// aún no lo trae, lo cortado, y si no, lo programado.
+const campoCurva = (o) => ((o.curva || []).some((r) => Number(r.ent) > 0) ? 'ent'
+  : Number((((o.stages || {}).alistamiento) || {}).cant) > 0 ? 'corte' : 'prog')
 
 function curvaDe(ordenes) {
   const c = {}
@@ -332,7 +348,7 @@ export function calcularLibres(r, prioridades) {
   if (deMas > 0 && totalCurva === r.entro) avisos.push(`Por talla suman ${suma(libre)} libres y por total ${r.libre}: hay ${deMas} separadas de más en alguna casilla. Confirmar en bodega antes de separar`)
   const pend = r.recibidasSinEntrada || []
   if (pend.length) avisos.push(`Sin entrada a bodega en Factory, aunque el taller ya ${pend.length > 1 ? 'las' : 'la'} entregó: ${pend.map((o) => `orden ${o.orden}${o.muestra ? ' (muestra)' : ''} · ${o.cant} und`).join(', ')}. Si esa mercancía ya está en bodega, hay más libres de las que aquí figuran`)
-  if (totalCurva !== r.entro) avisos.push(`La curva por talla sale de lo cortado (${totalCurva}); a bodega figuran ${r.entro} entradas`)
+  if (totalCurva !== r.entro) avisos.push(`Por talla el taller entregó ${totalCurva}; a bodega figuran ${r.entro} entradas`)
   return {
     colores: coloresLibres, tallas, libre, totalLibre: suma(libre),
     asignables, asignadas: asignables.reduce((s, x) => s + x.n, 0),

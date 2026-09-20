@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Quitar un separado y redistribuir</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Simulación sobre la hoja de libres: quitarle lo separado a un cliente y ver
+   a quién se le completa el pedido con esas unidades. Datos reales de C6930;
+   el resultado "sin Olga" es el que da hoy el cálculo del sistema. */
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--ink:#1c1c22;--muted:#6b6660;--grid:#d0cec8;--head:#efede8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.35;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 12px;max-width:1000px}
+.resp{background:#eef3f7;border:1px solid #c9d8e4;color:#1c4f6e;border-radius:10px;padding:12px 16px;max-width:1080px;margin:0 0 18px}
+.resp p{margin:0 0 6px}.resp p:last-child{margin:0}
+.modal{background:var(--surface);border:1px solid var(--hairline);border-radius:12px;max-width:1080px;box-shadow:0 8px 30px rgba(0,0,0,.10);overflow:hidden}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--hairline)}
+.mh h2{font-family:Fraunces,serif;font-weight:500;font-size:19px;margin:0}
+.mh p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.x{border:1px solid var(--hairline);background:var(--surface);border-radius:8px;width:28px;height:28px;color:var(--muted)}
+.cuerpo{padding:12px 18px 16px}
+.sim{display:none;align-items:center;gap:12px;background:#fff6d8;border:1px solid #e6cf7a;border-radius:8px;padding:9px 12px;margin:0 0 10px;color:#5f4a00}
+.sim.on{display:flex}
+.sim b{font-weight:700}
+.sim .sp{flex:1}
+.btn{border:1px solid #cfc9b6;background:#fff;border-radius:7px;padding:5px 11px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.btn.neg{background:var(--ink);color:#fff;border-color:var(--ink)}
+table.x1{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums}
+.x1 th,.x1 td{border:1px solid var(--grid);padding:3px 3px;text-align:center;height:25px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.x1 th{background:var(--head);font-size:11px;font-weight:600;color:#4a4642}
+.x1 .l{text-align:left;padding-left:6px}
+.x1 tr.tot td{background:var(--head);font-weight:700}
+.x1 tr.band td{background:#1c1c22;color:#fff;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;text-align:left;padding-left:8px}
+.x1 tr.band.q td{background:#7a5c00}
+.x1 tr.band td small{font-weight:400;letter-spacing:0;text-transform:none;opacity:.8}
+.x1 td.s{background:#d8e4f6;color:#23478a;font-weight:700}
+.x1 td.v{background:#d9ecd5;color:#1f6b2e;font-weight:700}
+.x1 td.a{background:#fdeecb;color:#8a5a0a;font-weight:700}
+.x1 td.r{background:#fbe3e0;color:#b23121;font-weight:700}
+.x1 td.k{background:repeating-linear-gradient(135deg,#fff6d8,#fff6d8 4px,#fbe9a6 4px,#fbe9a6 8px);color:#5f4a00;font-weight:700}
+.x1 td.g{color:#b9b5ad}
+.x1 td.m{color:var(--muted);font-size:12px}
+.x1 td.sur{color:#a09b93;font-style:italic;font-size:12px}
+.x1 tr.c1 td{border-top:1.5px solid #9d9a93}
+.x1 td .mas{color:#1f6b2e;font-size:10px;font-weight:700;margin-left:1px}
+.pt{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.pt.az{background:#2f5fa8}.pt.te{background:#b3622a}
+.q-btn{border:1px solid #c9c5bd;background:#fff;border-radius:5px;font:inherit;font-size:10.5px;padding:0 5px;cursor:pointer;color:#4a4642;margin-left:4px}
+.q-btn:hover{background:#1c1c22;color:#fff;border-color:#1c1c22}
+.nuevo{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:#1f6b2e;color:#fff;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:1px}
+.ley{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--muted);margin:10px 0 0}
+.ley i{display:inline-block;width:12px;height:12px;border:1px solid var(--grid);vertical-align:-2px;margin-right:5px;background:#fff}
+.instr{display:none;margin-top:12px;border:1px solid var(--grid);border-radius:8px;overflow:hidden}
+.instr.on{display:block}
+.instr h3{margin:0;padding:7px 12px;background:var(--head);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#4a4642}
+.instr pre{margin:0;padding:10px 12px;font:12.5px/1.55 Inter,system-ui,sans-serif;white-space:pre-wrap}
+.mock-nota{position:fixed;right:14px;bottom:14px;background:#1c1c22;color:#fff;font-size:11.5px;padding:8px 12px;border-radius:999px;opacity:.85}
+</style>
+</head>
+<body>
+<h1>Quitar un separado y redistribuir</h1>
+<p class="sub">Mockup con clic de verdad: prueba el botón <b>Quitar</b> de Olga Palacios Cuesta y luego <b>Devolver</b>.</p>
+<div class="resp">
+  <p><b>Cómo funcionaría.</b> En el bloque "Ya separado" cada cliente tiene un botón <b>Quitar</b>. Al tocarlo, sus unidades vuelven a libres <i>en simulación</i> y el sistema reparte de nuevo, con la misma regla de siempre: curva completa y por turno (★ primero). Arriba sale el resultado en una frase y los clientes que ahora se completan aparecen marcados como <b>nuevo</b>.</p>
+  <p><b>Ojo:</b> la separación vive en SYD, así que el sistema no puede deshacerla solo. Lo que entrega es la lista exacta de qué quitar y qué separar en SYD ("Copiar instrucciones"). Cuando SYD se actualice, la hoja queda igual a la simulación.</p>
+  <p><b>Para que gane el que paga mejor:</b> márcale la ★ antes de quitar; el reparto lo pone de primero.</p>
+</div>
+
+<div class="modal">
+  <div class="mh"><div><h2>C6930 · libres en bodega</h2><p id="meta"></p></div><button class="x">✕</button></div>
+  <div class="cuerpo">
+    <div class="sim" id="sim">
+      <span>🧪 <b>Simulación:</b> le quitaste lo separado a <b>Olga Palacios Cuesta</b> (12 unidades) → se completan <b>3 clientes más</b> (5 unidades) y quedan <b>16 libres</b> en vez de 10.</span>
+      <span class="sp"></span>
+      <button class="btn" onclick="pinta(false)">Deshacer</button>
+      <button class="btn neg" onclick="document.getElementById('instr').classList.toggle('on')">Copiar instrucciones para SYD</button>
+    </div>
+    <table class="x1">
+      <colgroup><col style="width:23%"><col style="width:9%"><col style="width:6.5%"><col style="width:11.5%"><col style="width:7%"><col><col><col><col><col><col><col><col style="width:4.5%"><col style="width:15%"></colgroup>
+      <thead><tr><th class="l">Cliente</th><th class="l">Ciudad</th><th>Pedido</th><th class="l">Color</th><th class="l">Obs.</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>20</th><th>Total</th><th>Estado</th></tr></thead>
+      <tbody id="tb"></tbody>
+    </table>
+    <div class="ley">
+      <span><i style="background:#d8e4f6"></i>ya separado en SYD</span>
+      <span><i style="background:#d9ecd5"></i>se le puede separar</span>
+      <span><i style="background:#fdeecb"></i>se le da en otro color (surtidos)</span>
+      <span><i style="background:#fbe3e0"></i>no alcanza</span>
+      <span><i style="background:repeating-linear-gradient(135deg,#fff6d8,#fff6d8 4px,#fbe9a6 4px,#fbe9a6 8px)"></i>quitado en la simulación</span>
+    </div>
+    <div class="instr" id="instr">
+      <h3>Instrucciones para SYD · C6930</h3>
+<pre>QUITAR separado
+· OLGA PALACIOS CUESTA (Quibdó, pedido 8009) — 12: azul 8, 10, 12, 14, 16, 18 · terracota 8, 10, 12, 14, 16, 18
+
+SEPARAR
+· MARINA DEL CARMEN RODRIGUEZ (Barranquilla, pedido 7803) — 1: azul 12
+· RUBY STELLA CASTILLA FERRO (Santa Marta, pedido 7737) — 1: azul 8  → queda completa
+· MATILDE TORRES BOADA (Cúcuta, pedido 7965) — 3: terracota 8, 10, 12
+· NILDA MARIA POTES ROMERO (Buga, pedido 6631-2) — 3: azul 10, azul 18, azul 14 (pidió terracota 14, va surtido)
+
+Quedan libres 16: azul 10 ×2, 14 ×4, 16 ×2, 18 ×2 · terracota 12, 16 ×2, 18 ×2, 20</pre>
+    </div>
+  </div>
+</div>
+<div class="mock-nota">Mockup · datos reales de C6930</div>
+
+<script>
+const T = ['8','10','12','14','16','18','20']
+// cliente, ciudad, [ [pedido, color, obs, {talla:n}] ... ]
+const C = {
+  yordan:  ['CASA YORDAN LTDA','MEDELLIN',[['7952','TERRACOTA','TERRACOYA',{14:1,16:1}]]],
+  ingrid:  ['INGRID GUARIGLIA','BUCARAMANGA',[['7966','TERRACOTA','TERRACOTA',{12:1,18:1}]]],
+  jose:    ['JOSE MARIA MESTRA MADERA','MONTERIA',[['7835','TERRACOTA','TERRACOTA',{12:1,14:1,16:1}]]],
+  leidy:   ['LEIDY ROCIO CHAVEZ FIGUEROA','PITALITO',[['7865','AZUL','AZUL',{10:1,12:1}],['7865','TERRACOTA','TERRACOTA',{14:1}]]],
+  libia:   ['LIBIA RENTERIA DE GOMEZ','QUIBDO-CHOCO',[['7766','AZUL','',{12:1,16:1}],['7766','TERRACOTA','',{14:1}]]],
+  luz:     ['LUZ PIEDAD OCHOA RUIZ','APARTADO',[['7960','AZUL','',{14:1,18:1}],['7960','TERRACOTA','',{16:1}]]],
+  olga:    ['OLGA PALACIOS CUESTA','QUIBDO-CHOCO',[['8009','AZUL','AZUL',{8:1,10:1,12:1,14:1,16:1,18:1}],['8009','TERRACOTA','TERRA',{8:1,10:1,12:1,14:1,16:1,18:1}]]],
+  sara:    ['SARA ASSERIAS DE MATERON','CALI',[['6623','AZUL','AZUL',{10:1,12:1,14:1,16:1}]]],
+  sirlena: ['SIRLENA JUDITH LASTRE HERRERA','SANTA ANA',[['7843','AZUL','',{20:1}]]],
+  yineth:  ['YINETH QUEZADA','FLORENCIA',[['7853','TERRACOTA','TERRACOTA',{12:1}]]],
+  nilda:   ['NILDA MARIA POTES ROMERO','BUGA',[['6631-2','AZUL','',{10:1,18:1}],['6631-2','TERRACOTA','',{14:1}]]],
+  marina:  ['MARINA DEL CARMEN RODRIGUEZ','BARRANQUILLA',[['7803','AZUL','AZUL',{12:1}]]],
+  ruby:    ['RUBY STELLA CASTILLA FERRO','SANTA MARTA',[['7737','AZUL','',{8:1,12:1,16:1}],['7737','TERRACOTA','',{10:1,14:1}]]],
+  matilde: ['MATILDE TORRES BOADA','CUCUTA',[['7965','TERRACOTA','TERRACOTA',{8:1,10:1,12:1}]]],
+  nuris:   ['NURIS MARIA PADILLA MONTES','CIENAGA DE ORO',[['7829','TERRACOTA','TERRACOTA',{10:1}]]],
+  alex:    ['ALEXANDRA MORALES SERNA','PLATO',[['7732','AZUL','',{8:1,12:1}],['7732','TERRACOTA','',{10:1,14:1}]]],
+  nubia:   ['NUBIA PERDOMO VALENCIA','ALGECIRAS',[['6414','TERRACOTA','TERRACOTA',{14:1}]]],
+  adriana: ['ADRIANA ARISTIZABAL CASTAÑO','FLORENCIA',[['7851','AZUL','AZUL',{8:1}]]],
+  ludibia: ['LUDIBIA TAFUR CAMACHO','NEIVA',[['6407','AZUL','AZUL',{12:1}],['6407','TERRACOTA','',{10:1}]]],
+  yolanda: ['YOLANDA CASAS UBAQUE','SANTA MARTA',[['7735','AZUL','AZUL',{12:1,14:1,16:1,18:1,20:1}]]],
+  marga:   ['MARGARITA MARIA GOMEZ LOPERA','MEDELLIN',[['7953','TERRACOTA','TERRACOTA',{8:1,10:1,12:1,14:1}]]],
+}
+// pintura de casillas por estado: 'linea|talla' -> clase. Lo no listado: todo el cliente con la clase base.
+const SEP = ['yordan','ingrid','jose','leidy','libia','luz','sara','sirlena','yineth']
+const HOY = {
+  libre: {AZUL:{10:2,14:4,16:1,18:2}, TERRACOTA:{12:1,16:1,18:1,20:1}},
+  queda: {AZUL:{10:1,14:3,16:1,18:1}, TERRACOTA:{12:1,16:1,18:1,20:1}},
+  separar: [['nilda',3,{'0|10':'v','0|18':'v','1|14':'a'}]],
+  espera: [['marina',{'0|12':'r'}],['ruby',{'0|8':'r','0|12':'s','0|16':'s','1|10':'s','1|14':'s'}],['matilde',{'0|8':'r','0|10':'r'}],['nuris',{'0|10':'r'}],['alex',{'0|8':'r'}],['nubia',{'0|14':'r'}],['adriana',{'0|8':'r'}],['ludibia',{'0|12':'r'}],['yolanda',{'0|12':'r','0|20':'r'}],['marga',{'0|8':'r','0|10':'r','1|14':'r','0|14':'r'}]],
+}
+const SIN = {
+  libre: {AZUL:{8:1,10:3,12:1,14:5,16:2,18:3}, TERRACOTA:{8:1,10:1,12:2,16:2,18:2,20:1}},
+  queda: {AZUL:{10:2,14:4,16:2,18:2}, TERRACOTA:{12:1,16:2,18:2,20:1}},
+  separar: [['marina',1,{'0|12':'v'},1],['ruby',1,{'0|8':'v','0|12':'s','0|16':'s','1|10':'s','1|14':'s'},1],['matilde',3,{'0|8':'v','0|10':'v','0|12':'v'},1],['nilda',3,{'0|10':'v','0|18':'v','1|14':'a'}]],
+  espera: [['nuris',{'0|10':'r'}],['alex',{'0|8':'r'}],['nubia',{'0|14':'r'}],['adriana',{'0|8':'r'}],['ludibia',{'0|12':'r'}],['yolanda',{'0|12':'r','0|20':'r'}],['marga',{'0|8':'r','0|10':'r','0|14':'r'}]],
+}
+const pt = (c) => `<i class="pt ${c === 'AZUL' ? 'az' : 'te'}"></i>${c}`
+function filasCliente(id, base, mapa, estadoHtml, estadoCls, extra) {
+  const [nom, ciu, lin] = C[id]
+  return lin.map((l, i) => {
+    const celdas = T.map((t) => { const n = l[3][t]; if (!n) return '<td></td>'; const k = mapa ? (mapa[i + '|' + t] ?? base) : base; return `<td class="${k || ''}">${n}</td>` }).join('')
+    const tot = Object.values(l[3]).reduce((a, b) => a + b, 0)
+    return `<tr class="${i === 0 ? 'c1' : ''}">` +
+      (i === 0 ? `<td class="l" rowspan="${lin.length}">${nom}${extra || ''}</td><td class="l m" rowspan="${lin.length}">${ciu}</td>` : '') +
+      `<td>${l[0]}</td><td class="l">${pt(l[1])}</td>` + (l[2] ? `<td class="l m">${l[2]}</td>` : `<td class="l sur">surtido</td>`) +
+      celdas + `<td><b>${tot}</b></td>` + (i === 0 ? `<td class="${estadoCls}" rowspan="${lin.length}">${estadoHtml}</td>` : '') + '</tr>'
+  }).join('')
+}
+function filasColor(m, antes) {
+  return ['AZUL','TERRACOTA'].map((c, i) => `<tr>${i === 0 ? '<td colspan="3" rowspan="2"></td>' : ''}<td class="l">${pt(c)}</td><td></td>` +
+    T.map((t) => { const n = m[c][t] || 0; const d = antes ? n - (antes[c][t] || 0) : 0; return n ? `<td><b>${n}</b>${d > 0 ? `<span class="mas">+${d}</span>` : ''}</td>` : '<td class="g">0</td>' }).join('') +
+    `<td><b>${Object.values(m[c]).reduce((a, b) => a + b, 0)}</b></td><td></td></tr>`).join('')
+}
+const suma = (m) => Object.values(m).reduce((a, c) => a + Object.values(c).reduce((x, y) => x + y, 0), 0)
+function pinta(sinOlga) {
+  const E = sinOlga ? SIN : HOY
+  let h = `<tr class="band"><td colspan="14">Libres en bodega${sinOlga ? ' <small>· con lo que soltó Olga</small>' : ''}</td></tr>` + filasColor(E.libre, sinOlga ? HOY.libre : null)
+  h += `<tr class="tot"><td class="l" colspan="5">TOTAL LIBRES</td>${T.map((t) => `<td>${(E.libre.AZUL[t] || 0) + (E.libre.TERRACOTA[t] || 0)}</td>`).join('')}<td>${suma(E.libre)}</td><td></td></tr>`
+  if (sinOlga) h += `<tr class="band q"><td colspan="14">Quitados en esta simulación <small>· 1 cliente · 12 unidades · hay que quitarlos en SYD</small></td></tr>` + filasCliente('olga', 'k', null, 'quitado <button class="q-btn" onclick="pinta(false)">Devolver</button>', 'k')
+  const sep = sinOlga ? SEP : [...SEP.slice(0, 6), 'olga', ...SEP.slice(6)]
+  h += `<tr class="band"><td colspan="14">Ya separado <small>· ${sep.length} clientes · ${sinOlga ? 22 : 34} unidades</small></td></tr>`
+  sep.forEach((id) => { const n = C[id][2].reduce((a, l) => a + Object.values(l[3]).reduce((x, y) => x + y, 0), 0); h += filasCliente(id, 's', null, `separado ${n} <button class="q-btn" ${id === 'olga' ? 'onclick="pinta(true)"' : ''}>Quitar</button>`, 's') })
+  h += `<tr class="band"><td colspan="14">Se pueden separar en curva completa <small>· ${E.separar.length} clientes · ${E.separar.reduce((a, x) => a + x[1], 0)} unidades · en orden de turno</small></td></tr>`
+  E.separar.forEach(([id, n, mapa, nuevo]) => { h += filasCliente(id, '', mapa, 'separar ' + n + (nuevo ? '<span class="nuevo">nuevo</span>' : ''), 'v') })
+  h += `<tr class="band"><td colspan="14">Esperan <small>· ${E.espera.length} clientes · con lo libre no les sale completo</small></td></tr>`
+  E.espera.forEach(([id, mapa]) => { h += filasCliente(id, '', mapa, 'espera', 'r') })
+  h += `<tr class="band"><td colspan="14">Quedarían libres después de separar <small>· ${suma(E.queda)} unidades</small></td></tr>` + filasColor(E.queda)
+  document.getElementById('tb').innerHTML = h
+  document.getElementById('sim').classList.toggle('on', sinOlga)
+  if (!sinOlga) document.getElementById('instr').classList.remove('on')
+  document.getElementById('meta').textContent = 'VESTIDO ESTAMPADO CON CINTURON · Casania · entraron 50 · ' + (sinOlga ? '26 separadas (simulación: 38 − 12 de Olga)' : '38 ya separadas') + ' · 21 clientes la pidieron'
+}
+pinta(false)
+</script>
+</body>
+</html>

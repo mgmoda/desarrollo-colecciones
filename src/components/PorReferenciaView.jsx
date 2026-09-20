@@ -358,7 +358,7 @@ function LibresModal({ r, prioridades, esPrioridad, onPrioridad, refMap, onViewI
           <div>
             <h2 className="modal-title">{r.ref} · libres en bodega</h2>
             <p className="eb-meta">
-              {r.descripcion} · {r.marca} · entraron {num(r.entro)} · {num(r.separado)} ya separadas · {num(L.totalLibre)} libres · {num(L.hoja.length)} clientes la pidieron
+              {r.descripcion} · {r.marca} · entraron {num(r.entro)} · {num(r.separado)} ya separadas · {num(r.libre)} libres{L.totalLibre !== r.libre ? ` (${num(L.totalLibre)} por talla)` : ''} · {num(L.hoja.length)} clientes la pidieron
             </p>
           </div>
         </div>

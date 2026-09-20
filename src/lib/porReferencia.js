@@ -318,6 +318,10 @@ export function calcularLibres(r, prioridades) {
   const tallasHoja = TALLAS_ORDEN.filter((t) => tallas.includes(t) || vend.some((l) => Number((l.tallas || {})[t]) > 0))
   // La curva es la de CORTE: si a bodega entró otra cantidad, se avisa.
   const totalCurva = suma(entro)
+  // Separadas de más en una casilla: salieron físicamente de otra, así que el
+  // total por talla queda inflado frente al libre real (entró − separado).
+  const deMas = suma(libre) - r.libre
+  if (deMas > 0 && totalCurva === r.entro) avisos.push(`Por talla suman ${suma(libre)} libres, pero las reales son ${r.libre}: las ${deMas} separadas de más salieron de otra casilla, así que ${deMas} de las que aquí figuran libres no están. Confirmar en bodega antes de separar`)
   if (totalCurva !== r.entro) avisos.push(`La curva por talla sale de lo cortado (${totalCurva}); a bodega figuran ${r.entro} entradas`)
   return {
     colores: coloresLibres, tallas, libre, totalLibre: suma(libre),

@@ -94,15 +94,23 @@ export function armarPorReferencia(filasSyd, orders, refs) {
     // conjunto): de su curva sale lo libre por color y talla.
     let gruposOrdenes
     const conEntrada = (os) => os.filter((o) => n0(((o.stages || {}).entradaBodega || {}).cant) > 0)
+    // Entregadas por el taller pero SIN entrada a bodega en Factory: esa
+    // mercancía puede estar ya en la estantería sin contar como entrada.
+    const sinEntradaDe = (os) => os
+      .filter((o) => !n0(((o.stages || {}).entradaBodega || {}).cant) && n0(((o.stages || {}).entregaEnsamble || {}).cant) > 0)
+      .map((o) => ({ orden: o.orden, cant: n0(o.stages.entregaEnsamble.cant), muestra: o.origen === 'muestra' }))
+    let recibidasSinEntrada
     if (conj && conj.piezas.length) {
       // La menor de las dos prendas; las órdenes que se muestran son las de esa.
       const porPieza = conj.piezas.map((p) => entradasDe(ordenesDe(p, true)))
       ent = porPieza.reduce((a, b) => (b.entro < a.entro ? b : a))
       gruposOrdenes = conj.piezas.map((p) => conEntrada(ordenesDe(p, true)))
+      recibidasSinEntrada = conj.piezas.flatMap((p) => sinEntradaDe(ordenesDe(p, true)))
     } else {
       const os = ordenesDe(x.ref, false)
       ent = entradasDe(os)
       gruposOrdenes = [conEntrada(os)]
+      recibidasSinEntrada = sinEntradaDe(os)
     }
     const conNombre = Math.max(x.separado, x.facturado)
     const clientes = [...x.clientes.values()].map((c) => ({
@@ -119,7 +127,7 @@ export function armarPorReferencia(filasSyd, orders, refs) {
       // Se separó más de lo que figura entrado: la entrada de Factory va atrasada.
       sinEntradaSuficiente: conNombre > ent.entro,
       clientes, nClientes: clientes.length, nConSeparado: clientes.filter((c) => c.separado > 0).length,
-      lineas: x.lineas, gruposOrdenes, avance,
+      lineas: x.lineas, gruposOrdenes, recibidasSinEntrada, avance,
     }
   })
 }
@@ -321,7 +329,9 @@ export function calcularLibres(r, prioridades) {
   // Separadas de más en una casilla: salieron físicamente de otra, así que el
   // total por talla queda inflado frente al libre real (entró − separado).
   const deMas = suma(libre) - r.libre
-  if (deMas > 0 && totalCurva === r.entro) avisos.push(`Por talla suman ${suma(libre)} libres, pero las reales son ${r.libre}: las ${deMas} separadas de más salieron de otra casilla, así que ${deMas} de las que aquí figuran libres no están. Confirmar en bodega antes de separar`)
+  if (deMas > 0 && totalCurva === r.entro) avisos.push(`Por talla suman ${suma(libre)} libres y por total ${r.libre}: hay ${deMas} separadas de más en alguna casilla. Confirmar en bodega antes de separar`)
+  const pend = r.recibidasSinEntrada || []
+  if (pend.length) avisos.push(`Sin entrada a bodega en Factory, aunque el taller ya ${pend.length > 1 ? 'las' : 'la'} entregó: ${pend.map((o) => `orden ${o.orden}${o.muestra ? ' (muestra)' : ''} · ${o.cant} und`).join(', ')}. Si esa mercancía ya está en bodega, hay más libres de las que aquí figuran`)
   if (totalCurva !== r.entro) avisos.push(`La curva por talla sale de lo cortado (${totalCurva}); a bodega figuran ${r.entro} entradas`)
   return {
     colores: coloresLibres, tallas, libre, totalLibre: suma(libre),

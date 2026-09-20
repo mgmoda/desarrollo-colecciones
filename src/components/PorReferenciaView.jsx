@@ -190,7 +190,7 @@ export default function PorReferenciaView({
       </div>
 
       {ref && (
-        <Modal open onClose={() => setAbierta(null)} size="lg">
+        <Modal open onClose={() => setAbierta(null)} size="xl">
           <div className="modal-head">
             <div className="pr-mh">
               {(() => {
@@ -223,7 +223,7 @@ export default function PorReferenciaView({
               <div><span>Falta producir</span><b className="dsp-falt">{num(ref.faltaProducir)}</b><em>pedido − entró</em></div>
             </div>
             <div className="med-wrap ped-scroll">
-              <table className="med-tabla">
+              <table className="med-tabla pr-det">
                 <thead>
                   <tr><th>Cliente</th><th>Ciudad</th><th>Pedido</th><th>Colores</th><th className="num">Pidió</th><th className="num">Separado</th><th className="num">Le falta</th></tr>
                 </thead>
@@ -231,9 +231,9 @@ export default function PorReferenciaView({
                   {[...ref.clientes].sort((a, b) => (b.separado - a.separado) || (b.pidio - a.pidio)).map((c) => (
                     <tr key={c.cliente}>
                       <td><b>{c.cliente}</b></td>
-                      <td className="muted">{c.ciudad || '—'}</td>
+                      <td className="muted pr-corta" title={c.ciudad || ''}>{c.ciudad || '—'}</td>
                       <td className="mono muted">{c.pedidos.join(', ')}</td>
-                      <td className="muted">{c.colores.join(' · ')}</td>
+                      <td className="muted pr-corta" title={c.colores.join(' · ')}>{c.colores.join(' · ')}</td>
                       <td className="num">{num(c.pidio)}</td>
                       <td className="num">{c.separado ? <span className="dsp-sep">{num(c.separado)}</span> : <span className="dsp-cero">·</span>}</td>
                       <td className="num">{c.falta ? <span className="dsp-falt">{num(c.falta)}</span> : <span className="tag dsp-tag azul">completo</span>}</td>

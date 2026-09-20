@@ -6036,6 +6036,19 @@ select.filtro-taller { flex: none; width: 215px; }
 .pr-foto { width: 64px; height: 82px; object-fit: cover; border-radius: 8px; cursor: zoom-in; flex: none; }
 .pr-foto.empty { display: grid; place-items: center; background: #f1f0ee; color: var(--muted); cursor: default; }
 .pr-resumen { grid-template-columns: repeat(5, 1fr); }
+/* Regla de la casa: nada de desplazamiento horizontal dentro de un modal.
+   La tabla se ajusta al ancho: las columnas de texto largo se recortan con
+   puntos suspensivos (el texto completo sale al pasar el mouse) y las de
+   cifras nunca se esconden. */
+.pr-det { table-layout: fixed; width: 100%; }
+.pr-det th, .pr-det td { padding-left: 8px; padding-right: 8px; }
+.pr-det th:nth-child(1) { width: 28%; } .pr-det th:nth-child(2) { width: 18%; }
+.pr-det th:nth-child(3) { width: 10%; } .pr-det th:nth-child(4) { width: 14%; }
+.pr-det th:nth-child(5) { width: 8%; } .pr-det th:nth-child(6) { width: 9%; } .pr-det th:nth-child(7) { width: 13%; }
+.pr-det td:last-child { overflow: visible; }
+.pr-det td { overflow: hidden; text-overflow: ellipsis; }
+.pr-det td:first-child { position: static; }
+.med-wrap:has(.pr-det) { overflow-x: hidden; }
 .dsp-det tr.dsp-sub td { border-top: 0; padding-top: 2px; padding-bottom: 2px; background: #fcfbf8; font-size: 12px; }
 .dsp-det tr.dsp-sub.editando td { background: #f4f6fa; }
 .dsp-sub-et span { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }

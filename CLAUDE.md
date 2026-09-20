@@ -83,6 +83,12 @@ Editorial y cálido, **nada que ver con el azul del PLM**:
   `tr.row-click`), `.searchbox`, `.flag-yes/.flag-no/.flag-warn`, `.tag`,
   `.modal-*` (con `Modal.jsx`), `SortTh.jsx`.
 - **No hay drawer**: el detalle va en modal.
+- **Nada de desplazamiento horizontal** en tablas ni modales (regla de Diego,
+  20-sep-2026): toda la información a la vista. Antes de publicar, medir
+  `scrollWidth <= clientWidth` del contenedor a 1000, 1150 y 1280 px. Para
+  que quepa: `table-layout: fixed` con anchos por columna, puntos suspensivos
+  en el texto largo (completo en `title`), nunca esconder cifras, y ensanchar
+  el modal si hace falta (`.modal-xl:has(.dsp-densa)`).
 
 **Gotchas del CSS:**
 - `.stats-grid/.stat-card/.stat-value` están definidas pero **ningún

@@ -213,7 +213,7 @@ export function calcularLibres(r, prioridades) {
       if (!o) surtido = true
       else if (o.startsWith('SIN ') && !esPedidoEspecial(o)) { surtido = true; excluye = o.slice(4).trim() }
     }
-    c.lineas.push({ color: String(l.color || '').trim().toUpperCase(), tallas: l.tallas || {}, surtido, excluye })
+    c.lineas.push({ color: String(l.color || '').trim().toUpperCase(), tallas: l.tallas || {}, surtido, excluye, pedido: l.pedido || '', observacion: String(l.observacion || '').trim() })
   })
   r.lineas.forEach((l) => {
     const e = l.estado || 'vendido'
@@ -223,21 +223,24 @@ export function calcularLibres(r, prioridades) {
     Object.entries(l.tallas || {}).forEach(([t, v]) => { const k = String(l.color || '').trim().toUpperCase() + '|' + t; c.tiene[k] = Math.max(c.tiene[k] || 0, 0) + (Number(v) || 0) })
   })
   const pendientes = []
+  const completos = []   // ya tienen separado todo lo que pidieron de esta referencia
   cl.forEach((c) => {
     const usado = { ...c.tiene }
     let pidio = 0, falta = 0
     c.lineas.forEach((l) => {
       l.dem = {}
+      l.ya = {}
       Object.entries(l.tallas).forEach(([t, v]) => {
         const n = Number(v) || 0
         pidio += n
         const k = l.color + '|' + t
         const ya = Math.min(n, usado[k] || 0)
         usado[k] = (usado[k] || 0) - ya
+        if (ya) l.ya[t] = ya
         if (n - ya > 0) { l.dem[t] = n - ya; falta += n - ya }
       })
     })
-    if (falta <= 0) return
+    if (falta <= 0) { completos.push({ ...c, pedidos: [...c.pedidos].sort(), pidio, falta: 0, tenia: pidio, prior: prior.has(c.cliente) }); return }
     const a = r.avance.get(c.cliente) || { v: 0, s: 0 }
     pendientes.push({
       ...c, pedidos: [...c.pedidos].sort(), pidio, falta, tenia: pidio - falta,
@@ -250,41 +253,69 @@ export function calcularLibres(r, prioridades) {
   // Reparto todo o nada, en el orden del turno.
   const stock = { ...libre }
   const colores = [...new Set([...coloresPedido, ...Object.keys(libre).map((k) => k.split('|')[0])])]
+  // Recorre TODA la demanda del cliente (no se detiene en la primera casilla
+  // que falla): así la hoja puede pintar qué casillas alcanzan y cuáles no.
   const cubrir = (c, st) => {
     const dar = []
-    for (const l of c.lineas) {
+    let completo = true
+    c.lineas.forEach((l, i) => {
       for (const [t, n] of Object.entries(l.dem || {})) {
         let f = n
         const k = l.color + '|' + t
         const g = Math.min(f, st[k] || 0)
-        if (g) { dar.push({ color: l.color, talla: t, n: g, cambio: false }); st[k] -= g; f -= g }
+        if (g) { dar.push({ linea: i, color: l.color, talla: t, n: g, cambio: false }); st[k] -= g; f -= g }
         if (f && l.surtido) {
           for (const col of colores) {
             if (!f) break
             if (col === l.color || (l.excluye && normObs(col).startsWith(l.excluye.slice(0, 4)))) continue
             const kk = col + '|' + t
             const h = Math.min(f, st[kk] || 0)
-            if (h) { dar.push({ color: col, talla: t, n: h, cambio: true }); st[kk] -= h; f -= h }
+            if (h) { dar.push({ linea: i, color: col, talla: t, n: h, cambio: true }); st[kk] -= h; f -= h }
           }
         }
-        if (f) return null
+        if (f) { completo = false; dar.push({ linea: i, color: l.color, talla: t, n: f, falta: true }) }
       }
-    }
-    return dar
+    })
+    return { completo, dar }
   }
+  // Renglones de la hoja: uno por línea del pedido (cliente + color), con lo
+  // que pasa en cada talla: n pedido, ya separado, dar, cambio de color, falta.
+  const renglones = (c, dar) => c.lineas.map((l, i) => {
+    const celdas = {}
+    Object.entries(l.tallas).forEach(([t, v]) => {
+      const n = Number(v) || 0
+      if (!n) return
+      const mios = (dar || []).filter((x) => x.linea === i && x.talla === t)
+      celdas[t] = {
+        n, ya: l.ya[t] || 0,
+        dar: mios.filter((x) => !x.falta).reduce((a, x) => a + x.n, 0),
+        cambio: [...new Set(mios.filter((x) => x.cambio).map((x) => x.color))],
+        falta: mios.filter((x) => x.falta).reduce((a, x) => a + x.n, 0),
+      }
+    })
+    return { pedido: l.pedido, color: l.color, observacion: l.observacion, surtido: l.surtido, celdas, total: Object.values(celdas).reduce((a, x) => a + x.n, 0) }
+  })
   const asignables = []
+  const hoja = completos.map((c) => ({ cliente: c.cliente, ciudad: c.ciudad, prior: c.prior, estado: 'separado', n: c.pidio, lineas: renglones(c) }))
   pendientes.forEach((c) => {
     const copia = { ...stock }
-    const dar = cubrir(c, copia)
-    if (dar && dar.length) {
+    const { completo, dar } = cubrir(c, copia)
+    if (completo && dar.length) {
       Object.assign(stock, copia)
-      asignables.push({ cliente: c.cliente, ciudad: c.ciudad, pedidos: c.pedidos, pidio: c.pidio, tenia: c.tenia, surtido: c.surtido, prior: c.prior, dar, n: dar.reduce((s, x) => s + x.n, 0) })
+      const n = dar.reduce((s, x) => s + x.n, 0)
+      asignables.push({ cliente: c.cliente, ciudad: c.ciudad, pedidos: c.pedidos, pidio: c.pidio, tenia: c.tenia, surtido: c.surtido, prior: c.prior, dar, n })
+      hoja.push({ cliente: c.cliente, ciudad: c.ciudad, prior: c.prior, estado: 'separar', n, lineas: renglones(c, dar) })
+    } else {
+      // En espera solo importa qué casillas no alcanzan; lo demás queda sin mover.
+      hoja.push({ cliente: c.cliente, ciudad: c.ciudad, prior: c.prior, estado: 'espera', n: c.falta, lineas: renglones(c, dar.filter((x) => x.falta)) })
     }
   })
   const queda = Object.fromEntries(Object.entries(stock).filter(([, v]) => v > 0))
   const tallas = TALLAS_ORDEN.filter((t) => Object.keys(libre).some((k) => k.split('|')[1] === t))
   const coloresLibres = colores.filter((c) => Object.keys(libre).some((k) => k.split('|')[0] === c))
   const suma = (o) => Object.values(o).reduce((a, b) => a + b, 0)
+  // La hoja necesita también las tallas y colores pedidos aunque no haya libre.
+  const tallasHoja = TALLAS_ORDEN.filter((t) => tallas.includes(t) || vend.some((l) => Number((l.tallas || {})[t]) > 0))
   // La curva es la de CORTE: si a bodega entró otra cantidad, se avisa.
   const totalCurva = suma(entro)
   if (totalCurva !== r.entro) avisos.push(`La curva por talla sale de lo cortado (${totalCurva}); a bodega figuran ${r.entro} entradas`)
@@ -292,5 +323,6 @@ export function calcularLibres(r, prioridades) {
     colores: coloresLibres, tallas, libre, totalLibre: suma(libre),
     asignables, asignadas: asignables.reduce((s, x) => s + x.n, 0),
     queda, totalQueda: suma(queda), esperan: pendientes.length, avisos,
+    hoja, tallasHoja, coloresHoja: colores,
   }
 }

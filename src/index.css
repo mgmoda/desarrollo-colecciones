@@ -6026,33 +6026,43 @@ select.filtro-taller { flex: none; width: 215px; }
 .pr-libre-btn:hover { background: #1f6b2e; color: #fff; border-color: #1f6b2e; }
 .pr-estrella { border: 0; background: transparent; padding: 0 6px 0 0; font-size: 15px; line-height: 1; color: #c9c5bd; cursor: pointer; vertical-align: -1px; }
 .pr-estrella:hover { color: #e0a030; } .pr-estrella.on { color: #e0a030; }
-.pr-cuenta { table-layout: fixed; width: 100%; }
-.pr-cuenta col.pr-c0 { width: 36%; } .pr-cuenta col.pr-cfin { width: 11%; }
-.pr-cuenta th, .pr-cuenta td { padding-left: 6px; padding-right: 6px; }
-.pr-cuenta th:first-child, .pr-cuenta td:first-child { padding-left: 12px; position: static; }
-.pr-cuenta th.num, .pr-cuenta td.num { text-align: center; }
-.med-wrap.pr-cuenta-wrap { overflow-x: hidden; }
-.pr-cuenta tr.pr-libre-f td { background: #f6faf5; font-weight: 700; color: #1f6b2e; font-size: 13.5px; }
-.pr-cuenta tr.pr-libre-f td:first-child { color: var(--ink); }
-.pr-cuenta tr.pr-total-f td { background: #eef6ec; font-weight: 700; }
-.pr-cuenta tr.pr-sep-f td { background: #faf9f6; padding: 9px 12px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; border-top: 2px solid var(--hairline-strong); white-space: normal; }
-.pr-cuenta tr.pr-sep-f td small { font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }
-.pr-cuenta tr.pr-queda-f td { background: #f4f2ed; font-weight: 700; border-top: 2px solid var(--hairline-strong); }
-.pr-cuenta tr.pr-queda-f td:first-child { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
-.pr-cl { display: flex; align-items: flex-start; white-space: normal; }
-.pr-cl b { display: block; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pr-cl > span { min-width: 0; }
-.pr-cl-s { display: block; color: var(--muted); font-size: 11px; white-space: normal; }
-.pr-cl-s i { font-style: normal; color: #0f6b6b; font-weight: 600; }
+/* Hoja de libres: cuadrícula tipo Excel, un renglón por cliente y color.
+   El número es lo pedido; el color de la casilla dice qué pasa con la unidad. */
+.pr-h-barra { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0 0 10px; }
+.pr-h-chip { border: 1px solid #d0cec8; background: var(--surface); border-radius: 6px; padding: 4px 10px; font: inherit; font-size: 12px; color: #4a4642; cursor: pointer; }
+.pr-h-chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.pr-h-busca { margin-left: auto; width: 230px; }
+.pr-hoja-wrap { max-height: 58vh; overflow-y: auto; overflow-x: hidden; border-bottom: 1px solid #d0cec8; }
+.pr-hoja { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 12.5px; font-variant-numeric: tabular-nums; border-left: 1px solid #d0cec8; }
+.pr-hoja col.pr-h-cl { width: 28%; } .pr-hoja col.pr-h-ciu { width: 10%; } .pr-hoja col.pr-h-ped { width: 7%; }
+.pr-hoja col.pr-h-col { width: 10%; } .pr-hoja col.pr-h-obs { width: 7%; } .pr-hoja col.pr-h-tot { width: 5%; } .pr-hoja col.pr-h-est { width: 9%; }
+.pr-hoja th, .pr-hoja td { border-right: 1px solid #d0cec8; border-bottom: 1px solid #d0cec8; padding: 3px 2px; height: 25px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--surface); }
+.pr-hoja th { position: sticky; top: 0; z-index: 2; background: #efede8; border-top: 1px solid #d0cec8; font-size: 11px; font-weight: 600; color: #4a4642; }
+.pr-hoja .l { text-align: left; padding-left: 6px; padding-right: 4px; }
+.pr-hoja td.m { color: var(--muted); font-size: 12px; }
+.pr-hoja td.sur { color: #a09b93; font-style: italic; font-size: 12px; }
+.pr-hoja td.s { background: #d8e4f6; color: #23478a; font-weight: 700; }
+.pr-hoja td.v { background: #d9ecd5; color: #1f6b2e; font-weight: 700; }
+.pr-hoja td.a { background: #fdeecb; color: #8a5a0a; font-weight: 700; }
+.pr-hoja td.r { background: #fbe3e0; color: #b23121; font-weight: 700; }
+.pr-hoja tr.pr-h-band td { background: #1c1c22; color: #fff; text-align: left; padding-left: 8px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.pr-hoja tr.pr-h-band td small { font-weight: 400; letter-spacing: 0; text-transform: none; opacity: .75; }
+.pr-hoja tr.pr-h-tot-f td { background: #efede8; font-weight: 700; }
+.pr-hoja tr.pr-h-c1 td { border-top: 1px solid #9d9a93; }
+.pr-hoja td.pr-h-mas { text-align: left; color: var(--muted); font-size: 12px; background: #fafaf7; }
+.pr-hoja .pr-h-0 { color: #b9b5ad; }
+.pr-hoja .pr-punto { width: 9px; height: 9px; margin-right: 6px; vertical-align: 0; }
+.pr-hoja .pr-estrella { font-size: 12px; padding-right: 3px; }
+.pr-hoja td.pr-h-nom { font-size: 12px; letter-spacing: -.01em; }
+.pr-h-ley { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; color: var(--muted); margin: 10px 0 0; }
+.pr-h-ley i { display: inline-block; width: 12px; height: 12px; border: 1px solid #d0cec8; vertical-align: -2px; margin-right: 5px; background: #fff; }
+.pr-h-ley i.s { background: #d8e4f6; } .pr-h-ley i.v { background: #d9ecd5; } .pr-h-ley i.a { background: #fdeecb; } .pr-h-ley i.r { background: #fbe3e0; }
 .pr-punto { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; vertical-align: -1px; }
-.pr-pz { display: inline-block; min-width: 20px; padding: 0 6px; margin: 0 1px; border-radius: 999px; font-size: 12px; font-weight: 700; line-height: 18px; border: 1px solid transparent; }
-.pr-pz.cambio { box-shadow: 0 0 0 2px #a9dcd6; }
-.pr-punto.pr-tono-0 { background: #2f5fa8; } .pr-pz.pr-tono-0 { background: #e6eefa; color: #23478a; border-color: #c3d4ef; }
-.pr-punto.pr-tono-1 { background: #3d8b4f; } .pr-pz.pr-tono-1 { background: #e4f3e7; color: #22683a; border-color: #bfe0c7; }
-.pr-punto.pr-tono-2 { background: #b3622a; } .pr-pz.pr-tono-2 { background: #fbeadb; color: #8a4517; border-color: #eecaa6; }
-.pr-punto.pr-tono-3 { background: #7a3d8f; } .pr-pz.pr-tono-3 { background: #f1e7f6; color: #64307a; border-color: #dcc6e8; }
-.pr-punto.pr-tono-4 { background: #6b6660; } .pr-pz.pr-tono-4 { background: #eeece8; color: #4a4642; border-color: #d8d4c9; }
-.pr-ley-c { align-items: center; }
+.pr-punto.pr-tono-0 { background: #2f5fa8; }
+.pr-punto.pr-tono-1 { background: #3d8b4f; }
+.pr-punto.pr-tono-2 { background: #b3622a; }
+.pr-punto.pr-tono-3 { background: #7a3d8f; }
+.pr-punto.pr-tono-4 { background: #6b6660; }
 .pr-pie-txt { flex: 1; min-width: 260px; }
 /* Varios lotes de entrada: pastilla con el detalle al pasar el mouse o enfocarla */
 .pr-lotes { position: relative; display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: 10.5px; font-weight: 600; line-height: 17px; background: #f1f0ee; color: #4a4642; border: 1px solid var(--hairline-strong); cursor: default; outline: none; }

@@ -310,8 +310,29 @@ function LibresModal({ r, prioridades, esPrioridad, onPrioridad, refMap, onViewI
   const ficha = refMap && refMap.get(r.ref)
   const img = ficha && ficha.image
   const nombreColor = (c) => c.charAt(0) + c.slice(1).toLowerCase()
-  const tono = (c) => 'pr-tono-' + (L.colores.indexOf(c) % 5)
-  const nCols = L.tallas.length + 3
+  const tono = (c) => 'pr-tono-' + (Math.max(0, L.coloresHoja.indexOf(c)) % 5)
+  const [bloque, setBloque] = useState('todos')
+  const [q, setQ] = useState('')
+  const T = L.tallasHoja
+  const nCols = T.length + 7
+  const cuenta = (e) => L.hoja.filter((c) => c.estado === e)
+  const BLOQUES = [
+    { id: 'separado', titulo: 'Ya separado', chip: 'Ya separado', nota: (cs) => `${num(cs.length)} clientes · ${num(cs.reduce((n, c) => n + c.n, 0))} unidades` },
+    { id: 'separar', titulo: 'Se pueden separar en curva completa', chip: 'Se pueden separar', nota: (cs) => `${num(cs.length)} clientes · ${num(cs.reduce((n, c) => n + c.n, 0))} unidades · en orden de turno` },
+    { id: 'espera', titulo: 'Esperan', chip: 'Esperan', nota: (cs) => `${num(cs.length)} clientes · con lo libre no les sale completo` },
+  ]
+  const busca = q.trim().toUpperCase()
+  const pasa = (c) => !busca || c.cliente.toUpperCase().includes(busca) || (c.ciudad || '').toUpperCase().includes(busca) || c.lineas.some((l) => String(l.pedido).toUpperCase().includes(busca))
+  const filaColor = (mapa, c) => T.map((t) => <td key={t}>{mapa[c + '|' + t] ? <b>{mapa[c + '|' + t]}</b> : <span className="pr-h-0">0</span>}</td>)
+  function celda(x, t) {
+    if (!x) return <td key={t} />
+    const cls = x.falta ? 'r' : x.cambio.length ? 'a' : x.dar ? 'v' : x.ya ? 's' : ''
+    const tip = x.falta ? `Pidió ${x.n}; no alcanza lo libre${x.falta < x.n ? ` (faltan ${x.falta})` : ''}`
+      : x.cambio.length ? `Pidió ${x.n}; se le da en ${x.cambio.map(nombreColor).join(' y ')}, misma talla (va surtido)`
+      : x.dar ? `Pidió ${x.n}; se le puede separar${x.ya ? ` (ya tiene ${x.ya})` : ''}`
+      : x.ya ? `Pidió ${x.n}; ya separado ${x.ya}` : `Pidió ${x.n}`
+    return <td key={t} className={cls} title={tip}>{x.ya && x.ya < x.n && !x.dar ? `${x.ya}/${x.n}` : x.n}</td>
+  }
 
   function texto() {
     const lineas = [`${r.ref} · ${r.descripcion} — libres en bodega: ${L.totalLibre}`, '']
@@ -337,7 +358,7 @@ function LibresModal({ r, prioridades, esPrioridad, onPrioridad, refMap, onViewI
           <div>
             <h2 className="modal-title">{r.ref} · libres en bodega</h2>
             <p className="eb-meta">
-              {r.descripcion} · {r.marca} · entraron {num(r.entro)} · {num(r.separado)} ya separadas · {num(L.totalLibre)} libres · {num(L.esperan)} clientes la esperan
+              {r.descripcion} · {r.marca} · entraron {num(r.entro)} · {num(r.separado)} ya separadas · {num(L.totalLibre)} libres · {num(L.hoja.length)} clientes la pidieron
             </p>
           </div>
         </div>
@@ -345,83 +366,89 @@ function LibresModal({ r, prioridades, esPrioridad, onPrioridad, refMap, onViewI
       </div>
       <div className="modal-body tal-modal-body">
         {L.avisos.length > 0 && <div className="dsp-nota"><b>Revisar:</b> {L.avisos.join(' · ')}.</div>}
-        {L.totalLibre === 0 ? (
-          <div className="empty-state"><p>No hay unidades libres por talla: todo lo que entró ya tiene nombre.</p></div>
-        ) : (
-          <div className="med-wrap ped-scroll pr-cuenta-wrap">
-            <table className="med-tabla pr-cuenta">
-              <colgroup>
-                <col className="pr-c0" />{L.tallas.map((t) => <col key={t} />)}<col /><col className="pr-cfin" />
-              </colgroup>
-              <thead>
-                <tr><th>Libres en bodega</th>{L.tallas.map((t) => <th key={t} className="num">{t}</th>)}<th className="num">Total</th><th /></tr>
-              </thead>
-              <tbody>
-                {L.colores.map((c) => (
-                  <tr key={c} className="pr-libre-f">
-                    <td><span className={'pr-punto ' + tono(c)} />{nombreColor(c)}</td>
-                    {L.tallas.map((t) => <td key={t} className="num">{L.libre[c + '|' + t] || <span className="dsp-cero">·</span>}</td>)}
-                    <td className="num">{num(L.tallas.reduce((n, t) => n + (L.libre[c + '|' + t] || 0), 0))}</td><td />
-                  </tr>
-                ))}
-                <tr className="pr-total-f">
-                  <td>Total libres</td>
-                  {L.tallas.map((t) => <td key={t} className="num">{num(L.colores.reduce((n, c) => n + (L.libre[c + '|' + t] || 0), 0))}</td>)}
-                  <td className="num">{num(L.totalLibre)}</td><td />
+        <div className="pr-h-barra">
+          <button type="button" className={'pr-h-chip' + (bloque === 'todos' ? ' on' : '')} onClick={() => setBloque('todos')}>Todos <b>{num(L.hoja.length)}</b></button>
+          {BLOQUES.map((b) => (
+            <button key={b.id} type="button" className={'pr-h-chip' + (bloque === b.id ? ' on' : '')} onClick={() => setBloque(b.id)}>{b.chip} <b>{num(cuenta(b.id).length)}</b></button>
+          ))}
+          <span className="pr-h-busca"><SearchInput value={q} onChange={setQ} placeholder="Buscar cliente o pedido…" /></span>
+        </div>
+        <div className="pr-hoja-wrap">
+          <table className="pr-hoja">
+            <colgroup>
+              <col className="pr-h-cl" /><col className="pr-h-ciu" /><col className="pr-h-ped" /><col className="pr-h-col" /><col className="pr-h-obs" />
+              {T.map((t) => <col key={t} />)}<col className="pr-h-tot" /><col className="pr-h-est" />
+            </colgroup>
+            <thead>
+              <tr><th className="l">Cliente</th><th className="l">Ciudad</th><th>Pedido</th><th className="l">Color</th><th className="l">Obs.</th>{T.map((t) => <th key={t}>{t}</th>)}<th>Total</th><th>Estado</th></tr>
+            </thead>
+            <tbody>
+              <tr className="pr-h-band"><td colSpan={nCols}>Libres en bodega</td></tr>
+              {L.colores.length === 0 && <tr><td colSpan={nCols} className="pr-h-mas">No hay unidades libres por talla: todo lo que entró ya tiene nombre.</td></tr>}
+              {L.colores.map((c, i) => (
+                <tr key={c}>
+                  {i === 0 && <td colSpan={3} rowSpan={L.colores.length} />}
+                  <td className="l"><span className={'pr-punto ' + tono(c)} />{c}</td><td />
+                  {filaColor(L.libre, c)}
+                  <td><b>{num(T.reduce((n, t) => n + (L.libre[c + '|' + t] || 0), 0))}</b></td><td />
                 </tr>
-                <tr className="pr-sep-f">
-                  <td colSpan={nCols}>
-                    Se pueden asignar en curva completa
-                    <small> · {num(L.asignables.length)} clientes · {num(L.asignadas)} unidades</small>
-                  </td>
+              ))}
+              {L.colores.length > 0 && (
+                <tr className="pr-h-tot-f">
+                  <td className="l" colSpan={5}>TOTAL LIBRES</td>
+                  {T.map((t) => <td key={t}>{num(L.colores.reduce((n, c) => n + (L.libre[c + '|' + t] || 0), 0))}</td>)}
+                  <td>{num(L.totalLibre)}</td><td />
                 </tr>
-                {L.asignables.length === 0 && (
-                  <tr><td colSpan={nCols} className="muted" style={{ padding: 14 }}>Con lo libre no se completa el pedido de ningún cliente en esta referencia.</td></tr>
-                )}
-                {L.asignables.map((a) => (
-                  <tr key={a.cliente}>
-                    <td className="pr-cl">
-                      <Estrella on={esPrioridad(a.cliente)} onClick={() => onPrioridad(a.cliente)} />
-                      <span>
-                        <b>{a.cliente}</b>
-                        <span className="pr-cl-s">{a.ciudad} · pedido {a.pedidos.join(', ')} · pidió {num(a.pidio)}{a.tenia ? ` · ya tiene ${num(a.tenia)}` : ''}{a.surtido ? <i> · surtido</i> : ''}</span>
-                      </span>
-                    </td>
-                    {L.tallas.map((t) => {
-                      const xs = a.dar.filter((x) => x.talla === t)
-                      return (
-                        <td key={t} className="num">
-                          {xs.length ? xs.map((x, i) => (
-                            <span key={i} className={'pr-pz ' + tono(x.color) + (x.cambio ? ' cambio' : '')}
-                              title={`${nombreColor(x.color)} talla ${t}${x.cambio ? ' · color distinto al digitado, permitido porque va surtido' : ''}`}>{x.n}</span>
-                          )) : <span className="dsp-cero">·</span>}
+              )}
+              {BLOQUES.filter((b) => bloque === 'todos' || bloque === b.id).map((b) => {
+                const todos = cuenta(b.id)
+                const cs = todos.filter(pasa)
+                return [
+                  <tr key={b.id} className="pr-h-band"><td colSpan={nCols}>{b.titulo} <small>· {b.nota(todos)}</small></td></tr>,
+                  cs.length === 0 && <tr key={b.id + '-0'}><td colSpan={nCols} className="pr-h-mas">{todos.length ? 'Ningún cliente coincide con la búsqueda.' : 'Ninguno.'}</td></tr>,
+                  ...cs.flatMap((c) => c.lineas.map((l, i) => (
+                    <tr key={b.id + c.cliente + i} className={i === 0 ? 'pr-h-c1' : ''}>
+                      {i === 0 && (
+                        <td className="l pr-h-nom" rowSpan={c.lineas.length} title={c.cliente}>
+                          <Estrella on={esPrioridad(c.cliente)} onClick={() => onPrioridad(c.cliente)} />{c.cliente}
                         </td>
-                      )
-                    })}
-                    <td className="num strong">{num(a.n)}</td>
-                    <td><span className="tag dsp-tag verde">completo</span></td>
-                  </tr>
-                ))}
-                <tr className="pr-queda-f">
-                  <td>Quedarían libres</td>
-                  {L.tallas.map((t) => (
-                    <td key={t} className="num">
-                      {L.colores.some((c) => L.queda[c + '|' + t]) ? L.colores.map((c) => (L.queda[c + '|' + t]
-                        ? <span key={c} className={'pr-pz ' + tono(c)} title={`${nombreColor(c)} talla ${t}`}>{L.queda[c + '|' + t]}</span> : null)) : <span className="dsp-cero">·</span>}
-                    </td>
-                  ))}
-                  <td className="num">{num(L.totalQueda)}</td><td />
+                      )}
+                      {i === 0 && <td className="l m" rowSpan={c.lineas.length} title={c.ciudad}>{c.ciudad}</td>}
+                      <td>{l.pedido}</td>
+                      <td className="l" title={l.color}><span className={'pr-punto ' + tono(l.color)} />{l.color}</td>
+                      {l.observacion ? <td className="l m" title={l.observacion}>{l.observacion}</td> : <td className="l sur">{l.surtido ? 'surtido' : ''}</td>}
+                      {T.map((t) => celda(l.celdas[t], t))}
+                      <td><b>{num(l.total)}</b></td>
+                      {i === 0 && (
+                        <td rowSpan={c.lineas.length} className={c.estado === 'separado' ? 's' : c.estado === 'separar' ? 'v' : 'r'}>
+                          {c.estado === 'espera' ? 'espera' : `${c.estado} ${num(c.n)}`}
+                        </td>
+                      )}
+                    </tr>
+                  ))),
+                ]
+              })}
+              {bloque === 'todos' && L.colores.length > 0 && <tr className="pr-h-band"><td colSpan={nCols}>Quedarían libres después de separar <small>· {num(L.totalQueda)} unidades</small></td></tr>}
+              {bloque === 'todos' && L.colores.map((c, i) => (
+                <tr key={'q' + c}>
+                  {i === 0 && <td colSpan={3} rowSpan={L.colores.length} />}
+                  <td className="l"><span className={'pr-punto ' + tono(c)} />{c}</td><td />
+                  {filaColor(L.queda, c)}
+                  <td><b>{num(T.reduce((n, t) => n + (L.queda[c + '|' + t] || 0), 0))}</b></td><td />
                 </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
-        <div className="dsp-leyenda pr-ley-c">
-          {L.colores.map((c) => <span key={c}><span className={'pr-punto ' + tono(c)} />{nombreColor(c).toLowerCase()}</span>)}
-          <span><span className="pr-pz pr-tono-0 cambio">1</span> color distinto al digitado, permitido porque el cliente la pidió surtida</span>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="pr-h-ley">
+          <span><i className="s" />ya separado en SYD</span>
+          <span><i className="v" />se le puede separar</span>
+          <span><i className="a" />se le da en otro color, misma talla (solo surtidos)</span>
+          <span><i className="r" />no alcanza: por eso espera</span>
+          <span><i />pedido, sin mover</span>
         </div>
         <div className="dsp-acciones">
-          <span className="pr-pie-txt">Solo aparecen clientes a los que el pedido de esta referencia les <b>queda completo</b>. Turno: ★ → más cerca de completar su despacho → pedido más antiguo. La separación se hace en SYD.</span>
+          <span className="pr-pie-txt">El número es lo que pidió; el color de la casilla dice qué pasa con esa unidad. Se separa solo si el pedido de esta referencia <b>queda completo</b>. Turno: ★ → más cerca de completar su despacho → pedido más antiguo. La separación se hace en SYD.</span>
           <span className="dsp-ultimo">
             <button type="button" className="btn" onClick={imprimir}>Imprimir para bodega</button>{' '}
             <button type="button" className="btn btn-primary" onClick={copiar}>Copiar lista</button>

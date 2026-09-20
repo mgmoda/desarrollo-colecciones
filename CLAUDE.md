@@ -248,9 +248,17 @@ la entrada de la prenda que MENOS ha entrado (órdenes CONJUNTO de cada
 pieza). "Revisar entrada" avisa cuando hay más separado que entrado. Al
 abrir una referencia: a qué clientes se les separó y cuánto les falta.
 **Libres (20-sep-2026)**: el número de "Libre en bodega" es un botón que abre
-`LibresModal`: una sola tabla que se lee como una cuenta — libres por color
-y talla, menos lo que se le puede asignar a cada cliente en CURVA COMPLETA
-(todo o nada en esa referencia), igual a lo que sobra (`calcularLibres`).
+`LibresModal`: una HOJA tipo Excel (`.pr-hoja`, pedido por Diego: sencillo,
+cuadrícula, sin píldoras) con un renglón por cliente y COLOR (como las líneas
+de SYD; nombre, ciudad y estado con rowSpan) en bloques: Libres en bodega →
+Ya separado → Se pueden separar en CURVA COMPLETA (todo o nada en esa
+referencia) → Esperan → Quedarían libres; chips por bloque y buscador. El
+número de la casilla es lo PEDIDO; el color dice qué pasa: azul = ya separado
+en SYD, verde = se le puede separar, ámbar = se le da en otro color misma
+talla (solo surtidos), rojo = no alcanza al llegar su turno (por eso espera),
+blanco = sin mover. Todo sale de `calcularLibres` (`hoja`, `tallasHoja`,
+`coloresHoja`). Con muchas tallas las columnas de texto se recortan, nunca
+las cifras.
 La primera separación es a criterio de bodega; esto trabaja sobre lo que
 quedó. La curva por talla sale de lo CORTADO de las órdenes con entrada
 (Factory no da la entrada por talla); en conjuntos, la menor de las dos

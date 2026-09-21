@@ -26,12 +26,12 @@ const fechaHora = (ts) => {
 const Cel = ({ n, cls }) => (n ? <span className={cls || ''}>{num(n)}</span> : <span className="dsp-cero">·</span>)
 const CHIP_DECISION = { despachar: 'verde', parcial: 'ambar', no: 'rojo', completo: 'azul', esperar: '' }
 const ETIQUETA_LINEA = {
-  cerrada: ['', 'Cerrada · no sale'], facturado: ['azul', 'Facturado'],
+  cerrada: ['', 'Producción cerrada'], facturado: ['azul', 'Facturado'],
   separado: ['verde', 'Separado'], porSeparar: ['ambar', 'Por separar'],
 }
 
 export default function DespachosView({
-  stamp, stampDespachos, usuario, refMap, onViewImage, onOpenRef,
+  stamp, stampDespachos, usuario, refMap, onViewImage, onOpenRef, cerradas, onCerrarRef,
   // Inyectables para probar la vista con datos fijos, sin sesión.
   cargarPedidos = dbLoadPedidosTodos, cargarDespachos = dbLoadDespachos, guardarDespacho = dbUpsertDespacho,
 }) {
@@ -60,7 +60,7 @@ export default function DespachosView({
     return () => { vivo = false }
   }, [stampDespachos, cargarDespachos])
 
-  const clientes = useMemo(() => armarDespachos(filas || [], registros || {}), [filas, registros])
+  const clientes = useMemo(() => armarDespachos(filas || [], registros || {}, cerradas), [filas, registros, cerradas])
   const ciudades = useMemo(() => [...new Set(clientes.map((c) => c.ciudad).filter(Boolean))].sort(), [clientes])
 
   const lista = useMemo(() => {
@@ -177,7 +177,7 @@ export default function DespachosView({
       </div>
 
       {clienteAbierto && (
-        <ClienteModal cliente={clienteAbierto} usuario={usuario} registros={registros || {}}
+        <ClienteModal cliente={clienteAbierto} usuario={usuario} registros={registros || {}} onCerrarRef={onCerrarRef}
           onGuardar={guardar} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} onClose={() => setAbierto(null)} />
       )}
     </>
@@ -195,7 +195,7 @@ const FILTROS_REF = [
   { key: 'Mariset', label: 'Mariset', f: (r) => r.marca === 'Mariset' },
   { key: 'conSep', label: 'Con separado', f: (r) => r.separado > 0 },
   { key: 'porSep', label: 'Por separar', f: (r) => !r.cerrada && r.pendSinSep > 0 },
-  { key: 'noSale', label: 'No salen', f: (r) => r.cerrada },
+  { key: 'noSale', label: 'Producción cerrada', f: (r) => r.cerrada },
 ]
 
 // Cómo se reparte lo vendido de una talla: facturado, separado vigente (lo
@@ -207,7 +207,7 @@ function partesDe(l, t) {
   return { v, f, s: sp, p: v - f - sp }
 }
 
-function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onViewImage, onOpenRef, onClose }) {
+function ClienteModal({ cliente: c, usuario, registros, onGuardar, onCerrarRef, refMap, onViewImage, onOpenRef, onClose }) {
   const [nota, setNota] = useState(c.novedadNota || '')
   const [q, setQ] = useState('')
   const [filtro, setFiltro] = useState('todas')
@@ -272,6 +272,8 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
   }
   function cerrarRef(ref, cerrada) {
     setMenuDe(null)
+    // La marca vive en Programaciones (producción cerrada): un solo sitio.
+    if (onCerrarRef) { onCerrarRef(ref, cerrada); return }
     const previo = registros[idRef(ref)] || {}
     onGuardar(idRef(ref), { ...previo, cerrada, usuario, at: Date.now() })
   }
@@ -426,7 +428,7 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
                             <b>{r.ref}</b>
                             <span className={'dsp-cat c-' + r.categoria.key}>{r.categoria.label}</span>
                             <span className="dsp-refd-d" title={r.descripcion}>{r.descripcion}</span>
-                            {r.cerrada && <span className="tag dsp-tag">No sale</span>}
+                            {r.cerrada && <span className="tag dsp-tag">Producción cerrada</span>}
                           </>
                         )}
                       </td>
@@ -453,7 +455,7 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, refMap, onVie
                               <button type="button" onClick={() => { setMenuDe(null); if (onOpenRef) onOpenRef(r.ref) }}>Ver ficha</button>
                               {img && <button type="button" onClick={() => { setMenuDe(null); if (onViewImage) onViewImage(img) }}>Ampliar foto</button>}
                               <button type="button" className="rojo" onClick={() => cerrarRef(r.ref, !r.cerrada)}>
-                                {r.cerrada ? 'Reabrir la referencia' : 'Marcar "no sale"'}
+                                {r.cerrada ? 'Reabrir producción' : 'Cerrar producción'}
                               </button>
                             </div>
                           </>

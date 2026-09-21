@@ -38,7 +38,7 @@ function marcaDe(ref) {
 }
 
 export default function PedidosView({
-  stamp, stampDespachos, usuario, refMap, orders, refs, onViewImage, onOpenRef,
+  stamp, stampDespachos, usuario, refMap, orders, refs, onViewImage, onOpenRef, cerradas, onCerrarRef,
   // Inyectables para probar la vista con datos fijos, sin sesión.
   cargar = {},
 }) {
@@ -219,10 +219,10 @@ export default function PedidosView({
       </div>
 
       {vista === 'despachos' && (
-        <DespachosView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
+        <DespachosView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} cerradas={cerradas} onCerrarRef={onCerrarRef} />
       )}
       {vista === 'referencia' && (
-        <PorReferenciaView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} orders={orders} refs={refs} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} />
+        <PorReferenciaView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} orders={orders} refs={refs} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} cerradas={cerradas} />
       )}
       {vista !== 'pedidos' ? null : <>
 

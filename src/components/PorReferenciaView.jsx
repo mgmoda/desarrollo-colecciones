@@ -19,7 +19,7 @@ const num = (n) => Number(n || 0).toLocaleString('es-CO')
 const diaMes = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '')
 
 export default function PorReferenciaView({
-  stamp, stampDespachos, usuario, orders, refs, refMap, onViewImage, onOpenRef,
+  stamp, stampDespachos, usuario, orders, refs, refMap, onViewImage, onOpenRef, cerradas,
   // Inyectables para probar sin sesión.
   cargarPedidos = dbLoadPedidosTodos, cargarDespachos = dbLoadDespachos, guardarDespacho = dbUpsertDespacho,
 }) {
@@ -69,10 +69,16 @@ export default function PorReferenciaView({
   const todas = useMemo(() => armarPorReferencia(filas || [], orders, refs), [filas, orders, refs])
   const conEntrada = useMemo(() => todas.filter((r) => r.entro > 0), [todas])
   const tot = useMemo(() => totalesRef(conEntrada), [conEntrada])
+  // Producción cerrada (se marca en Programaciones): lo que falta de esas
+  // referencias ya no se va a producir, y sus libres hay que ubicarlos.
+  const esCerrada = (r) => !!(cerradas && cerradas.has(r.ref))
+  const filtros = useMemo(() => [...FILTROS_REF,
+    { key: 'cerrada', label: 'Producción cerrada', f: (r) => esCerrada(r) }], [cerradas])
+  const faltaCerrada = useMemo(() => conEntrada.filter(esCerrada).reduce((n, r) => n + r.faltaProducir, 0), [conEntrada, cerradas])
 
   const lista = useMemo(() => {
     const term = q.trim().toLowerCase()
-    const fn = (FILTROS_REF.find((f) => f.key === filtro) || FILTROS_REF[0]).f
+    const fn = (filtros.find((f) => f.key === filtro) || filtros[0]).f
     let l = todas.filter(fn)
     if (term) l = l.filter((r) => r.ref.toLowerCase().includes(term) || (r.descripcion || '').toLowerCase().includes(term) || r.categoria.label.toLowerCase().includes(term))
     const acc = {
@@ -80,7 +86,7 @@ export default function PorReferenciaView({
       libre: (r) => r.libre, falta: (r) => r.faltaProducir, clientes: (r) => r.nConSeparado,
     }
     return sortRows(l, acc[sortKey] || acc.ref, sortDir)
-  }, [todas, filtro, q, sortKey, sortDir])
+  }, [todas, filtro, filtros, q, sortKey, sortDir])
 
   function abrirLotes(e, r) {
     const b = e.currentTarget.getBoundingClientRect()
@@ -119,13 +125,13 @@ export default function PorReferenciaView({
         <div className="prog-kpi"><span>Separado</span><b className="dsp-sep">{num(tot.separado)}</b><em>con nombre de cliente</em></div>
         <div className="prog-kpi dsp-ok"><span>Libre en bodega</span><b>{num(tot.libre)}</b><em>entró y no está separado</em></div>
         <div className="prog-kpi"><span>Pedido de esas referencias</span><b>{num(tot.pedido)}</b><em>unidades vendidas</em></div>
-        <div className="prog-kpi alerta"><span>Falta producir</span><b>{num(tot.faltaProducir)}</b><em>pedido que aún no entra</em></div>
+        <div className="prog-kpi alerta"><span>Falta producir</span><b>{num(tot.faltaProducir - faltaCerrada)}</b><em>pedido que aún no entra{faltaCerrada > 0 ? ` · ${num(faltaCerrada)} de cerradas no sale` : ''}</em></div>
       </div>
 
       <div className="view-actions" style={{ marginBottom: 12 }}>
         <SearchInput value={q} onChange={setQ} placeholder="Referencia, categoría o descripción…" />
         <div className="dis-filtros">
-          {FILTROS_REF.map((f) => (
+          {filtros.filter((f) => f.key !== 'cerrada' || todas.some(f.f) || filtro === 'cerrada').map((f) => (
             <button key={f.key} type="button" className={'proc-f-btn' + (filtro === f.key ? ' on' : '')}
               onClick={() => setFiltro(f.key)}>{f.label} <b>{todas.filter(f.f).length}</b></button>
           ))}
@@ -162,9 +168,10 @@ export default function PorReferenciaView({
                 const ult = r.ordenes[0]
                 return (
                   <tr key={r.ref} className="row-click" onClick={() => setAbierta(r.ref)} title="Ver a qué clientes se les separó">
-                    <td className="dsp-cli" title="" onMouseEnter={(e) => abrirFoto(e, r)} onMouseLeave={() => setFoto(null)}>
+                    <td className="dsp-cli pr-refcel" title="" onMouseEnter={(e) => abrirFoto(e, r)} onMouseLeave={() => setFoto(null)}>
                       <b>{r.ref}</b>
                       <span className={'dsp-cat c-' + r.categoria.key}>{r.categoria.label}</span>
+                      {cerradas && cerradas.has(r.ref) && <span className="tag prog-cer-tag" title="Producción cerrada: ya no salen más lotes">Producción cerrada</span>}
                       <span className="pr-desc">{r.descripcion}</span>
                     </td>
                     <td className="pr-entro">
@@ -192,7 +199,9 @@ export default function PorReferenciaView({
                           onClick={(e) => { e.stopPropagation(); setLibresDe(r.ref) }}>{num(r.libre)} ↗</button>
                       ) : <span className="dsp-cero">·</span>) : <span className="dsp-cero">—</span>}
                     </td>
-                    <td className="num">{r.entro ? <span className="dsp-falt">{num(r.faltaProducir)}</span> : <span className="dsp-cero">—</span>}</td>
+                    <td className="num">{!r.entro ? <span className="dsp-cero">—</span>
+                      : esCerrada(r) && r.faltaProducir > 0 ? <span className="pr-nosale" title="Producción cerrada: esto ya no se produce"><s>{num(r.faltaProducir)}</s> no sale</span>
+                        : <span className="dsp-falt">{num(r.faltaProducir)}</span>}</td>
                     <td>
                       <div className="pr-bar" title={`${num(r.separado)} separadas · ${num(r.libre)} libres · ${num(r.entro ? r.faltaProducir : 0)} por producir`}>
                         <b className="pr-s" style={{ width: w(r.separado) }} />

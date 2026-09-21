@@ -36,7 +36,9 @@ const n0 = (v) => Math.max(0, Number(v) || 0)
 
 // Arma, por cliente, sus líneas (referencia × color) con lo vendido de SYD y
 // lo registrado acá, y calcula las cifras del tablero.
-export function armarDespachos(filasSyd, registros) {
+export function armarDespachos(filasSyd, registros, cerradas) {
+  // `cerradas`: referencias con PRODUCCIÓN CERRADA marcadas en Programaciones.
+  const cerr = cerradas || new Set()
   const reg = registros || {}
   const clientes = new Map()
   ;(filasSyd || []).forEach((r) => {
@@ -77,10 +79,10 @@ export function armarDespachos(filasSyd, registros) {
     Object.entries(r.tallas || {}).forEach(([t, v]) => { l.tallas[t] = (l.tallas[t] || 0) + (Number(v) || 0) })
   })
 
-  return [...clientes.values()].map((c) => medirCliente(c, reg))
+  return [...clientes.values()].map((c) => medirCliente(c, reg, cerr))
 }
 
-function medirCliente(c, reg) {
+function medirCliente(c, reg, cerr = new Set()) {
   const lineas = [...c.lineas.values()].sort((a, b) => a.ref.localeCompare(b.ref) || a.color.localeCompare(b.color))
   // Lo facturado por referencia decide si lo vendido sin cubrir es "abierto".
   const factPorRef = {}
@@ -105,7 +107,7 @@ function medirCliente(c, reg) {
       l.facturado = n0(d.facturado)
     }
     l.registro = d
-    l.cerrada = !!((reg[idRef(l.ref)] || {}).cerrada)
+    l.cerrada = cerr.has(String(l.ref || '').trim().toUpperCase()) || !!((reg[idRef(l.ref)] || {}).cerrada)
     factPorRef[l.ref] = (factPorRef[l.ref] || 0) + l.facturado
   })
   let vendido = 0, facturado = 0, separadoVig = 0, cerrado = 0, abierto = 0, valorV = 0

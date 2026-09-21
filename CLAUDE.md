@@ -275,6 +275,21 @@ texto es color fijo. Avisa cuando hay más separado que entrado en una
 casilla. La separación se sigue digitando en SYD. Ojo: Factory y SYD no siempre nombran igual el color
 ("VINO TINTO 2" = ROJO); reusar `empatarColor` de programaciones.
 
+**Producción cerrada (21-sep-2026)**: referencia que ya no saca más lotes (el
+nombre lo eligió Diego; sin motivos, "simplemente está cerrada"). Se marca en
+**Programaciones**: casilla por fila → barra negra "N seleccionadas" → Cerrar
+producción / Reabrir (con confirmación). Se guarda en la programación como
+`cerrada: { por, at }` (`cerrarProduccion` en App.jsx; `dev_programaciones`
+la escriben Diego y Ninfa, y `sincronizar_programaciones()` conserva los
+campos que no son suyos). Efectos: en Programaciones la falta se tacha y sale
+de "Falta por programar" (se cuenta aparte), no pide metros de tela, y hay
+chip "Producción cerrada N"; App arma el Set `cerradas` y lo pasa a Pedidos:
+Por referencia muestra la etiqueta, "N no sale" en Falta producir y el filtro;
+Despachos trata lo pendiente como cerrado sin cubrir (`armarDespachos(filas,
+registros, cerradas)`) y su menú "Cerrar producción" escribe la MISMA marca
+(`onCerrarRef`), ya no `r|REF` de `dev_despachos`. Pendiente: modo "Ubicar
+todo" de los libres para estas referencias (mockup libres-ubicar-todo-v1).
+
 **Despachos (14-sep-2026)**: segunda vista de la pestaña Pedidos
 (`DespachosView.jsx`, cuentas en `lib/despachos.js`). Vendido y pendiente
 salen de `pedidos_syd`; separado, facturado, referencias cerradas ("no

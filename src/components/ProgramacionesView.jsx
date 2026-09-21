@@ -716,7 +716,7 @@ function FaltaModal({ fila, cortes, onClose }) {
 // el informe cambia. Lo que sale del informe queda con pedido 0 y sinPedido.
 export default function ProgramacionesView({
   programaciones, orders, refMap, refs, telas, usuario,
-  onGuardar, onBorrar, onViewImage, onOpenRef,
+  onGuardar, onBorrar, onCerrar, onViewImage, onOpenRef,
 }) {
   const [marca, setMarca] = useState('Casania')
   const [q, setQ] = useState('')
@@ -729,6 +729,10 @@ export default function ProgramacionesView({
   const [telaF, setTelaF] = useState('')
   // Las que salieron del informe (pedido 0) se esconden salvo que se pidan.
   const [verSinPedido, setVerSinPedido] = useState(false)
+  // Producción cerrada: referencias que ya no sacan más lotes. Se seleccionan
+  // con la casilla y se marcan desde la barra; su falta deja de contar.
+  const [sel, setSel] = useState(() => new Set())
+  const [soloCerradas, setSoloCerradas] = useState(false)
   const [obsDe, setObsDe] = useState(null)
   const [movDe, setMovDe] = useState(null)
   const [desgDe, setDesgDe] = useState(null)
@@ -775,7 +779,7 @@ export default function ProgramacionesView({
       // metros son promedio × lo que falta por programar: la cuenta que se
       // hace a mano antes de pedir tela.
       const telasRef = telasDe({ id: p.id, piezas }, telas, codigos)
-        .map((t) => ({ ...t, metros: t.prom * Math.max(0, pendiente) }))
+        .map((t) => ({ ...t, metros: p.cerrada ? 0 : t.prom * Math.max(0, pendiente) }))
       return {
         ...p,
         pedido,
@@ -790,6 +794,7 @@ export default function ProgramacionesView({
         estado: p.estado || '',
         estadoColor: p.estadoColor || '',
         sinPedido: !!p.sinPedido,
+        cerrada: p.cerrada || null,
         obs: (p.observaciones || []).filter((o) => o.texto).length,
         ultimaObs: (p.observaciones || []).filter((o) => o.texto).slice(-1)[0] || null,
         ...enProceso(p.movimientos, pendiente),
@@ -801,7 +806,8 @@ export default function ProgramacionesView({
     // Sin pedido en SYD: fuera de la lista, salvo que tenga algo andando
     // (tela pedida, Textampa) que Ninfa todavía tiene que cerrar.
     if (!verSinPedido) list = list.filter((f) => !f.sinPedido || f.movAbiertos.length > 0)
-    if (soloPendientes) list = list.filter((f) => f.pendiente > 0)
+    if (soloCerradas) list = list.filter((f) => f.cerrada)
+    if (soloPendientes) list = list.filter((f) => f.pendiente > 0 && !f.cerrada)
     if (soloProceso) list = list.filter((f) => f.movAbiertos.length > 0)
     if (estadoF) list = list.filter((f) => f.estado === estadoF)
     const term = q.trim().toLowerCase()
@@ -824,13 +830,35 @@ export default function ProgramacionesView({
       obs: (f) => f.obs,
     }
     return sortRows(list, accessors[sortKey], sortDir)
-  }, [filas, q, verSinPedido, soloPendientes, soloProceso, estadoF, sortKey, sortDir])
+  }, [filas, q, verSinPedido, soloCerradas, soloPendientes, soloProceso, estadoF, sortKey, sortDir])
 
   const tot = useMemo(() => rows.reduce((a, f) => ({
     pedido: a.pedido + f.pedido,
     programado: a.programado + f.programado,
-    pendiente: a.pendiente + Math.max(0, f.pendiente),
-  }), { pedido: 0, programado: 0, pendiente: 0 }), [rows])
+    // Lo que falta de una referencia con producción cerrada ya no se va a
+    // programar: sale del total y se cuenta aparte.
+    pendiente: a.pendiente + (f.cerrada ? 0 : Math.max(0, f.pendiente)),
+    cerradoUnid: a.cerradoUnid + (f.cerrada ? Math.max(0, f.pendiente) : 0),
+    cerradas: a.cerradas + (f.cerrada ? 1 : 0),
+  }), { pedido: 0, programado: 0, pendiente: 0, cerradoUnid: 0, cerradas: 0 }), [rows])
+
+  const selFilas = useMemo(() => filas.filter((f) => sel.has(f.id)), [filas, sel])
+  const selAbiertas = selFilas.filter((f) => !f.cerrada)
+  const selCerradas = selFilas.filter((f) => f.cerrada)
+  function alternarSel(id) {
+    setSel((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  }
+  function cerrarSeleccion(cerrar) {
+    const lista = cerrar ? selAbiertas : selCerradas
+    if (!lista.length || !onCerrar) return
+    const falta = lista.reduce((n, f) => n + Math.max(0, f.pendiente), 0)
+    const msg = cerrar
+      ? `Cerrar producción de ${lista.map((f) => f.id).join(', ')}?\n\nYa no salen más lotes. Lo que falta (${falta}) deja de contar como pendiente por programar, y en Pedidos quedan como producción cerrada.`
+      : `Reabrir producción de ${lista.map((f) => f.id).join(', ')}?`
+    if (!window.confirm(msg)) return
+    onCerrar(lista.map((f) => f.id), cerrar)
+    setSel(new Set())
+  }
 
   // La otra vista: cada tela con las referencias que la usan y los metros que
   // necesita (promedio × falta). La que más metros pide va de primera, que es
@@ -892,6 +920,17 @@ export default function ProgramacionesView({
             )
           })()}
           {(() => {
+            const n = filas.filter((f) => f.cerrada).length
+            if (!n && !soloCerradas) return null
+            return (
+              <button type="button" className={'proc-f-btn prog-cer-chip' + (soloCerradas ? ' on' : '')}
+                title="Referencias que ya no sacan más lotes"
+                onClick={() => setSoloCerradas(!soloCerradas)}>
+                Producción cerrada <b>{n}</b>
+              </button>
+            )
+          })()}
+          {(() => {
             const n = filas.filter((f) => f.sinPedido).length
             if (!n && !verSinPedido) return null
             return (
@@ -927,15 +966,15 @@ export default function ProgramacionesView({
         <div className="prog-kpis">
           <div className="prog-kpi"><span>Telas</span><b>{num(grupos.length)}</b></div>
           <div className="prog-kpi alerta"><span>Metros necesarios</span><b>{mts(totMetros)}</b></div>
-          <div className="prog-kpi"><span>Falta por programar</span><b>{num(tot.pendiente)}</b></div>
+          <div className="prog-kpi"><span>Falta por programar</span><b>{num(tot.pendiente)}</b>{tot.cerradoUnid > 0 && <em>{num(tot.cerradoUnid)} en referencias cerradas</em>}</div>
           <div className="prog-kpi"><span>Referencias</span><b>{rows.length}</b></div>
         </div>
       ) : (
         <div className="prog-kpis">
           <div className="prog-kpi"><span>Pedido</span><b>{num(tot.pedido)}</b></div>
           <div className="prog-kpi"><span>Programado</span><b>{num(tot.programado)}</b></div>
-          <div className="prog-kpi alerta"><span>Falta por programar</span><b>{num(tot.pendiente)}</b></div>
-          <div className="prog-kpi"><span>Referencias</span><b>{rows.length}</b></div>
+          <div className="prog-kpi alerta"><span>Falta por programar</span><b>{num(tot.pendiente)}</b>{tot.cerradoUnid > 0 && <em>{num(tot.cerradoUnid)} en referencias cerradas</em>}</div>
+          <div className="prog-kpi"><span>Referencias</span><b>{rows.length}</b>{tot.cerradas > 0 && <em>{num(tot.cerradas)} con producción cerrada</em>}</div>
         </div>
       )}
 
@@ -1067,10 +1106,22 @@ export default function ProgramacionesView({
           )}
         </>
       ) : (
+        <>
+        {sel.size > 0 && (
+          <div className="prog-sel-barra">
+            <span><b>{num(sel.size)} {sel.size === 1 ? 'seleccionada' : 'seleccionadas'}</b> · {selFilas.map((f) => f.id).join(', ')}
+              {selAbiertas.length > 0 && <> · falta {num(selAbiertas.reduce((n, f) => n + Math.max(0, f.pendiente), 0))}</>}</span>
+            <span className="prog-sel-sp" />
+            <button type="button" className="prog-sel-btn" onClick={() => setSel(new Set())}>Quitar selección</button>
+            {selCerradas.length > 0 && <button type="button" className="prog-sel-btn" onClick={() => cerrarSeleccion(false)}>Reabrir producción{selAbiertas.length ? ` (${selCerradas.length})` : ''}</button>}
+            {selAbiertas.length > 0 && <button type="button" className="prog-sel-btn pri" onClick={() => cerrarSeleccion(true)}>Cerrar producción{selCerradas.length ? ` (${selAbiertas.length})` : ''}</button>}
+          </div>
+        )}
         <div className="table-wrap">
           <table className="data-table">
             <thead>
               <tr>
+                <th className="prog-ck-th" title="Seleccionar para cerrar o reabrir producción" />
                 <th>Foto</th>
                 <SortTh label="Referencia" col="referencia" {...thProps} />
                 <SortTh label="Descripción" col="descripcion" {...thProps} />
@@ -1087,7 +1138,11 @@ export default function ProgramacionesView({
               {rows.map((f) => {
                 const ficha = refMap.get(f.id)
                 return (
-                  <tr key={f.id}>
+                  <tr key={f.id} className={(f.cerrada ? 'prog-cerrada' : '') + (sel.has(f.id) ? ' prog-sel' : '')}>
+                    <td className="prog-ck">
+                      <input type="checkbox" checked={sel.has(f.id)} onChange={() => alternarSel(f.id)}
+                        aria-label={`Seleccionar ${f.id}`} />
+                    </td>
                     <td className="cell-photo">
                       {f.image
                         ? <img src={f.image} alt={f.id} className="thumb" title="Ampliar foto"
@@ -1101,6 +1156,12 @@ export default function ProgramacionesView({
                         <span className="tag conj-tag"
                           title={f.piezas.length ? `Se arma con ${f.piezas.join(' + ')}` : 'Conjunto'}>
                           Conjunto
+                        </span>
+                      )}
+                      {f.cerrada && (
+                        <span className="tag prog-cer-tag"
+                          title={`Producción cerrada${f.cerrada.por ? ' por ' + f.cerrada.por : ''}${f.cerrada.at ? ' · ' + fechaHora(f.cerrada.at) : ''}. Ya no salen más lotes.`}>
+                          Producción cerrada
                         </span>
                       )}
                     </td>
@@ -1200,6 +1261,7 @@ export default function ProgramacionesView({
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {desgDe && <DesgloseModal fila={desgDe} onClose={() => setDesgDe(null)} />}

@@ -6064,6 +6064,23 @@ select.filtro-taller { flex: none; width: 215px; }
 .pr-punto.pr-tono-3 { background: #7a3d8f; }
 .pr-punto.pr-tono-4 { background: #6b6660; }
 .pr-pie-txt { flex: 1; min-width: 260px; }
+/* Producción cerrada: referencias que ya no sacan más lotes */
+.prog-ck-th, td.prog-ck { width: 30px; padding-left: 10px !important; padding-right: 0 !important; }
+td.prog-ck input { width: 15px; height: 15px; accent-color: var(--ink); cursor: pointer; vertical-align: middle; }
+tr.prog-sel td { background: #f6f5f1; }
+tr.prog-cerrada td { background: #fbfaf7; }
+tr.prog-cerrada .prog-falta, tr.prog-cerrada td.num.strong .prog-ped, tr.prog-cerrada td.num.strong { color: #a09b93; }
+tr.prog-cerrada td:nth-child(7), tr.prog-cerrada td:nth-child(8) { text-decoration: line-through; text-decoration-color: #b9b5ad; }
+tr.prog-cerrada td:nth-child(7) .prog-ped, tr.prog-cerrada td:nth-child(8) * { color: #a09b93; text-decoration: line-through; }
+.tag.prog-cer-tag { background: #fdf3dc; color: #8a5a0a; border: 1px solid #ecd59a; font-weight: 700; margin-left: 6px; }
+.proc-f-btn.prog-cer-chip { border-color: #d9c48a; color: #8a5a0a; }
+.proc-f-btn.prog-cer-chip.on { background: #8a5a0a; color: #fff; border-color: #8a5a0a; }
+.prog-sel-barra { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--ink); color: #fff; border-radius: 10px; padding: 8px 14px; margin: 0 0 8px; font-size: 12.5px; position: sticky; top: 8px; z-index: 5; }
+.prog-sel-sp { flex: 1; }
+.prog-sel-btn { border: 1px solid #55535a; background: transparent; color: #fff; border-radius: 8px; padding: 5px 12px; font: inherit; font-size: 12px; cursor: pointer; }
+.prog-sel-btn.pri { background: #fff; color: var(--ink); border-color: #fff; font-weight: 600; }
+td.pr-refcel { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.pr-nosale { color: #a09b93; font-size: 12px; white-space: nowrap; }
 /* Foto rápida al pasar el mouse por la referencia */
 .pr-foto-caja { position: fixed; z-index: 60; pointer-events: none; background: var(--surface); border: 1px solid var(--hairline-strong); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 5px; }
 .pr-foto-caja img { display: block; height: 288px; width: auto; max-width: 260px; object-fit: cover; border-radius: 8px; }
@@ -6729,11 +6746,13 @@ tr.row-parcial > td { background: #fffaf0; }
 .prog-seg {
   background: none; border: 0; padding: 0; font: inherit; text-align: left;
   cursor: pointer; display: flex; flex-direction: column; gap: 3px;
-  align-items: flex-start; max-width: 260px;
+  align-items: flex-start; max-width: 210px; min-width: 0;
 }
 .prog-seg-vacio { font-size: 11px; color: var(--muted); }
 .prog-seg:hover .prog-seg-vacio { text-decoration: underline; }
-.prog-seg-txt { font-size: 11px; color: var(--muted); line-height: 1.35; }
+.prog-seg-txt { font-size: 11px; color: var(--muted); line-height: 1.35;
+  /* La nota se parte en dos renglones en vez de empujar la tabla a la derecha. */
+  white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .prog-obs .est-chip.sm { margin-bottom: 3px; }
 
 /* El número de pedido con desglose se abre; que se note. */

@@ -529,6 +529,22 @@ export default function App() {
     dbUpsertPreorden(p).catch((e) => { console.error(e); alert('No se pudo guardar la preorden: ' + e.message) })
   }
 
+  // Producción cerrada: referencias que ya no sacan más lotes. La marca vive
+  // en la programación (el sync de SYD conserva los campos que no son suyos)
+  // y la leen Programaciones, Por referencia y Despachos.
+  const cerradas = useMemo(() => new Set((programaciones || [])
+    .filter((p) => p.cerrada).map((p) => String(p.id).trim().toUpperCase())), [programaciones])
+  function cerrarProduccion(ids, cerrar) {
+    const quien = (emailSesion || '').split('@')[0]
+    ;(Array.isArray(ids) ? ids : [ids]).forEach((id) => {
+      const k = String(id).trim().toUpperCase()
+      const p = programaciones.find((x) => String(x.id).trim().toUpperCase() === k)
+      if (!p) { alert(`${id} no está en Programaciones: no se pudo marcar.`); return }
+      const { cerrada, ...resto } = p
+      guardarProgramacion(cerrar ? { ...resto, cerrada: { por: quien, at: Date.now() } } : resto)
+    })
+  }
+
   function guardarProgramacion(p) {
     setProgramaciones((l) => {
       const i = l.findIndex((x) => x.id === p.id)
@@ -1073,6 +1089,7 @@ export default function App() {
             programaciones={programaciones} orders={orders} refMap={refMap} refs={refIndex}
             telas={telasFicha} usuario={emailSesion}
             onGuardar={guardarProgramacion}
+            onCerrar={cerrarProduccion}
             onBorrar={borrarProgramacion}
             onViewImage={setLightbox} onOpenRef={openEdit} />
         )}
@@ -1080,7 +1097,7 @@ export default function App() {
           <AsistenciaView stamp={stampAsistencia} />
         )}
         {tab === 'pedidos' && vePedidos && (
-          <PedidosView stamp={stampPedidos} stampDespachos={stampDespachos} usuario={emailSesion} refMap={refMapFotos} orders={orders} refs={refs} onViewImage={setLightbox} onOpenRef={(ref) => { const f = refMap.get(ref) || refMap.get(((refMapFotos.get(ref) || {}).piezas || [])[0]); if (f) openEdit(f) }} />
+          <PedidosView stamp={stampPedidos} stampDespachos={stampDespachos} usuario={emailSesion} refMap={refMapFotos} orders={orders} refs={refs} cerradas={cerradas} onCerrarRef={(ref, c) => cerrarProduccion(ref, c)} onViewImage={setLightbox} onOpenRef={(ref) => { const f = refMap.get(ref) || refMap.get(((refMapFotos.get(ref) || {}).piezas || [])[0]); if (f) openEdit(f) }} />
         )}
       </main>
 

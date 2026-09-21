@@ -416,13 +416,28 @@ export default function App() {
   }, [tabsVisibles, tab])
   // Se puede buscar por cualquiera de sus códigos: el interno o el final.
   const refMap = useMemo(() => {
+    // La foto y el precio que se montan en una PREORDEN de Geodésica viven en
+    // la preorden, no en la ficha. Cuando llega la orden de Factory la
+    // referencia aún no tiene ficha propia, así que sin esto salía sin foto
+    // en todas las etapas. La ficha manda; la preorden más reciente la suple.
+    const dePreorden = new Map()
+    ;(preordenes || []).forEach((p) => {
+      const k = String(p.referencia || '').trim().toUpperCase()
+      if (!k) return
+      const prev = dePreorden.get(k)
+      if (!prev || (p.geodesicaPreOrderAt || 0) > (prev.geodesicaPreOrderAt || 0)) dePreorden.set(k, p)
+    })
     const m = new Map()
-    refIndex.forEach((r) => {
+    refIndex.forEach((r0) => {
+      const po = dePreorden.get(String(r0.id || '').trim().toUpperCase())
+      const r = po && ((!r0.image && po.image) || (!r0.costo && po.costo))
+        ? { ...r0, image: r0.image || po.image || '', costo: r0.costo || po.costo || r0.costo, fotoDePreorden: !r0.image && !!po.image }
+        : r0
       m.set(r.id, r)
       ;(r.codigos || []).forEach((c) => { if (!m.has(c)) m.set(c, r) })
     })
     return m
-  }, [refIndex])
+  }, [refIndex, preordenes])
   // Para Pedidos y Despachos: el mismo índice más los códigos de CONJUNTO
   // (C6852, M5279…), que no son una ficha propia sino un dato de la blusa en
   // Costos. Su foto es la del conjunto completo, no la de la blusa sola.

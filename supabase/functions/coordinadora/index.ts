@@ -6,7 +6,7 @@
 const AUTORIZADOS = ['diego_monsalve87@hotmail.com']
 const CUENTA = { nit: '901682300', idProceso: 46846, division: '01', tipoCuenta: 1, codigoPais: 170 }
 // Remitente fijo (del reporte de guías 2026): siempre despacha MG Moda desde Bucaramanga.
-const REMITENTE = { nombre: 'Mg Moda SAS', direccion: 'Calle 35 # 27-47 Piso 1', dane: '68001000', identificacion: '901682300', tipoDocumento: 31 }
+const REMITENTE = { nombre: 'Mg Moda SAS', direccion: 'Calle 35 # 27-47 Piso 1', dane: '68001000', identificacion: '901682300', tipoDocumento: 31, celular: '3185323198' }
 const BASE = { test: 'https://api-test.coordinadora.tech', prod: 'https://api.coordinadora.tech' }
 
 let tokenCache: { valor: string; vence: number } | null = null
@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
           datosRemitente: {
             identificacionRemitente: REMITENTE.identificacion, tipoDocumentoRemitente: REMITENTE.tipoDocumento,
             nombreRemitente: REMITENTE.nombre, direccionRemitente: REMITENTE.direccion, codigoCiudadRemitente: REMITENTE.dane,
-            indicativoRemitente: '57', celularRemitente: Deno.env.get('COORDINADORA_REMITENTE_CEL') || '',
+            indicativoRemitente: '57', celularRemitente: Deno.env.get('COORDINADORA_REMITENTE_CEL') || REMITENTE.celular,
             correoRemitente: Deno.env.get('COORDINADORA_REMITENTE_CORREO') || correo,
             ...(g.datosRemitente || {}),
           },

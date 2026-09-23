@@ -4,6 +4,7 @@ import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { dbLoadPedidosTodos, dbLoadDespachos, dbUpsertDespacho } from '../lib/db.js'
+import { coordinadora } from '../lib/coordinadora.js'
 import { formatPrice } from '../lib/constants.js'
 import { nombreDe } from '../lib/procesos.js'
 import { CATEGORIAS, categoriaDe, esPedidoEspecial } from '../lib/pedidos.js'
@@ -101,6 +102,8 @@ export default function DespachosView({
         <div className="prog-kpi"><span>Cerrado sin cubrir</span><b>{num(tot.cerrado)}</b><em>referencias que no salen</em></div>
         <div className="prog-kpi dsp-ok"><span>Listos para despachar</span><b>{num(tot.listos)}</b><em>clientes con todo lo abierto separado</em></div>
       </div>
+
+      <PruebaCoordinadora />
 
       <div className="view-actions" style={{ marginBottom: 12 }}>
         <div className="dis-filtros">
@@ -490,5 +493,29 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, onCerrarRef, 
         </div>
       </div>
     </Modal>
+  )
+}
+
+
+// Prueba de la conexión con Coordinadora (ambiente de pruebas): pide un token
+// y cotiza un envío de ejemplo. Provisional, mientras se arma el módulo de guías.
+function PruebaCoordinadora() {
+  const [res, setRes] = useState(null)
+  const [busy, setBusy] = useState('')
+  async function probar(tipo) {
+    setBusy(tipo); setRes(null)
+    try {
+      if (tipo === 'ping') setRes(await coordinadora('ping'))
+      else setRes(await coordinadora('cotizar', { origen: '05001000', destino: '11001000', valoracion: 200000, detalle: [{ alto: 15, ancho: 20, largo: 30, peso: 2, unidades: 1 }] }))
+    } catch (e) { setRes({ error: e.message || String(e) }) }
+    setBusy('')
+  }
+  return (
+    <div className="dsp-nota" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      <b>Coordinadora</b>
+      <button type="button" className="btn" disabled={!!busy} onClick={() => probar('ping')}>{busy === 'ping' ? 'Probando…' : 'Probar conexión'}</button>
+      <button type="button" className="btn" disabled={!!busy} onClick={() => probar('cotizar')}>{busy === 'cotizar' ? 'Cotizando…' : 'Cotizar Medellín → Bogotá (prueba)'}</button>
+      {res && <code style={{ whiteSpace: 'pre-wrap', fontSize: 11.5, maxWidth: 700 }}>{JSON.stringify(res, null, 1)}</code>}
+    </div>
   )
 }

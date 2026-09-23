@@ -132,11 +132,17 @@ if ($ini -and (Test-Path $ini)) {
     $resto = $txt.Substring(0, $i)
     $lineas = $resto -split "\r?\n"
     $out = New-Object System.Collections.ArrayList; $puesto = $false
+    # El bloque va al FINAL de la sección [mysqld] (antes del siguiente
+    # encabezado), para que pise los valores que dejó el instalador
+    # (utf8mb4) y no al revés.
+    $enMysqld = $false
     foreach ($l in $lineas) {
       if ($l.Trim() -eq '' -and $out.Count -gt 0 -and $out[$out.Count-1] -eq '') { continue }
+      if ($enMysqld -and -not $puesto -and $l.Trim() -match '^\[.+\]$') { foreach ($x in $bloque) { [void]$out.Add($x) }; [void]$out.Add(''); $puesto = $true }
       [void]$out.Add($l)
-      if (-not $puesto -and $l.Trim() -eq '[mysqld]') { foreach ($x in $bloque) { [void]$out.Add($x) }; $puesto = $true }
+      if ($l.Trim() -eq '[mysqld]') { $enMysqld = $true }
     }
+    if ($enMysqld -and -not $puesto) { foreach ($x in $bloque) { [void]$out.Add($x) }; $puesto = $true }
     if ($puesto) { [IO.File]::WriteAllText($ini, (($out -join "`r`n").TrimEnd() + "`r`n")); L 'my.ini: bloque de ajustes puesto bajo [mysqld]'; Restart-Service MariaDB -ErrorAction SilentlyContinue; Start-Sleep 10 }
     else { L 'AVISO: no encontré [mysqld] en my.ini' }
   }

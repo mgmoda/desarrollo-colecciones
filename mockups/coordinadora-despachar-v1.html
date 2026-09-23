@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Despachar con Coordinadora</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Módulo de guías Coordinadora dentro de Pedidos → Despachos. Datos reales:
+   reporte de 1.117 guías (mar–jul 2026), cotización real del API de pruebas
+   y el pedido de Miriam Angulo Celorio en SYD. */
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hs:#d8d4c9;--ink:#1c1c22;--soft:#3f3d3a;--muted:#6b6660;--verde:#1f6b2e;--verde-bg:#e1f1df;--azul:#23478a;--azul-bg:#e6eefa;--rojo:#b23121;--rojo-bg:#fbeceb;--ambar:#8a5a0a;--ambar-bg:#fdf3dc}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.4;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 14px;max-width:1000px}
+.paso{display:flex;align-items:center;gap:10px;margin:28px 0 8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.paso i{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:12px}
+.exp{color:var(--muted);margin:0 0 10px;max-width:1040px}
+.datos{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:1080px;margin:0 0 6px}
+.dato{background:#fff;border:1px solid var(--hairline);border-radius:10px;padding:10px 12px}
+.dato small{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dato b{font-size:19px;font-weight:600}.dato em{display:block;font-style:normal;font-size:11.5px;color:var(--muted)}
+.caja{background:#fff;border:1px solid var(--hairline);border-radius:12px;max-width:1080px;overflow:hidden}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--hairline);background:#faf9f6}
+td{padding:8px 10px;border-bottom:1px solid #efece5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.n{text-align:right;font-variant-numeric:tabular-nums}th.n{text-align:right}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid transparent}
+.tag.v{background:var(--verde-bg);color:var(--verde);border-color:#b5d8b0}.tag.a{background:var(--azul-bg);color:var(--azul);border-color:#c3d4ef}.tag.r{background:var(--rojo-bg);color:var(--rojo);border-color:#f0c4bf}.tag.m{background:var(--ambar-bg);color:var(--ambar);border-color:#ecd59a}.tag.g{background:#f1f0ee;color:#4a4642;border-color:var(--hs)}
+.btn{border:1px solid var(--hs);background:#fff;border-radius:8px;padding:5px 12px;font:inherit;font-size:12.5px;cursor:pointer}
+.btn.p{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.btn.sm{padding:2px 9px;font-size:11.5px}
+.muted{color:var(--muted)}
+/* modal Despachar */
+.modal{background:#fff;border:1px solid var(--hairline);border-radius:14px;max-width:1080px;box-shadow:0 10px 40px rgba(0,0,0,.12);overflow:hidden}
+.mh{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 20px;border-bottom:1px solid var(--hairline)}
+.mh h2{font-family:Fraunces,serif;font-weight:500;font-size:21px;margin:0}
+.mh p{margin:3px 0 0;color:var(--muted);font-size:12.5px}
+.x{border:1px solid var(--hairline);background:#fff;border-radius:9px;width:32px;height:32px;color:var(--muted)}
+.cuerpo{display:grid;grid-template-columns:1.1fr 1fr;gap:0}
+.col{padding:16px 20px}.col+.col{border-left:1px solid var(--hairline)}
+.col h3{margin:0 0 10px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.f{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;align-items:center;font-size:12.5px;margin-bottom:6px}
+.f label{color:var(--muted)}
+.in{border:1px solid var(--hs);border-radius:7px;padding:6px 9px;background:#fff;min-height:30px}
+.in.ok{background:#fafaf7}
+.in.falta{border-color:#e0a030;background:var(--ambar-bg)}
+.pq{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 10px}
+.pq div{border:1px solid var(--hs);border-radius:10px;padding:8px 10px;font-size:12px;cursor:pointer}
+.pq div.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.pq b{display:block;font-size:13px}.pq small{color:var(--muted)}
+.cot{background:#f6f5f1;border:1px solid var(--hairline);border-radius:10px;padding:10px 12px;margin:10px 0}
+.cot .g{font-family:Fraunces,serif;font-size:26px;font-weight:500}
+.cot .l{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:2px}
+.res{border:1px solid #b5d8b0;background:var(--verde-bg);border-radius:10px;padding:10px 12px;margin:10px 0}
+.res b.g{font-family:Fraunces,serif;font-size:22px;font-weight:500;color:var(--verde);letter-spacing:.04em}
+.acc{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.pie{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-top:1px solid var(--hairline);background:#faf9f6;font-size:12px;color:var(--muted)}
+.nota{background:var(--ambar-bg);border:1px solid #ecd59a;color:var(--ambar);border-radius:8px;padding:7px 10px;font-size:12px;margin-top:8px}
+.hist{font-size:12px;color:var(--muted);margin:6px 0 0}
+.mock-nota{position:fixed;right:14px;bottom:14px;background:#1c1c22;color:#fff;font-size:11.5px;padding:8px 12px;border-radius:999px;opacity:.85}
+</style>
+</head>
+<body>
+<h1>Despachar con Coordinadora</h1>
+<p class="sub">Generar la guía desde Pedidos → Despachos, sin salir del sistema. Datos reales del reporte 2026 (1.117 guías), del pedido en SYD y del cotizador de pruebas.</p>
+
+<div class="paso"><i>0</i> Lo que sale del reporte y queda fijo en el sistema</div>
+<div class="datos">
+  <div class="dato"><small>Remitente (siempre)</small><b style="font-size:14px">Mg Moda SAS</b><em>Calle 35 # 27-47 Piso 1 · Bucaramanga · flete pagado por MG · servicio estándar</em></div>
+  <div class="dato"><small>Empaques que usas</small><b style="font-size:14px">3 tipos</b><em>Caja mercancía 20 kg · $832.000 (73 %) · Paquete 3–5 kg (18 %) · Paquete 1–2 kg (9 %)</em></div>
+  <div class="dato"><small>Libreta de destinatarios</small><b>175 <span style="font-size:13px;font-weight:400">de 238</span></b><em>clientes de SYD con cédula/NIT y dirección del último envío · 63 sin envío este año</em></div>
+  <div class="dato"><small>Flete promedio caja 20 kg</small><b>$ 34.770</b><em>$ 34,8 millones en fletes mar–jul · 79 % entregadas a tiempo · 24 % con novedad</em></div>
+</div>
+
+<div class="paso"><i>1</i> En la lista de Despachos: botón y columna de guía</div>
+<p class="exp">Cada cliente listo para despachar tiene el botón <b>Despachar</b>. Cuando ya tiene guía, en su lugar aparece el número con el estado que reporta Coordinadora.</p>
+<div class="caja">
+  <table>
+    <colgroup><col style="width:26%"><col style="width:13%"><col style="width:8%"><col style="width:9%"><col style="width:9%"><col style="width:20%"><col style="width:15%"></colgroup>
+    <thead><tr><th>Cliente</th><th>Ciudad</th><th class="n">Separado</th><th class="n">Pendiente</th><th class="n">Faltante</th><th>Guía Coordinadora</th><th>Acción</th></tr></thead>
+    <tbody>
+      <tr><td><b>MIRIAM ANGULO CELORIO</b></td><td class="muted">BUENAVENTURA</td><td class="n">6</td><td class="n">358</td><td class="n">352</td><td class="muted">— sin guía</td><td><button class="btn p sm">Despachar</button></td></tr>
+      <tr><td><b>LESVIA ESTHER DAVILA DE DIAZ</b></td><td class="muted">SANTA MARTA</td><td class="n">12</td><td class="n">96</td><td class="n">84</td><td><b>87332507104</b> <span class="tag a">En ruta</span> <small class="muted">· 1 día</small></td><td><button class="btn sm">Etiqueta</button> <button class="btn sm">Rastrear</button></td></tr>
+      <tr><td><b>ALCIRA ISABEL PEÑA MARTINEZ</b></td><td class="muted">EL CARMEN DE BOLIVAR</td><td class="n">9</td><td class="n">60</td><td class="n">51</td><td><b>87332507088</b> <span class="tag m">Novedad</span> <small class="muted">· se visita, no se logra entrega</small></td><td><button class="btn sm">Ver novedad</button></td></tr>
+      <tr><td><b>CARMELA LOZADA</b></td><td class="muted">PALMIRA</td><td class="n">0</td><td class="n">44</td><td class="n">44</td><td><b>87332506995</b> <span class="tag v">Entregada</span> <small class="muted">· 14/05</small></td><td><button class="btn sm">Etiqueta</button></td></tr>
+      <tr><td><b>GRUPO EMITHY SAS</b></td><td class="muted">MEDELLIN</td><td class="n">4</td><td class="n">4</td><td class="n">0</td><td class="muted">— sin guía</td><td><button class="btn p sm">Despachar</button></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="paso"><i>2</i> Al pulsar Despachar: todo precargado, cotiza solo, y la guía sale con un clic</div>
+<p class="exp">Los datos del destinatario vienen de la libreta (último envío); se editan si cambiaron. El empaque más usado va marcado. La cotización se pide al API mientras escribes.</p>
+<div class="modal">
+  <div class="mh"><div><h2>Guía Coordinadora · MIRIAM ANGULO CELORIO</h2><p>Buenaventura (Valle) · pedidos 6626, 6627, 6974, 6975 · 6 unidades separadas para este despacho · último envío 14/05/2026 (guía 87332506995, entregada en 3 días)</p></div><button class="x">✕</button></div>
+  <div class="cuerpo">
+    <div class="col">
+      <h3>Destinatario <span class="tag g">de la libreta · 20 envíos este año</span></h3>
+      <div class="f"><label>Nombre</label><div class="in ok">Miriam Angulo Celorio</div></div>
+      <div class="f"><label>Cédula / NIT</label><div class="in ok">31378971</div></div>
+      <div class="f"><label>Dirección</label><div class="in ok">Cra 64c No. 9-55 Piso 3 Boutique Leo</div></div>
+      <div class="f"><label>Ciudad</label><div class="in ok">Buenaventura (Valle del Cauca) · DANE 76109000</div></div>
+      <div class="f"><label>Celular</label><div class="in falta">— falta · obligatorio para la guía</div></div>
+      <div class="f"><label>Correo</label><div class="in muted">opcional</div></div>
+      <div class="f"><label>Observación</label><div class="in muted">Piso 3 · llamar antes</div></div>
+      <div class="nota">El celular no viene en el reporte de Coordinadora. Se pide una sola vez y queda guardado en la libreta para los próximos envíos.</div>
+      <h3 style="margin-top:14px">Contenido</h3>
+      <div class="f"><label>Descripción</label><div class="in ok">Prendas de vestir MG Moda</div></div>
+      <div class="f"><label>Referencia</label><div class="in ok">Pedidos 6626-6627-6974-6975</div></div>
+    </div>
+    <div class="col">
+      <h3>Empaque</h3>
+      <div class="pq">
+        <div class="on"><b>Caja mercancía</b>20 kg · 60×40×20<small><br>valor declarado $ 832.000</small></div>
+        <div><b>Paquete 3–5 kg</b>5 kg · 40×30×15<small><br>valor declarado $ 50.000</small></div>
+        <div><b>Paquete 1–2 kg</b>1 kg · 30×20×10<small><br>valor declarado $ 50.000</small></div>
+      </div>
+      <div class="f"><label>Cajas</label><div class="in ok" style="max-width:80px">1</div></div>
+      <div class="f"><label>Valor declarado</label><div class="in ok">$ 832.000 <span class="muted">(estándar de este empaque; editable)</span></div></div>
+      <div class="cot">
+        <div class="muted" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase">Cotización Coordinadora · Bucaramanga → Buenaventura</div>
+        <div class="g">$ 43.130</div>
+        <div class="l"><span>flete fijo $ 34.200 · variable $ 8.930</span><span>entrega estimada <b>3 días</b></span><span>peso liquidado 20 kg</span></div>
+      </div>
+      <div class="acc"><button class="btn p">Generar guía</button><button class="btn">Guardar sin generar</button></div>
+      <div class="res">
+        <div class="muted" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase">Guía generada · pruebas</div>
+        <b class="g">87332507112</b>
+        <div class="acc"><button class="btn">Imprimir etiqueta</button><button class="btn">Programar recogida hoy 17:00</button><button class="btn">Copiar número</button></div>
+        <div class="hist">Queda registrado en el sistema: guía, fecha, cajas, valor declarado, flete cotizado, quién la generó. La separación en SYD sigue igual.</div>
+      </div>
+    </div>
+  </div>
+  <div class="pie"><span>Remitente fijo: Mg Moda SAS · Calle 35 # 27-47 Piso 1 · Bucaramanga · flete pagado por MG · servicio estándar</span><span>Ambiente: <b>pruebas</b> (no genera guías reales hasta cambiar a producción)</span></div>
+</div>
+
+<div class="paso"><i>3</i> Seguimiento: rastreo y novedades en la misma lista</div>
+<p class="exp">Con la documentación de rastreo, el sistema consulta cada guía abierta y muestra el estado sin entrar a la página de Coordinadora. Las novedades de este año, para que veas lo que vamos a ver:</p>
+<div class="caja">
+  <table>
+    <colgroup><col style="width:52%"><col style="width:12%"><col style="width:36%"></colgroup>
+    <thead><tr><th>Novedad reportada por Coordinadora (mar–jul 2026)</th><th class="n">Guías</th><th>Qué haría el sistema</th></tr></thead>
+    <tbody>
+      <tr><td>Afectación del tiempo de entrega, guía continúa en distribución</td><td class="n">89</td><td class="muted">solo informar (atraso)</td></tr>
+      <tr><td>Unidad en lugar diferente a terminal destino</td><td class="n">67</td><td class="muted">solo informar (atraso)</td></tr>
+      <tr><td>Se visita, no se logra entrega</td><td class="n">38</td><td><span class="tag m">Avisar</span> llamar al cliente · reenvío</td></tr>
+      <tr><td>Destinatario persona jurídica no recibe sábados / entrega según cita</td><td class="n">25</td><td class="muted">informar</td></tr>
+      <tr><td>Novedad de orden público o infraestructura en ruta</td><td class="n">27</td><td class="muted">informar</td></tr>
+      <tr><td>Pedido cancelado · devolución · cambio de destino</td><td class="n">15</td><td><span class="tag r">Alerta</span> revisar con cartera</td></tr>
+      <tr><td>Sin novedad (entregada normal)</td><td class="n">848</td><td><span class="tag v">Entregada</span></td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="mock-nota">Mockup · datos reales del reporte Coordinadora 2026</div>
+</body>
+</html>

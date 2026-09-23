@@ -77,13 +77,22 @@ export default function DespacharModal({ cliente, ciudadSyd, pedidos, unidades, 
 
   async function imprimirEtiqueta() {
     if (!gen || !gen.numero) return
+    setEtiqueta('')
     try {
       const r = await llamar('etiqueta', { guias: [gen.numero] })
       const txt = JSON.stringify(r && r.data)
-      const m = txt.match(/"([A-Za-z0-9+/=]{200,})"/)
-      if (!m) { setEtiqueta('No llegó la imagen: ' + txt.slice(0, 200)); return }
-      const w = window.open('', '_blank')
-      if (w) { w.document.write(`<img src="data:image/png;base64,${m[1]}" style="max-width:100%" onload="window.print()">`); w.document.close() }
+      // La etiqueta llega en base64 con el nombre de campo que sea; el formato
+      // se reconoce por la cabecera (PDF, PNG o JPG) y se abre como archivo.
+      const m = txt.match(/"([A-Za-z0-9+/=\r\n]{200,})"/)
+      if (!m) { setEtiqueta('Coordinadora no devolvió la etiqueta: ' + txt.slice(0, 300)); return }
+      const b64 = m[1].replace(/[\r\n]/g, '')
+      const tipo = b64.startsWith('JVBERi0') ? 'application/pdf' : b64.startsWith('/9j/') ? 'image/jpeg' : b64.startsWith('iVBORw0') ? 'image/png' : ''
+      if (!tipo) { setEtiqueta('Formato de etiqueta no reconocido (empieza por "' + b64.slice(0, 12) + '"). Campos: ' + Object.keys((r && r.data && r.data.data) || r.data || {}).join(', ')); return }
+      const bin = atob(b64); const bytes = new Uint8Array(bin.length)
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+      const url = URL.createObjectURL(new Blob([bytes], { type: tipo }))
+      const w = window.open(url, '_blank')
+      if (!w) setEtiqueta('El navegador bloqueó la pestaña; permite ventanas emergentes para este sitio.')
     } catch (e) { setEtiqueta(e.message || String(e)) }
   }
 

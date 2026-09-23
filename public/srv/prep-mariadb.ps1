@@ -130,7 +130,9 @@ if ($ini -and (Test-Path $ini)) {
   if ($i -ge 0) {
     $bloque = ($txt.Substring($i) -split "\r?\n" | Where-Object { $_ -match '\S' })
     $resto = $txt.Substring(0, $i)
-    $lineas = $resto -split "\r?\n"
+    # Fuera las líneas de juego de caracteres que dejó el instalador (utf8mb4),
+    # estén en la sección que estén: solo valen las del bloque.
+    $lineas = ($resto -split "\r?\n") | Where-Object { $_ -notmatch '^\s*(character[-_]set[-_]server|collation[-_]server)\s*=' }
     $out = New-Object System.Collections.ArrayList; $puesto = $false
     # El bloque va al FINAL de la sección [mysqld] (antes del siguiente
     # encabezado), para que pise los valores que dejó el instalador
@@ -144,6 +146,7 @@ if ($ini -and (Test-Path $ini)) {
     }
     if ($enMysqld -and -not $puesto) { foreach ($x in $bloque) { [void]$out.Add($x) }; $puesto = $true }
     if ($puesto) { [IO.File]::WriteAllText($ini, (($out -join "`r`n").TrimEnd() + "`r`n")); L 'my.ini: bloque de ajustes puesto bajo [mysqld]'; Restart-Service MariaDB -ErrorAction SilentlyContinue; Start-Sleep 10 }
+    L ('my.ini queda así: ' + ((Get-Content $ini | Where-Object { $_ -match '\S' -and $_ -notmatch '^\s*#' }) -join ' | '))
     else { L 'AVISO: no encontré [mysqld] en my.ini' }
   }
 }

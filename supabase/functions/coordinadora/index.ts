@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
         const b = {
           identificacion: CUENTA.nit, idProceso: CUENTA.idProceso, divisionCliente: CUENTA.division,
           codigoPais: CUENTA.codigoPais, tipoCuenta: CUENTA.tipoCuenta, tipoGuia: 1, fuente: 'integracion',
-          usuario: correo, quienPagaEnvio: '1', nivelServicio: 1, tipoProducto: 4, tipoEnvioEspecial: false,
+          usuario: correo, quienPagaEnvio: '1', nivelServicio: 1, tipoProducto: '4', tipoEnvioEspecial: false,
           ...g,
           datosRemitente: {
             identificacionRemitente: REMITENTE.identificacion, tipoDocumentoRemitente: REMITENTE.tipoDocumento,

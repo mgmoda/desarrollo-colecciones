@@ -5,6 +5,8 @@
 // solo los correos autorizados pueden usarla.
 const AUTORIZADOS = ['diego_monsalve87@hotmail.com']
 const CUENTA = { nit: '901682300', idProceso: 46846, division: '01', tipoCuenta: 1, codigoPais: 170 }
+// Remitente fijo (del reporte de guías 2026): siempre despacha MG Moda desde Bucaramanga.
+const REMITENTE = { nombre: 'Mg Moda SAS', direccion: 'Calle 35 # 27-47 Piso 1', dane: '68001000', identificacion: '901682300', tipoDocumento: 31 }
 const BASE = { test: 'https://api-test.coordinadora.tech', prod: 'https://api.coordinadora.tech' }
 
 let tokenCache: { valor: string; vence: number } | null = null
@@ -78,7 +80,7 @@ Deno.serve(async (req) => {
         const b = {
           nit: CUENTA.nit, div: CUENTA.division, cuenta: String(CUENTA.tipoCuenta), producto: '0',
           codigo_postal_origen: '', codigo_postal_destino: '',
-          origen: String(cuerpo.origen || Deno.env.get('COORDINADORA_ORIGEN_DANE') || ''), destino: String(cuerpo.destino || ''),
+          origen: String(cuerpo.origen || Deno.env.get('COORDINADORA_ORIGEN_DANE') || REMITENTE.dane), destino: String(cuerpo.destino || ''),
           valoracion: Number(cuerpo.valoracion) || 0, nivel_servicio: '',
           detalle: (cuerpo.detalle || []).map((d: any) => ({ ubl: '0', alto: String(d.alto), ancho: String(d.ancho), largo: String(d.largo), peso: String(d.peso), unidades: String(d.unidades || 1) })),
         }
@@ -87,13 +89,25 @@ Deno.serve(async (req) => {
       case 'guia': {
         // El cuerpo ya viene armado por la app (remitente, destinatario, detalle…);
         // aquí solo se completan los datos de la cuenta, que no viajan al navegador.
+        const g = cuerpo.guia || {}
         const b = {
           identificacion: CUENTA.nit, idProceso: CUENTA.idProceso, divisionCliente: CUENTA.division,
           codigoPais: CUENTA.codigoPais, tipoCuenta: CUENTA.tipoCuenta, tipoGuia: 1, fuente: 'integracion',
           usuario: correo, quienPagaEnvio: '1', nivelServicio: 1, tipoProducto: 4, tipoEnvioEspecial: false,
-          ...cuerpo.guia,
+          ...g,
+          datosRemitente: {
+            identificacionRemitente: REMITENTE.identificacion, tipoDocumentoRemitente: REMITENTE.tipoDocumento,
+            nombreRemitente: REMITENTE.nombre, direccionRemitente: REMITENTE.direccion, codigoCiudadRemitente: REMITENTE.dane,
+            indicativoRemitente: '57', celularRemitente: Deno.env.get('COORDINADORA_REMITENTE_CEL') || '',
+            correoRemitente: Deno.env.get('COORDINADORA_REMITENTE_CORREO') || correo,
+            ...(g.datosRemitente || {}),
+          },
         }
-        return json({ enviado: b, ...(await api('/suite/guias', b)) })
+        const r = await api('/suite/guias', b)
+        // El número de guía tiene 11 dígitos; se busca en la respuesta venga con el nombre que venga.
+        const txt = JSON.stringify(r.data)
+        const m = txt.match(/"(?:codigo_?remision|codigoRemision|guia|numero_?guia|numeroGuia|codigoGuia)"\s*:\s*"?(\d{11})"?/i) || txt.match(/\b(\d{11})\b/)
+        return json({ enviado: b, guia: m ? m[1] : null, ...r })
       }
       case 'etiqueta': {
         // { guias: ['12345678901'] } → imagen base64

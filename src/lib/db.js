@@ -419,3 +419,30 @@ export async function dbLoadTelas() {
   ;(data || []).forEach((r) => { m[r.id] = (r.data && r.data.telas) || [] })
   return m
 }
+
+// ── Coordinadora: libreta de destinatarios y guías generadas ─────────────
+export async function dbLoadLibreta() {
+  const filas = await paginar(() => supabase.from('coord_libreta').select('*').order('cliente_key'))
+  const m = {}
+  filas.forEach((r) => { m[r.cliente_key] = r })
+  return m
+}
+
+export async function dbUpsertLibreta(fila) {
+  const { error } = await supabase.from('coord_libreta').upsert({ ...fila, updated_at: new Date().toISOString() })
+  if (error) throw error
+}
+
+export async function dbLoadGuias() {
+  return paginar(() => supabase.from('coord_guias').select('*').order('at', { ascending: false }))
+}
+
+export async function dbInsertGuia(g) {
+  const { error } = await supabase.from('coord_guias').insert(g)
+  if (error) throw error
+}
+
+export async function dbLoadCiudadesDane() {
+  const filas = await paginar(() => supabase.from('coord_ciudades').select('dane, municipio, departamento').order('municipio'))
+  return filas
+}

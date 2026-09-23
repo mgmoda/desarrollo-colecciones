@@ -5,6 +5,8 @@ import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { dbLoadPedidosTodos, dbLoadDespachos, dbUpsertDespacho } from '../lib/db.js'
 import { coordinadora } from '../lib/coordinadora.js'
+import DespacharModal from './DespacharModal.jsx'
+import { dbInsertGuia, dbLoadCiudadesDane, dbLoadGuias, dbLoadLibreta, dbUpsertLibreta } from '../lib/db.js'
 import { formatPrice } from '../lib/constants.js'
 import { nombreDe } from '../lib/procesos.js'
 import { CATEGORIAS, categoriaDe, esPedidoEspecial } from '../lib/pedidos.js'
@@ -38,6 +40,22 @@ export default function DespachosView({
 }) {
   const [filas, setFilas] = useState(null)
   const [registros, setRegistros] = useState(null)
+  // Coordinadora: libreta de destinatarios, guías generadas y ciudades DANE.
+  const [libreta, setLibreta] = useState({})
+  const [guias, setGuias] = useState([])
+  const [ciudadesDane, setCiudadesDane] = useState([])
+  const [danePorCiudad, setDanePorCiudad] = useState({})
+  const [despachando, setDespachando] = useState(null)
+  useEffect(() => {
+    let vivo = true
+    Promise.all([dbLoadLibreta(), dbLoadGuias()]).then(([l, g]) => { if (vivo) { setLibreta(l); setGuias(g) } }).catch((e) => console.error('Coordinadora:', e))
+    return () => { vivo = false }
+  }, [stampDespachos])
+  useEffect(() => {
+    dbLoadCiudadesDane().then(setCiudadesDane).catch(() => {})
+    supabaseCiudadSyd().then(setDanePorCiudad).catch(() => {})
+  }, [])
+  const guiaDe = useMemo(() => { const m = {}; guias.forEach((g) => { if (!m[g.cliente_key]) m[g.cliente_key] = g }); return m }, [guias])
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
   const [ciudad, setCiudad] = useState('')
@@ -141,6 +159,7 @@ export default function DespachosView({
                 <SortTh label="Faltante real" col="faltante" className="num" {...thProps} />
                 <SortTh label="Valor faltante" col="valorFalt" className="num" {...thProps} />
                 <SortTh label="Decisión" col="decision" {...thProps} />
+                <th className="dsp-th-guia">Guía</th>
               </tr>
             </thead>
             <tbody>
@@ -162,6 +181,11 @@ export default function DespachosView({
                     <span className={'tag dsp-tag ' + (CHIP_DECISION[c.decision.key] || '')}>{c.decision.label}</span>
                     <span className="muted dsp-motivo">{c.decision.motivo}</span>
                   </td>
+                  <td className="dsp-guia" onClick={(e) => e.stopPropagation()}>
+                    {guiaDe[c.cliente]
+                      ? <><b>{guiaDe[c.cliente].guia}</b><span className="muted dsp-motivo">{String(guiaDe[c.cliente].at || '').slice(0, 10)} · {guiaDe[c.cliente].ambiente === 'test' ? 'prueba' : guiaDe[c.cliente].estado}</span></>
+                      : <button type="button" className="btn dsp-btn-desp" onClick={() => setDespachando(c)}>Despachar</button>}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -178,6 +202,15 @@ export default function DespachosView({
         <span><b>Pendiente</b> = vendido − facturado.</span>
         <span><b>Faltante real</b> = separado por facturar + abierto real; lo cerrado ("no sale") no cuenta.</span>
       </div>
+
+      {despachando && (
+        <DespacharModal cliente={despachando.cliente} ciudadSyd={despachando.ciudad} usuario={usuario}
+          pedidos={[...new Set(despachando.lineas.flatMap((l) => l.pedidos || []))].sort()} unidades={despachando.separadoVig}
+          libreta={libreta[despachando.cliente]} ciudades={ciudadesDane} danePorCiudad={danePorCiudad}
+          onGuardarLibreta={async (d) => { const fila = { ...d, origen: libreta[d.cliente_key] ? (libreta[d.cliente_key].origen || 'manual') : 'manual', usuario }; await dbUpsertLibreta(fila); setLibreta((l) => ({ ...l, [d.cliente_key]: { ...(l[d.cliente_key] || {}), ...fila } })) }}
+          onGuiaGenerada={async (g) => { await dbInsertGuia(g); setGuias((l) => [g, ...l]) }}
+          onClose={() => setDespachando(null)} />
+      )}
 
       {clienteAbierto && (
         <ClienteModal cliente={clienteAbierto} usuario={usuario} registros={registros || {}} onCerrarRef={onCerrarRef}
@@ -518,4 +551,15 @@ function PruebaCoordinadora() {
       {res && <code style={{ whiteSpace: 'pre-wrap', fontSize: 11.5, maxWidth: 700 }}>{JSON.stringify(res, null, 1)}</code>}
     </div>
   )
+}
+
+
+// Ciudad de SYD → código DANE (tabla coord_ciudad_syd).
+async function supabaseCiudadSyd() {
+  const { supabase } = await import('../lib/supabase.js')
+  const { data, error } = await supabase.from('coord_ciudad_syd').select('ciudad_syd, dane')
+  if (error) throw error
+  const m = {}
+  ;(data || []).forEach((r) => { m[r.ciudad_syd] = r.dane })
+  return m
 }

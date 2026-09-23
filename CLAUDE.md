@@ -290,6 +290,25 @@ registros, cerradas)`) y su menú "Cerrar producción" escribe la MISMA marca
 (`onCerrarRef`), ya no `r|REF` de `dev_despachos`. Pendiente: modo "Ubicar
 todo" de los libres para estas referencias (mockup libres-ubicar-todo-v1).
 
+**Coordinadora (23-sep-2026)**: guías de despacho desde Pedidos → Despachos.
+Credenciales SOLO en secretos de Supabase (`COORDINADORA_KEY/SECRET/ENV`);
+la Edge Function `coordinadora` (`supabase/functions/coordinadora/index.ts`,
+se despliega con la Management API `functions/deploy`) hace token, cotizar,
+guía (`/suite/guias`), etiqueta y recogida; cuenta NIT 901682300, idProceso
+46846, división 01; remitente fijo Mg Moda SAS, Calle 35 # 27-47 Piso 1,
+Bucaramanga (DANE 68001000); solo el correo de Diego puede llamarla. Tablas:
+`coord_ciudades` (DIVIPOLA, DANE+000), `coord_ciudad_syd` (ciudad SYD → DANE,
+102/104), `coord_libreta` (destinatario por cliente: documento, dirección,
+DANE, celular; 175 sembrados del reporte 2026 de Coordinadora), `coord_guias`
+(cada guía generada con lo enviado y la respuesta; trigger → stamp
+'despachos'). UI: columna "Guía" + botón Despachar en `DespachosView`
+(`DespacharModal.jsx`): destinatario de la libreta, empaques reales
+(`EMPAQUES` en lib/coordinadora.js: caja 20 kg 40×40×30 = 19,2 kg vol,
+$832.000; paquete 5 kg; paquete 1 kg), cotización automática, Generar guía,
+etiqueta. Falta: rastreo/novedades (sin documentación aún), recogida en UI,
+celulares (se piden al primer despacho). `COORDINADORA_ENV=prod` para salir de
+pruebas; el número de guía se extrae de la respuesta (11 dígitos).
+
 **Despachos (14-sep-2026)**: segunda vista de la pestaña Pedidos
 (`DespachosView.jsx`, cuentas en `lib/despachos.js`). Vendido y pendiente
 salen de `pedidos_syd`; separado, facturado, referencias cerradas ("no

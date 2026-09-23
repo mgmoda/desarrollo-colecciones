@@ -122,6 +122,25 @@ log_bin_trust_function_creators=1
   Restart-Service MariaDB -ErrorAction SilentlyContinue
   Start-Sleep 8
 }
+# El bloque debe quedar bajo [mysqld]; si quedó al final (bajo [client]),
+# el cliente mysql.exe lo rechaza y el servidor no lo lee. Se normaliza.
+if ($ini -and (Test-Path $ini)) {
+  $txt = [IO.File]::ReadAllText($ini)
+  $i = $txt.IndexOf('# --- ajustes-factory')
+  if ($i -ge 0) {
+    $bloque = ($txt.Substring($i) -split "\r?\n" | Where-Object { $_ -match '\S' })
+    $resto = $txt.Substring(0, $i)
+    $lineas = $resto -split "\r?\n"
+    $out = New-Object System.Collections.ArrayList; $puesto = $false
+    foreach ($l in $lineas) {
+      if ($l.Trim() -eq '' -and $out.Count -gt 0 -and $out[$out.Count-1] -eq '') { continue }
+      [void]$out.Add($l)
+      if (-not $puesto -and $l.Trim() -eq '[mysqld]') { foreach ($x in $bloque) { [void]$out.Add($x) }; $puesto = $true }
+    }
+    if ($puesto) { [IO.File]::WriteAllText($ini, (($out -join "`r`n").TrimEnd() + "`r`n")); L 'my.ini: bloque de ajustes puesto bajo [mysqld]'; Restart-Service MariaDB -ErrorAction SilentlyContinue; Start-Sleep 10 }
+    else { L 'AVISO: no encontré [mysqld] en my.ini' }
+  }
+}
 $svc = Get-Service -Name MariaDB -ErrorAction SilentlyContinue
 L "Servicio MariaDB: $($svc.Status)"
 $env:MYSQL_PWD = $pwd51

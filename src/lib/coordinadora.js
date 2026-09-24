@@ -63,3 +63,37 @@ export function faltantesDe(dest) {
   if (String(dest.celular || '').replace(/\D/g, '').length < 10) f.push('celular (10 dígitos)')
   return f
 }
+
+export const empaqueDe = (key) => EMPAQUES.find((e) => e.key === key) || EMPAQUES[0]
+
+// Pide la etiqueta de una guía y la abre en una pestaña nueva. Llega en base64
+// con el nombre de campo que sea; el formato se reconoce por la cabecera.
+// Devuelve '' si abrió, o el motivo si no.
+export async function abrirEtiqueta(numero, llamar = coordinadora) {
+  const r = await llamar('etiqueta', { guias: [String(numero)] })
+  const txt = JSON.stringify(r && r.data)
+  const m = txt.match(/"([A-Za-z0-9+/=\r\n]{200,})"/)
+  if (!m) return 'Coordinadora no devolvió la etiqueta: ' + txt.slice(0, 300)
+  const b64 = m[1].replace(/[\r\n]/g, '')
+  const tipo = b64.startsWith('JVBERi0') ? 'application/pdf' : b64.startsWith('/9j/') ? 'image/jpeg' : b64.startsWith('iVBORw0') ? 'image/png' : ''
+  if (!tipo) return 'Formato de etiqueta no reconocido (empieza por "' + b64.slice(0, 12) + '").'
+  const bin = atob(b64); const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  const url = URL.createObjectURL(new Blob([bytes], { type: tipo }))
+  const w = window.open(url, '_blank')
+  return w ? '' : 'El navegador bloqueó la pestaña; permite ventanas emergentes para este sitio.'
+}
+
+// Estado que se muestra de una guía: hoy solo "generada"; cuando llegue el
+// rastreo de Coordinadora, `rastreo.estado` manda.
+export const ESTADOS_GUIA = {
+  generada: { label: 'Generada', cls: 'g' },
+  ruta: { label: 'En ruta', cls: 'a' },
+  novedad: { label: 'Novedad', cls: 'm' },
+  entregada: { label: 'Entregada', cls: 'v' },
+  error: { label: 'Error', cls: 'r' },
+}
+export function estadoDe(g) {
+  const k = (g.rastreo && g.rastreo.estado) || g.estado || 'generada'
+  return { key: k, ...(ESTADOS_GUIA[k] || ESTADOS_GUIA.generada), detalle: (g.rastreo && g.rastreo.detalle) || '' }
+}

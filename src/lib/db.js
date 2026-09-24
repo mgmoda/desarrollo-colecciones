@@ -446,3 +446,12 @@ export async function dbLoadCiudadesDane() {
   const filas = await paginar(() => supabase.from('coord_ciudades').select('dane, municipio, departamento').order('municipio'))
   return filas
 }
+
+// Ciudad de SYD → código DANE (coord_ciudad_syd), como mapa.
+export async function dbLoadCiudadSyd() {
+  const { data, error } = await supabase.from('coord_ciudad_syd').select('ciudad_syd, dane')
+  if (error) throw error
+  const m = {}
+  ;(data || []).forEach((r) => { m[r.ciudad_syd] = r.dane })
+  return m
+}

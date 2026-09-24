@@ -301,7 +301,7 @@ Bucaramanga (DANE 68001000); solo el correo de Diego puede llamarla. Tablas:
 102/104), `coord_libreta` (destinatario por cliente: documento, dirección,
 DANE, celular; 175 sembrados del reporte 2026 de Coordinadora), `coord_guias`
 (cada guía generada con lo enviado y la respuesta; trigger → stamp
-'despachos'). UI: columna "Guía" + botón Despachar en `DespachosView`
+'despachos'). UI (24-sep): cuarta vista de Pedidos **Guías Coordinadora** (`GuiasView.jsx`: KPIs hoy/mes/en ruta/novedad/entregadas, chips por estado, lista agrupada por día, "Nueva guía" con buscador de cliente, botón Etiqueta por fila, panel plegable de pruebas); en Despachos solo queda el atajo: columna "Guía" + botón Despachar en `DespachosView`
 (`DespacharModal.jsx`): destinatario de la libreta, empaques reales
 (`EMPAQUES` en lib/coordinadora.js: caja 20 kg 40×40×30 = 19,2 kg vol,
 $832.000; paquete 5 kg; paquete 1 kg), cotización automática, Generar guía,

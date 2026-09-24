@@ -7,6 +7,7 @@ import { dbLoadPedidosDeCliente, dbLoadPedidosClientes, dbLoadPedidosObservacion
 import { CATEGORIAS, agruparEspeciales, categoriaDe, esPedidoEspecial, especialesPorCliente } from '../lib/pedidos.js'
 import { formatPrice } from '../lib/constants.js'
 import DespachosView from './DespachosView.jsx'
+import GuiasView from './GuiasView.jsx'
 import PorReferenciaView from './PorReferenciaView.jsx'
 
 // ════════════════════════════════════════════════════════════════════════
@@ -178,7 +179,9 @@ export default function PedidosView({
             ? 'Despachos — qué tiene separado cada cliente y qué le falta'
             : vista === 'referencia'
               ? 'Por referencia — lo que entró a bodega, a quién se separó y qué queda libre'
-              : 'Pendientes por cliente y referencia — SYD'}</p>
+              : vista === 'guias'
+                ? 'Guías Coordinadora — generar, imprimir y seguir los envíos'
+                : 'Pendientes por cliente y referencia — SYD'}</p>
         </div>
         <div className="view-actions">
           {/* El conmutador va solo en la cabecera, siempre en el mismo sitio:
@@ -191,6 +194,8 @@ export default function PedidosView({
               className={vista === 'despachos' ? 'on' : ''} onClick={() => setVista('despachos')}>Despachos</button>
             <button type="button" role="tab" aria-selected={vista === 'referencia'}
               className={vista === 'referencia' ? 'on' : ''} onClick={() => setVista('referencia')}>Por referencia</button>
+            <button type="button" role="tab" aria-selected={vista === 'guias'}
+              className={vista === 'guias' ? 'on' : ''} onClick={() => setVista('guias')}>Guías Coordinadora</button>
           </div>
         </div>
       </div>
@@ -220,6 +225,9 @@ export default function PedidosView({
 
       {vista === 'despachos' && (
         <DespachosView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} cerradas={cerradas} onCerrarRef={onCerrarRef} />
+      )}
+      {vista === 'guias' && (
+        <GuiasView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} />
       )}
       {vista === 'referencia' && (
         <PorReferenciaView stamp={stamp} stampDespachos={stampDespachos} usuario={usuario} orders={orders} refs={refs} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} cerradas={cerradas} />

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Guías Coordinadora</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Cuarta vista de Pedidos: Guías Coordinadora. Las 4 guías son las reales
+   generadas en pruebas (23–24 sep); los estados de rastreo son de ejemplo,
+   con los textos reales que usa Coordinadora en su reporte 2026. */
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hs:#d8d4c9;--ink:#1c1c22;--soft:#3f3d3a;--muted:#6b6660;--verde:#1f6b2e;--verde-bg:#e1f1df;--azul:#23478a;--azul-bg:#e6eefa;--rojo:#b23121;--rojo-bg:#fbeceb;--ambar:#8a5a0a;--ambar-bg:#fdf3dc}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.4;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 14px;max-width:1000px}
+.paso{display:flex;align-items:center;gap:10px;margin:26px 0 8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.paso i{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:12px}
+.exp{color:var(--muted);margin:0 0 10px;max-width:1040px}
+.pantalla{background:var(--bg);border:1px solid var(--hairline);border-radius:14px;padding:18px 20px;max-width:1080px}
+.cab{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.cab h2{font-family:Fraunces,serif;font-weight:500;font-size:24px;margin:0}
+.cab p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+.seg{display:inline-flex;border:1px solid var(--hs);border-radius:9px;overflow:hidden;background:#fff}
+.seg span{padding:7px 13px;font-size:12.5px;color:var(--soft);border-left:1px solid var(--hs)}
+.seg span:first-child{border-left:0}.seg span.on{background:var(--ink);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border:1px solid var(--hairline);border-radius:12px;margin:0 0 10px}
+.kpis div{padding:10px 14px;border-left:1px solid var(--hairline)}.kpis div:first-child{border-left:0}
+.kpis small{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpis b{font-size:21px;font-weight:600}.kpis em{display:block;font-style:normal;font-size:11.5px;color:var(--muted)}
+.kpis .a b{color:var(--azul)}.kpis .m b{color:var(--ambar)}.kpis .v b{color:var(--verde)}
+.barra{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+.chip{border:1px solid var(--hs);background:#fff;border-radius:999px;padding:4px 11px;font-size:12px;color:var(--soft)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip b{font-weight:700}
+.busca{margin-left:auto;border:1px solid var(--hs);border-radius:8px;padding:6px 10px;font-size:12.5px;color:#a09b93;width:230px;background:#fff}
+.btn{border:1px solid var(--hs);background:#fff;border-radius:8px;padding:6px 12px;font:inherit;font-size:12.5px;cursor:pointer}
+.btn.p{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.btn.sm{padding:2px 9px;font-size:11.5px}
+.caja{background:#fff;border:1px solid var(--hairline);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:8px 8px;border-bottom:1px solid var(--hairline);background:#faf9f6;white-space:normal;line-height:1.15;vertical-align:bottom}
+td{padding:7px 8px;border-bottom:1px solid #efece5;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
+tr:last-child td{border-bottom:0}
+.n{text-align:right;font-variant-numeric:tabular-nums}th.n{text-align:right}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid transparent}
+.tag.v{background:var(--verde-bg);color:var(--verde);border-color:#b5d8b0}.tag.a{background:var(--azul-bg);color:var(--azul);border-color:#c3d4ef}.tag.r{background:var(--rojo-bg);color:var(--rojo);border-color:#f0c4bf}.tag.m{background:var(--ambar-bg);color:var(--ambar);border-color:#ecd59a}.tag.g{background:#f1f0ee;color:#4a4642;border-color:var(--hs)}
+.muted{color:var(--muted)}.s{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.guia{font-variant-numeric:tabular-nums;font-weight:700}
+tr.hoy td{background:#fbfaf6}
+tr.dia td{background:#efede8;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--soft);font-weight:700;padding:5px 8px}
+tr.dia td small{font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted)}
+.pie{display:flex;justify-content:space-between;padding:9px 12px;font-size:12px;color:var(--muted);background:#faf9f6;border-top:1px solid var(--hairline)}
+.nota{background:var(--ambar-bg);border:1px solid #ecd59a;color:var(--ambar);border-radius:8px;padding:8px 12px;font-size:12px;margin-top:10px;max-width:1080px}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:1080px}
+.panel{background:#fff;border:1px solid var(--hairline);border-radius:12px;padding:12px 14px}
+.panel h4{margin:0 0 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lista div{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid #efece5;font-size:12.5px}
+.lista div:first-of-type{border-top:0}
+.drop{position:absolute;left:0;top:38px;width:420px;background:#fff;border:1px solid var(--hs);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.14);z-index:5;overflow:hidden}
+.drop div{display:flex;justify-content:space-between;padding:7px 12px;border-top:1px solid #efece5;font-size:12.5px}
+.drop div:first-child{border-top:0}.drop div.sel{background:#f6f5f1}
+.drop .s{display:inline}
+.rel{position:relative;display:inline-block}
+.inp{border:1px solid var(--ink);border-radius:8px;padding:6px 10px;font-size:12.5px;width:420px;background:#fff}
+.mock-nota{position:fixed;right:14px;bottom:14px;background:#1c1c22;color:#fff;font-size:11.5px;padding:8px 12px;border-radius:999px;opacity:.85}
+</style>
+</head>
+<body>
+<h1>Guías Coordinadora</h1>
+<p class="sub">Cuarta vista de Pedidos: aquí se generan, se imprimen y se siguen las guías. Con las 4 guías reales de prueba (23–24 sep). Los estados de rastreo son de ejemplo, con los textos reales de Coordinadora.</p>
+
+<div class="paso"><i>1</i> La vista: lo de hoy arriba, la lista por día abajo</div>
+<div class="pantalla">
+  <div class="cab">
+    <div><h2>Pedidos</h2><p>Guías Coordinadora — generar, imprimir y seguir los envíos</p></div>
+    <div class="seg"><span>Pedidos</span><span>Despachos</span><span>Por referencia</span><span class="on">Guías Coordinadora</span></div>
+  </div>
+  <div class="kpis">
+    <div><small>Hoy</small><b>1</b><em>1 caja · flete $ 44.620</em></div>
+    <div><small>Septiembre</small><b>4</b><em>4 cajas · $ 164.680 en fletes</em></div>
+    <div class="a"><small>En ruta</small><b>2</b><em>entrega estimada 1–2 días</em></div>
+    <div class="m"><small>Con novedad</small><b>1</b><em>requiere acción</em></div>
+    <div class="v"><small>Entregadas</small><b>1</b><em>este mes · 2 días promedio</em></div>
+  </div>
+  <div class="barra">
+    <button class="btn p">+ Nueva guía</button>
+    <button class="btn">Programar recogida hoy · 1 guía</button>
+    <span class="chip on">Todas <b>4</b></span><span class="chip">Hoy <b>1</b></span><span class="chip">En ruta <b>2</b></span><span class="chip">Con novedad <b>1</b></span><span class="chip">Entregadas <b>1</b></span>
+    <span class="busca">Cliente, ciudad o número de guía…</span>
+  </div>
+  <div class="caja">
+    <table>
+      <colgroup><col style="width:6%"><col style="width:24%"><col style="width:11%"><col style="width:9%"><col style="width:5%"><col style="width:8%"><col style="width:11%"><col style="width:16%"><col style="width:10%"></colgroup>
+      <thead><tr><th>Hora</th><th>Cliente</th><th>Ciudad</th><th>Pedidos</th><th class="n">Cajas</th><th class="n">Flete</th><th>Guía</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        <tr class="dia"><td colspan="9">Miércoles 24 de septiembre <small>· 1 guía · 1 caja · $ 44.620</small></td></tr>
+        <tr class="hoy"><td>14:48</td><td><b>JOSE MARIA MESTRA MADERA</b><span class="s">1 caja · 20 kg · $ 832.000 declarados</span></td><td class="muted">Montería</td><td class="muted">7835</td><td class="n">1</td><td class="n">$ 44.620</td><td class="guia">87332501166</td><td><span class="tag g">Generada</span><span class="s">recogida pendiente · llega en 2 días</span></td><td><button class="btn sm">Etiqueta</button></td></tr>
+        <tr class="dia"><td colspan="9">Martes 23 de septiembre <small>· 3 guías · 3 cajas · $ 120.060</small></td></tr>
+        <tr><td>17:36</td><td><b>MIRIAM ANGULO CELORIO</b><span class="s">1 caja · 20 kg · $ 832.000 declarados</span></td><td class="muted">Buenaventura</td><td class="muted">6626, 6627</td><td class="n">1</td><td class="n">$ 37.720</td><td class="guia">87332501165</td><td><span class="tag a">En ruta</span><span class="s">Unidad en terminal Buenaventura · 24/09 08:10</span></td><td><button class="btn sm">Rastrear</button></td></tr>
+        <tr><td>17:31</td><td><b>QUESSEP DE FERNANDEZ Y CÍA</b><span class="s">1 caja · 20 kg · $ 832.000 declarados</span></td><td class="muted">Sincelejo</td><td class="muted">7958</td><td class="n">1</td><td class="n">$ 37.720</td><td class="guia">87332501164</td><td><span class="tag m">Novedad</span><span class="s">Se visita, no se logra entrega · 24/09 11:20</span></td><td><button class="btn sm">Ver novedad</button></td></tr>
+        <tr><td>17:28</td><td><b>MARIA TERESA ECHEVERRI TRUJILL</b><span class="s">1 caja · 20 kg · $ 832.000 declarados</span></td><td class="muted">Cereté</td><td class="muted">7545, 7546, 7830, 7831</td><td class="n">1</td><td class="n">$ 44.620</td><td class="guia">87332501163</td><td><span class="tag v">Entregada</span><span class="s">Entregada a Almacén Sensación · 24/09 10:05</span></td><td><button class="btn sm">Etiqueta</button></td></tr>
+      </tbody>
+    </table>
+    <div class="pie"><span>4 guías · ambiente de pruebas</span><span><b>4</b> cajas · <b>$ 164.680</b> en fletes cotizados</span></div>
+  </div>
+  <div class="nota">Los estados "En ruta", "Novedad" y "Entregada" son de ejemplo: aparecerán solos cuando Coordinadora entregue la documentación de rastreo. Hasta entonces la guía queda como "Generada" y el rastreo se hace con el número en su página.</div>
+</div>
+
+<div class="paso"><i>2</i> Nueva guía: elegir el cliente y pasa a la ventana que ya funciona</div>
+<p class="exp">El buscador muestra lo que importa para decidir: ciudad, unidades separadas y si ya tiene guía reciente. Al elegir, se abre la misma ventana de despacho (destinatario de la libreta, empaque, cotización, generar).</p>
+<div class="pantalla" style="min-height:250px">
+  <div class="rel">
+    <div class="inp">miri</div>
+    <div class="drop">
+      <div class="sel"><span><b>MIRIAM ANGULO CELORIO</b> <span class="s">· Buenaventura · 11 separadas</span></span><span class="muted">guía ayer</span></div>
+      <div><span><b>MIRIAM YANETH ARDILA</b> <span class="s">· Bucaramanga · 0 separadas</span></span><span class="muted">sin guía</span></div>
+      <div><span><b>MIRYAM SOFIA PEREZ</b> <span class="s">· Neiva · 6 separadas</span></span><span class="muted">sin guía</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="paso"><i>3</i> Lo que cambia en Despachos y lo que sigue</div>
+<div class="dos">
+  <div class="panel">
+    <h4>En Despachos (atajo, no gestión)</h4>
+    <div class="lista">
+      <div><span>Botón <b>Despachar</b> en la fila</span><span class="muted">se queda</span></div>
+      <div><span>Columna Guía</span><span class="muted">solo el número y estado de la última guía</span></div>
+      <div><span>Franja "Probar conexión / Cotizar prueba"</span><span class="muted">se va a Guías</span></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h4>Pendiente de Coordinadora</h4>
+    <div class="lista">
+      <div><span>Rastreo</span><span class="muted">estados automáticos en la lista</span></div>
+      <div><span>Novedades</span><span class="muted">chip "Con novedad" + aviso al abrir</span></div>
+      <div><span>Recogida</span><span class="muted">la API ya está conectada; falta la pantalla</span></div>
+      <div><span>Pasar a producción</span><span class="muted">un cambio en Supabase cuando apruebes</span></div>
+    </div>
+  </div>
+</div>
+<div class="mock-nota">Mockup · 4 guías reales de prueba</div>
+</body>
+</html>

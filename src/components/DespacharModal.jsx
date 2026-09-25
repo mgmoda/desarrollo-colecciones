@@ -25,6 +25,7 @@ export default function DespacharModal({ cliente, ciudadSyd, pedidos, unidades, 
   const [generando, setGenerando] = useState(false)
   const [etiqueta, setEtiqueta] = useState('')
   const timer = useRef(null)
+  const [ambiente, setAmbiente] = useState('test')
 
   function cambiarEmpaque(k) {
     const e = EMPAQUES.find((x) => x.key === k)
@@ -48,6 +49,7 @@ export default function DespacharModal({ cliente, ciudadSyd, pedidos, unidades, 
       try {
         const r = await llamar('cotizar', { destino: dest.dane, valoracion: Number(valor) || 0, detalle: [{ alto: emp.alto, ancho: emp.ancho, largo: emp.largo, peso: emp.peso, unidades: Math.max(1, Number(cajas) || 1) }] })
         const d = r && r.data && r.data.data
+        if (r && r.ambiente) setAmbiente(r.ambiente)
         if (r && r.ok && d) setCot({ flete: d.flete_total, fijo: d.flete_fijo, variable: d.flete_variable, dias: d.dias_entrega, pesoLiq: d.peso_liquidado, raw: r.data })
         else setCot({ error: (r && r.data && (r.data.error?.message || r.data.message || JSON.stringify(r.data).slice(0, 160))) || 'Sin respuesta' })
       } catch (e) { setCot({ error: e.message || String(e) }) }
@@ -67,7 +69,7 @@ export default function DespacharModal({ cliente, ciudadSyd, pedidos, unidades, 
       const registro = {
         id: numero || ('sin-numero-' + Date.now()), cliente_key: cliente, cliente, pedidos, empaque: empKey, cajas: Math.max(1, Number(cajas) || 1),
         valor_declarado: Number(valor) || 0, cotizacion: cot && !cot.error ? cot.raw : null, enviado: r && r.enviado, respuesta: r && r.data,
-        guia: numero, estado: numero ? 'generada' : 'error', ambiente: 'test', usuario, at: new Date().toISOString(),
+        guia: numero, estado: numero ? 'generada' : 'error', ambiente: (r && r.ambiente) || 'test', usuario, at: new Date().toISOString(),
       }
       if (numero) await onGuiaGenerada(registro)
       setGen({ numero, ok: !!numero, status: r && r.status, respuesta: r && r.data })
@@ -133,7 +135,7 @@ export default function DespacharModal({ cliente, ciudadSyd, pedidos, unidades, 
           </div>
           <div className="dsp-acciones" style={{ marginTop: 10 }}>
             <button type="button" className="btn btn-primary" disabled={faltan.length > 0 || generando || !!(gen && gen.ok)} onClick={generar}>{generando ? 'Generando…' : 'Generar guía'}</button>
-            <span className="muted">Ambiente de <b>pruebas</b>: la guía no es real todavía.</span>
+            <span className="muted">{ambiente === 'prod' ? <><b>Producción</b>: la guía es real y se factura.</> : <>Ambiente de <b>pruebas</b>: la guía no es real todavía.</>}</span>
           </div>
           {gen && (
             <div className={'cd-res' + (gen.ok ? '' : ' err')}>

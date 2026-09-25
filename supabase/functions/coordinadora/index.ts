@@ -9,12 +9,22 @@ const CUENTA = { nit: '901682300', idProceso: 46846, division: '01', tipoCuenta:
 const REMITENTE = { nombre: 'Mg Moda SAS', direccion: 'Calle 35 # 27-47 Piso 1', dane: '68001000', identificacion: '901682300', tipoDocumento: 31, celular: '3185323198' }
 const BASE = { test: 'https://api-test.coordinadora.tech', prod: 'https://api.coordinadora.tech' }
 
-let tokenCache: { valor: string; vence: number } | null = null
+const tokenCache: Record<string, { valor: string; vence: number }> = {}
 
-function base() { return (Deno.env.get('COORDINADORA_ENV') || 'test') === 'prod' ? BASE.prod : BASE.test }
+// Ambiente por defecto: el secreto COORDINADORA_ENV ("test" | "prod").
+// Solo las acciones de consulta (ping, cotizar) admiten forzar otro ambiente
+// en el cuerpo, para probar producción sin generar guías reales.
+function ambienteDe(cuerpo: any, accion: string): 'test' | 'prod' {
+  const porDefecto = (Deno.env.get('COORDINADORA_ENV') || 'test') === 'prod' ? 'prod' : 'test'
+  if ((accion === 'ping' || accion === 'cotizar') && (cuerpo.ambiente === 'prod' || cuerpo.ambiente === 'test')) return cuerpo.ambiente
+  return porDefecto
+}
+let ambiente: 'test' | 'prod' = 'test'
+function base() { return BASE[ambiente] }
 
 async function token(): Promise<string> {
-  if (tokenCache && Date.now() < tokenCache.vence) return tokenCache.valor
+  const cache = tokenCache[ambiente]
+  if (cache && Date.now() < cache.vence) return cache.valor
   const key = Deno.env.get('COORDINADORA_KEY'), secret = Deno.env.get('COORDINADORA_SECRET')
   if (!key || !secret) throw new Error('Faltan los secretos COORDINADORA_KEY / COORDINADORA_SECRET en Supabase')
   const r = await fetch(`${base()}/oauth/token?grant_type=client_credentials`, {
@@ -27,7 +37,7 @@ async function token(): Promise<string> {
   const j = JSON.parse(txt)
   const valor = j.access_token || j.acces_token
   if (!valor) throw new Error('La respuesta del token no trae access_token: ' + txt.slice(0, 200))
-  tokenCache = { valor, vence: Date.now() + Math.max(60, (Number(j.expires_in) || 3599) - 120) * 1000 }
+  tokenCache[ambiente] = { valor, vence: Date.now() + Math.max(60, (Number(j.expires_in) || 3599) - 120) * 1000 }
   return valor
 }
 
@@ -68,12 +78,13 @@ Deno.serve(async (req) => {
   let cuerpo: any = {}
   try { cuerpo = await req.json() } catch { /* sin cuerpo */ }
   const accion = String(cuerpo.accion || '')
+  ambiente = ambienteDe(cuerpo, accion)
   try {
     switch (accion) {
       case 'ping': {
         // Solo comprueba que las credenciales sirven (pide un token).
         await token()
-        return json({ ok: true, ambiente: base(), cuenta: { nit: CUENTA.nit, idProceso: CUENTA.idProceso, division: CUENTA.division } })
+        return json({ ok: true, ambiente, url: base(), cuenta: { nit: CUENTA.nit, idProceso: CUENTA.idProceso, division: CUENTA.division } })
       }
       case 'cotizar': {
         // { destino (DANE 8 dígitos), valoracion, detalle:[{alto,ancho,largo,peso,unidades}] }
@@ -84,7 +95,7 @@ Deno.serve(async (req) => {
           valoracion: Number(cuerpo.valoracion) || 0, nivel_servicio: '',
           detalle: (cuerpo.detalle || []).map((d: any) => ({ ubl: '0', alto: String(d.alto), ancho: String(d.ancho), largo: String(d.largo), peso: String(d.peso), unidades: String(d.unidades || 1) })),
         }
-        return json(await api('/cotizador/nacional', b))
+        return json({ ambiente, ...(await api('/cotizador/nacional', b)) })
       }
       case 'guia': {
         // El cuerpo ya viene armado por la app (remitente, destinatario, detalle…);
@@ -107,7 +118,7 @@ Deno.serve(async (req) => {
         // El número de guía tiene 11 dígitos; se busca en la respuesta venga con el nombre que venga.
         const txt = JSON.stringify(r.data)
         const m = txt.match(/"(?:codigo_?remision|codigoRemision|guia|numero_?guia|numeroGuia|codigoGuia)"\s*:\s*"?(\d{11})"?/i) || txt.match(/\b(\d{11})\b/)
-        return json({ enviado: b, guia: m ? m[1] : null, ...r })
+        return json({ ambiente, enviado: b, guia: m ? m[1] : null, ...r })
       }
       case 'etiqueta': {
         // { guias: ['12345678901'] } → imagen base64

@@ -226,6 +226,8 @@ function PruebaCoordinadora({ llamar }) {
     setBusy(tipo); setRes(null)
     try {
       if (tipo === 'ping') setRes(await llamar('ping'))
+      else if (tipo === 'prod') setRes(await llamar('ping', { ambiente: 'prod' }))
+      else if (tipo === 'cotprod') setRes(await llamar('cotizar', { ambiente: 'prod', destino: '11001000', valoracion: 832000, detalle: [{ alto: 40, ancho: 30, largo: 40, peso: 20, unidades: 1 }] }))
       else setRes(await llamar('cotizar', { destino: '11001000', valoracion: 832000, detalle: [{ alto: 40, ancho: 30, largo: 40, peso: 20, unidades: 1 }] }))
     } catch (e) { setRes({ error: e.message || String(e) }) }
     setBusy('')
@@ -234,6 +236,8 @@ function PruebaCoordinadora({ llamar }) {
     <div className="dsp-nota" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
       <button type="button" className="btn" disabled={!!busy} onClick={() => probar('ping')}>{busy === 'ping' ? 'Probando…' : 'Probar conexión'}</button>
       <button type="button" className="btn" disabled={!!busy} onClick={() => probar('cotizar')}>{busy === 'cotizar' ? 'Cotizando…' : 'Cotizar caja a Bogotá (prueba)'}</button>
+      <button type="button" className="btn" disabled={!!busy} onClick={() => probar('prod')}>{busy === 'prod' ? 'Probando…' : 'Probar credenciales en PRODUCCIÓN'}</button>
+      <button type="button" className="btn" disabled={!!busy} onClick={() => probar('cotprod')}>{busy === 'cotprod' ? 'Cotizando…' : 'Cotizar en PRODUCCIÓN (tarifa real)'}</button>
       {res && <code style={{ whiteSpace: 'pre-wrap', fontSize: 11.5, maxWidth: 700 }}>{JSON.stringify(res, null, 1)}</code>}
     </div>
   )

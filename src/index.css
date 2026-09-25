@@ -6087,9 +6087,10 @@ td.pr-refcel { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
 .dsp-tabla { table-layout: fixed; width: 100%; }
 .dsp-tabla th, .dsp-tabla td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 8px; padding-right: 8px; }
 .dsp-tabla th { font-size: 10px; letter-spacing: .03em; white-space: normal; line-height: 1.15; vertical-align: bottom; }
-.dsp-tabla th:nth-child(1) { width: 19%; } .dsp-tabla th:nth-child(2) { width: 10%; }
-.dsp-tabla th:nth-child(3), .dsp-tabla th:nth-child(4), .dsp-tabla th:nth-child(5), .dsp-tabla th:nth-child(6), .dsp-tabla th:nth-child(7) { width: 7.5%; }
-.dsp-tabla th:nth-child(8) { width: 10%; } .dsp-tabla th:nth-child(9) { width: 14%; } .dsp-tabla th:nth-child(10) { width: 9.5%; }
+.dsp-tabla th:nth-child(1) { width: 15.5%; } .dsp-tabla th:nth-child(2) { width: 8.5%; }
+.dsp-tabla th:nth-child(3) { width: 5.5%; } .dsp-tabla th:nth-child(4) { width: 6%; } .dsp-tabla th:nth-child(5) { width: 18.5%; }
+.dsp-tabla th:nth-child(6), .dsp-tabla th:nth-child(7) { width: 6%; } .dsp-tabla th:nth-child(8) { width: 6.5%; }
+.dsp-tabla th:nth-child(9) { width: 8%; } .dsp-tabla th:nth-child(10) { width: 11%; } .dsp-tabla th:nth-child(11) { width: 8.5%; }
 .dsp-tabla td.dsp-decision { white-space: normal; }
 .dsp-tabla .dsp-motivo { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dsp-th-guia { width: 128px; }
@@ -7491,3 +7492,33 @@ tr.row-al.row-sel > td { background: #e9f3da; }
 .pp-falta { border: 1px solid #f0c4c0; border-radius: 10px; overflow: hidden; margin-top: 8px; }
 .pp-falta-cab { padding: 7px 12px; background: #fbeceb; font-size: 12px; border-bottom: 1px solid #f0c4c0; }
 .pp-falta .pp-curva td:first-child { font-weight: 600; }
+
+/* ── Flete por unidad de lo separado (Despachos) ── */
+.dsp-fl { padding-top: 4px !important; padding-bottom: 4px !important; }
+.dsp-fl-nota { font-size: 11px; white-space: normal; line-height: 1.15; display: block; }
+.dsp-emp { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px; font-size: 11px; line-height: 1.15; }
+.dsp-emp div { padding: 2px 3px; border-radius: 6px; text-align: center; border: 1px solid transparent; min-width: 0; overflow: hidden; }
+.dsp-emp small { display: block; font-size: 8.5px; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dsp-emp b { font-weight: 700; font-size: 11px; white-space: nowrap; }
+.dsp-emp .ok { background: #e9f5ee; border-color: #bfe0cd; color: #1f6b4a; }
+.dsp-emp .amb { background: #fff4e0; border-color: #f3d3a5; color: #8a4b0a; }
+.dsp-emp .no { background: #fbeceb; border-color: #f0c4c0; color: #8c2f28; }
+.dsp-emp .nc { color: #b8b3a8; } .dsp-emp .nc b { font-weight: 500; text-decoration: line-through; text-decoration-color: #c9c4ba; }
+.dsp-emp .nt { color: #b8b3a8; }
+.dsp-emp .mejor { outline: 2px solid var(--ink); outline-offset: -1px; }
+.dsp-f-sep { width: 1px; height: 18px; background: var(--hairline-strong); margin: 0 4px; align-self: center; }
+.proc-f-btn i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+.dsp-f-ok i { background: #1f6b2e; } .dsp-f-amb i { background: #e0a030; } .dsp-f-no i { background: #b23121; }
+.dsp-cotizando { font-size: 12px; align-self: center; margin-left: 4px; }
+.dsp-fl-ok { color: #1f6b2e; } .dsp-fl-amb { color: #8a4b0a; } .dsp-fl-no { color: #b23121; }
+.dsp-flcomp { border: 1px solid #bfe0cd; border-radius: 10px; overflow: hidden; margin: -6px 0 14px; }
+.dsp-flcomp-cab { padding: 7px 12px; background: #f0f8f2; font-size: 12px; border-bottom: 1px solid #d5ead9; }
+.dsp-flcomp-t { width: 100%; border-collapse: collapse; table-layout: auto; }
+.dsp-flcomp-t th { background: var(--surface); padding: 5px 10px; font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 600; text-align: left; border-bottom: 1px solid var(--hairline); white-space: nowrap; }
+.dsp-flcomp-t td { padding: 5px 10px; font-size: 12px; border-bottom: 1px solid #f4f2ed; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dsp-flcomp-t tr:last-child td { border-bottom: 0; }
+.dsp-flcomp-t .num { text-align: right; }
+.dsp-flcomp-t tr.mejor td { background: #f6fbf7; }
+.dsp-flcomp-t tr.nc td { color: #a8a39b; }
+.dsp-flcomp-t .dsp-tag { margin-left: 6px; }
+.dsp-err { color: #b23121; }

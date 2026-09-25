@@ -455,3 +455,18 @@ export async function dbLoadCiudadSyd() {
   ;(data || []).forEach((r) => { m[r.ciudad_syd] = r.dane })
   return m
 }
+
+// Tarifas de Coordinadora por ciudad (DANE) y empaque, para el flete por
+// unidad de Despachos. Mapa por `dane|empaque`.
+export async function dbLoadTarifas() {
+  const { data, error } = await supabase.from('coord_tarifas').select('*')
+  if (error) throw error
+  const m = {}
+  ;(data || []).forEach((r) => { m[`${r.dane}|${r.empaque}`] = r })
+  return m
+}
+
+export async function dbUpsertTarifa(fila) {
+  const { error } = await supabase.from('coord_tarifas').upsert({ ...fila, at: new Date().toISOString() })
+  if (error) throw error
+}

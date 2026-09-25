@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Modal from './Modal.jsx'
 import SortTh from './SortTh.jsx'
 import SearchInput from './SearchInput.jsx'
@@ -6,7 +6,9 @@ import { useSort, sortRows } from '../lib/sort.js'
 import { dbLoadPedidosTodos, dbLoadDespachos, dbUpsertDespacho } from '../lib/db.js'
 import DespacharModal from './DespacharModal.jsx'
 import ProduccionPanel from './ProduccionPanel.jsx'
-import { dbInsertGuia, dbLoadCiudadesDane, dbLoadCiudadSyd, dbLoadGuias, dbLoadLibreta, dbUpsertLibreta } from '../lib/db.js'
+import { dbInsertGuia, dbLoadCiudadesDane, dbLoadCiudadSyd, dbLoadGuias, dbLoadLibreta, dbLoadTarifas, dbUpsertLibreta, dbUpsertTarifa } from '../lib/db.js'
+import { coordinadora } from '../lib/coordinadora.js'
+import { FILTROS_FLETE, UMBRAL, claveTarifa, decisionConFlete, empaqueCorto, empaqueMinimo, fleteDe, tarifasPendientes } from '../lib/flete.js'
 import { formatPrice } from '../lib/constants.js'
 import { nombreDe } from '../lib/procesos.js'
 import { CATEGORIAS, categoriaDe, esPedidoEspecial } from '../lib/pedidos.js'
@@ -27,7 +29,8 @@ const fechaHora = (ts) => {
   return isNaN(d) || !ts ? '' : d.toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
 }
 const Cel = ({ n, cls }) => (n ? <span className={cls || ''}>{num(n)}</span> : <span className="dsp-cero">·</span>)
-const CHIP_DECISION = { despachar: 'verde', parcial: 'ambar', no: 'rojo', completo: 'azul', esperar: '' }
+const CHIP_DECISION = { despachar: 'verde', flete: 'verde', parcial: 'ambar', faltaPoco: 'ambar', no: 'rojo', completo: 'azul', esperar: '' }
+const CLASE_FLETE = { ok: 'ok', amb: 'amb', no: 'no' }
 const ETIQUETA_LINEA = {
   cerrada: ['', 'Producción cerrada'], facturado: ['azul', 'Facturado'],
   separado: ['verde', 'Separado'], porSeparar: ['ambar', 'Por separar'],
@@ -40,8 +43,19 @@ export default function DespachosView({
   orders, refs, programaciones, procesos,
   // Inyectables para probar la vista con datos fijos, sin sesión.
   cargarPedidos = dbLoadPedidosTodos, cargarDespachos = dbLoadDespachos, guardarDespacho = dbUpsertDespacho,
+  cargarTarifas = dbLoadTarifas, guardarTarifa = dbUpsertTarifa, llamar = coordinadora,
+  cargarLibreta = dbLoadLibreta, cargarCiudadSyd = dbLoadCiudadSyd,
 }) {
   const [filas, setFilas] = useState(null)
+  // Tarifas de Coordinadora por ciudad y empaque (flete por unidad).
+  const [tarifas, setTarifas] = useState({})
+  const [cotizando, setCotizando] = useState(0)
+  const cotizandoRef = useRef(false)
+  useEffect(() => {
+    let vivo = true
+    cargarTarifas().then((t) => { if (vivo) setTarifas(t || {}) }).catch((e) => console.error('Tarifas:', e))
+    return () => { vivo = false }
+  }, [cargarTarifas])
   const [registros, setRegistros] = useState(null)
   // Coordinadora: libreta de destinatarios, guías generadas y ciudades DANE.
   const [libreta, setLibreta] = useState({})
@@ -51,13 +65,13 @@ export default function DespachosView({
   const [despachando, setDespachando] = useState(null)
   useEffect(() => {
     let vivo = true
-    Promise.all([dbLoadLibreta(), dbLoadGuias()]).then(([l, g]) => { if (vivo) { setLibreta(l); setGuias(g) } }).catch((e) => console.error('Coordinadora:', e))
+    Promise.all([cargarLibreta(), dbLoadGuias().catch(() => [])]).then(([l, g]) => { if (vivo) { setLibreta(l || {}); setGuias(g || []) } }).catch((e) => console.error('Coordinadora:', e))
     return () => { vivo = false }
-  }, [stampDespachos])
+  }, [stampDespachos, cargarLibreta])
   useEffect(() => {
     dbLoadCiudadesDane().then(setCiudadesDane).catch(() => {})
-    dbLoadCiudadSyd().then(setDanePorCiudad).catch(() => {})
-  }, [])
+    cargarCiudadSyd().then(setDanePorCiudad).catch(() => {})
+  }, [cargarCiudadSyd])
   const guiaDe = useMemo(() => { const m = {}; guias.forEach((g) => { if (!m[g.cliente_key]) m[g.cliente_key] = g }); return m }, [guias])
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
@@ -82,7 +96,44 @@ export default function DespachosView({
     return () => { vivo = false }
   }, [stampDespachos, cargarDespachos])
 
-  const clientes = useMemo(() => armarDespachos(filas || [], registros || {}, cerradas), [filas, registros, cerradas])
+  const clientesBase = useMemo(() => armarDespachos(filas || [], registros || {}, cerradas), [filas, registros, cerradas])
+  // El DANE del cliente: el de su libreta, o el de su ciudad de SYD.
+  const daneDe = (c) => (libreta[c.cliente] && libreta[c.cliente].dane) || danePorCiudad[c.ciudad] || ''
+  // Con el flete por unidad de lo separado encima, y la decisión ajustada.
+  const clientes = useMemo(() => clientesBase.map((c) => {
+    const flete = fleteDe(c.lineas, daneDe(c), tarifas)
+    return { ...c, flete, decision: decisionConFlete(c.decision, flete, formatPrice) }
+  }), [clientesBase, libreta, danePorCiudad, tarifas])
+
+  // Cotiza en segundo plano las ciudades con separado que no tienen tarifa
+  // (o la tienen vieja): una vez por ciudad y empaque, de a dos a la vez, y
+  // guarda cada una apenas llega para que la tabla se vaya pintando.
+  useEffect(() => {
+    if (cotizandoRef.current) return
+    const pendientes = tarifasPendientes(clientesBase, daneDe, tarifas)
+    if (!pendientes.length) return
+    cotizandoRef.current = true
+    setCotizando(pendientes.length)
+    let vivo = true
+    const cola = [...pendientes]
+    const una = async () => {
+      while (cola.length && vivo) {
+        const { dane, empaque: e } = cola.shift()
+        try {
+          const r = await llamar('cotizar', { destino: dane, valoracion: e.valor, detalle: [{ alto: e.alto, ancho: e.ancho, largo: e.largo, peso: e.peso, unidades: 1 }] })
+          const d = r && r.data && r.data.data
+          if (r && r.ok && d && Number(d.flete_total) > 0) {
+            const fila = { dane, empaque: e.key, fijo: Math.round(Number(d.flete_fijo) || 0), variable: Math.round(Number(d.flete_variable) || 0), flete: Math.round(Number(d.flete_total) || 0), valoracion: e.valor, dias: Number(d.dias_entrega) || null, peso_liquidado: Number(d.peso_liquidado) || null, ambiente: r.ambiente || '', raw: r.data }
+            await guardarTarifa(fila).catch((err) => console.error('Tarifa:', err))
+            if (vivo) setTarifas((t) => ({ ...t, [claveTarifa(dane, e.key)]: { ...fila, at: new Date().toISOString() } }))
+          }
+        } catch (err) { console.error('Cotizar', dane, e.key, err) }
+        if (vivo) setCotizando((n) => Math.max(0, n - 1))
+      }
+    }
+    Promise.all([una(), una()]).finally(() => { cotizandoRef.current = false; if (vivo) setCotizando(0) })
+    return () => { vivo = false }
+  }, [clientesBase, libreta, danePorCiudad]) // eslint-disable-line react-hooks/exhaustive-deps
   // Lo que el panel de producción de una referencia necesita; se arma una
   // sola vez para que el panel no recalcule con cada pintada.
   const produccion = useMemo(() => ({ filasSyd: filas || [], orders: orders || [], refs: refs || [], programaciones: programaciones || [], procesos: procesos || {} }),
@@ -91,7 +142,7 @@ export default function DespachosView({
 
   const lista = useMemo(() => {
     const term = q.trim().toLowerCase()
-    const fn = (FILTROS.find((f) => f.key === filtro) || FILTROS[0]).f
+    const fn = ([...FILTROS, ...FILTROS_FLETE].find((f) => f.key === filtro) || FILTROS[0]).f
     let l = clientes.filter(fn)
     if (ciudad) l = l.filter((c) => c.ciudad === ciudad)
     if (term) l = l.filter((c) => [c.cliente, c.ciudad, c.codigo].some((v) => String(v || '').toLowerCase().includes(term)))
@@ -100,6 +151,7 @@ export default function DespachosView({
       vendido: (c) => c.vendido, separadoVig: (c) => c.separadoVig, facturado: (c) => c.facturado,
       pendiente: (c) => c.pendiente, faltante: (c) => c.faltante, valorFalt: (c) => c.valorFalt,
       decision: (c) => c.decision.label,
+      flete: (c) => (c.flete && c.flete.mejor ? c.flete.mejor.porUnidad : 9e9),
     }
     return sortRows(l, accessors[sortKey] || accessors.pendiente, sortDir)
   }, [clientes, filtro, ciudad, q, sortKey, sortDir])
@@ -138,6 +190,16 @@ export default function DespachosView({
                 onClick={() => setFiltro(f.key)}>{f.label} <b>{n}</b></button>
             )
           })}
+          <span className="dsp-f-sep" />
+          {FILTROS_FLETE.map((f) => {
+            const n = clientes.filter(f.f).length
+            if (!n && filtro !== f.key) return null
+            return (
+              <button key={f.key} type="button" className={'proc-f-btn dsp-f-' + f.clase + (filtro === f.key ? ' on' : '')}
+                onClick={() => setFiltro(f.key)}><i />{f.label} <b>{n}</b></button>
+            )
+          })}
+          {cotizando > 0 && <span className="muted dsp-cotizando" title="Pidiendo a Coordinadora la tarifa de las ciudades que faltan">cotizando {cotizando}…</span>}
         </div>
         <select className="input dsp-ciudad" value={ciudad} onChange={(e) => setCiudad(e.target.value)} title="Filtrar por ciudad">
           <option value="">Todas las ciudades</option>
@@ -159,6 +221,7 @@ export default function DespachosView({
                 <SortTh label="Ciudad" col="ciudad" {...thProps} />
                 <SortTh label="Vendido" col="vendido" className="num" {...thProps} />
                 <SortTh label="Separado" col="separadoVig" className="num" {...thProps} />
+                <SortTh label="Flete por unidad · caja / paq 5 kg / paq 1–2 kg" col="flete" {...thProps} />
                 <SortTh label="Facturado" col="facturado" className="num" {...thProps} />
                 <SortTh label="Pendiente" col="pendiente" className="num" {...thProps} />
                 <SortTh label="Faltante real" col="faltante" className="num" {...thProps} />
@@ -178,6 +241,7 @@ export default function DespachosView({
                   <td className="muted dsp-ciu">{c.ciudad || '—'}</td>
                   <td className="num">{num(c.vendido)}</td>
                   <td className="num"><Cel n={c.separadoVig} cls="dsp-sep" /></td>
+                  <td className="dsp-fl"><FleteCel c={c} /></td>
                   <td className="num"><Cel n={c.facturado} /></td>
                   <td className="num strong" title="vendido − facturado">{num(c.pendiente)}</td>
                   <td className="num"><Cel n={c.faltante} cls="dsp-falt" /></td>
@@ -203,6 +267,7 @@ export default function DespachosView({
       )}
 
       <div className="dsp-leyenda">
+        <span><b>Flete por unidad</b> = flete de Coordinadora de lo separado ÷ unidades, en cada empaque; verde hasta {formatPrice(UMBRAL.sale)}, ámbar hasta {formatPrice(UMBRAL.faltaPoco)}, tachado si no cabe; el recuadro marca el más barato de los que caben.</span>
         <span><b>Separado</b> = separado − facturado del mismo color, referencia por referencia (nunca negativo).</span>
         <span><b>Pendiente</b> = vendido − facturado.</span>
         <span><b>Faltante real</b> = separado por facturar + abierto real; lo cerrado ("no sale") no cuenta.</span>
@@ -242,6 +307,64 @@ const FILTROS_REF = [
 
 // Cómo se reparte lo vendido de una talla: facturado, separado vigente (lo
 // separado que aún no se factura) y pendiente sin separar.
+// El flete por unidad de lo separado en los tres empaques, en una celda.
+function FleteCel({ c }) {
+  const f = c.flete
+  if (!f) return <span className="dsp-cero">·</span>
+  if (f.estado === 'sinCiudad') return <span className="muted dsp-fl-nota">sin ciudad con código DANE</span>
+  return (
+    <div className="dsp-emp">
+      {f.opciones.map((o) => (
+        <div key={o.key} className={(o.sinTarifa ? 'nt' : !o.cabe ? 'nc' : CLASE_FLETE[o.estado]) + (f.mejor && f.mejor.key === o.key ? ' mejor' : '')}
+          title={o.sinTarifa ? 'Sin tarifa todavía' : `${o.label}${o.cajas > 1 ? ` × ${o.cajas}` : ''}: flete ${formatPrice(o.flete)} = fijo ${formatPrice(o.fijo)} + 1 % de ${formatPrice(o.valoracion)} declarados · ${o.cabe ? `cabe (hasta ${o.capacidad} und)` : `no cabe (hasta ${o.capacidad} und)`}${o.faltan ? ` · con ${o.faltan} más saldría a ${formatPrice(o.alcanzaria)}` : ''}`}>
+          <small>{empaqueMinimo(o)}</small>
+          <b>{o.sinTarifa ? '…' : formatPrice(o.porUnidad)}</b>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// La comparación completa de los tres empaques, en la ventana del cliente.
+function FleteComparacion({ c }) {
+  const f = c.flete
+  if (!f) return null
+  const cats = Object.entries(f.cats).map(([k, n]) => `${n} ${({ blusa: 'blusa', vestido: 'vestido', pantalon: 'pantalón', conjunto: 'conjunto', otros: 'otras' })[k] || k}${n > 1 && k !== 'otros' ? 's' : ''}`).join(', ')
+  return (
+    <div className="dsp-flcomp">
+      <div className="dsp-flcomp-cab">
+        <b>Flete de las {num(f.unid)} separadas</b> · {f.peso} kg estimados ({cats})
+        {f.estado === 'sinCiudad' ? <span className="dsp-err"> · la ciudad no tiene código DANE: se asigna en Despachar</span>
+          : f.estado === 'cotizando' ? <span className="muted"> · cotizando…</span>
+            : f.mejor ? <span className="muted"> · mejor: {empaqueCorto(f.mejor)} a <b className={'dsp-fl-' + f.mejor.estado}>{formatPrice(f.mejor.porUnidad)}/und</b>{f.paraSalir ? ` · con ${f.paraSalir.faltan} más saldría a ${formatPrice(f.paraSalir.alcanzaria)} en ${empaqueCorto(f.paraSalir)}` : ''}</span> : null}
+      </div>
+      {f.estado !== 'sinCiudad' && (
+        <table className="dsp-flcomp-t">
+          <thead><tr><th>Empaque</th><th className="num">Cabe</th><th className="num">Fijo</th><th className="num">1 % declarado</th><th className="num">Flete</th><th className="num">Por unidad</th><th>Entrega</th><th>Para que salga a {formatPrice(UMBRAL.sale)}</th></tr></thead>
+          <tbody>
+            {f.opciones.map((o) => (
+              <tr key={o.key} className={f.mejor && f.mejor.key === o.key ? 'mejor' : !o.cabe ? 'nc' : ''}>
+                <td>{o.label} <span className="muted">· {o.nota}</span>{f.mejor && f.mejor.key === o.key && <span className="tag dsp-tag verde">mejor</span>}</td>
+                <td className="num">{o.cabe ? (o.key === 'caja' && o.cajas > 1 ? `${o.cajas} cajas` : 'sí') : `no · hasta ${o.capacidad}`}</td>
+                {o.sinTarifa ? <td colSpan={5} className="muted">sin tarifa todavía</td> : (
+                  <>
+                    <td className="num">{formatPrice(o.fijo)}</td>
+                    <td className="num">{formatPrice(o.variable)} <span className="muted">({formatPrice(o.valoracion)})</span></td>
+                    <td className="num">{formatPrice(o.flete)}</td>
+                    <td className={'num strong dsp-fl-' + o.estado}>{formatPrice(o.porUnidad)}</td>
+                    <td>{o.dias ? `${o.dias} ${o.dias === 1 ? 'día' : 'días'}` : '—'}</td>
+                  </>
+                )}
+                <td className="muted">{o.sinTarifa ? '' : !o.cabe ? 'no cabe lo separado' : o.estado === 'ok' ? 'ya sale' : o.faltan ? `con ${o.faltan} más (${formatPrice(o.alcanzaria)})` : 'no alcanza en este empaque'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
+
 function partesDe(l, t) {
   const v = l.tallas[t] || 0
   const f = Math.min(v, l.factTallas[t] || 0)
@@ -400,6 +523,7 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, onCerrarRef, 
           <div><span>Faltante real</span><b className="dsp-falt">{num(c.faltante)}</b><em>{formatPrice(c.valorFalt) || '$ 0'}</em></div>
           <div><span>Decisión</span><b><span className={'tag dsp-tag ' + (CHIP_DECISION[c.decision.key] || '')}>{c.decision.label}</span></b><em>{c.decision.motivo}</em></div>
         </div>
+        <FleteComparacion c={c} />
 
         <div className="dsp-tool">
           <SearchInput value={q} onChange={setQ} placeholder="Referencia, categoría, descripción o color…" className="dsp-buscar" />

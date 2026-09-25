@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · ¿Vale la pena despachar lo separado? Flete por unidad</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--muted:#6b6660;--sep:#2b4a7e;--rojo:#b23121;--ok:#1f6b2e;--amb:#8a4b0a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.4;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:24px;margin:0 0 4px}
+h2{font-family:Fraunces,serif;font-weight:500;font-size:18px;margin:0}
+.sub{color:var(--muted);margin:0 0 6px;max-width:1000px}
+.paso{display:flex;align-items:center;gap:10px;margin:34px 0 8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.paso i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:11px}
+.paso small{font-weight:500;letter-spacing:0;text-transform:none;margin-left:6px}
+.reco{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:#e9f5ee;color:#1f6b4a;border:1px solid #bfe0cd;font-size:10.5px;letter-spacing:0;text-transform:none;font-weight:600}
+.caja{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px 18px;max-width:1240px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:1240px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;max-width:1240px}
+.caja h3{margin:0 0 6px;font-size:13px}
+.caja ol,.caja ul{margin:4px 0 0;padding-left:18px}
+.caja li{margin:4px 0}
+.formula{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#faf9f6;border:1px solid var(--hairline);border-radius:8px;padding:8px 10px;margin:6px 0}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 8px;text-align:left;background:#faf9f6;border-bottom:1px solid var(--hairline);white-space:normal;line-height:1.15;vertical-align:bottom}
+td{padding:7px 8px;border-bottom:1px solid #f0ede7;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.num{text-align:right}.n{text-align:center}
+.mut{color:var(--muted)}.sep{color:var(--sep);font-weight:700}.rojo{color:var(--rojo);font-weight:700}
+.chip{display:inline-block;padding:0 7px;border-radius:999px;font-size:10.5px;font-weight:600;line-height:17px;border:1px solid;white-space:nowrap}
+.chip.ok{background:#e9f5ee;color:#1f6b4a;border-color:#bfe0cd}
+.chip.amb{background:#fff4e0;color:#8a4b0a;border-color:#f3d3a5}
+.chip.no{background:#fbeceb;color:#8c2f28;border-color:#f0c4c0}
+.chip.gris{background:#f1f0ee;color:#6b6660;border-color:#d8d4c9}
+.dec{display:inline-block;padding:0 8px;border-radius:999px;font-size:10.5px;font-weight:600;line-height:18px;background:#f1f0ee;color:#4a4642;border:1px solid var(--hairline-strong)}
+.motivo{display:block;font-size:11px;color:var(--muted)}
+.pt{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.pt.ok{background:#1f6b2e}.pt.amb{background:#e0a030}.pt.no{background:#b23121}.pt.gris{background:#d8d4c9}
+.sub2{display:block;font-size:10.5px;color:var(--muted);font-weight:400;line-height:1.2;margin-top:1px}
+.btn{display:inline-block;background:var(--ink);color:#fff;border-radius:999px;padding:3px 12px;font-size:11.5px;font-weight:600}
+.f{display:flex;gap:6px;align-items:center;margin:10px 0 12px;flex-wrap:wrap}
+.f span{border:1px solid var(--hairline-strong);border-radius:999px;padding:3px 10px;font-size:12px;background:#fff}
+.f span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.f b{font-weight:700;opacity:.75;margin-left:2px}
+.kp{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:12px;overflow:hidden;margin:8px 0 12px}
+.kp div{background:#fff;padding:9px 12px}
+.kp span{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kp b{font-size:18px;font-weight:600}
+.kp em{display:block;font-style:normal;font-size:11px;color:var(--muted)}
+.flete{border:1px solid #bfe0cd;background:#f0f8f2;border-radius:10px;padding:10px 14px;margin:0 0 12px;display:grid;grid-template-columns:1.2fr 1fr 1fr 1.4fr;gap:12px;align-items:center}
+.flete small{display:block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.flete b{font-size:16px}
+.flete .mut{font-size:11px}
+.cfg{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cfg table{table-layout:auto}
+.cfg input{border:1px solid var(--hairline-strong);border-radius:7px;padding:3px 8px;width:80px;font:inherit;text-align:right}
+.nota{color:var(--muted);font-size:12px;max-width:1000px;margin:10px 0 0}
+.nota b{color:var(--ink)}
+.preg{background:#fff8ec;border:1px solid #f3d3a5;border-radius:12px;padding:12px 16px;max-width:1240px}
+.preg li{margin:6px 0}
+</style>
+</head>
+<body>
+<h1>¿Vale la pena despachar lo separado? Flete por unidad</h1>
+<p class="sub">Hoy la columna Separado dice cuánto tiene cada cliente listo en bodega, pero no si conviene mandarlo ya. La ficha técnica costea entre <b>$ 2.500 y $ 3.000 de flete por prenda</b>: si lo separado sale por menos, se despacha; si sale por más, se espera a que haya más unidades. La idea es que el sistema haga esa cuenta solo, con la tarifa real de Coordinadora, y la muestre con un color.</p>
+
+<div class="paso"><i>A</i> Estrategia · cómo se calcula</div>
+<div class="grid2">
+  <div class="caja">
+    <h3>1 · Lo que ya sabemos de la tarifa (cotizaciones reales guardadas)</h3>
+    <p class="mut" style="margin:0 0 4px">El flete de Coordinadora tiene dos partes:</p>
+    <div class="formula">flete = <b>fijo</b> (según ciudad y peso del empaque) + <b>1 % del valor declarado</b></div>
+    <ul>
+      <li>Caja 20 kg a Buenaventura o Sincelejo: fijo $ 29.400 · a Cereté o Montería: fijo $ 36.300.</li>
+      <li>El 1 % del valor declarado es igual para todos: si se declara $ 832.000 son $ 8.320.</li>
+      <li>Los paquetes de 5 kg y de 1–2 kg tienen un fijo menor: se cotizan igual y se guardan.</li>
+    </ul>
+  </div>
+  <div class="caja">
+    <h3>2 · Cuánto pesa y en qué va lo separado</h3>
+    <p class="mut" style="margin:0 0 4px">Peso estimado por categoría (se ajusta en configuración):</p>
+    <div class="formula">peso = Σ unidades × peso de su categoría<br>blusa 0,25 kg · pantalón 0,45 · vestido 0,40 · conjunto 0,65 · otros 0,40</div>
+    <ul>
+      <li>≤ 2 kg → paquete 1–2 kg · ≤ 5 kg → paquete 3–5 kg · más → cajas de 20 kg (las que hagan falta).</li>
+      <li>El empaque propuesto es el mismo que después sale en "Despachar": ahí se puede cambiar a mano.</li>
+    </ul>
+  </div>
+  <div class="caja">
+    <h3>3 · La cuenta y el color</h3>
+    <div class="formula">flete por unidad = flete del empaque ÷ unidades separadas</div>
+    <ul>
+      <li><span class="pt ok"></span><b>Sale</b>: ≤ $ 2.500 por unidad.</li>
+      <li><span class="pt amb"></span><b>Falta poco</b>: entre $ 2.500 y $ 3.000 (lo que la ficha admite). Se muestra <b>cuántas unidades más</b> lo bajan a $ 2.500.</li>
+      <li><span class="pt no"></span><b>Esperar</b>: más de $ 3.000. También dice cuántas más harían falta.</li>
+      <li>Sin separado o sin ciudad con código DANE: gris, no se calcula.</li>
+    </ul>
+    <div class="formula">unidades que faltan = ⌈ fijo ÷ (2.500 − 1 % del precio promedio) ⌉ − separadas</div>
+  </div>
+  <div class="caja">
+    <h3>4 · De dónde sale la tarifa sin llamar a Coordinadora todo el tiempo</h3>
+    <ul>
+      <li>Tabla <b>coord_tarifas</b>: ciudad (DANE) × empaque → fijo, días de entrega, fecha de cotización.</li>
+      <li>Se cotiza <b>una vez por ciudad y empaque</b> (unas 100 ciudades × 3 empaques) y se reusa; se vuelve a cotizar si tiene más de 30 días o cuando cambie la tarifa de Coordinadora (enero).</li>
+      <li>Las ciudades que falten se cotizan al abrir Despachos, en segundo plano; mientras tanto la fila sale gris "cotizando".</li>
+      <li>El 1 % se calcula aquí sobre el valor declarado, no hace falta cotizar por cada valor.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="paso"><i>B</i> En la tabla de Despachos · el flete bajo lo separado <span class="reco">recomendada</span><small>· sin columna nueva, sin scroll horizontal</small></div>
+<div class="caja">
+  <div class="f"><span class="on">Todos <b>238</b></span><span>Parcial <b>1</b></span><span>Con separado <b>146</b></span><span>Sin nada separado <b>92</b></span><span style="border-color:#bfe0cd;color:#1f6b4a">● Sale por flete <b>31</b></span><span style="border-color:#f3d3a5;color:#8a4b0a">● Falta poco <b>9</b></span><span style="border-color:#f0c4c0;color:#8c2f28">● Esperar <b>106</b></span><span class="mut">Todas las ciudades ▾</span></div>
+  <table>
+    <colgroup><col style="width:19%"><col style="width:10%"><col style="width:7.5%"><col style="width:11%"><col style="width:7.5%"><col style="width:7.5%"><col style="width:7.5%"><col style="width:9%"><col style="width:12%"><col style="width:9%"></colgroup>
+    <thead><tr><th>Cliente</th><th>Ciudad</th><th class="num">Vendido</th><th class="num">Separado · flete/und ▾</th><th class="num">Facturado</th><th class="num">Pendiente</th><th class="num">Faltante real</th><th class="num">Valor faltante</th><th>Decisión</th><th>Guía</th></tr></thead>
+    <tbody>
+      <tr><td><b>KERLLY VANESSA LLERENA RAMIREZ</b></td><td class="mut">GUAYAQUIL-ECUADOR</td><td class="num">796</td><td class="num"><span class="sep">101</span><span class="sub2"><span class="pt gris"></span>sin tarifa · exterior</span></td><td class="num mut">·</td><td class="num">796</td><td class="num rojo">796</td><td class="num mut">$ 88.122.600</td><td><span class="dec">Esperar</span><span class="motivo">solo 13 % separado</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>JOSE MARIA MESTRA MADERA</b></td><td class="mut">MONTERIA</td><td class="num">352</td><td class="num"><span class="sep">69</span><span class="sub2"><span class="pt ok"></span><b>$ 770</b>/und · 2 cajas · $ 53.100</span></td><td class="num mut">·</td><td class="num">352</td><td class="num rojo">352</td><td class="num mut">$ 40.769.990</td><td><span class="dec" style="background:#e9f5ee;color:#1f6b4a;border-color:#bfe0cd">Despachar</span><span class="motivo">69 listas · flete sale</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>MIRIAM ANGULO CELORIO</b></td><td class="mut">BUENAVENTURA</td><td class="num">358</td><td class="num"><span class="sep">14</span><span class="sub2"><span class="pt amb"></span><b>$ 2.680</b>/und · paq 5 kg · $ 37.500</span></td><td class="num mut">·</td><td class="num">358</td><td class="num rojo">358</td><td class="num mut">$ 47.039.100</td><td><span class="dec" style="background:#fff4e0;color:#8a4b0a;border-color:#f3d3a5">Falta poco</span><span class="motivo">con 2 más baja a $ 2.500</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>MARIA INES ALBARRACIN VEGA</b></td><td class="mut">LA DORADA-CALDAS</td><td class="num">337</td><td class="num"><span class="sep">12</span><span class="sub2"><span class="pt no"></span><b>$ 3.450</b>/und · paq 5 kg · $ 41.400</span></td><td class="num mut">·</td><td class="num">337</td><td class="num rojo">337</td><td class="num mut">$ 42.305.100</td><td><span class="dec">Esperar</span><span class="motivo">faltan 5 para que salga</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>LENIS MARIA PEREZ CARMONA</b></td><td class="mut">BANCO MAGDALENA</td><td class="num">261</td><td class="num"><span class="sep">6</span><span class="sub2"><span class="pt no"></span><b>$ 5.900</b>/und · paq 1–2 kg · $ 35.400</span></td><td class="num mut">·</td><td class="num">261</td><td class="num rojo">261</td><td class="num mut">$ 40.705.300</td><td><span class="dec">Esperar</span><span class="motivo">faltan 9 para que salga</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>CARMEN ACOSTA OSIO SAS</b></td><td class="mut">BARRANQUILLA</td><td class="num">326</td><td class="num"><span class="sep mut" style="font-weight:400">·</span><span class="sub2"><span class="pt gris"></span>nada separado</span></td><td class="num">27</td><td class="num">299</td><td class="num rojo">298</td><td class="num mut">$ 44.429.149</td><td><span class="dec">Esperar</span><span class="motivo">nada separado</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>CASA YORDAN LTDA</b></td><td class="mut">MEDELLIN</td><td class="num">224</td><td class="num"><span class="sep">60</span><span class="sub2"><span class="pt ok"></span><b>$ 690</b>/und · 1 caja · $ 41.400</span></td><td class="num mut">·</td><td class="num">224</td><td class="num rojo">224</td><td class="num mut">$ 27.712.600</td><td><span class="dec" style="background:#e9f5ee;color:#1f6b4a;border-color:#bfe0cd">Despachar</span><span class="motivo">60 listas · flete sale</span></td><td><span class="btn">Despachar</span></td></tr>
+    </tbody>
+  </table>
+  <p class="nota"><b>Cómo se lee:</b> debajo del número separado va el flete por unidad con su punto de color, el empaque propuesto y el flete total. La Decisión gana un motivo nuevo cuando lo separado ya sale por flete ("Despachar · flete sale") o casi ("Falta poco · con 2 más baja a $ 2.500"). Tres chips arriba filtran por color y la columna se puede ordenar por flete por unidad. Las cifras de flete son de ejemplo salvo la caja (real: $ 37.720 a Buenaventura).</p>
+</div>
+
+<div class="paso"><i>C</i> Alternativa · columna propia "Flete"<small>· más visible, pero quita espacio a las otras columnas</small></div>
+<div class="caja">
+  <table>
+    <colgroup><col style="width:18%"><col style="width:9%"><col style="width:6.5%"><col style="width:7%"><col style="width:12%"><col style="width:6.5%"><col style="width:7%"><col style="width:7%"><col style="width:8.5%"><col style="width:11%"><col style="width:7.5%"></colgroup>
+    <thead><tr><th>Cliente</th><th>Ciudad</th><th class="num">Vendido</th><th class="num">Separado</th><th>Flete de lo separado</th><th class="num">Facturado</th><th class="num">Pendiente</th><th class="num">Faltante real</th><th class="num">Valor faltante</th><th>Decisión</th><th>Guía</th></tr></thead>
+    <tbody>
+      <tr><td><b>JOSE MARIA MESTRA MADERA</b></td><td class="mut">MONTERIA</td><td class="num">352</td><td class="num sep">69</td><td><span class="chip ok">Sale · $ 770/und</span><span class="sub2">2 cajas · $ 53.100</span></td><td class="num mut">·</td><td class="num">352</td><td class="num rojo">352</td><td class="num mut">$ 40.769.990</td><td><span class="dec">Despachar</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>MIRIAM ANGULO CELORIO</b></td><td class="mut">BUENAVENTURA</td><td class="num">358</td><td class="num sep">14</td><td><span class="chip amb">Falta poco · $ 2.680</span><span class="sub2">paq 5 kg · con 2 más sale</span></td><td class="num mut">·</td><td class="num">358</td><td class="num rojo">358</td><td class="num mut">$ 47.039.100</td><td><span class="dec">Esperar</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>MARIA INES ALBARRACIN VEGA</b></td><td class="mut">LA DORADA-CALDAS</td><td class="num">337</td><td class="num sep">12</td><td><span class="chip no">Esperar · $ 3.450</span><span class="sub2">paq 5 kg · faltan 5</span></td><td class="num mut">·</td><td class="num">337</td><td class="num rojo">337</td><td class="num mut">$ 42.305.100</td><td><span class="dec">Esperar</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>LENIS MARIA PEREZ CARMONA</b></td><td class="mut">BANCO MAGDALENA</td><td class="num">261</td><td class="num sep">6</td><td><span class="chip no">Esperar · $ 5.900</span><span class="sub2">paq 1–2 kg · faltan 9</span></td><td class="num mut">·</td><td class="num">261</td><td class="num rojo">261</td><td class="num mut">$ 40.705.300</td><td><span class="dec">Esperar</span></td><td><span class="btn">Despachar</span></td></tr>
+    </tbody>
+  </table>
+  <p class="nota">Mismo dato, en columna aparte con chip. Se ve más rápido, pero once columnas obligan a apretar Cliente y Ciudad (ya se recortan hoy).</p>
+</div>
+
+<div class="paso"><i>D</i> En la ventana del cliente y al despachar</div>
+<div class="caja">
+  <h2>MIRIAM ANGULO CELORIO</h2>
+  <p class="mut" style="margin:2px 0 10px">BUENAVENTURA · pedidos 7611, 7702 · 38 referencias · 358 unidades · $ 47.039.100</p>
+  <div class="kp">
+    <div><span>Pendiente</span><b>358</b><em>358 vend. − 0 fact.</em></div>
+    <div><span>Separado vigente</span><b style="color:var(--sep)">14</b><em>listo en bodega</em></div>
+    <div><span>Abierto real</span><b>344</b><em>falta producir o separar</em></div>
+    <div><span>Cerrado s/cubrir</span><b class="mut">0</b><em>no se persigue</em></div>
+    <div><span>Faltante real</span><b class="rojo">358</b><em>$ 47.039.100</em></div>
+    <div><span>Decisión</span><b><span class="dec" style="background:#fff4e0;color:#8a4b0a;border-color:#f3d3a5">Falta poco</span></b><em>con 2 más baja a $ 2.500</em></div>
+  </div>
+  <div class="flete">
+    <div><small>Flete de lo separado</small><b>$ 37.500</b> <span class="mut">· paquete 3–5 kg · 4,9 kg estimados</span></div>
+    <div><small>Por unidad</small><b style="color:var(--amb)">$ 2.680</b> <span class="mut">· ficha $ 2.500–3.000</span></div>
+    <div><small>Para que salga</small><b>2 más</b> <span class="mut">→ $ 2.340/und</span></div>
+    <div><small>Cómo</small><span class="mut">fijo $ 37.000 + 1 % de $ 50.000 declarados · tarifa del 23 sep · 2 días de entrega</span></div>
+  </div>
+  <p class="nota">La misma tira sale arriba en la ventana "Despachar" cuando se va a generar la guía, con el empaque y el valor declarado que se escojan ahí (si se cambia el empaque, la cuenta cambia al momento). Así la decisión y la guía usan los mismos números.</p>
+</div>
+
+<div class="paso"><i>E</i> Configuración · lo que Diego ajusta sin programar</div>
+<div class="caja cfg">
+  <div>
+    <h3>Peso por categoría (kg por prenda)</h3>
+    <table><tbody>
+      <tr><td>Blusa</td><td class="num"><input value="0,25"></td><td>Vestido</td><td class="num"><input value="0,40"></td></tr>
+      <tr><td>Pantalón</td><td class="num"><input value="0,45"></td><td>Conjunto</td><td class="num"><input value="0,65"></td></tr>
+      <tr><td>Otros</td><td class="num"><input value="0,40"></td><td></td><td></td></tr>
+    </tbody></table>
+  </div>
+  <div>
+    <h3>Umbrales de flete por unidad</h3>
+    <table><tbody>
+      <tr><td><span class="pt ok"></span>Sale hasta</td><td class="num"><input value="2.500"></td></tr>
+      <tr><td><span class="pt amb"></span>Falta poco hasta</td><td class="num"><input value="3.000"></td></tr>
+      <tr><td>Valor declarado por unidad</td><td class="num"><input value="—"></td></tr>
+    </tbody></table>
+    <p class="mut" style="margin:6px 0 0;font-size:11.5px">Se guarda en la configuración de la app (dev_settings), como las telas y los colores.</p>
+  </div>
+</div>
+
+<div class="paso"><i>?</i> Decisiones que necesito de ti antes de programar</div>
+<div class="preg">
+  <ol>
+    <li><b>Valor declarado.</b> Hoy la guía declara un valor fijo por empaque ($ 832.000 la caja, $ 50.000 los paquetes). ¿Se sigue así, o se declara el valor real de la mercancía (precio de lista × unidades)? Con el 1 %, declarar $ 2.000.000 de un paquete cuesta $ 20.000 más de flete: cambia mucho la cuenta por unidad.</li>
+    <li><b>Pesos por categoría.</b> ¿Los de arriba se parecen a la realidad? Si tienes el peso de una caja llena típica (cuántas prendas y cuántos kilos), lo calibro con eso.</li>
+    <li><b>Umbrales.</b> Verde hasta $ 2.500 y ámbar hasta $ 3.000, ¿o un solo corte?</li>
+    <li><b>Tarifa de pruebas vs real.</b> Las cotizaciones de hoy salen del ambiente de pruebas. Suelen ser las mismas tarifas, pero lo confirmamos cuando Coordinadora active producción; mientras tanto la cuenta sirve para comparar entre clientes.</li>
+    <li><b>Dónde se ve.</b> Opción B (bajo el separado) u opción C (columna propia).</li>
+  </ol>
+</div>
+</body>
+</html>

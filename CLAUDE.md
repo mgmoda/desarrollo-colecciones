@@ -358,6 +358,26 @@ en un conjunto la prenda que más se cortó) y un bloque rojo por color y
 talla cuando falta; negativo = "programado de más". Para eso App pasa
 `programaciones` y `procesos` a Pedidos → Despachos.
 
+**Flete por unidad de lo separado (25-sep-2026)**: columna en Despachos
+("Flete por unidad · caja / paq 5 kg / paq 1–2 kg", `FleteCel`) con el flete
+de Coordinadora de lo separado ÷ unidades en cada empaque; cuentas en
+`lib/flete.js`. Peso estimado por categoría (`PESO_CATEGORIA`: blusa 0,25 kg,
+vestido 0,40, pantalón 0,45, conjunto 0,65; supuesto, falta calibrar con una
+caja pesada), cabe si el peso ≤ `PESO_MAX` (caja 20 → n cajas, paq 5, paq 2);
+tarifa = fijo + 1 % del valor declarado fijo por empaque (`EMPAQUES.valor`),
+guardada en `coord_tarifas` (dane × empaque, RLS `pedidos_autorizado()`,
+vale `TARIFA_DIAS` = 30) y cotizada en segundo plano desde `DespachosView`
+(de a dos, solo ciudades con separado que falten; "cotizando N…" en los
+chips). Verde ≤ $ 2.500, ámbar ≤ $ 3.000, rojo (`UMBRAL`); tachado = no cabe;
+recuadro = el más barato de los que caben. `decisionConFlete` cambia
+"Esperar/Parcial" por "Despachar" (key `flete`) cuando sale, "Falta poco"
+(`faltaPoco`) con "con N más baja a $ 2.500", o deja "Esperar" con "faltan N
+para que salga". Chips "Sale por flete / Falta poco / Esperar por flete"
+(`FILTROS_FLETE`), orden por flete, y en la ventana del cliente la tabla
+`FleteComparacion` (cabe, fijo, 1 %, flete, por unidad, entrega, para que
+salga). El DANE del cliente sale de su libreta o de `coord_ciudad_syd`; sin
+DANE no se calcula. Con varias cajas el flete se asume n × tarifa de una.
+
 **Programaciones se alimenta de aquí (13-sep-2026).** Ya no existe "Cargar
 pedidos": `reemplazar_pedidos()` llama a `sincronizar_programaciones()`, que
 escribe en `dev_programaciones` el pedido, el desglose por color y talla y la

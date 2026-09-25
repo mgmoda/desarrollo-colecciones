@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup v2 · Flete por unidad en caja, paquete 5 kg y paquete 1–2 kg</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--muted:#6b6660;--sep:#2b4a7e;--rojo:#b23121;--ok:#1f6b2e;--amb:#8a4b0a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.4;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:24px;margin:0 0 4px}
+h2{font-family:Fraunces,serif;font-weight:500;font-size:18px;margin:0}
+.sub{color:var(--muted);margin:0 0 6px;max-width:1000px}
+.paso{display:flex;align-items:center;gap:10px;margin:34px 0 8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.paso i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:11px}
+.paso small{font-weight:500;letter-spacing:0;text-transform:none;margin-left:6px}
+.reco{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:#e9f5ee;color:#1f6b4a;border:1px solid #bfe0cd;font-size:10.5px;letter-spacing:0;text-transform:none;font-weight:600}
+.caja{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px 18px;max-width:1240px}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 8px;text-align:left;background:#faf9f6;border-bottom:1px solid var(--hairline);white-space:normal;line-height:1.15;vertical-align:bottom}
+td{padding:7px 8px;border-bottom:1px solid #f0ede7;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.num{text-align:right}.n{text-align:center}
+.mut{color:var(--muted)}.sep{color:var(--sep);font-weight:700}.rojo{color:var(--rojo);font-weight:700}
+.dec{display:inline-block;padding:0 8px;border-radius:999px;font-size:10.5px;font-weight:600;line-height:18px;background:#f1f0ee;color:#4a4642;border:1px solid var(--hairline-strong)}
+.dec.ok{background:#e9f5ee;color:#1f6b4a;border-color:#bfe0cd}.dec.amb{background:#fff4e0;color:#8a4b0a;border-color:#f3d3a5}
+.motivo{display:block;font-size:11px;color:var(--muted)}
+.btn{display:inline-block;background:var(--ink);color:#fff;border-radius:999px;padding:3px 12px;font-size:11.5px;font-weight:600}
+/* tres empaques en una celda */
+.emp{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:11px;line-height:1.2}
+.emp div{padding:2px 5px;border-radius:6px;text-align:center;border:1px solid transparent}
+.emp small{display:block;font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.emp b{font-weight:700;font-size:11.5px}
+.emp .ok{background:#e9f5ee;border-color:#bfe0cd;color:#1f6b4a}
+.emp .amb{background:#fff4e0;border-color:#f3d3a5;color:#8a4b0a}
+.emp .no{background:#fbeceb;border-color:#f0c4c0;color:#8c2f28}
+.emp .nc{color:#b8b3a8}
+.emp .nc b{font-weight:500;text-decoration:line-through;text-decoration-color:#c9c4ba}
+.emp .mejor{outline:2px solid var(--ink);outline-offset:-1px}
+.f{display:flex;gap:6px;align-items:center;margin:10px 0 12px;flex-wrap:wrap}
+.f span{border:1px solid var(--hairline-strong);border-radius:999px;padding:3px 10px;font-size:12px;background:#fff}
+.f span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.f b{font-weight:700;opacity:.75;margin-left:2px}
+.ley{font-size:11px;color:var(--muted);margin:8px 0 0}
+.ley i{display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 4px 0 10px;vertical-align:middle;border:1px solid}
+/* ventana del cliente */
+.kp{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:12px;overflow:hidden;margin:8px 0 12px}
+.kp div{background:#fff;padding:9px 12px}
+.kp span{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kp b{font-size:18px;font-weight:600}
+.kp em{display:block;font-style:normal;font-size:11px;color:var(--muted)}
+.comp{border:1px solid var(--hairline);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.comp table{table-layout:auto}
+.comp th{background:#fff}
+.comp td{white-space:normal}
+.comp .fila-ok td{background:#f6fbf7}
+.comp .fila-nc td{color:#a8a39b}
+.tit{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+.nota{color:var(--muted);font-size:12px;max-width:1000px;margin:10px 0 0}
+.nota b{color:var(--ink)}
+.preg{background:#fff8ec;border:1px solid #f3d3a5;border-radius:12px;padding:12px 16px;max-width:1240px}
+.preg li{margin:6px 0}
+.cap{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:1240px}
+.cap .caja h3{margin:0 0 4px;font-size:13px}
+.cap .caja p{margin:2px 0;font-size:12px;color:var(--muted)}
+.cap .caja b{color:var(--ink)}
+</style>
+</head>
+<body>
+<h1>Flete por unidad de lo separado, en los tres empaques</h1>
+<p class="sub">Para cada cliente con separado, el sistema cotiza los tres empaques a su ciudad y muestra el flete <b>por unidad en cada uno</b>. El color dice si sale (≤ $ 2.500), si falta poco ($ 2.500–3.000) o si toca esperar (> $ 3.000); el empaque donde <b>no cabe</b> lo separado se ve tachado, pero el número queda ahí para comparar. El recuadro negro marca el más barato de los que caben.</p>
+
+<div class="cap">
+  <div class="caja"><h3>Caja de mercancía · 20 kg · 40×40×30</h3><p>Cabe hasta <b>~55 prendas</b> (según categoría). Fijo Buenaventura <b>$ 29.400</b> + 1 % declarado. Real cotizado: <b>$ 37.720</b>.</p></div>
+  <div class="caja"><h3>Paquete 3–5 kg · 30×20×15</h3><p>Cabe hasta <b>~14 prendas</b>. Fijo estimado <b>$ 14.000</b> + 1 % declarado (ejemplo; se cotiza real).</p></div>
+  <div class="caja"><h3>Paquete 1–2 kg · 25×20×8</h3><p>Cabe hasta <b>~5 prendas</b>. Fijo estimado <b>$ 9.500</b> + 1 % declarado (ejemplo; se cotiza real).</p></div>
+</div>
+
+<div class="paso"><i>B</i> En la tabla de Despachos · columna "Flete por unidad" con los tres empaques <span class="reco">recomendada</span></div>
+<div class="caja">
+  <div class="f"><span class="on">Todos <b>238</b></span><span>Parcial <b>1</b></span><span>Con separado <b>146</b></span><span>Sin nada separado <b>92</b></span><span style="border-color:#bfe0cd;color:#1f6b4a">● Sale por flete <b>38</b></span><span style="border-color:#f3d3a5;color:#8a4b0a">● Falta poco <b>7</b></span><span style="border-color:#f0c4c0;color:#8c2f28">● Esperar <b>101</b></span><span class="mut">Todas las ciudades ▾</span></div>
+  <table>
+    <colgroup><col style="width:17%"><col style="width:9%"><col style="width:6%"><col style="width:6.5%"><col style="width:20%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:7%"><col style="width:8.5%"><col style="width:10%"><col style="width:7%"></colgroup>
+    <thead><tr><th>Cliente</th><th>Ciudad</th><th class="num">Vendido</th><th class="num">Separado</th><th>Flete por unidad · caja / paq 5 kg / paq 1–2 kg</th><th class="num">Facturado</th><th class="num">Pendiente</th><th class="num">Faltante real</th><th class="num">Valor faltante</th><th>Decisión</th><th>Guía</th></tr></thead>
+    <tbody>
+      <tr><td><b>JOSE MARIA MESTRA MADERA</b></td><td class="mut">MONTERIA</td><td class="num">352</td><td class="num sep">69</td>
+        <td><div class="emp"><div class="ok mejor"><small>2 cajas</small><b>$ 1.290</b></div><div class="nc"><small>Paq 5 kg</small><b>$ 330</b>no cabe</div><div class="nc"><small>Paq 1–2 kg</small><b>$ 145</b>no cabe</div></div></td>
+        <td class="num mut">·</td><td class="num">352</td><td class="num rojo">352</td><td class="num mut">$ 40.769.990</td><td><span class="dec ok">Despachar</span><span class="motivo">69 listas · 2 cajas · $ 89.240</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>MIRIAM ANGULO CELORIO</b></td><td class="mut">BUENAVENTURA</td><td class="num">358</td><td class="num sep">14</td>
+        <td><div class="emp"><div class="amb"><small>1 caja</small><b>$ 2.690</b></div><div class="ok mejor"><small>Paq 5 kg</small><b>$ 1.040</b></div><div class="nc"><small>Paq 1–2 kg</small><b>$ 715</b>no cabe</div></div></td>
+        <td class="num mut">·</td><td class="num">358</td><td class="num rojo">358</td><td class="num mut">$ 47.039.100</td><td><span class="dec ok">Despachar</span><span class="motivo">14 listas · paq 5 kg · $ 14.500</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>MARIA INES ALBARRACIN VEGA</b></td><td class="mut">LA DORADA-CALDAS</td><td class="num">337</td><td class="num sep">12</td>
+        <td><div class="emp"><div class="no"><small>1 caja</small><b>$ 3.720</b></div><div class="amb mejor"><small>Paq 5 kg</small><b>$ 2.790</b></div><div class="nc"><small>Paq 1–2 kg</small><b>$ 1.980</b>no cabe</div></div></td>
+        <td class="num mut">·</td><td class="num">337</td><td class="num rojo">337</td><td class="num mut">$ 42.305.100</td><td><span class="dec amb">Falta poco</span><span class="motivo">con 2 más baja a $ 2.500</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>LENIS MARIA PEREZ CARMONA</b></td><td class="mut">BANCO MAGDALENA</td><td class="num">261</td><td class="num sep">6</td>
+        <td><div class="emp"><div class="no"><small>1 caja</small><b>$ 7.450</b></div><div class="no"><small>Paq 5 kg</small><b>$ 4.100</b></div><div class="no mejor"><small>Paq 1–2 kg</small><b>$ 3.300</b></div></div></td>
+        <td class="num mut">·</td><td class="num">261</td><td class="num rojo">261</td><td class="num mut">$ 40.705.300</td><td><span class="dec">Esperar</span><span class="motivo">faltan 2 para que salga en paq 1–2 kg</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>KERLLY VANESSA LLERENA RAMIREZ</b></td><td class="mut">GUAYAQUIL-ECUADOR</td><td class="num">796</td><td class="num sep">101</td>
+        <td><div class="emp"><div class="nc"><small>Caja</small><b>—</b>sin tarifa</div><div class="nc"><small>Paq 5 kg</small><b>—</b></div><div class="nc"><small>Paq 1–2 kg</small><b>—</b></div></div></td>
+        <td class="num mut">·</td><td class="num">796</td><td class="num rojo">796</td><td class="num mut">$ 88.122.600</td><td><span class="dec">Esperar</span><span class="motivo">exterior · sin Coordinadora</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>CARMEN ACOSTA OSIO SAS</b></td><td class="mut">BARRANQUILLA</td><td class="num">326</td><td class="num mut">·</td>
+        <td class="mut" style="font-size:11px">nada separado</td>
+        <td class="num">27</td><td class="num">299</td><td class="num rojo">298</td><td class="num mut">$ 44.429.149</td><td><span class="dec">Esperar</span><span class="motivo">nada separado</span></td><td><span class="btn">Despachar</span></td></tr>
+    </tbody>
+  </table>
+  <p class="ley">Color del flete por unidad: <i style="background:#e9f5ee;border-color:#bfe0cd"></i>sale (≤ $ 2.500) <i style="background:#fff4e0;border-color:#f3d3a5"></i>falta poco ($ 2.500–3.000) <i style="background:#fbeceb;border-color:#f0c4c0"></i>esperar (> $ 3.000) · tachado = no cabe lo separado · recuadro negro = el más barato de los que caben. Se puede ordenar por el mejor flete por unidad.</p>
+  <p class="nota"><b>Cómo se lee:</b> Miriam Angulo tiene 14 separadas; en caja saldrían a $ 2.690 (falta poco), pero en paquete de 5 kg salen a $ 1.040: se despacha en paquete. María Inés con 12 solo cabe en paquete de 5 kg y sale a $ 2.790 (ámbar): con 2 más baja de $ 2.500. Lenis con 6 no sale en ningún empaque; le faltan 2 para que salga en paquete pequeño. La Decisión toma el mejor empaque que cabe.</p>
+</div>
+
+<div class="paso"><i>D</i> En la ventana del cliente y en "Despachar" · la comparación completa</div>
+<div class="caja">
+  <h2>MIRIAM ANGULO CELORIO</h2>
+  <p class="mut" style="margin:2px 0 10px">BUENAVENTURA · pedidos 7611, 7702 · 38 referencias · 358 unidades · $ 47.039.100</p>
+  <div class="kp">
+    <div><span>Pendiente</span><b>358</b><em>358 vend. − 0 fact.</em></div>
+    <div><span>Separado vigente</span><b style="color:var(--sep)">14</b><em>4,9 kg est. · 9 blusas, 3 vestidos, 2 conj.</em></div>
+    <div><span>Abierto real</span><b>344</b><em>falta producir o separar</em></div>
+    <div><span>Cerrado s/cubrir</span><b class="mut">0</b><em>no se persigue</em></div>
+    <div><span>Faltante real</span><b class="rojo">358</b><em>$ 47.039.100</em></div>
+    <div><span>Decisión</span><b><span class="dec ok">Despachar</span></b><em>paq 5 kg · $ 1.040/und</em></div>
+  </div>
+  <p class="tit">Flete de las 14 separadas a Buenaventura · tarifa del 23 sep</p>
+  <div class="comp">
+    <table>
+      <thead><tr><th>Empaque</th><th class="num">Cabe</th><th class="num">Fijo</th><th class="num">1 % declarado</th><th class="num">Flete</th><th class="num">Por unidad</th><th>Entrega</th><th>Para que salga a $ 2.500</th></tr></thead>
+      <tbody>
+        <tr><td>Caja 20 kg · 40×40×30</td><td class="num">55</td><td class="num">$ 29.400</td><td class="num">$ 8.320 <span class="mut">($ 832.000)</span></td><td class="num">$ 37.720</td><td class="num" style="color:var(--amb);font-weight:700">$ 2.690</td><td>2 días</td><td>con 2 más ($ 2.360)</td></tr>
+        <tr class="fila-ok"><td><b>Paquete 3–5 kg · 30×20×15</b> <span class="dec ok">mejor</span></td><td class="num">14</td><td class="num">$ 14.000</td><td class="num">$ 500 <span class="mut">($ 50.000)</span></td><td class="num">$ 14.500</td><td class="num" style="color:var(--ok);font-weight:700">$ 1.040</td><td>2 días</td><td>ya sale</td></tr>
+        <tr class="fila-nc"><td>Paquete 1–2 kg · 25×20×8</td><td class="num">5 · no cabe</td><td class="num">$ 9.500</td><td class="num">$ 500</td><td class="num">$ 10.000</td><td class="num">$ 715</td><td>2 días</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="nota">Aquí se ven las tres opciones con la cuenta completa: fijo, 1 % del valor declarado, flete, por unidad, días de entrega y cuántas unidades más harían que saliera. La ventana "Despachar" muestra esta misma tabla y al escoger el empaque queda seleccionado para la guía. Las cifras de paquetes son de ejemplo hasta cotizarlas; la caja es real.</p>
+</div>
+
+<div class="paso"><i>?</i> Decisiones antes de programar</div>
+<div class="preg">
+  <ol>
+    <li><b>Cuántas prendas caben.</b> Puse ~55 en caja, ~14 en paquete de 5 kg y ~5 en el de 1–2 kg, calculando por peso (blusa 0,25 kg, vestido 0,40, pantalón 0,45, conjunto 0,65). Si me dices cuántas prendas metes de verdad en una caja llena y en un paquete, lo ajusto; queda configurable.</li>
+    <li><b>Valor declarado.</b> Seguir con el fijo por empaque ($ 832.000 caja, $ 50.000 paquetes) o declarar el valor real de la mercancía. Con el 1 %, cambia la cuenta.</li>
+    <li><b>Umbrales.</b> Verde hasta $ 2.500, ámbar hasta $ 3.000, ¿o un solo corte?</li>
+    <li><b>Tarifa.</b> Las cotizaciones salen del ambiente de pruebas; se confirman cuando activen producción.</li>
+  </ol>
+</div>
+</body>
+</html>

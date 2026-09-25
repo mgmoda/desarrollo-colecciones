@@ -143,6 +143,7 @@ export default function DespachosView({
             const fila = { dane, empaque: e.key, fijo: Math.round(Number(d.flete_fijo) || 0), variable: Math.round(Number(d.flete_variable) || 0), flete: Math.round(Number(d.flete_total) || 0), valoracion: e.valor, dias: Number(d.dias_entrega) || null, peso_liquidado: Number(d.peso_liquidado) || null, ambiente: r.ambiente || '', raw: r.data }
             await guardarTarifa(fila).catch((err) => { console.error('Tarifa:', err); setErrorCot('No se pudo guardar la tarifa: ' + (err.message || err)) })
             if (q.vivo) setTarifas((t) => ({ ...t, [k]: { ...fila, at: new Date().toISOString() } }))
+            q.seguidos = 0
             break
           }
           const msg = r && r.data ? (r.data.error?.message || r.data.error || r.data.message || JSON.stringify(r.data).slice(0, 200)) : 'sin respuesta'
@@ -152,6 +153,15 @@ export default function DespachosView({
           // El rechazo también se guarda (flete 0) para poder leer el motivo
           // exacto; se vuelve a intentar pasada una hora.
           await guardarTarifa({ dane, empaque: e.key, fijo: 0, variable: 0, flete: 0, valoracion: e.valor, dias: null, peso_liquidado: null, ambiente: (r && r.ambiente) || '', raw: r && r.data }).catch(() => {})
+          // Tres rechazos seguidos con el mismo motivo: el cotizador está
+          // caído para la cuenta, no para una ciudad. Se para la cola y se
+          // avisa una sola vez; al recargar la página se vuelve a intentar.
+          q.seguidos = (q.ultimoError === msg ? (q.seguidos || 0) : 0) + 1
+          q.ultimoError = msg
+          if (q.seguidos >= 3) {
+            q.pendientes.clear()
+            if (q.vivo) setErrorCot(`Coordinadora no está cotizando ahora (${msg}). Se dejó de pedir; al recargar la página se vuelve a intentar.`)
+          }
         }
         if (q.vivo) setCotizando(q.pendientes.size + (q.corriendo ? 1 : 0))
         await pausa(400)
@@ -225,7 +235,7 @@ export default function DespachosView({
             )
           })}
           {cotizando > 0 && <span className="muted dsp-cotizando" title="Pidiendo a Coordinadora la tarifa de las ciudades que faltan">cotizando {cotizando}…</span>}
-          {errorCot && <span className="dsp-cotizando dsp-err" title={errorCot}>{errorCot.slice(0, 90)}</span>}
+          {errorCot && <span className="dsp-cotizando dsp-err" title={errorCot}>{errorCot.length > 120 ? errorCot.slice(0, 118) + '…' : errorCot}</span>}
         </div>
         <select className="input dsp-ciudad" value={ciudad} onChange={(e) => setCiudad(e.target.value)} title="Filtrar por ciudad">
           <option value="">Todas las ciudades</option>

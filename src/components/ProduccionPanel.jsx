@@ -139,7 +139,40 @@ export default function ProduccionPanel({ codigo, descripcion, cliente, lineas, 
           <div><span>Entregó taller</span><b>{num(p.cifras.entrego)}</b><em>{p.cifras.enTaller ? `${num(p.cifras.enTaller)} en taller` : p.cifras.cortado > p.cifras.entrego ? `faltan ${num(p.cifras.cortado - p.cifras.entrego)}` : p.cifras.cortado ? 'todo' : 'nada cortado'}</em></div>
           <div><span>En bodega</span><b>{num(p.cifras.bodega)}</b><em>{num(p.libres.conNombre)} con nombre</em></div>
           <div><span>Libres hoy</span><b className="pp-ok">{num(p.libres.total)}</b><em>{p.libres.colores.length ? p.libres.colores.join(' · ') : 'nada libre'}</em></div>
+          <div>
+            <span>Por programar</span>
+            <b className={p.porProgramar.total > 0 && !p.cerrada ? 'pp-f' : p.porProgramar.total < 0 ? 'muted' : ''}>
+              {p.porProgramar.total > 0 ? num(p.porProgramar.total) : p.porProgramar.total < 0 ? `+${num(-p.porProgramar.total)}` : '0'}
+            </b>
+            <em title={`Pedido de todos los clientes ${num(p.porProgramar.pedido)} · programado ${num(p.porProgramar.programado)}`}>
+              {p.cerrada && p.porProgramar.total > 0 ? 'cerrada · no sale' : p.porProgramar.total < 0 ? 'programado de más' : `pedido ${num(p.porProgramar.pedido)} · prog. ${num(p.porProgramar.programado)}`}
+            </em>
+          </div>
         </div>
+
+        {p.porProgramar.total > 0 && !p.cerrada && p.porProgramar.colores.some((c) => c.unid > 0) && (
+          <div className="pp-falta">
+            <div className="pp-falta-cab">
+              <b>Falta por programar {num(p.porProgramar.total)}</b> · pedido de todos los clientes {num(p.porProgramar.pedido)} − programado {num(p.porProgramar.programado)}
+              <span className="muted"> · misma cuenta que Programaciones</span>
+            </div>
+            <table className="pp-curva">
+              <thead><tr><th>Color</th>{p.porProgramar.tallas.map((t) => <th key={t} className="num">{t}</th>)}<th className="num">Falta</th></tr></thead>
+              <tbody>
+                {p.porProgramar.colores.filter((c) => c.unid > 0).map((c) => (
+                  <tr key={c.color}>
+                    <td>{c.color}{!c.delPedido && <span className="muted"> · no está en el pedido</span>}</td>
+                    {p.porProgramar.tallas.map((t) => <td key={t} className={'num' + (c.tallas[t] ? ' pp-f' : c.deMas[t] ? ' muted' : ' pp-z')}>{c.tallas[t] || (c.deMas[t] ? `+${c.deMas[t]}` : '·')}</td>)}
+                    <td className="num pp-f"><b>{num(c.unid)}</b></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {p.porProgramar.colores.some((c) => c.unid <= 0 && Object.keys(c.deMas).length > 0) && (
+              <div className="pp-nota">Programado de más: {p.porProgramar.colores.filter((c) => c.unid <= 0 && Object.keys(c.deMas).length).map((c) => `${c.color} ${num(-c.unid)}`).join(', ')}.</div>
+            )}
+          </div>
+        )}
 
         {p.tela && (p.tela.label || p.tela.movimientos.length > 0) && (
           <div className="pp-tela">

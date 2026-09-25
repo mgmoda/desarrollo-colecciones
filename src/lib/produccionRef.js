@@ -9,7 +9,7 @@
 // Todo sale de lo que ya existe: órdenes de Factory (Programaciones), etapas
 // medidas (procesos), estado de tela (programaciones) y el pedido de SYD.
 // ════════════════════════════════════════════════════════════════════════
-import { cantidadReal, empatarColor, esOrdenConjunto, indiceCodigos, indiceConjuntos } from './programaciones.js'
+import { cantidadReal, cortesDe, empatarColor, esOrdenConjunto, faltaPorColor, indiceCodigos, indiceConjuntos, programadoDe } from './programaciones.js'
 import { AREA_ORDER, areaIndex, orderArea } from './domain.js'
 import { diasDesde, diasEntre } from './dates.js'
 import { armarPorReferencia, calcularLibres } from './porReferencia.js'
@@ -169,6 +169,54 @@ function ordenesDeRef(ref, orders, refs) {
   return { esConjunto: false, grupos: [{ pieza: '', ordenes: juntar(ref, false) }] }
 }
 
+// Lo que falta por programar: el pedido de todos los clientes (el desglose
+// por color y talla del reporte de separados, como en Programaciones) menos
+// lo ya mandado a cortar. Misma cuenta que la columna "Falta" de esa pestaña
+// (`programadoDe` + `faltaPorColor`), para que los dos números coincidan.
+function porProgramarDe(ref, orders, refs, programaciones, filasSyd, coloresPedido) {
+  const prog = (programaciones || []).find((x) => up(x.id) === up(ref))
+  const codigos = indiceCodigos(refs)
+  const conj = indiceConjuntos(refs).get(up(ref))
+  const piezas = conj ? conj.piezas : []
+  const ordenesPorRef = new Map()
+  ;(orders || []).forEach((o) => {
+    if (o.origen === 'premuestra') return
+    const k = String(o.referencia || '').trim()
+    if (!ordenesPorRef.has(k)) ordenesPorRef.set(k, [])
+    ordenesPorRef.get(k).push(o)
+  })
+  // Sin programación (referencia que no está en el reporte), el desglose se
+  // arma con las líneas vendidas de SYD.
+  let desglose = prog && prog.desglose
+  if (!desglose) {
+    const colores = new Map()
+    ;(filasSyd || []).forEach((r) => {
+      if (up(r.referencia) !== up(ref) || (r.estado || 'vendido') !== 'vendido') return
+      const c = up(r.color) || '—'
+      if (!colores.has(c)) colores.set(c, { color: c, tallas: {}, unid: 0 })
+      const d = colores.get(c)
+      Object.entries(r.tallas || {}).forEach(([t, v]) => { d.tallas[t] = (d.tallas[t] || 0) + n0(v); d.unid += n0(v) })
+    })
+    desglose = { colores: [...colores.values()], total: [...colores.values()].reduce((n, c) => n + c.unid, 0) }
+  }
+  const pedido = n0(desglose.total) || (prog ? n0(prog.pedido) : 0)
+  const programado = programadoDe({ id: up(ref), piezas }, ordenesPorRef, codigos)
+  const cortes = cortesDe({ id: up(ref), piezas }, ordenesPorRef, codigos, coloresPedido)
+  const falta = faltaPorColor(desglose, cortes)
+  const colores = falta.colores.map((c) => ({
+    color: up(c.color), delPedido: c.delPedido, unid: c.unid,
+    tallas: Object.fromEntries(Object.entries(c.tallas).filter(([, v]) => v > 0)),
+    deMas: Object.fromEntries(Object.entries(c.tallas).filter(([, v]) => v < 0).map(([t, v]) => [t, -v])),
+  }))
+  return {
+    pedido, programado, total: pedido - programado,
+    colores: colores.filter((c) => c.unid > 0 || Object.keys(c.deMas).length),
+    // Solo las tallas con algo que decir: el reporte trae la lista completa.
+    tallas: falta.tallas.map(String).filter((t) => colores.some((c) => c.tallas[t] || c.deMas[t])).sort(ordenTalla),
+    sinDetalle: falta.sinDetalle,
+  }
+}
+
 // Estado de tela de la referencia (Programaciones): lo que está andando.
 function estadoTelaDe(ref, programaciones) {
   const p = (programaciones || []).find((x) => up(x.id) === up(ref))
@@ -249,17 +297,21 @@ export function produccionDe({ ref, lineas, filasSyd, orders, refs, programacion
   cifras.libres = libres.total
 
   const tela = estadoTelaDe(codigo, programaciones)
+  const porProgramar = porProgramarDe(codigo, orders, refs, programaciones, filasSyd, coloresPedido)
+  // El programado de arriba es el mismo de Programaciones (en un conjunto, la
+  // prenda que más se cortó), para que "por programar" cuadre con esa cifra.
+  cifras.programado = porProgramar.programado
   const pendiente = pendienteDe(lineas)
   // Un conjunto se corta en dos órdenes iguales (una por prenda): para decir
   // dónde está lo que falta basta con las de la primera prenda.
-  const respuesta = armarRespuesta({ pendiente, libres, ordenes: esConjunto ? gruposArmados[0].ordenes : ordenes, tela, cerrada })
+  const respuesta = armarRespuesta({ pendiente, libres, ordenes: esConjunto ? gruposArmados[0].ordenes : ordenes, tela, cerrada, porProgramar })
 
-  return { ref: codigo, esConjunto, grupos: gruposArmados, ordenes, cifras, libres, tela, pendiente, respuesta, cerrada: !!cerrada }
+  return { ref: codigo, esConjunto, grupos: gruposArmados, ordenes, cifras, libres, tela, pendiente, respuesta, porProgramar, cerrada: !!cerrada }
 }
 
 // La respuesta para el cliente, color por color: qué se le puede separar hoy
 // y dónde está lo que falta.
-function armarRespuesta({ pendiente, libres, ordenes, tela, cerrada }) {
+function armarRespuesta({ pendiente, libres, ordenes, tela, cerrada, porProgramar }) {
   const enCamino = ordenes.filter((o) => o.area !== 'bodega')
   return pendiente.map((p) => {
     const tallas = Object.keys(p.tallas).sort(ordenTalla)
@@ -291,13 +343,19 @@ function armarRespuesta({ pendiente, libres, ordenes, tela, cerrada }) {
         else donde.push(`${und} en corte (orden ${o.orden} del ${o.fechaOCTxt})`)
       })
       if (donde.length) partes.push(donde.join('; '))
-      else if (cerrada) partes.push('producción cerrada: no sale más')
-      else if (tela && tela.movimientos.length) {
-        const m = tela.movimientos.filter((x) => x.color === p.color)
-        const lista = (m.length ? m : tela.movimientos).map((x) => `${x.proceso.toLowerCase()} ${x.cant ? x.cant + ' und' : ''}${x.dias != null ? ` hace ${diasTxt(x.dias)}` : ''}`.replace(/\s+/g, ' ').trim())
-        partes.push(`sin orden de corte de ese color: ${lista.join(', ')}`)
-      } else if (tela && tela.label) partes.push(`sin orden de corte de ese color · ${tela.label.toLowerCase()}`)
-      else partes.push('sin orden de corte de ese color')
+      // Lo que ni siquiera se ha programado de ese color.
+      const fp = (porProgramar.colores || []).find((c) => c.color === p.color)
+      const faltaProg = fp ? fp.unid : 0
+      if (cerrada) partes.push('producción cerrada: no sale más')
+      else if (faltaProg > 0 || !donde.length) {
+        const base = faltaProg > 0 ? `faltan ${faltaProg} und por programar de ese color` : 'sin orden de corte de ese color'
+        if (tela && tela.movimientos.length) {
+          const m = tela.movimientos.filter((x) => x.color === p.color)
+          const lista = (m.length ? m : tela.movimientos).map((x) => `${x.proceso.toLowerCase()} ${x.cant ? x.cant + ' und' : ''}${x.dias != null ? ` hace ${diasTxt(x.dias)}` : ''}`.replace(/\s+/g, ' ').trim())
+          partes.push(`${base}: ${lista.join(', ')}`)
+        } else if (tela && tela.label) partes.push(`${base} · ${tela.label.toLowerCase()}`)
+        else partes.push(base)
+      }
     }
     return { color: p.color, n: p.n, puede, texto: partes.join(' · ') }
   })

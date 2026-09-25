@@ -350,7 +350,12 @@ cortador (`procesos[orden].corte.quien`), taller y días (rojo pasados
 `dev_programaciones`; libres hoy por color y talla (`calcularLibres`, mismo
 número de Por referencia) cruzados con lo que ese cliente pide; y "Para
 contestarle" por color: cuánto se le puede separar ya y dónde está el resto
-(taller, corte, alistamiento, estampación, cerrada). Para eso App pasa
+(taller, corte, alistamiento, estampación, cerrada). Sexta cifra **Por
+programar** = pedido de todos los clientes (desglose del reporte de
+separados, o las líneas vendidas de SYD si no hay programación) − programado,
+con la MISMA cuenta de Programaciones (`programadoDe` + `faltaPorColor`:
+en un conjunto la prenda que más se cortó) y un bloque rojo por color y
+talla cuando falta; negativo = "programado de más". Para eso App pasa
 `programaciones` y `procesos` a Pedidos → Despachos.
 
 **Programaciones se alimenta de aquí (13-sep-2026).** Ya no existe "Cargar

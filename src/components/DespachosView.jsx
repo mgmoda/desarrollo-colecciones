@@ -107,33 +107,46 @@ export default function DespachosView({
 
   // Cotiza en segundo plano las ciudades con separado que no tienen tarifa
   // (o la tienen vieja): una vez por ciudad y empaque, de a dos a la vez, y
-  // guarda cada una apenas llega para que la tabla se vaya pintando.
+  // guarda cada una apenas llega para que la tabla se vaya pintando. La cola
+  // vive en un ref para que un refresco de la tabla (cada 2 min) no la
+  // cancele ni la duplique; lo ya pedido no se vuelve a pedir en la sesión.
+  const colaRef = useRef({ pendientes: new Map(), pedidas: new Set(), corriendo: false, vivo: true })
+  const [errorCot, setErrorCot] = useState('')
+  useEffect(() => { const q = colaRef.current; q.vivo = true; return () => { q.vivo = false } }, [])
   useEffect(() => {
-    if (cotizandoRef.current) return
-    const pendientes = tarifasPendientes(clientesBase, daneDe, tarifas)
-    if (!pendientes.length) return
-    cotizandoRef.current = true
-    setCotizando(pendientes.length)
-    let vivo = true
-    const cola = [...pendientes]
+    const q = colaRef.current
+    tarifasPendientes(clientesBase, daneDe, tarifas).forEach((p) => {
+      const k = claveTarifa(p.dane, p.empaque.key)
+      if (!q.pendientes.has(k) && !q.pedidas.has(k)) q.pendientes.set(k, p)
+    })
+    if (q.corriendo || !q.pendientes.size) return
+    q.corriendo = true
+    setCotizando(q.pendientes.size)
     const una = async () => {
-      while (cola.length && vivo) {
-        const { dane, empaque: e } = cola.shift()
+      while (q.pendientes.size && q.vivo) {
+        const [k, { dane, empaque: e }] = q.pendientes.entries().next().value
+        q.pendientes.delete(k); q.pedidas.add(k)
         try {
           const r = await llamar('cotizar', { destino: dane, valoracion: e.valor, detalle: [{ alto: e.alto, ancho: e.ancho, largo: e.largo, peso: e.peso, unidades: 1 }] })
           const d = r && r.data && r.data.data
           if (r && r.ok && d && Number(d.flete_total) > 0) {
             const fila = { dane, empaque: e.key, fijo: Math.round(Number(d.flete_fijo) || 0), variable: Math.round(Number(d.flete_variable) || 0), flete: Math.round(Number(d.flete_total) || 0), valoracion: e.valor, dias: Number(d.dias_entrega) || null, peso_liquidado: Number(d.peso_liquidado) || null, ambiente: r.ambiente || '', raw: r.data }
-            await guardarTarifa(fila).catch((err) => console.error('Tarifa:', err))
-            if (vivo) setTarifas((t) => ({ ...t, [claveTarifa(dane, e.key)]: { ...fila, at: new Date().toISOString() } }))
+            await guardarTarifa(fila).catch((err) => { console.error('Tarifa:', err); setErrorCot('No se pudo guardar la tarifa: ' + (err.message || err)) })
+            if (q.vivo) setTarifas((t) => ({ ...t, [k]: { ...fila, at: new Date().toISOString() } }))
+          } else {
+            const msg = r && r.data ? (r.data.error?.message || r.data.message || JSON.stringify(r.data).slice(0, 200)) : 'sin respuesta'
+            console.error('Cotizar', dane, e.key, msg)
+            if (q.vivo) setErrorCot(`Coordinadora no cotizó ${dane} (${e.label}): ${msg}`)
           }
-        } catch (err) { console.error('Cotizar', dane, e.key, err) }
-        if (vivo) setCotizando((n) => Math.max(0, n - 1))
+        } catch (err) {
+          console.error('Cotizar', dane, e.key, err)
+          if (q.vivo) setErrorCot(`No se pudo cotizar ${dane} (${e.label}): ${err.message || err}`)
+        }
+        if (q.vivo) setCotizando(q.pendientes.size + (q.corriendo ? 1 : 0))
       }
     }
-    Promise.all([una(), una()]).finally(() => { cotizandoRef.current = false; if (vivo) setCotizando(0) })
-    return () => { vivo = false }
-  }, [clientesBase, libreta, danePorCiudad]) // eslint-disable-line react-hooks/exhaustive-deps
+    Promise.all([una(), una()]).finally(() => { q.corriendo = false; if (q.vivo) setCotizando(0) })
+  }, [clientesBase, libreta, danePorCiudad, tarifas]) // eslint-disable-line react-hooks/exhaustive-deps
   // Lo que el panel de producción de una referencia necesita; se arma una
   // sola vez para que el panel no recalcule con cada pintada.
   const produccion = useMemo(() => ({ filasSyd: filas || [], orders: orders || [], refs: refs || [], programaciones: programaciones || [], procesos: procesos || {} }),
@@ -200,6 +213,7 @@ export default function DespachosView({
             )
           })}
           {cotizando > 0 && <span className="muted dsp-cotizando" title="Pidiendo a Coordinadora la tarifa de las ciudades que faltan">cotizando {cotizando}…</span>}
+          {errorCot && <span className="dsp-cotizando dsp-err" title={errorCot}>{errorCot.slice(0, 90)}</span>}
         </div>
         <select className="input dsp-ciudad" value={ciudad} onChange={(e) => setCiudad(e.target.value)} title="Filtrar por ciudad">
           <option value="">Todas las ciudades</option>

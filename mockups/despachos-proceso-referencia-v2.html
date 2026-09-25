@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup v2 · Panel lateral con el detalle de cada orden</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--muted:#6b6660;--sep:#2b4a7e;--pend:#b23121;--ok:#1f6b2e;--tal:#8a4b0a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.35;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:24px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 18px;max-width:980px}
+.modal{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;max-width:1230px;padding:16px 18px;position:relative;overflow:hidden;min-height:860px}
+.modal h2{font-family:Fraunces,serif;font-weight:500;font-size:20px;margin:0}
+.modal .m{color:var(--muted);font-size:12px;margin:2px 0 12px}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 8px;text-align:left;background:#faf9f6;border-bottom:1px solid var(--hairline)}
+td{padding:7px 8px;border-bottom:1px solid #f0ede7;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.n{text-align:center}.num{text-align:right}
+.grupo td{background:#f7f6f2;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#4a4642}
+.foto{width:34px;height:42px;border-radius:5px;background:linear-gradient(135deg,#d8c7b8,#b39c8b);display:inline-block;vertical-align:middle}
+.ref b{font-weight:700}
+.ref b.link{text-decoration:underline;text-decoration-color:#b8b3a8;text-underline-offset:3px;cursor:pointer}
+.cat{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;font-size:10px;font-weight:600;line-height:15px;background:#fdf1e2;color:#8a4b0a;border:1px solid #f3d3a5}
+.cat.v{background:#eeedfe;color:#3c3489;border-color:#cecbf6}.cat.b{background:#e9f5ee;color:#1f6b4a;border-color:#bfe0cd}
+.desc{color:var(--muted);font-size:11px;margin-left:6px}
+.col{font-weight:600}.col small{color:var(--muted);font-weight:400;margin-left:4px}
+.sep{color:var(--sep);font-weight:700}.pend{color:var(--pend);font-weight:700}.mut{color:var(--muted)}
+.punto{display:inline-block;width:7px;height:7px;border-radius:50%;background:#d8d4c9;margin-right:6px;vertical-align:middle}
+.punto.az{background:var(--sep)}
+.cel-sep{background:#eaf0fb}
+.sel td{background:#fff8ec}
+.chip{display:inline-block;padding:0 7px;border-radius:999px;line-height:17px;font-size:10.5px;font-weight:600;border:1px solid;white-space:nowrap}
+.chip.taller{background:#fff4e0;color:#8a4b0a;border-color:#f3d3a5}
+.chip.bodega{background:#e9f5ee;color:#1f6b4a;border-color:#bfe0cd}
+.chip.corte{background:#eef3fb;color:#2b4a7e;border-color:#c9d7ee}
+.chip.muestra{background:#f1f0ee;color:#6b6660;border-color:#d8d4c9}
+/* velo + panel */
+.velo{position:absolute;inset:0;background:rgba(28,28,34,.06)}
+.drawer{position:absolute;right:0;top:0;bottom:0;width:680px;background:#fff;border-left:1px solid var(--hairline-strong);box-shadow:-12px 0 30px rgba(0,0,0,.10);padding:16px 20px 20px;overflow:auto}
+.drawer h3{font-family:Fraunces,serif;font-weight:500;font-size:19px;margin:0;padding-right:36px}
+.drawer .m{margin-bottom:0}
+.x{position:absolute;right:16px;top:14px;width:26px;height:26px;border-radius:50%;border:1px solid var(--hairline-strong);display:grid;place-items:center;font-size:12px;color:var(--muted);background:#fff}
+.kp{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0 4px}
+.kp div{border:1px solid var(--hairline);border-radius:9px;padding:6px 10px}
+.kp small{display:block;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.kp b{font-size:17px;font-weight:600}
+.kp em{display:block;font-style:normal;font-size:10.5px;color:var(--muted)}
+.tit{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+/* orden */
+.lote{border:1px solid var(--hairline);border-radius:10px;margin-top:10px;overflow:hidden}
+.lote .cab{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;background:#faf9f6;border-bottom:1px solid var(--hairline);font-size:12px}
+.lote .cab b{font-size:13px;font-weight:700}
+.lote .cab .mut{margin-left:6px}
+.ruta{display:flex;flex-wrap:wrap;gap:0;padding:7px 12px 6px;font-size:11px;border-bottom:1px solid #f0ede7}
+.ruta span{display:inline-flex;align-items:center;gap:5px;color:#4a4642;padding-right:10px;margin-right:10px;border-right:1px solid var(--hairline)}
+.ruta span:last-child{border-right:0;margin-right:0;padding-right:0}
+.ruta i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#8fbf9e}
+.ruta span.aqui{font-weight:700;color:var(--tal)}.ruta span.aqui i{background:#e0862e;box-shadow:0 0 0 2px #fbe3c6}
+.ruta span.falta{color:#b8b3a8}.ruta span.falta i{background:#fff;box-shadow:inset 0 0 0 1px #d8d4c9}
+.ruta b{font-weight:600}
+.tarde{color:var(--pend);font-weight:600}
+.curva{table-layout:auto}
+.curva th{background:#fff;padding:5px 8px;font-size:9.5px}
+.curva td{padding:4px 8px;font-size:12px;border-bottom:1px solid #f4f2ed}
+.curva tr:last-child td{border-bottom:0}
+.curva td:first-child,.curva th:first-child{padding-left:12px}
+.curva .fila-t td{color:var(--muted);font-size:11px;font-style:italic}
+.curva .fila-t td:first-child{padding-left:20px;font-style:normal}
+.curva .tot td{font-weight:700;background:#faf9f6}
+.curva .f{color:var(--pend)}
+.curva .z{color:#c9c4ba}
+.curva .ok{color:var(--ok)}
+.nota-l{padding:6px 12px 8px;font-size:11.5px;color:#4a4642;background:#fffdf8;border-top:1px solid #f0ede7}
+.resp{margin-top:12px;padding:9px 12px;border-radius:9px;background:#fff8ec;border:1px solid #f3d3a5;font-size:12px}
+.resp b{font-weight:700}
+.libres{border:1px solid #bfe0cd;border-radius:10px;overflow:hidden;margin-top:6px}
+.libres .cab{padding:7px 12px;background:#f0f8f2;font-size:12px;border-bottom:1px solid #d5ead9}
+.libres .curva td:first-child{font-weight:600}
+.nota{color:var(--muted);font-size:12px;max-width:1000px;margin:14px 0 0}
+.nota b{color:var(--ink)}
+</style>
+</head>
+<body>
+<h1>Panel lateral · cada orden con sus cantidades y colores</h1>
+<p class="sub">Clic en el código de la referencia dentro de la ventana del cliente → se abre este panel a la derecha. La tabla del cliente sigue detrás, atenuada; se cierra con la × o con Escape, o haciendo clic en otra referencia para cambiar.</p>
+
+<div class="modal">
+  <h2>CARMEN ACOSTA OSIO SAS</h2>
+  <p class="m">BARRANQUILLA · pedidos 7531, 7532, 7808 · 45 referencias · 326 unidades · $ 48.603.700</p>
+  <table>
+    <colgroup><col style="width:42px"><col style="width:26%"><col style="width:13%"><col span="7" style="width:3.2%"><col style="width:5%"><col style="width:8%"><col style="width:9%"><col style="width:5%"><col style="width:5%"><col style="width:5.5%"></colgroup>
+    <thead><tr><th></th><th>Referencia</th><th>Color</th><th class="n">8</th><th class="n">10</th><th class="n">12</th><th class="n">14</th><th class="n">16</th><th class="n">18</th><th class="n">20</th><th class="num">Unid</th><th class="num">Precio</th><th class="num">Total</th><th class="num">Sep.</th><th class="num">Fact.</th><th class="num">Pend.</th></tr></thead>
+    <tbody>
+      <tr class="grupo"><td colspan="16">Casania · 13 referencias · 90 unidades</td></tr>
+      <tr class="sel">
+        <td rowspan="2"><span class="foto"></span></td>
+        <td rowspan="2" class="ref"><span class="punto"></span><b class="link">C6852</b><span class="cat">Conjunto</span><span class="desc">CONJUNTO ESTAMPADO CON O…</span></td>
+        <td class="col">AZUL <small>7808</small></td>
+        <td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td>
+        <td class="num">7</td><td class="num mut">$ 185.800</td><td class="num">$ 1.300.600</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">7</td>
+      </tr>
+      <tr class="sel"><td class="col">VERDE <small>7808</small></td><td class="n mut">·</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">2</td><td class="num mut">$ 173.800</td><td class="num">$ 347.600</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">2</td></tr>
+      <tr><td><span class="foto"></span></td><td class="ref"><span class="punto"></span><b class="link">C6858</b><span class="cat">Conjunto</span><span class="desc">CONJUNTO CHAMBRAY BORDADO</span></td><td class="col">AZUL <small>7808</small></td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">6</td><td class="num mut">$ 187.800</td><td class="num">$ 1.126.800</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">6</td></tr>
+      <tr><td rowspan="2"><span class="foto"></span></td><td rowspan="2" class="ref"><span class="punto"></span><b class="link">C6865</b><span class="cat v">Vestido</span><span class="desc">VESTIDO CAMISERO ESTAMPADO</span></td><td class="col">AZUL <small>7808</small></td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">5</td><td class="num mut">$ 149.900</td><td class="num">$ 749.500</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">5</td></tr>
+      <tr><td class="col">VINOTINTO <small>7808</small></td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">5</td><td class="num mut">$ 149.900</td><td class="num">$ 749.500</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">5</td></tr>
+      <tr><td rowspan="2"><span class="foto"></span></td><td rowspan="2" class="ref"><span class="punto"></span><b class="link">C6868</b><span class="cat">Conjunto</span><span class="desc">CONJUNTO ESTAMPADO COORDI…</span></td><td class="col">AZUL <small>7808</small></td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="num">7</td><td class="num mut">$ 182.800</td><td class="num">$ 1.279.600</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">7</td></tr>
+      <tr><td class="col">VERDE <small>7808</small></td><td class="n mut">·</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">2</td><td class="num mut">$ 170.800</td><td class="num">$ 341.600</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">2</td></tr>
+      <tr><td><span class="foto"></span></td><td class="ref"><span class="punto"></span><b class="link">C6870</b><span class="cat v">Vestido</span><span class="desc">VESTIDO CHIFFON DE CAPAS</span></td><td class="col">AZUL <small>7808</small></td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">5</td><td class="num mut">$ 155.900</td><td class="num">$ 779.500</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">5</td></tr>
+      <tr><td><span class="foto"></span></td><td class="ref"><span class="punto"></span><b class="link">C6882</b><span class="cat v">Vestido</span><span class="desc">VESTIDO BORDADO NATURAL</span></td><td class="col">BLANCO <small>7808</small></td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="num">7</td><td class="num mut">$ 220.900</td><td class="num">$ 1.546.300</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">7</td></tr>
+      <tr><td><span class="foto"></span></td><td class="ref"><span class="punto az"></span><b class="link">C6888</b><span class="cat b">Blusa</span><span class="desc">BLUSA BORDADA CON MANGA G…</span></td><td class="col">CRUDO <small>7808</small></td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">5</td><td class="num mut">$ 129.900</td><td class="num">$ 649.500</td><td class="num sep">5</td><td class="num mut">·</td><td class="num pend">5</td></tr>
+      <tr><td><span class="foto"></span></td><td class="ref"><span class="punto"></span><b class="link">C6891</b><span class="cat">Conjunto</span><span class="desc">CONJUNTO CON ENCAJES</span></td><td class="col">CAQUI <small>7808</small></td><td class="n">1</td><td class="n">1</td><td class="n">2</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="num">8</td><td class="num mut">$ 238.800</td><td class="num">$ 1.910.400</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">8</td></tr>
+      <tr><td><span class="foto"></span></td><td class="ref"><span class="punto"></span><b class="link">C6892</b><span class="cat v">Vestido</span><span class="desc">VESTIDO CAMISERO DE LUNARES</span></td><td class="col">VERDE <small>7808</small></td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="num">6</td><td class="num mut">$ 156.900</td><td class="num">$ 941.400</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">6</td></tr>
+    </tbody>
+  </table>
+
+  <div class="velo"></div>
+  <div class="drawer">
+    <span class="x">×</span>
+    <h3>C6852 · Conjunto estampado con o…</h3>
+    <p class="m">Carmen Acosta pide <b>9</b>: AZUL 7 · VERDE 2 · nada separado · nada facturado</p>
+
+    <div class="kp">
+      <div><small>Programado</small><b>156</b><em>3 órdenes</em></div>
+      <div><small>Cortado</small><b>156</b><em>156 / 156</em></div>
+      <div><small>Entregó taller</small><b>58</b><em>faltan 98</em></div>
+      <div><small>En bodega</small><b>58</b><em>2 entradas</em></div>
+      <div><small>Libres hoy</small><b style="color:var(--ok)">12</b><em>solo AZUL</em></div>
+    </div>
+
+    <p class="tit">Órdenes de la referencia · de la más reciente a la más vieja</p>
+
+    <!-- Orden 10912 en taller -->
+    <div class="lote">
+      <div class="cab">
+        <div><b>Orden 10912</b><span class="mut">Producción · orden de corte 02 sep · 96 und</span></div>
+        <span class="chip taller">En taller · Taller Nubia · 10 días</span>
+      </div>
+      <div class="ruta">
+        <span><i></i>Orden corte <b>02 sep</b></span>
+        <span><i></i>Trazo <b>03 sep</b></span>
+        <span><i></i>Corte <b>05 sep</b> · Fabián</span>
+        <span><i></i>Alistado <b>12 sep</b></span>
+        <span class="aqui"><i></i>Taller Nubia <b>15 sep</b> · <span class="tarde">10 días</span></span>
+        <span class="falta"><i></i>Entrega</span>
+        <span class="falta"><i></i>Bodega</span>
+      </div>
+      <table class="curva">
+        <thead><tr><th>Color</th><th class="n">8</th><th class="n">10</th><th class="n">12</th><th class="n">14</th><th class="n">16</th><th class="n">18</th><th class="n">20</th><th class="num">Unid</th><th class="num">Entregó taller</th></tr></thead>
+        <tbody>
+          <tr><td>AZUL</td><td class="n">8</td><td class="n">10</td><td class="n">12</td><td class="n">12</td><td class="n">10</td><td class="n">5</td><td class="n">3</td><td class="num"><b>60</b></td><td class="num z">0</td></tr>
+          <tr><td>VERDE</td><td class="n">5</td><td class="n">6</td><td class="n">8</td><td class="n">8</td><td class="n">5</td><td class="n">3</td><td class="n">1</td><td class="num"><b>36</b></td><td class="num z">0</td></tr>
+          <tr class="tot"><td>Total</td><td class="n">13</td><td class="n">16</td><td class="n">20</td><td class="n">20</td><td class="n">15</td><td class="n">8</td><td class="n">4</td><td class="num">96</td><td class="num z">0</td></tr>
+        </tbody>
+      </table>
+      <div class="nota-l">Lo que el cliente pide de VERDE (2 und: tallas 10 y 12) viene en esta orden. Sin fecha prometida por el taller.</div>
+    </div>
+
+    <!-- Orden 10850 en bodega -->
+    <div class="lote">
+      <div class="cab">
+        <div><b>Orden 10850</b><span class="mut">Producción · orden de corte 20 ago · 48 und</span></div>
+        <span class="chip bodega">Entró a bodega · 12 sep · 46 und</span>
+      </div>
+      <div class="ruta">
+        <span><i></i>Orden corte <b>20 ago</b></span>
+        <span><i></i>Trazo <b>21 ago</b></span>
+        <span><i></i>Corte <b>22 ago</b> · Janet</span>
+        <span><i></i>Alistado <b>28 ago</b></span>
+        <span><i></i>Conf. Pérez <b>29 ago</b> · 13 días</span>
+        <span><i></i>Entregó <b>11 sep</b></span>
+        <span><i></i>Bodega <b>12 sep</b></span>
+      </div>
+      <table class="curva">
+        <thead><tr><th>Color</th><th class="n">8</th><th class="n">10</th><th class="n">12</th><th class="n">14</th><th class="n">16</th><th class="n">18</th><th class="n">20</th><th class="num">Unid</th><th class="num">Entregó taller</th></tr></thead>
+        <tbody>
+          <tr><td>AZUL <span class="mut">cortado</span></td><td class="n">6</td><td class="n">8</td><td class="n">10</td><td class="n">10</td><td class="n">8</td><td class="n">4</td><td class="n">2</td><td class="num"><b>48</b></td><td class="num ok">46</td></tr>
+          <tr class="fila-t"><td>entregó taller</td><td class="n">6</td><td class="n">8</td><td class="n f">9</td><td class="n">10</td><td class="n f">7</td><td class="n">4</td><td class="n">2</td><td class="num">46</td><td class="num f">faltan 2</td></tr>
+        </tbody>
+      </table>
+      <div class="nota-l">El taller entregó 46 de 48: falta 1 en talla 12 y 1 en talla 16 (arreglos o segunda). A bodega entraron las 46.</div>
+    </div>
+
+    <!-- Orden 10788 muestra -->
+    <div class="lote">
+      <div class="cab">
+        <div><b>Orden 10788</b><span class="mut">Muestra · orden de corte 02 ago · 12 und</span></div>
+        <span class="chip bodega">Entró a bodega · 22 ago · 12 und</span>
+      </div>
+      <div class="ruta">
+        <span><i></i>Orden corte <b>02 ago</b></span>
+        <span><i></i>Corte <b>04 ago</b></span>
+        <span><i></i>Taller Nubia <b>08 ago</b></span>
+        <span><i></i>Entregó <b>21 ago</b></span>
+        <span><i></i>Bodega <b>22 ago</b></span>
+      </div>
+      <table class="curva">
+        <thead><tr><th>Color</th><th class="n">8</th><th class="n">10</th><th class="n">12</th><th class="n">14</th><th class="n">16</th><th class="n">18</th><th class="n">20</th><th class="num">Unid</th><th class="num">Entregó taller</th></tr></thead>
+        <tbody>
+          <tr><td>AZUL</td><td class="n">1</td><td class="n">2</td><td class="n">2</td><td class="n">2</td><td class="n">2</td><td class="n">2</td><td class="n">1</td><td class="num"><b>12</b></td><td class="num ok">12</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="tit">Libres hoy en bodega · lo que se puede separar ya</p>
+    <div class="libres">
+      <div class="cab">Entró <b>58</b> · con nombre o facturado <b>46</b> · libres <b style="color:var(--ok)">12</b> (mismo cálculo de Por referencia)</div>
+      <table class="curva">
+        <thead><tr><th>Color</th><th class="n">8</th><th class="n">10</th><th class="n">12</th><th class="n">14</th><th class="n">16</th><th class="n">18</th><th class="n">20</th><th class="num">Libres</th><th class="num">Pide Carmen</th></tr></thead>
+        <tbody>
+          <tr><td>AZUL</td><td class="n">2</td><td class="n">3</td><td class="n z">·</td><td class="n">3</td><td class="n">2</td><td class="n">1</td><td class="n">1</td><td class="num ok"><b>12</b></td><td class="num">7 <span class="f">· falta talla 12</span></td></tr>
+          <tr><td>VERDE</td><td class="n z">·</td><td class="n z">·</td><td class="n z">·</td><td class="n z">·</td><td class="n z">·</td><td class="n z">·</td><td class="n z">·</td><td class="num z">0</td><td class="num">2 <span class="f">· nada libre</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="resp"><b>Para contestarle:</b> AZUL se le pueden separar hoy 6 de las 7 (no hay talla 12 libre; la 12 viene en la orden 10912). VERDE no hay nada libre: las 36 están en Taller Nubia desde el 15 sep, hace 10 días.</div>
+  </div>
+</div>
+
+<p class="nota"><b>Qué tiene el panel:</b> arriba las cinco cifras de la referencia (programado, cortado, entregó taller, en bodega, libres hoy). Luego cada orden con su encabezado (número, tipo, fecha, unidades y la etapa actual en color), la ruta de pasos con fechas y quién cortó / qué taller / cuántos días, y la curva por color y talla tal como se cortó; cuando el taller ya entregó, debajo de cada color va lo que entregó por talla y se marcan en rojo las tallas que faltaron. Al final, los libres hoy por color y talla cruzados con lo que pide este cliente, y la respuesta lista. Si la referencia no tiene orden, el panel muestra el estado de tela (sin tela, tela pedida, en estampación) y la fecha; si está en producción cerrada, lo dice arriba.</p>
+<p class="nota"><b>Datos:</b> órdenes, fechas de cada etapa, cortador y taller vienen de Programaciones; la curva cortada y lo entregado por talla son las que ya usa Por referencia; libres es el mismo cálculo de Por referencia; lo que pide el cliente sale de la misma ventana.</p>
+</body>
+</html>

@@ -1112,7 +1112,7 @@ export default function App() {
           <AsistenciaView stamp={stampAsistencia} />
         )}
         {tab === 'pedidos' && vePedidos && (
-          <PedidosView stamp={stampPedidos} stampDespachos={stampDespachos} usuario={emailSesion} refMap={refMapFotos} orders={orders} refs={refs} cerradas={cerradas} onCerrarRef={(ref, c) => cerrarProduccion(ref, c)} onViewImage={setLightbox} onOpenRef={(ref) => { const f = refMap.get(ref) || refMap.get(((refMapFotos.get(ref) || {}).piezas || [])[0]); if (f) openEdit(f) }} />
+          <PedidosView stamp={stampPedidos} stampDespachos={stampDespachos} usuario={emailSesion} refMap={refMapFotos} orders={orders} refs={refs} cerradas={cerradas} programaciones={programaciones} procesos={procesos} onCerrarRef={(ref, c) => cerrarProduccion(ref, c)} onViewImage={setLightbox} onOpenRef={(ref) => { const f = refMap.get(ref) || refMap.get(((refMapFotos.get(ref) || {}).piezas || [])[0]); if (f) openEdit(f) }} />
         )}
       </main>
 

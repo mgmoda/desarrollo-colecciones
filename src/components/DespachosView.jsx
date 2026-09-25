@@ -5,6 +5,7 @@ import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { dbLoadPedidosTodos, dbLoadDespachos, dbUpsertDespacho } from '../lib/db.js'
 import DespacharModal from './DespacharModal.jsx'
+import ProduccionPanel from './ProduccionPanel.jsx'
 import { dbInsertGuia, dbLoadCiudadesDane, dbLoadCiudadSyd, dbLoadGuias, dbLoadLibreta, dbUpsertLibreta } from '../lib/db.js'
 import { formatPrice } from '../lib/constants.js'
 import { nombreDe } from '../lib/procesos.js'
@@ -34,6 +35,9 @@ const ETIQUETA_LINEA = {
 
 export default function DespachosView({
   stamp, stampDespachos, usuario, refMap, onViewImage, onOpenRef, cerradas, onCerrarRef,
+  // Para el panel "en qué va" de una referencia: órdenes de Factory, fichas
+  // (conjuntos y códigos), programaciones (estado de tela) y procesos (cortador).
+  orders, refs, programaciones, procesos,
   // Inyectables para probar la vista con datos fijos, sin sesión.
   cargarPedidos = dbLoadPedidosTodos, cargarDespachos = dbLoadDespachos, guardarDespacho = dbUpsertDespacho,
 }) {
@@ -79,6 +83,10 @@ export default function DespachosView({
   }, [stampDespachos, cargarDespachos])
 
   const clientes = useMemo(() => armarDespachos(filas || [], registros || {}, cerradas), [filas, registros, cerradas])
+  // Lo que el panel de producción de una referencia necesita; se arma una
+  // sola vez para que el panel no recalcule con cada pintada.
+  const produccion = useMemo(() => ({ filasSyd: filas || [], orders: orders || [], refs: refs || [], programaciones: programaciones || [], procesos: procesos || {} }),
+    [filas, orders, refs, programaciones, procesos])
   const ciudades = useMemo(() => [...new Set(clientes.map((c) => c.ciudad).filter(Boolean))].sort(), [clientes])
 
   const lista = useMemo(() => {
@@ -211,7 +219,8 @@ export default function DespachosView({
 
       {clienteAbierto && (
         <ClienteModal cliente={clienteAbierto} usuario={usuario} registros={registros || {}} onCerrarRef={onCerrarRef}
-          onGuardar={guardar} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} onClose={() => setAbierto(null)} />
+          onGuardar={guardar} refMap={refMap} onViewImage={onViewImage} onOpenRef={onOpenRef} onClose={() => setAbierto(null)}
+          produccion={produccion} />
       )}
     </>
   )
@@ -240,8 +249,9 @@ function partesDe(l, t) {
   return { v, f, s: sp, p: v - f - sp }
 }
 
-function ClienteModal({ cliente: c, usuario, registros, onGuardar, onCerrarRef, refMap, onViewImage, onOpenRef, onClose }) {
+function ClienteModal({ cliente: c, usuario, registros, onGuardar, onCerrarRef, refMap, onViewImage, onOpenRef, onClose, produccion }) {
   const [nota, setNota] = useState(c.novedadNota || '')
+  const [prodDe, setProdDe] = useState(null) // referencia con el panel "en qué va" abierto
   const [q, setQ] = useState('')
   const [filtro, setFiltro] = useState('todas')
   const [cat, setCat] = useState('') // categoría: vestido, conjunto, pantalón, blusa
@@ -458,7 +468,7 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, onCerrarRef, 
                         {i === 0 && (
                           <>
                             <span className={'dsp-punto ' + r.punto} title={{ gris: 'No sale', verde: 'Todo facturado', azul: 'Todo lo pendiente está separado', ambar: 'Separado en parte', vacio: 'Nada separado' }[r.punto]} />
-                            <b>{r.ref}</b>
+                            <b className="dsp-ref-link" title="En qué va la producción de esta referencia" onClick={() => setProdDe(r.ref)}>{r.ref}</b>
                             <span className={'dsp-cat c-' + r.categoria.key}>{r.categoria.label}</span>
                             <span className="dsp-refd-d" title={r.descripcion}>{r.descripcion}</span>
                             {r.cerrada && <span className="tag dsp-tag">Producción cerrada</span>}
@@ -522,6 +532,13 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, onCerrarRef, 
           </span>
         </div>
       </div>
+      {prodDe && produccion && (() => {
+        const r = refs.find((x) => x.ref === prodDe)
+        return r ? (
+          <ProduccionPanel codigo={r.ref} descripcion={r.descripcion} cliente={c.cliente} lineas={r.lineas} cerrada={r.cerrada}
+            datos={produccion} onClose={() => setProdDe(null)} />
+        ) : null
+      })()}
     </Modal>
   )
 }

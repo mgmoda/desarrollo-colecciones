@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · En qué va la producción de una referencia (modal del cliente)</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--muted:#6b6660;--sep:#2b4a7e;--pend:#b23121;--ok:#1f6b2e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.35;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:24px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 6px;max-width:980px}
+.paso{display:flex;align-items:center;gap:10px;margin:34px 0 8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.paso i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:11px}
+.paso small{font-weight:500;letter-spacing:0;text-transform:none;margin-left:6px}
+.reco{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:#e9f5ee;color:#1f6b4a;border:1px solid #bfe0cd;font-size:10.5px;letter-spacing:0;text-transform:none;font-weight:600}
+.modal{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;max-width:1180px;padding:16px 18px;position:relative;overflow:hidden}
+.modal h2{font-family:Fraunces,serif;font-weight:500;font-size:20px;margin:0}
+.modal .m{color:var(--muted);font-size:12px;margin:2px 0 12px}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 8px;text-align:left;background:#faf9f6;border-bottom:1px solid var(--hairline)}
+td{padding:7px 8px;border-bottom:1px solid #f0ede7;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.n{text-align:center}.num{text-align:right}
+.grupo td{background:#f7f6f2;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#4a4642}
+.foto{width:34px;height:42px;border-radius:5px;background:linear-gradient(135deg,#d8c7b8,#b39c8b);display:inline-block;vertical-align:middle}
+.ref b{font-weight:700}
+.cat{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;font-size:10px;font-weight:600;line-height:15px;background:#fdf1e2;color:#8a4b0a;border:1px solid #f3d3a5}
+.cat.v{background:#eeedfe;color:#3c3489;border-color:#cecbf6}.cat.b{background:#e9f5ee;color:#1f6b4a;border-color:#bfe0cd}
+.desc{color:var(--muted);font-size:11px;margin-left:6px}
+.col{font-weight:600}.col small{color:var(--muted);font-weight:400;margin-left:4px}
+.sep{color:var(--sep);font-weight:700}.pend{color:var(--pend);font-weight:700}.mut{color:var(--muted)}
+.punto{display:inline-block;width:7px;height:7px;border-radius:50%;background:#d8d4c9;margin-right:6px;vertical-align:middle}
+.punto.az{background:var(--sep)}
+.cel-sep{background:#eaf0fb}
+/* estado de producción bajo la referencia */
+.prod{display:block;margin-top:3px;font-size:11px;color:#4a4642;cursor:pointer}
+.prod .chip{display:inline-block;padding:0 7px;border-radius:999px;line-height:17px;font-size:10.5px;font-weight:600;border:1px solid;margin-right:4px}
+.chip.taller{background:#fff4e0;color:#8a4b0a;border-color:#f3d3a5}
+.chip.bodega{background:#e9f5ee;color:#1f6b4a;border-color:#bfe0cd}
+.chip.corte{background:#eef3fb;color:#2b4a7e;border-color:#c9d7ee}
+.chip.tela{background:#faeeda;color:#633806;border-color:#fac775}
+.chip.sintela{background:#fbeceb;color:#8c2f28;border-color:#f0c4c0}
+.chip.estam{background:#eeedfe;color:#3c3489;border-color:#cecbf6}
+.chip.cerr{background:#f1f0ee;color:#6b6660;border-color:#d8d4c9}
+.prod .flecha{color:var(--muted);font-size:10px;margin-left:2px}
+/* detalle de lotes */
+.det td{background:#fbfaf7;white-space:normal;padding:10px 12px 12px}
+.lotes{width:100%;table-layout:auto;border:1px solid var(--hairline);border-radius:10px;background:#fff;overflow:hidden}
+.lotes th{background:#fff;font-size:10px}
+.lotes td{white-space:nowrap;padding:7px 10px}
+.lotes tr:last-child td{border-bottom:0}
+.pipa{display:inline-flex;gap:3px;align-items:center;vertical-align:middle}
+.pipa i{display:block;width:16px;height:7px;border-radius:3px;background:#e5e2da}
+.pipa i.ok{background:#8fbf9e}.pipa i.aqui{background:#e0862e;box-shadow:0 0 0 2px #fbe3c6}
+.pipa small{margin-left:6px;font-size:11px;font-weight:600;color:#4a4642}
+.dias{font-size:11px;color:var(--muted)}
+.dias.tarde{color:var(--pend);font-weight:600}
+.resp{margin-top:10px;padding:8px 12px;border-radius:9px;background:#fff8ec;border:1px solid #f3d3a5;font-size:12px}
+.resp b{font-weight:700}
+.tit{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.nota{color:var(--muted);font-size:12px;max-width:980px;margin:10px 0 0}
+.nota b{color:var(--ink)}
+/* panel lateral */
+.drawer{position:absolute;right:0;top:0;bottom:0;width:520px;background:#fff;border-left:1px solid var(--hairline-strong);box-shadow:-12px 0 30px rgba(0,0,0,.10);padding:16px 18px;overflow:auto}
+.drawer h3{font-family:Fraunces,serif;font-weight:500;font-size:18px;margin:0}
+.drawer .x{position:absolute;right:14px;top:12px;width:26px;height:26px;border-radius:50%;border:1px solid var(--hairline-strong);display:grid;place-items:center;font-size:12px;color:var(--muted);background:#fff}
+.tl{list-style:none;margin:8px 0 0;padding:0 0 0 14px;border-left:2px solid #e5e2da}
+.tl li{position:relative;padding:0 0 12px 12px;font-size:12px}
+.tl li::before{content:'';position:absolute;left:-20px;top:3px;width:10px;height:10px;border-radius:50%;background:#8fbf9e;border:2px solid #fff;box-shadow:0 0 0 1px #8fbf9e}
+.tl li.aqui::before{background:#e0862e;box-shadow:0 0 0 1px #e0862e}
+.tl li.falta::before{background:#fff;box-shadow:0 0 0 1px #d8d4c9}
+.tl li.falta{color:var(--muted)}
+.tl li b{font-weight:700}
+.kp{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.kp div{border:1px solid var(--hairline);border-radius:9px;padding:7px 10px}
+.kp small{display:block;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.kp b{font-size:18px;font-weight:600}
+.lote{border:1px solid var(--hairline);border-radius:10px;padding:10px 12px;margin-top:10px}
+.lote .cab{display:flex;justify-content:space-between;align-items:baseline;font-size:12px}
+.lote .cab b{font-size:13px}
+.velo{position:absolute;inset:0;background:rgba(28,28,34,.06)}
+/* popover */
+.pop{position:absolute;left:150px;top:196px;z-index:5;background:#fff;border:1px solid var(--hairline-strong);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:10px 12px;width:520px}
+.pop table{table-layout:auto}
+.pop td,.pop th{padding:4px 8px;font-size:11.5px}
+.pop th{background:#fff}
+.pop .resp{margin-top:8px;font-size:11.5px}
+.cmp{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;max-width:1180px;margin-top:12px}
+.cmp div{background:#fff;border:1px solid var(--hairline);border-radius:12px;padding:12px 14px;font-size:12px}
+.cmp h4{margin:0 0 6px;font-size:13px}
+.cmp ul{margin:0;padding-left:16px}
+.cmp li{margin:3px 0}
+</style>
+</head>
+<body>
+<h1>En qué va la producción de una referencia, desde el cliente</h1>
+<p class="sub">Escenario: llama <b>Carmen Acosta Osio SAS</b> y pregunta por la C6852. Hoy la ventana dice qué le vendimos, qué está separado y qué falta, pero no dice si lo que falta está cortándose, en un taller o ya entrando. Tres formas de ponerlo ahí mismo, con datos que ya tiene el sistema (las órdenes de Programaciones con sus etapas y el estado de tela).</p>
+
+<div class="paso"><i>1</i> Estado bajo la referencia + clic despliega los lotes <span class="reco">recomendada</span><small>· todo dentro de la misma tabla, sin columna nueva</small></div>
+<div class="modal">
+  <h2>CARMEN ACOSTA OSIO SAS</h2>
+  <p class="m">BARRANQUILLA · pedidos 7531, 7532, 7808 · 45 referencias · 326 unidades · $ 48.603.700</p>
+  <table>
+    <colgroup><col style="width:42px"><col style="width:26%"><col style="width:13%"><col span="7" style="width:3.2%"><col style="width:5%"><col style="width:8%"><col style="width:9%"><col style="width:5%"><col style="width:5%"><col style="width:5.5%"></colgroup>
+    <thead><tr><th></th><th>Referencia</th><th>Color</th><th class="n">8</th><th class="n">10</th><th class="n">12</th><th class="n">14</th><th class="n">16</th><th class="n">18</th><th class="n">20</th><th class="num">Unid</th><th class="num">Precio</th><th class="num">Total</th><th class="num">Sep.</th><th class="num">Fact.</th><th class="num">Pend.</th></tr></thead>
+    <tbody>
+      <tr class="grupo"><td colspan="16">Casania · 13 referencias · 90 unidades</td></tr>
+      <tr>
+        <td rowspan="2"><span class="foto"></span></td>
+        <td rowspan="2" class="ref"><span class="punto"></span><b>C6852</b><span class="cat">Conjunto</span><span class="desc">CONJUNTO ESTAMPADO CON O…</span>
+          <span class="prod"><span class="chip taller">Taller 96</span><span class="chip bodega">Bodega 48</span><span class="flecha">▾ ver lotes</span></span>
+        </td>
+        <td class="col">AZUL <small>7808</small></td>
+        <td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td>
+        <td class="num">7</td><td class="num mut">$ 185.800</td><td class="num">$ 1.300.600</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">7</td>
+      </tr>
+      <tr>
+        <td class="col">VERDE <small>7808</small></td>
+        <td class="n mut">·</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="n mut">·</td><td class="n mut">·</td>
+        <td class="num">2</td><td class="num mut">$ 173.800</td><td class="num">$ 347.600</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">2</td>
+      </tr>
+      <!-- detalle desplegado -->
+      <tr class="det"><td colspan="16">
+        <p class="tit">Producción de C6852 · 3 lotes · 156 unidades programadas</p>
+        <table class="lotes">
+          <thead><tr><th>Orden</th><th>Tipo</th><th>Orden de corte</th><th class="num">Unid</th><th>Colores</th><th>Etapa</th><th>Dónde / desde</th><th class="num">Entregó taller</th><th>Entró a bodega</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>10788</b></td><td class="mut">Muestra</td><td>02 ago</td><td class="num">12</td><td>AZUL 12</td>
+              <td><span class="pipa"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><small>Bodega</small></span></td>
+              <td class="mut">Taller Nubia · entregó 21 ago</td><td class="num">12 / 12</td><td>22 ago · 12</td>
+            </tr>
+            <tr>
+              <td><b>10850</b></td><td class="mut">Producción</td><td>20 ago</td><td class="num">48</td><td>AZUL 48</td>
+              <td><span class="pipa"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><small>Bodega</small></span></td>
+              <td class="mut">Confecciones Pérez · entregó 11 sep</td><td class="num">46 / 48</td><td>12 sep · 46</td>
+            </tr>
+            <tr>
+              <td><b>10912</b></td><td class="mut">Producción</td><td>02 sep</td><td class="num">96</td><td>AZUL 60 · VERDE 36</td>
+              <td><span class="pipa"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="aqui"></i><i></i><i></i><small>En taller</small></span></td>
+              <td>Taller Nubia · desde 15 sep <span class="dias tarde">· 10 días</span></td><td class="num">0 / 96</td><td class="mut">—</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="resp"><b>Para este cliente:</b> AZUL le faltan 7 y hay <b>12 libres en bodega</b> (se pueden separar ya) · VERDE le faltan 2 y no hay libres: las 36 verdes están en Taller Nubia desde el 15 sep, entrega estimada la otra semana.</div>
+      </td></tr>
+      <tr>
+        <td><span class="foto"></span></td>
+        <td class="ref"><span class="punto"></span><b>C6858</b><span class="cat">Conjunto</span><span class="desc">CONJUNTO CHAMBRAY BORDADO</span>
+          <span class="prod"><span class="chip tela">Tela pedida 18 sep</span><span class="flecha">▾</span></span>
+        </td>
+        <td class="col">AZUL <small>7808</small></td>
+        <td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td>
+        <td class="num">6</td><td class="num mut">$ 187.800</td><td class="num">$ 1.126.800</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">6</td>
+      </tr>
+      <tr>
+        <td><span class="foto"></span></td>
+        <td class="ref"><span class="punto"></span><b>C6865</b><span class="cat v">Vestido</span><span class="desc">VESTIDO CAMISERO ESTAMPADO</span>
+          <span class="prod"><span class="chip corte">Corte 120</span><span class="chip estam">Estampación 80</span><span class="flecha">▾</span></span>
+        </td>
+        <td class="col">AZUL <small>7808</small></td>
+        <td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td>
+        <td class="num">5</td><td class="num mut">$ 149.900</td><td class="num">$ 749.500</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">5</td>
+      </tr>
+      <tr>
+        <td><span class="foto"></span></td>
+        <td class="ref"><span class="punto az"></span><b>C6888</b><span class="cat b">Blusa</span><span class="desc">BLUSA BORDADA CON MANGA G…</span>
+          <span class="prod"><span class="chip bodega">Bodega 140</span><span class="flecha">▾</span></span>
+        </td>
+        <td class="col">CRUDO <small>7808</small></td>
+        <td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n mut">·</td><td class="n mut">·</td>
+        <td class="num">5</td><td class="num mut">$ 129.900</td><td class="num">$ 649.500</td><td class="num sep">5</td><td class="num mut">·</td><td class="num pend">5</td>
+      </tr>
+      <tr>
+        <td><span class="foto"></span></td>
+        <td class="ref"><span class="punto"></span><b>C6891</b><span class="cat">Conjunto</span><span class="desc">CONJUNTO CON ENCAJES</span>
+          <span class="prod"><span class="chip cerr">Producción cerrada</span></span>
+        </td>
+        <td class="col">CAQUI <small>7808</small></td>
+        <td class="n">1</td><td class="n">1</td><td class="n">2</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td>
+        <td class="num">8</td><td class="num mut">$ 238.800</td><td class="num">$ 1.910.400</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">8</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p class="nota"><b>Cómo funciona:</b> debajo de cada referencia va una línea con sus lotes resumidos por etapa (unidades en taller, en corte, en bodega, o el estado de tela si aún no hay orden). Al hacer clic en esa línea se despliega la tabla de lotes: orden, cuántas, colores, la barra de 7 pasos (orden de corte → trazo → corte → alistamiento → taller → entrega → bodega), en qué taller y desde cuándo, cuántas entregó el taller y cuántas entraron a bodega. Abajo, la respuesta lista para el cliente: lo que le falta por color cruzado con libres en bodega y con lo que viene. Se ve todo de una, sin salir de la ventana, y no agrega columnas (no hay riesgo de scroll horizontal).</p>
+
+<div class="paso"><i>2</i> Clic en la referencia abre un panel lateral con línea de tiempo<small>· más detalle por lote, tapa parte de la tabla</small></div>
+<div class="modal" style="min-height:560px">
+  <h2>CARMEN ACOSTA OSIO SAS</h2>
+  <p class="m">BARRANQUILLA · pedidos 7531, 7532, 7808 · 45 referencias · 326 unidades · $ 48.603.700</p>
+  <table>
+    <colgroup><col style="width:42px"><col style="width:26%"><col style="width:13%"><col span="7" style="width:3.2%"><col style="width:5%"><col style="width:8%"><col style="width:9%"><col style="width:5%"><col style="width:5%"><col style="width:5.5%"></colgroup>
+    <thead><tr><th></th><th>Referencia</th><th>Color</th><th class="n">8</th><th class="n">10</th><th class="n">12</th><th class="n">14</th><th class="n">16</th><th class="n">18</th><th class="n">20</th><th class="num">Unid</th><th class="num">Precio</th><th class="num">Total</th><th class="num">Sep.</th><th class="num">Fact.</th><th class="num">Pend.</th></tr></thead>
+    <tbody>
+      <tr class="grupo"><td colspan="16">Casania · 13 referencias · 90 unidades</td></tr>
+      <tr style="background:#fff8ec">
+        <td rowspan="2"><span class="foto"></span></td>
+        <td rowspan="2" class="ref"><span class="punto"></span><b style="text-decoration:underline">C6852</b><span class="cat">Conjunto</span><span class="desc">CONJUNTO ESTAMPADO CON O…</span></td>
+        <td class="col">AZUL <small>7808</small></td>
+        <td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td>
+        <td class="num">7</td><td class="num mut">$ 185.800</td><td class="num">$ 1.300.600</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">7</td>
+      </tr>
+      <tr style="background:#fff8ec"><td class="col">VERDE <small>7808</small></td><td class="n mut">·</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">2</td><td class="num mut">$ 173.800</td><td class="num">$ 347.600</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">2</td></tr>
+      <tr><td><span class="foto"></span></td><td class="ref"><span class="punto"></span><b>C6858</b><span class="cat">Conjunto</span><span class="desc">CONJUNTO CHAMBRAY BORDADO</span></td><td class="col">AZUL <small>7808</small></td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">6</td><td class="num mut">$ 187.800</td><td class="num">$ 1.126.800</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">6</td></tr>
+      <tr><td><span class="foto"></span></td><td class="ref"><span class="punto"></span><b>C6865</b><span class="cat v">Vestido</span><span class="desc">VESTIDO CAMISERO ESTAMPADO</span></td><td class="col">AZUL <small>7808</small></td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">5</td><td class="num mut">$ 149.900</td><td class="num">$ 749.500</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">5</td></tr>
+      <tr><td><span class="foto"></span></td><td class="ref"><span class="punto az"></span><b>C6888</b><span class="cat b">Blusa</span><span class="desc">BLUSA BORDADA CON MANGA G…</span></td><td class="col">CRUDO <small>7808</small></td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">5</td><td class="num mut">$ 129.900</td><td class="num">$ 649.500</td><td class="num sep">5</td><td class="num mut">·</td><td class="num pend">5</td></tr>
+    </tbody>
+  </table>
+  <div class="velo"></div>
+  <div class="drawer">
+    <span class="x">×</span>
+    <h3>C6852 · Conjunto estampado con o…</h3>
+    <div class="m">Carmen Acosta pide 9: AZUL 7 · VERDE 2 · nada separado</div>
+    <div class="kp">
+      <div><small>Programado</small><b>156</b></div>
+      <div><small>En bodega</small><b>58</b></div>
+      <div><small>Libres hoy</small><b style="color:var(--ok)">12</b></div>
+      <div><small>En taller</small><b style="color:#8a4b0a">96</b></div>
+    </div>
+    <div class="lote">
+      <div class="cab"><b>Orden 10912</b> · 96 und · AZUL 60 · VERDE 36 <span class="chip taller">En taller · 10 días</span></div>
+      <ul class="tl">
+        <li>Orden de corte <b>02 sep</b></li>
+        <li>Trazo <b>03 sep</b> · Corte <b>05 sep</b> (Fabián, 3 h 20)</li>
+        <li>Alistamiento <b>12 sep</b> · 96 und</li>
+        <li class="aqui">Enviado a <b>Taller Nubia</b> el <b>15 sep</b> · lleva 10 días</li>
+        <li class="falta">Entrega del taller · pendiente</li>
+        <li class="falta">Entrada a bodega · pendiente</li>
+      </ul>
+    </div>
+    <div class="lote">
+      <div class="cab"><b>Orden 10850</b> · 48 und · AZUL 48 <span class="chip bodega">Bodega</span></div>
+      <ul class="tl">
+        <li>Orden de corte <b>20 ago</b> · corte 22 ago · alistado 28 ago</li>
+        <li>Confecciones Pérez · enviado 29 ago · entregó <b>11 sep</b> (46 de 48)</li>
+        <li>Entró a bodega <b>12 sep</b> · 46 und · quedan <b style="color:var(--ok)">12 libres</b></li>
+      </ul>
+    </div>
+    <div class="lote">
+      <div class="cab"><b>Orden 10788</b> · muestra · 12 und · AZUL <span class="chip bodega">Bodega</span></div>
+      <ul class="tl"><li>Entregó Taller Nubia 21 ago · entró a bodega 22 ago</li></ul>
+    </div>
+    <div class="resp"><b>Respuesta:</b> AZUL se le pueden separar hoy las 7 (hay 12 libres). VERDE no hay; las 36 están en Taller Nubia desde el 15 sep.</div>
+  </div>
+</div>
+<p class="nota"><b>Cómo funciona:</b> el código de la referencia se vuelve un enlace. Al hacer clic se abre un panel a la derecha con los cuatro números clave y cada lote como una línea de tiempo con fechas, cortador, taller y días. Da más contexto que la opción 1 (fechas de cada paso), pero tapa la mitad de la tabla mientras está abierto y hay que cerrarlo para seguir revisando otras referencias.</p>
+
+<div class="paso"><i>3</i> Pasar el mouse por la referencia muestra una tarjeta flotante<small>· cero clics, como la foto en Por referencia</small></div>
+<div class="modal" style="min-height:420px">
+  <h2>CARMEN ACOSTA OSIO SAS</h2>
+  <p class="m">BARRANQUILLA · pedidos 7531, 7532, 7808 · 45 referencias · 326 unidades · $ 48.603.700</p>
+  <table>
+    <colgroup><col style="width:42px"><col style="width:26%"><col style="width:13%"><col span="7" style="width:3.2%"><col style="width:5%"><col style="width:8%"><col style="width:9%"><col style="width:5%"><col style="width:5%"><col style="width:5.5%"></colgroup>
+    <thead><tr><th></th><th>Referencia</th><th>Color</th><th class="n">8</th><th class="n">10</th><th class="n">12</th><th class="n">14</th><th class="n">16</th><th class="n">18</th><th class="n">20</th><th class="num">Unid</th><th class="num">Precio</th><th class="num">Total</th><th class="num">Sep.</th><th class="num">Fact.</th><th class="num">Pend.</th></tr></thead>
+    <tbody>
+      <tr class="grupo"><td colspan="16">Casania · 13 referencias · 90 unidades</td></tr>
+      <tr style="background:#fff8ec">
+        <td rowspan="2"><span class="foto"></span></td>
+        <td rowspan="2" class="ref"><span class="punto"></span><b>C6852</b><span class="cat">Conjunto</span><span class="desc">CONJUNTO ESTAMPADO CON O…</span></td>
+        <td class="col">AZUL <small>7808</small></td>
+        <td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td>
+        <td class="num">7</td><td class="num mut">$ 185.800</td><td class="num">$ 1.300.600</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">7</td>
+      </tr>
+      <tr style="background:#fff8ec"><td class="col">VERDE <small>7808</small></td><td class="n mut">·</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">2</td><td class="num mut">$ 173.800</td><td class="num">$ 347.600</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">2</td></tr>
+      <tr><td><span class="foto"></span></td><td class="ref"><span class="punto"></span><b>C6858</b><span class="cat">Conjunto</span><span class="desc">CONJUNTO CHAMBRAY BORDADO</span></td><td class="col">AZUL <small>7808</small></td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">6</td><td class="num mut">$ 187.800</td><td class="num">$ 1.126.800</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">6</td></tr>
+      <tr><td><span class="foto"></span></td><td class="ref"><span class="punto"></span><b>C6865</b><span class="cat v">Vestido</span><span class="desc">VESTIDO CAMISERO ESTAMPADO</span></td><td class="col">AZUL <small>7808</small></td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">5</td><td class="num mut">$ 149.900</td><td class="num">$ 749.500</td><td class="num mut">·</td><td class="num mut">·</td><td class="num pend">5</td></tr>
+      <tr><td><span class="foto"></span></td><td class="ref"><span class="punto az"></span><b>C6888</b><span class="cat b">Blusa</span><span class="desc">BLUSA BORDADA CON MANGA G…</span></td><td class="col">CRUDO <small>7808</small></td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n cel-sep sep">1</td><td class="n mut">·</td><td class="n mut">·</td><td class="num">5</td><td class="num mut">$ 129.900</td><td class="num">$ 649.500</td><td class="num sep">5</td><td class="num mut">·</td><td class="num pend">5</td></tr>
+    </tbody>
+  </table>
+  <div class="pop">
+    <p class="tit">C6852 · 3 lotes · 156 programadas · 12 libres en bodega</p>
+    <table>
+      <thead><tr><th>Orden</th><th class="num">Unid</th><th>Colores</th><th>Etapa</th><th>Dónde</th></tr></thead>
+      <tbody>
+        <tr><td>10788 <span class="mut">muestra</span></td><td class="num">12</td><td>AZUL</td><td><span class="chip bodega">Bodega 22 ago</span></td><td class="mut">Taller Nubia</td></tr>
+        <tr><td>10850</td><td class="num">48</td><td>AZUL</td><td><span class="chip bodega">Bodega 12 sep · 46</span></td><td class="mut">Conf. Pérez</td></tr>
+        <tr><td>10912</td><td class="num">96</td><td>AZUL 60 · VERDE 36</td><td><span class="chip taller">Taller · 10 días</span></td><td class="mut">Taller Nubia desde 15 sep</td></tr>
+      </tbody>
+    </table>
+    <div class="resp">AZUL: se pueden separar las 7 hoy · VERDE: no hay, 36 en taller.</div>
+  </div>
+</div>
+<p class="nota"><b>Cómo funciona:</b> igual que la foto al pasar el mouse en Por referencia, pero con la tabla de lotes. Es lo más rápido para “mirar y ya”, pero desaparece al mover el mouse, no permite copiar ni leer con calma mientras se habla por teléfono, y en referencias con muchos lotes la tarjeta se hace larga.</p>
+
+<div class="paso"><i>=</i> Comparación</div>
+<div class="cmp">
+  <div><h4>1 · Estado + desplegar</h4><ul><li>Se ve el estado de <b>todas</b> las referencias del cliente sin tocar nada (ideal cuando el cliente pregunta “¿y lo demás?”).</li><li>El detalle queda abierto mientras se habla; se pueden abrir varias.</li><li>No agrega columnas; sin scroll horizontal.</li><li>Cada fila crece 14 px por la línea de estado.</li></ul></div>
+  <div><h4>2 · Panel lateral</h4><ul><li>Más detalle: fechas de cada paso, cortador, tiempos.</li><li>Tapa la tabla; una referencia a la vez.</li><li>Sirve mejor para investigar un atraso que para contestar rápido.</li></ul></div>
+  <div><h4>3 · Tarjeta al pasar el mouse</h4><ul><li>Cero clics, rapidísimo.</li><li>Se va sola; no queda nada fijo en pantalla.</li><li>Sin resumen general de las demás referencias.</li></ul></div>
+</div>
+<p class="nota" style="margin-top:16px"><b>Datos en los tres casos:</b> las órdenes salen de Programaciones (Factory) y su etapa es la última cumplida; “Entregó taller” es lo recibido por talla (lo mismo que ya usa Por referencia); “Libres hoy” es el cálculo de Por referencia; los días en taller se cuentan desde la fecha de envío al taller; si la referencia no tiene orden, se muestra el estado de tela (sin tela, tela pedida, en estampación) que se registra en Programaciones; “Producción cerrada” aparece tal cual. La “respuesta para el cliente” cruza lo que le falta por color con libres en bodega y con lo que viene en camino.</p>
+</body>
+</html>

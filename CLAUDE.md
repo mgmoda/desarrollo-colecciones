@@ -334,6 +334,25 @@ El modal se ensancha solo con `.modal-xl:has(.dsp-densa)`.
 Cerrar una referencia aplica a todos los clientes. Falta ver cómo manda SYD
 lo facturado cuando empiecen a facturar (se espera Tipo "Facturado").
 
+**Panel "en qué va" de una referencia (25-sep-2026)**: en el detalle del
+cliente el código de la referencia es un enlace (`.dsp-ref-link`) que abre
+`ProduccionPanel.jsx` (cuentas en `lib/produccionRef.js`), un panel a la
+derecha por portal (`.pp-*`; Escape lo cierra a él y no a la ventana; frena
+`onMouseDown` porque los eventos de React suben por el árbol y cerrarían el
+modal). Sirve para contestar al cliente por teléfono: cinco cifras
+(programado, cortado, entregó taller, en bodega, libres hoy); cada orden
+(sin premuestras; un conjunto trae las órdenes CONJUNTO de sus dos prendas,
+por pieza) con chip de etapa (`orderArea`), la ruta de 7 pasos con fechas,
+cortador (`procesos[orden].corte.quien`), taller y días (rojo pasados
+`DIAS_TALLER_TARDE` = 15 sin entregar), la curva por color y talla
+(`corte` si hay alistamiento, si no `prog`) y lo entregado por talla
+(`ent`) con las faltantes en rojo; estado de tela y movimientos abiertos de
+`dev_programaciones`; libres hoy por color y talla (`calcularLibres`, mismo
+número de Por referencia) cruzados con lo que ese cliente pide; y "Para
+contestarle" por color: cuánto se le puede separar ya y dónde está el resto
+(taller, corte, alistamiento, estampación, cerrada). Para eso App pasa
+`programaciones` y `procesos` a Pedidos → Despachos.
+
 **Programaciones se alimenta de aquí (13-sep-2026).** Ya no existe "Cargar
 pedidos": `reemplazar_pedidos()` llama a `sincronizar_programaciones()`, que
 escribe en `dev_programaciones` el pedido, el desglose por color y talla y la

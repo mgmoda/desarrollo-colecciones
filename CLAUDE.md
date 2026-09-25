@@ -298,8 +298,11 @@ guía (`/suite/guias`), etiqueta y recogida; cuenta NIT 901682300, idProceso
 46846, división 01; remitente fijo Mg Moda SAS, Calle 35 # 27-47 Piso 1,
 Bucaramanga (DANE 68001000); solo el correo de Diego puede llamarla. Tablas:
 `coord_ciudades` (DIVIPOLA, DANE+000), `coord_ciudad_syd` (ciudad SYD → DANE,
-102/104), `coord_libreta` (destinatario por cliente: documento, dirección,
-DANE, celular; 175 sembrados del reporte 2026 de Coordinadora), `coord_guias`
+102/104), `coord_libreta` (destinatario por cliente: documento, dirección, DANE,
+celular, teléfono fijo, correo, almacén; 475 filas: el maestro de clientes de
+SYD `RELACION CLIENTES MG MODA SAS.XLS` (25-sep-2026) manda en documento,
+DANE, celular y correo; la dirección es la del último envío de Coordinadora
+si coincide con SYD y la de SYD si difiere o no hay envío — regla de Diego), `coord_guias`
 (cada guía generada con lo enviado y la respuesta; trigger → stamp
 'despachos'). UI (24-sep): cuarta vista de Pedidos **Guías Coordinadora** (`GuiasView.jsx`: KPIs hoy/mes/en ruta/novedad/entregadas, chips por estado, lista agrupada por día, "Nueva guía" con buscador de cliente, botón Etiqueta por fila, panel plegable de pruebas); en Despachos solo queda el atajo: columna "Guía" + botón Despachar en `DespachosView`
 (`DespacharModal.jsx`): destinatario de la libreta, empaques reales

@@ -97,7 +97,7 @@ export default function DespacharModal({ cliente, ciudadSyd, pedidos, unidades, 
       </div>
       <div className="modal-body cd-cuerpo">
         <div className="cd-col">
-          <h3>Destinatario {base.origen === 'reporte' && <span className="tag dsp-tag">de la libreta · {num(base.envios_2026)} envíos</span>}</h3>
+          <h3>Destinatario {base.origen === 'reporte' ? <span className="tag dsp-tag">de la libreta · {num(base.envios_2026)} envíos</span> : base.origen === 'syd' ? <span className="tag dsp-tag">datos del maestro SYD</span> : null}</h3>
           <div className="cd-f"><label>Nombre</label>{campo('nombre')}</div>
           <div className="cd-f"><label>Cédula / NIT</label>{campo('documento', { inputMode: 'numeric' })}</div>
           <div className="cd-f"><label>Dirección</label>{campo('direccion')}</div>

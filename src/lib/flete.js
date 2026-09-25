@@ -50,7 +50,8 @@ export function fleteDe(lineas, dane, tarifas) {
   if (!unid) return null
   const pesoUnidad = peso / unid
   const opciones = EMPAQUES.map((e) => {
-    const t = dane && tarifas ? tarifas[claveTarifa(dane, e.key)] : null
+    const tt = dane && tarifas ? tarifas[claveTarifa(dane, e.key)] : null
+    const t = tt && n0(tt.flete) > 0 ? tt : null
     const cajas = e.key === 'caja' ? Math.max(1, Math.ceil(peso / PESO_MAX.caja)) : 1
     const cabe = e.key === 'caja' ? true : peso <= PESO_MAX[e.key]
     // Cuántas prendas de este cliente caben en un empaque de estos.
@@ -120,7 +121,8 @@ export function tarifasPendientes(clientes, daneDe, tarifas) {
     EMPAQUES.forEach((e) => {
       const k = claveTarifa(dane, e.key)
       const t = tarifas && tarifas[k]
-      if (t && new Date(t.at).getTime() > limite) return
+      // Una tarifa buena vale 30 días; un rechazo guardado (flete 0), una hora.
+      if (t && new Date(t.at).getTime() > (n0(t.flete) > 0 ? limite : Date.now() - 3600000)) return
       if (!falta.has(k)) falta.set(k, { dane, empaque: e })
     })
   })

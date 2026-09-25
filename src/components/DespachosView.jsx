@@ -122,30 +122,42 @@ export default function DespachosView({
     if (q.corriendo || !q.pendientes.size) return
     q.corriendo = true
     setCotizando(q.pendientes.size)
+    const pausa = (ms) => new Promise((r) => setTimeout(r, ms))
     const una = async () => {
       while (q.pendientes.size && q.vivo) {
         const [k, { dane, empaque: e }] = q.pendientes.entries().next().value
         q.pendientes.delete(k); q.pedidas.add(k)
-        try {
-          const r = await llamar('cotizar', { destino: dane, valoracion: e.valor, detalle: [{ alto: e.alto, ancho: e.ancho, largo: e.largo, peso: e.peso, unidades: 1 }] })
+        // De a una y con pausa: el cotizador de Coordinadora rechaza las
+        // ráfagas. Si responde "isError" se reintenta una vez.
+        for (let intento = 0; intento < 2 && q.vivo; intento++) {
+          let r = null
+          try {
+            r = await llamar('cotizar', { destino: dane, valoracion: e.valor, detalle: [{ alto: e.alto, ancho: e.ancho, largo: e.largo, peso: e.peso, unidades: 1 }] })
+          } catch (err) {
+            console.error('Cotizar', dane, e.key, err)
+            if (q.vivo) setErrorCot(`No se pudo cotizar ${dane} (${e.label}): ${err.message || err}`)
+            r = { ok: false, data: { error: String(err.message || err) } }
+          }
           const d = r && r.data && r.data.data
           if (r && r.ok && d && Number(d.flete_total) > 0) {
             const fila = { dane, empaque: e.key, fijo: Math.round(Number(d.flete_fijo) || 0), variable: Math.round(Number(d.flete_variable) || 0), flete: Math.round(Number(d.flete_total) || 0), valoracion: e.valor, dias: Number(d.dias_entrega) || null, peso_liquidado: Number(d.peso_liquidado) || null, ambiente: r.ambiente || '', raw: r.data }
             await guardarTarifa(fila).catch((err) => { console.error('Tarifa:', err); setErrorCot('No se pudo guardar la tarifa: ' + (err.message || err)) })
             if (q.vivo) setTarifas((t) => ({ ...t, [k]: { ...fila, at: new Date().toISOString() } }))
-          } else {
-            const msg = r && r.data ? (r.data.error?.message || r.data.message || JSON.stringify(r.data).slice(0, 200)) : 'sin respuesta'
-            console.error('Cotizar', dane, e.key, msg)
-            if (q.vivo) setErrorCot(`Coordinadora no cotizó ${dane} (${e.label}): ${msg}`)
+            break
           }
-        } catch (err) {
-          console.error('Cotizar', dane, e.key, err)
-          if (q.vivo) setErrorCot(`No se pudo cotizar ${dane} (${e.label}): ${err.message || err}`)
+          const msg = r && r.data ? (r.data.error?.message || r.data.error || r.data.message || JSON.stringify(r.data).slice(0, 200)) : 'sin respuesta'
+          console.error('Cotizar', dane, e.key, msg)
+          if (intento === 0) { await pausa(1500); continue }
+          if (q.vivo) setErrorCot(`Coordinadora no cotizó ${dane} (${e.label}): ${msg}`)
+          // El rechazo también se guarda (flete 0) para poder leer el motivo
+          // exacto; se vuelve a intentar pasada una hora.
+          await guardarTarifa({ dane, empaque: e.key, fijo: 0, variable: 0, flete: 0, valoracion: e.valor, dias: null, peso_liquidado: null, ambiente: (r && r.ambiente) || '', raw: r && r.data }).catch(() => {})
         }
         if (q.vivo) setCotizando(q.pendientes.size + (q.corriendo ? 1 : 0))
+        await pausa(400)
       }
     }
-    Promise.all([una(), una()]).finally(() => { q.corriendo = false; if (q.vivo) setCotizando(0) })
+    una().finally(() => { q.corriendo = false; if (q.vivo) setCotizando(0) })
   }, [clientesBase, libreta, danePorCiudad, tarifas]) // eslint-disable-line react-hooks/exhaustive-deps
   // Lo que el panel de producción de una referencia necesita; se arma una
   // sola vez para que el panel no recalcule con cada pintada.

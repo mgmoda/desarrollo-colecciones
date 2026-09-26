@@ -161,11 +161,28 @@ export const FILTROS = [
 ]
 
 export function totales(lista) {
-  const t = { vendido: 0, facturado: 0, pendiente: 0, separadoVig: 0, cerrado: 0, abierto: 0, faltante: 0, valorFalt: 0, listos: 0 }
+  const t = { vendido: 0, facturado: 0, pendiente: 0, separadoVig: 0, cerrado: 0, abierto: 0, faltante: 0, valorFalt: 0, listos: 0,
+    // Valores a precio de lista, línea por línea: vendido (el total de SYD),
+    // facturado y separado vigente (unidades × precio). Para los KPIs.
+    valorVend: 0, valorFact: 0, valorSep: 0, pedidos: 0, clientes: 0 }
+  const peds = new Set()
   lista.forEach((c) => {
-    Object.keys(t).forEach((k) => { if (k !== 'listos') t[k] += c[k] || 0 })
+    Object.keys(t).forEach((k) => { if (!['listos', 'valorVend', 'valorFact', 'valorSep', 'pedidos', 'clientes'].includes(k)) t[k] += c[k] || 0 })
     if (c.decision.key === 'despachar') t.listos += 1
+    if (c.pendiente > 0 || c.vendido > 0) t.clientes += 1
+    c.lineas.forEach((l) => {
+      t.valorVend += Number(l.valor) || 0
+      t.valorFact += (Number(l.facturado) || 0) * (Number(l.precio) || 0)
+      t.valorSep += (Number(l.sepVig) || 0) * (Number(l.precio) || 0)
+      ;(l.pedidos || []).forEach((p) => peds.add(p))
+    })
   })
+  t.pedidos = peds.size
+  // Faltante = vendido − facturado (definición de Diego, 26-sep-2026).
+  t.faltanteVF = Math.max(t.vendido - t.facturado, 0)
+  t.valorFaltVF = Math.max(t.valorVend - t.valorFact, 0)
+  t.porSeparar = Math.max(t.faltanteVF - t.separadoVig, 0)
+  t.valorPorSeparar = Math.max(t.valorFaltVF - t.valorSep, 0)
   return t
 }
 

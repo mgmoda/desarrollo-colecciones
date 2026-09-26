@@ -209,13 +209,7 @@ export default function DespachosView({
     <>
       {error && <div className="ct-error">{error}</div>}
 
-      <div className="prog-kpis dsp-kpis">
-        <div className="prog-kpi"><span>Pendiente por despachar</span><b>{num(tot.pendiente)}</b><em>{num(tot.vendido)} vendidas · {num(tot.facturado)} facturadas</em></div>
-        <div className="prog-kpi"><span>Separado vigente</span><b className="dsp-sep">{num(tot.separadoVig)}</b><em>en bodega con nombre de cliente</em></div>
-        <div className="prog-kpi alerta"><span>Faltante real</span><b>{num(tot.faltante)}</b><em>{formatPrice(tot.valorFalt) || '$ 0'} · sin contar cerradas</em></div>
-        <div className="prog-kpi"><span>Cerrado sin cubrir</span><b>{num(tot.cerrado)}</b><em>referencias que no salen</em></div>
-        <div className="prog-kpi dsp-ok"><span>Listos para despachar</span><b>{num(tot.listos)}</b><em>clientes con todo lo abierto separado</em></div>
-      </div>
+      <KpisDespachos tot={tot} />
 
       <div className="view-actions" style={{ marginBottom: 12 }}>
         <div className="dis-filtros">
@@ -299,7 +293,7 @@ export default function DespachosView({
           </table>
           <div className="ct-foot">
             <span>{num(lista.length)} de {num(clientes.length)} clientes</span>
-            <span><b>{num(totLista.separadoVig)}</b> separadas · <b>{num(totLista.faltante)}</b> faltante real · {formatPrice(totLista.valorFalt) || '$ 0'}</span>
+            <span><b>{num(totLista.vendido)}</b> vendidas · <b>{num(totLista.facturado)}</b> facturadas · <b>{num(totLista.faltanteVF)}</b> faltante · {formatPrice(totLista.valorFaltVF) || '$ 0'} · <b>{num(totLista.separadoVig)}</b> separadas</span>
           </div>
         </div>
       )}
@@ -345,6 +339,61 @@ const FILTROS_REF = [
 
 // Cómo se reparte lo vendido de una talla: facturado, separado vigente (lo
 // separado que aún no se factura) y pendiente sin separar.
+// Los cuatro KPIs de Despachos (pedidos por Diego, 26-sep-2026): vendido −
+// facturado = faltante, del cual una parte ya está separada en bodega. Cada
+// uno en unidades y en valor a precio de lista, con la barra de avance.
+const pct = (n, d) => (d > 0 ? (Math.round((n / d) * 1000) / 10).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' %' : '—')
+function KpisDespachos({ tot }) {
+  const v = tot.vendido || 0
+  const pFact = v ? (tot.facturado / v) * 100 : 0
+  const pSep = v ? (tot.separadoVig / v) * 100 : 0
+  const pPor = Math.max(0, 100 - pFact - pSep)
+  return (
+    <div className="dsp-kp">
+      <div className="dsp-kp-cards">
+        <div className="dsp-kp-card vend">
+          <span className="dsp-kp-t">Vendido</span>
+          <b className="dsp-kp-u">{num(tot.vendido)}<small>unid</small></b>
+          <span className="dsp-kp-v">{formatPrice(tot.valorVend) || '$ 0'}</span>
+          <em>{num(tot.pedidos)} pedidos · {num(tot.clientes)} clientes</em>
+        </div>
+        <div className="dsp-kp-card fact">
+          <i className="dsp-kp-op" title="menos">−</i>
+          <span className="dsp-kp-t">Facturado</span>
+          <b className="dsp-kp-u">{num(tot.facturado)}<small>unid</small></b>
+          <span className="dsp-kp-v">{formatPrice(tot.valorFact) || '$ 0'}</span>
+          <em>{pct(tot.facturado, v)} de lo vendido</em>
+        </div>
+        <div className="dsp-kp-card falt">
+          <i className="dsp-kp-op" title="igual a">=</i>
+          <span className="dsp-kp-t">Faltante</span>
+          <b className="dsp-kp-u">{num(tot.faltanteVF)}<small>unid</small></b>
+          <span className="dsp-kp-v">{formatPrice(tot.valorFaltVF) || '$ 0'}</span>
+          <em>vendido − facturado · {pct(tot.faltanteVF, v)}{tot.cerrado ? ` · ${num(tot.cerrado)} en referencias cerradas` : ''}</em>
+        </div>
+        <div className="dsp-kp-card sepv">
+          <i className="dsp-kp-op" title="parte del faltante">⊂</i>
+          <span className="dsp-kp-t">Separado vigente</span>
+          <b className="dsp-kp-u">{num(tot.separadoVig)}<small>unid</small></b>
+          <span className="dsp-kp-v">{formatPrice(tot.valorSep) || '$ 0'}</span>
+          <em>{pct(tot.separadoVig, tot.faltanteVF)} del faltante ya está en bodega · {num(tot.porSeparar)} por separar</em>
+        </div>
+      </div>
+      <div className="dsp-kp-bar" title="Proporción sobre lo vendido">
+        <span className="f" style={{ width: pFact + '%' }} />
+        <span className="s" style={{ width: pSep + '%' }} />
+        <span className="p" style={{ width: pPor + '%' }} />
+      </div>
+      <div className="dsp-kp-leg">
+        <span><i className="f" /><b>Facturado</b> {num(tot.facturado)} · {pct(tot.facturado, v)}</span>
+        <span><i className="s" /><b>Separado vigente</b> {num(tot.separadoVig)} · {pct(tot.separadoVig, v)}</span>
+        <span><i className="p" /><b>Por separar</b> {num(tot.porSeparar)} · {pct(tot.porSeparar, v)}</span>
+        <span className="dsp-kp-de">de <b>{num(tot.vendido)}</b> vendidas</span>
+      </div>
+    </div>
+  )
+}
+
 // El flete por unidad de lo separado en los tres empaques, en una celda.
 function FleteCel({ c }) {
   const f = c.flete

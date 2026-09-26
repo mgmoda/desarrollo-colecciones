@@ -358,6 +358,16 @@ en un conjunto la prenda que más se cortó) y un bloque rojo por color y
 talla cuando falta; negativo = "programado de más". Para eso App pasa
 `programaciones` y `procesos` a Pedidos → Despachos.
 
+**KPIs de Despachos (26-sep-2026, `KpisDespachos`)**: cuatro tarjetas con
+signos entre ellas, cada una en unidades y valor a precio de lista: Vendido −
+Facturado = Faltante (definición de Diego: vendido − facturado, con "N en
+referencias cerradas" como nota) ⊃ Separado vigente (separado no facturado,
+con "por separar" = faltante − separado); barra facturado / separado / por
+separar sobre lo vendido. Valores en `totales()`: `valorVend` (total SYD),
+`valorFact` y `valorSep` (unidades × precio de la línea). Las cifras viejas
+(`faltante` = separado + abierto, `cerrado`, `listos`) siguen en `totales()`
+para la tabla y las decisiones, ya no como tarjetas.
+
 **Flete por unidad de lo separado (25-sep-2026)**: columna en Despachos
 ("Flete por unidad · caja / paq 5 kg / paq 1–2 kg", `FleteCel`) con el flete
 de Coordinadora de lo separado ÷ unidades en cada empaque; cuentas en

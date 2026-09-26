@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · KPIs de Despachos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--muted:#6b6660;--sep:#2b4a7e;--rojo:#b23121;--ok:#1f6b2e;--amb:#8a4b0a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.4;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:24px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 6px;max-width:1000px}
+.paso{display:flex;align-items:center;gap:10px;margin:34px 0 10px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.paso i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:11px}
+.paso small{font-weight:500;letter-spacing:0;text-transform:none;margin-left:6px}
+.reco{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:#e9f5ee;color:#1f6b4a;border:1px solid #bfe0cd;font-size:10.5px;letter-spacing:0;text-transform:none;font-weight:600}
+.n{font-variant-numeric:tabular-nums}
+.nota{color:var(--muted);font-size:12px;max-width:1100px;margin:10px 0 0}
+.nota b{color:var(--ink)}
+/* ── Opción A: cuatro tarjetas + barra ── */
+.a{max-width:1240px}
+.a-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:14px;overflow:hidden}
+.a-card{background:#fff;padding:14px 18px 12px;position:relative}
+.a-card .t{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.a-card .u{font-size:30px;font-weight:600;line-height:1.1;margin-top:6px}
+.a-card .u small{font-size:12px;color:var(--muted);font-weight:500;margin-left:5px}
+.a-card .v{font-size:16px;font-weight:600;margin-top:4px}
+.a-card .d{font-size:11.5px;color:var(--muted);margin-top:4px}
+.a-card.vend .u{color:var(--ink)}
+.a-card.fact .u,.a-card.fact .v{color:var(--ok)}
+.a-card.falt .u,.a-card.falt .v{color:var(--rojo)}
+.a-card.sepv .u,.a-card.sepv .v{color:var(--sep)}
+.a-card .op{position:absolute;left:-12px;top:34px;width:24px;height:24px;border-radius:50%;background:#fff;border:1px solid var(--hairline-strong);display:grid;place-items:center;font-weight:700;color:var(--muted);font-size:14px;z-index:2}
+.a-bar{display:flex;height:14px;border-radius:8px;overflow:hidden;margin:14px 0 6px;border:1px solid var(--hairline)}
+.a-bar span{display:block;height:100%}
+.a-leg{display:flex;gap:18px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.a-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.a-leg b{color:var(--ink)}
+/* ── Opción B: cascada ── */
+.b{max-width:1240px;background:#fff;border:1px solid var(--hairline);border-radius:14px;padding:18px 22px}
+.b-row{display:grid;grid-template-columns:1.1fr 40px 1fr 40px 1.1fr 60px 1fr 40px 1fr;align-items:center;gap:6px}
+.b-cell .t{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.b-cell .u{font-size:28px;font-weight:600;line-height:1.1;margin-top:4px}
+.b-cell .v{font-size:15px;font-weight:600;margin-top:2px}
+.b-cell .d{font-size:11.5px;color:var(--muted);margin-top:3px}
+.b-op{font-size:26px;color:#b8b3a8;text-align:center;font-weight:300}
+.b-op.eq{color:var(--ink);font-weight:500}
+.b-cell.fact .u,.b-cell.fact .v{color:var(--ok)} .b-cell.falt .u,.b-cell.falt .v{color:var(--rojo)} .b-cell.sepv .u,.b-cell.sepv .v{color:var(--sep)}
+.b-brace{font-size:11px;color:var(--muted);text-align:center;line-height:1.2}
+.b-sub{display:grid;grid-template-columns:1.1fr 40px 1fr 40px 1.1fr 60px 1fr 40px 1fr;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--hairline)}
+.b-sub .b-cell{grid-column:7 / span 3}
+/* ── Opción C: cuadro unidades / valor ── */
+.c{max-width:1240px;background:#fff;border:1px solid var(--hairline);border-radius:14px;overflow:hidden}
+.c table{width:100%;border-collapse:collapse}
+.c th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:12px 18px 8px;text-align:right;border-bottom:1px solid var(--hairline);background:#faf9f6}
+.c th:first-child{text-align:left}
+.c td{padding:12px 18px;text-align:right;border-bottom:1px solid #f0ede7;font-size:20px;font-weight:600}
+.c td:first-child{text-align:left;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.c tr:last-child td{border-bottom:0}
+.c tr.pct td{font-size:12px;font-weight:500;color:var(--muted);padding-top:0;background:#fff}
+.c .fact{color:var(--ok)} .c .falt{color:var(--rojo)} .c .sepv{color:var(--sep)}
+.c th small{display:block;font-size:10px;letter-spacing:0;text-transform:none;font-weight:500;color:#a8a39b}
+.cmp{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;max-width:1240px;margin-top:12px}
+.cmp div{background:#fff;border:1px solid var(--hairline);border-radius:12px;padding:12px 14px;font-size:12px}
+.cmp h4{margin:0 0 6px;font-size:13px}
+.cmp ul{margin:0;padding-left:16px}.cmp li{margin:3px 0}
+.def{background:#fff8ec;border:1px solid #f3d3a5;border-radius:12px;padding:12px 16px;max-width:1240px;font-size:12.5px}
+.def b{font-weight:700}
+</style>
+</head>
+<body>
+<h1>KPIs de Despachos</h1>
+<p class="sub">Cuatro medidas, cada una en unidades y en pesos, y la relación entre ellas a la vista: lo vendido se divide en lo facturado y lo que falta; y lo que falta, en lo que ya está separado en bodega y lo que no. Cifras de hoy (los valores son a precio de lista).</p>
+
+<div class="def">
+  <b>Definiciones:</b> <b>Vendido</b> = unidades y valor de todo lo pedido por los clientes. <b>Facturado</b> = lo que ya salió con factura. <b>Faltante</b> = vendido − facturado (lo que aún se debe entregar). <b>Separado vigente</b> = separado en bodega con nombre de cliente y todavía no facturado; es la parte del faltante que ya está lista. <b>Por separar</b> = faltante − separado vigente.
+</div>
+
+<div class="paso"><i>A</i> Cuatro tarjetas con la operación entre ellas y la barra de avance <span class="reco">recomendada</span></div>
+<div class="a">
+  <div class="a-cards">
+    <div class="a-card vend">
+      <div class="t">Vendido</div>
+      <div class="u n">21.130<small>unid</small></div>
+      <div class="v n">$ 2.838.500.000</div>
+      <div class="d">401 pedidos · 238 clientes</div>
+    </div>
+    <div class="a-card fact">
+      <span class="op">−</span>
+      <div class="t">Facturado</div>
+      <div class="u n">577<small>unid</small></div>
+      <div class="v n">$ 77.510.000</div>
+      <div class="d">2,7 % de lo vendido</div>
+    </div>
+    <div class="a-card falt">
+      <span class="op">=</span>
+      <div class="t">Faltante · vendido − facturado</div>
+      <div class="u n">20.553<small>unid</small></div>
+      <div class="v n">$ 2.760.990.000</div>
+      <div class="d">97,3 % de lo vendido · 8 en referencias cerradas</div>
+    </div>
+    <div class="a-card sepv">
+      <span class="op" title="parte del faltante">⊂</span>
+      <div class="t">Separado vigente</div>
+      <div class="u n">1.048<small>unid</small></div>
+      <div class="v n">$ 140.790.000</div>
+      <div class="d">5,1 % del faltante ya está en bodega · 19.505 por separar</div>
+    </div>
+  </div>
+  <div class="a-bar">
+    <span style="width:2.7%;background:#1f6b2e"></span>
+    <span style="width:5%;background:#2b4a7e"></span>
+    <span style="width:92.3%;background:#f0c4c0"></span>
+  </div>
+  <div class="a-leg">
+    <span><i style="background:#1f6b2e"></i><b>Facturado</b> 577 · 2,7 %</span>
+    <span><i style="background:#2b4a7e"></i><b>Separado vigente</b> 1.048 · 5,0 %</span>
+    <span><i style="background:#f0c4c0"></i><b>Por separar</b> 19.505 · 92,3 %</span>
+    <span style="margin-left:auto">de <b>21.130</b> vendidas</span>
+  </div>
+</div>
+<p class="nota"><b>Cómo se lee:</b> de izquierda a derecha es una resta: vendido − facturado = faltante; y el faltante tiene una parte ya separada (azul) y otra por separar. La barra de abajo muestra lo mismo en proporción. Cada tarjeta lleva unidades grandes, el valor debajo y una línea de contexto. Se mantiene "en referencias cerradas" como dato pequeño dentro del faltante, para no perder lo que hoy es la tarjeta "Cerrado sin cubrir".</p>
+
+<div class="paso"><i>B</i> La cascada en una sola línea<small>· la operación es el protagonista</small></div>
+<div class="b">
+  <div class="b-row">
+    <div class="b-cell"><div class="t">Vendido</div><div class="u n">21.130</div><div class="v n">$ 2.838.500.000</div><div class="d">unidades · valor</div></div>
+    <div class="b-op">−</div>
+    <div class="b-cell fact"><div class="t">Facturado</div><div class="u n">577</div><div class="v n">$ 77.510.000</div><div class="d">2,7 %</div></div>
+    <div class="b-op eq">=</div>
+    <div class="b-cell falt"><div class="t">Faltante</div><div class="u n">20.553</div><div class="v n">$ 2.760.990.000</div><div class="d">97,3 % de lo vendido</div></div>
+    <div class="b-brace">del cual</div>
+    <div class="b-cell sepv"><div class="t">Separado vigente</div><div class="u n">1.048</div><div class="v n">$ 140.790.000</div><div class="d">listo en bodega · 5,1 %</div></div>
+    <div class="b-op">+</div>
+    <div class="b-cell"><div class="t">Por separar</div><div class="u n">19.505</div><div class="v n">$ 2.620.200.000</div><div class="d">94,9 % del faltante</div></div>
+  </div>
+</div>
+<p class="nota"><b>Cómo se lee:</b> la fórmula completa en un renglón, con los signos entre las cifras. Muy directa, pero con seis cifras grandes en una línea las tarjetas quedan más angostas y en pantallas de 1.000 px se aprietan.</p>
+
+<div class="paso"><i>C</i> Cuadro: una fila para unidades, otra para valor<small>· estilo informe</small></div>
+<div class="c">
+  <table>
+    <thead><tr><th></th><th>Vendido</th><th>Facturado</th><th>Faltante<small>vendido − facturado</small></th><th>Separado vigente<small>parte del faltante</small></th><th>Por separar<small>faltante − separado</small></th></tr></thead>
+    <tbody>
+      <tr><td>Unidades</td><td class="n">21.130</td><td class="n fact">577</td><td class="n falt">20.553</td><td class="n sepv">1.048</td><td class="n">19.505</td></tr>
+      <tr class="pct"><td></td><td>100 %</td><td>2,7 %</td><td>97,3 %</td><td>5,0 %</td><td>92,3 %</td></tr>
+      <tr><td>Valor</td><td class="n">$ 2.838.500.000</td><td class="n fact">$ 77.510.000</td><td class="n falt">$ 2.760.990.000</td><td class="n sepv">$ 140.790.000</td><td class="n">$ 2.620.200.000</td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="nota"><b>Cómo se lee:</b> como un cuadro de informe: cada columna una medida, cada fila una unidad de medida, y el porcentaje sobre lo vendido. Es la más compacta y la más fácil de comparar valor contra unidades, pero se ve menos "de un vistazo" que las tarjetas.</p>
+
+<div class="paso"><i>=</i> Comparación</div>
+<div class="cmp">
+  <div><h4>A · Tarjetas + barra</h4><ul><li>Cuatro cifras grandes, cada una con su valor debajo.</li><li>Los signos − y = entre tarjetas dicen la relación sin explicar nada.</li><li>La barra muestra el avance del despacho en un solo golpe de vista.</li><li>Cabe bien de 1.000 a 1.600 px.</li></ul></div>
+  <div><h4>B · Cascada</h4><ul><li>La fórmula entera en un renglón.</li><li>Seis cifras seguidas: más apretado en pantallas chicas.</li></ul></div>
+  <div><h4>C · Cuadro</h4><ul><li>Compacto y ordenado, fácil de leer valor y unidades juntos.</li><li>Menos impacto visual; parece una tabla más.</li></ul></div>
+</div>
+<p class="nota" style="margin-top:14px"><b>Datos:</b> vendido, facturado y separado salen de las líneas de SYD (estado vendido, facturado, separado); el valor es unidades × precio de lista de cada línea. El faltante se toma tal cual lo defines: vendido − facturado. Las cifras de valor de este mockup son aproximadas (precio promedio); en la app salen exactas por línea.</p>
+</body>
+</html>

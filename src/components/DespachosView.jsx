@@ -289,7 +289,10 @@ export default function DespachosView({
                   </td>
                   <td className="muted dsp-ciu">{c.ciudad || '—'}</td>
                   <td className="num">{num(c.vendido)}</td>
-                  <td className="num"><Cel n={c.separadoVig} cls="dsp-sep" />{c.faltas && <span className={'dsp-falta-tag' + (c.faltas.todasLibres ? ' ok' : '')} title={c.faltas.faltas.map((x) => `${x.ref} ${x.color} talla ${x.talla} · ${DONDE[x.donde].label}`).join('\n')}>{c.faltas.nTallas === 1 ? 'falta 1 talla' : `faltan ${c.faltas.nTallas} tallas`}</span>}</td>
+                  <td className="num dsp-sep-cel">
+                    {c.faltas && <span className={'dsp-falta-pt' + (c.faltas.todasLibres ? ' ok' : '')} title={(c.faltas.nTallas === 1 ? 'Falta 1 talla: ' : `Faltan ${c.faltas.nTallas} tallas: `) + c.faltas.faltas.map((x) => `${x.ref} ${x.color} talla ${x.talla} · ${DONDE[x.donde].label}`).join(' · ')} />}
+                    <Cel n={c.separadoVig} cls="dsp-sep" />
+                  </td>
                   <td className="dsp-fl"><FleteCel c={c} /></td>
                   <td className="num"><Cel n={c.facturado} /></td>
                   <td className="num strong" title="vendido − facturado">{num(c.pendiente)}</td>

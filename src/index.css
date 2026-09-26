@@ -7548,8 +7548,9 @@ tr.row-al.row-sel > td { background: #e9f3da; }
 @media (max-width: 1100px) { .dsp-kp-u { font-size: 24px; } .dsp-kp-v { font-size: 14px; } }
 
 /* ── Separado incompleto (Despachos) ── */
-.dsp-falta-tag { display: inline-block; margin-left: 5px; padding: 0 6px; border-radius: 999px; font-size: 9.5px; font-weight: 600; line-height: 15px; background: #fff4e0; color: #8a4b0a; border: 1px solid #f3d3a5; white-space: nowrap; vertical-align: middle; }
-.dsp-falta-tag.ok { background: #e9f5ee; color: #1f6b4a; border-color: #bfe0cd; }
+.dsp-sep-cel { position: relative; }
+.dsp-falta-pt { position: absolute; left: 6px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: #e0a030; box-shadow: 0 0 0 2px #fbe3c6; cursor: help; }
+.dsp-falta-pt.ok { background: #1f6b2e; box-shadow: 0 0 0 2px #cfe8d6; }
 .dsp-comp { border: 1px solid #f3d3a5; border-radius: 10px; overflow: hidden; margin: -6px 0 14px; }
 .dsp-comp-cab { padding: 7px 12px; background: #fff8ec; font-size: 12px; border-bottom: 1px solid #f3d3a5; }
 .dsp-comp-cab .dsp-tag { margin-left: 8px; }

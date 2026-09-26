@@ -11,6 +11,9 @@ import { produccionDe, diasTxt } from '../lib/produccionRef.js'
 // ════════════════════════════════════════════════════════════════════════
 
 const num = (n) => Number(n || 0).toLocaleString('es-CO')
+const up = (x) => String(x || '').trim().toUpperCase()
+// ¿Esta fila de color es la del foco? (el color de Factory empatado con el del pedido)
+const esFoco = (foco, c) => !!foco && up(c.colorPedido || c.color) === foco.color
 
 function Cel({ n, cls }) {
   return n ? <td className={'num' + (cls ? ' ' + cls : '')}>{num(n)}</td> : <td className="num pp-z">·</td>
@@ -18,7 +21,7 @@ function Cel({ n, cls }) {
 
 // La curva de una orden: una fila por color con lo cortado por talla; si el
 // taller ya entregó, debajo lo entregado por talla con las faltantes en rojo.
-function Curva({ o }) {
+function Curva({ o, foco }) {
   const t = o.tallas
   return (
     <table className="pp-curva">
@@ -27,7 +30,7 @@ function Curva({ o }) {
       </thead>
       <tbody>
         {o.colores.map((c) => (
-          <FilaColor key={c.color} c={c} t={t} conEntrega={o.entregoTaller > 0} />
+          <FilaColor key={c.color} c={c} t={t} conEntrega={o.entregoTaller > 0} foco={foco} />
         ))}
         {o.colores.length > 1 && (
           <tr className="pp-tot">
@@ -42,13 +45,16 @@ function Curva({ o }) {
   )
 }
 
-function FilaColor({ c, t, conEntrega }) {
+function FilaColor({ c, t, conEntrega, foco }) {
   const falto = c.unid - c.entUnid
+  const fc = esFoco(foco, c)
   return (
     <>
-      <tr>
+      <tr className={fc ? 'pp-fila-foco' : ''}>
         <td>{c.color}{c.colorPedido && c.colorPedido !== c.color && <span className="muted"> = {c.colorPedido}</span>}</td>
-        {t.map((x) => <Cel key={x} n={c.tallas[x]} />)}
+        {t.map((x) => (fc && x === foco.talla
+          ? <td key={x} className="num pp-foco">{c.tallas[x] ? num(c.tallas[x]) : '0'}</td>
+          : <Cel key={x} n={c.tallas[x]} />))}
         <td className="num"><b>{num(c.unid)}</b></td>
         <td className={'num' + (conEntrega ? (falto > 0 ? ' pp-f' : ' pp-ok') : ' pp-z')}>
           {conEntrega ? num(c.entUnid) : '·'}
@@ -70,9 +76,10 @@ function FilaColor({ c, t, conEntrega }) {
   )
 }
 
-function Orden({ o }) {
+function Orden({ o, foco }) {
+  const trae = !!foco && o.area !== 'bodega' && o.colores.some((c) => esFoco(foco, c) && (c.tallas[foco.talla] || 0) > 0)
   return (
-    <div className="pp-lote">
+    <div className={'pp-lote' + (trae ? ' pp-lote-foco' : '')}>
       <div className="pp-cab">
         <div>
           <b>Orden {o.orden}</b>
@@ -91,7 +98,7 @@ function Orden({ o }) {
           </span>
         ))}
       </div>
-      {o.colores.length > 0 && <Curva o={o} />}
+      {o.colores.length > 0 && <Curva o={o} foco={foco} />}
       {(o.faltoTaller.length > 0 || o.entroSinDigitar || (o.area === 'bodega' && o.entro !== o.entregoTaller && o.entregoTaller > 0)) && (
         <div className="pp-nota">
           {o.faltoTaller.length > 0 && <>El taller entregó {num(o.entregoTaller)} de {num(o.cant)}: falta {o.faltoTaller.map((f) => `${f.n} en talla ${f.talla}${o.colores.length > 1 ? ' ' + f.color : ''}`).join(', ')}. </>}
@@ -103,8 +110,28 @@ function Orden({ o }) {
   )
 }
 
-export default function ProduccionPanel({ codigo, descripcion, cliente, lineas, cerrada, datos, onClose }) {
+// `foco` ({ color, talla, n }): la talla que le falta al cliente para
+// completar lo separado. El panel la resalta en cada lote y arriba dice si
+// hay libres y qué lotes en camino la traen. `faltas` + `onElegir`: si al
+// cliente le faltan varias, pestañas para pasar de una a otra.
+export default function ProduccionPanel({ codigo, descripcion, cliente, lineas, cerrada, datos, onClose, foco: focoIn, faltas, elegida, onElegir }) {
   const p = useMemo(() => produccionDe({ ref: codigo, lineas, cerrada, ...datos }), [codigo, lineas, cerrada, datos])
+  const foco = focoIn ? { color: up(focoIn.color), talla: String(focoIn.talla), n: focoIn.n || 0 } : null
+  const focoInfo = useMemo(() => {
+    if (!foco) return null
+    const lib = p.libres.libre[foco.color + '|' + foco.talla] || 0
+    const lotes = []
+    p.ordenes.forEach((o) => {
+      if (o.area === 'bodega') return
+      o.colores.forEach((c) => {
+        if (!esFoco(foco, c)) return
+        const n = c.tallas[foco.talla] || 0
+        if (n > 0) lotes.push({ o, n })
+      })
+    })
+    const pp = (p.porProgramar.colores || []).find((x) => x.color === foco.color)
+    return { lib, lotes, porProgramar: pp ? (pp.tallas[foco.talla] || 0) : 0 }
+  }, [p, foco && foco.color, foco && foco.talla])
 
   // Escape cierra este panel y no la ventana del cliente que está detrás.
   useEffect(() => {
@@ -132,6 +159,43 @@ export default function ProduccionPanel({ codigo, descripcion, cliente, lineas, 
           {cliente} pide <b>{num(p.pendiente.reduce((n, c) => n + c.n, 0))}</b> pendientes: {pideTxt}
           {p.cerrada && <> <span className="tag dsp-tag pp-cerrada">Producción cerrada</span></>}
         </p>
+
+        {foco && focoInfo && (
+          <div className="pp-foco-box">
+            {faltas && faltas.length > 1 && (
+              <div className="pp-foco-tabs">
+                {faltas.map((x, i) => (
+                  <button key={i} type="button" className={'proc-f-btn' + (i === elegida ? ' on' : '')} onClick={() => onElegir && onElegir(i)}>
+                    {x.ref} · {x.color} · talla {x.talla}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="pp-foco-t">
+              A {cliente.split(' ').slice(0, 2).join(' ')} le {foco.n === 1 ? 'falta' : 'faltan'} <b>{num(foco.n || 1)}</b> en <b>{foco.color} talla {foco.talla}</b> para completar lo separado
+            </div>
+            <ul className="pp-foco-l">
+              <li className={focoInfo.lib > 0 ? 'ok' : ''}>
+                <b>Libres en bodega:</b> {focoInfo.lib > 0 ? <>{num(focoInfo.lib)} — se puede separar hoy en SYD</> : 'ninguna'}
+              </li>
+              <li className={focoInfo.lotes.length ? 'amb' : ''}>
+                <b>Lotes en camino que la traen:</b>{' '}
+                {focoInfo.lotes.length
+                  ? focoInfo.lotes.map(({ o, n }, i) => <span key={i} className="pp-foco-lote">orden {o.orden}{o.pieza ? ` (${o.pieza})` : ''} · <b>{num(n)}</b> en talla {foco.talla} · {o.chip}</span>)
+                  : 'ninguno'}
+              </li>
+              {!focoInfo.lib && !focoInfo.lotes.length && (
+                <li className="no">
+                  <b>{p.cerrada ? 'Producción cerrada:' : 'Por programar:'}</b>{' '}
+                  {p.cerrada ? 'no salen más lotes; decidir si va incompleto o se quita la talla.'
+                    : focoInfo.porProgramar > 0 ? `faltan ${num(focoInfo.porProgramar)} de esa talla y color por programar en el pedido total; hay que meterla en el próximo corte.`
+                      : 'ningún lote la trae; revisar en Programaciones.'}
+                </li>
+              )}
+            </ul>
+            <div className="pp-foco-ley">Los lotes que la traen están marcados abajo y la casilla de esa talla, resaltada.</div>
+          </div>
+        )}
 
         <div className="pp-kp">
           <div><span>Programado</span><b>{num(p.cifras.programado)}</b><em>{p.cifras.ordenes === 1 ? '1 orden' : `${p.cifras.ordenes} órdenes`}{p.esConjunto ? ' · conjunto' : ''}</em></div>
@@ -188,7 +252,7 @@ export default function ProduccionPanel({ codigo, descripcion, cliente, lineas, 
         {p.grupos.map((g) => (
           <div key={g.pieza || 'u'}>
             {p.esConjunto && <p className="pp-pieza">{g.pieza} <span className="muted">· {g.ordenes.length === 1 ? '1 orden' : `${g.ordenes.length} órdenes`}</span></p>}
-            {g.ordenes.map((o) => <Orden key={o.orden} o={o} />)}
+            {g.ordenes.map((o) => <Orden key={o.orden} o={o} foco={foco} />)}
           </div>
         ))}
 

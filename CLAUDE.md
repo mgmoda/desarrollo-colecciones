@@ -382,7 +382,13 @@ que falta está libre (`decisionConFaltas`, manda sobre flete salvo
 `ParaCompletar` ("Para completar lo separado") con talla, cuánto falta,
 separado de la línea, dónde está y qué hacer. La lista agrupada por talla
 para producción quedó en el mockup `despachos-tallas-que-frenan-v1` (Diego
-la dejó pendiente).
+la dejó pendiente). El chip "Falta N talla(s)" / "Completar ya" de la
+Decisión es un botón (y cada fila del bloque trae "Ver lotes ›"): abre
+`ProduccionPanel` de esa referencia en modo foco (`foco` = color + talla,
+`faltas` + `onElegir` para pestañas si faltan varias): recuadro con libres
+en bodega, lotes en camino que traen esa talla y color (orden, unidades en
+esa talla, etapa), o qué hacer si no viene ninguno; los lotes que la traen
+quedan con borde ámbar y la casilla resaltada.
 
 **Flete por unidad de lo separado (25-sep-2026)**: columna en Despachos
 ("Flete por unidad · caja / paq 5 kg / paq 1–2 kg", `FleteCel`) con el flete

@@ -79,6 +79,7 @@ export default function DespachosView({
   const [ciudad, setCiudad] = useState('')
   const [filtro, setFiltro] = useState('todos')
   const [abierto, setAbierto] = useState(null) // nombre del cliente abierto
+  const [faltaDe, setFaltaDe] = useState(null) // { cliente, i }: panel de la talla que falta
   const { sortKey, sortDir, toggle } = useSort('pendiente', 'desc')
 
   useEffect(() => {
@@ -299,7 +300,10 @@ export default function DespachosView({
                   <td className="num"><Cel n={c.faltante} cls="dsp-falt" /></td>
                   <td className="num muted">{c.faltante ? formatPrice(c.valorFalt) : <span className="dsp-cero">·</span>}</td>
                   <td className="dsp-decision">
-                    <span className={'tag dsp-tag ' + (CHIP_DECISION[c.decision.key] || '')}>{c.decision.label}</span>
+                    {c.faltas && (c.decision.key === 'faltaTalla' || c.decision.key === 'completar')
+                      ? <button type="button" className={'tag dsp-tag dsp-tag-btn ' + (CHIP_DECISION[c.decision.key] || '')} title="Ver la referencia y los lotes que traen la talla que falta"
+                        onClick={(e) => { e.stopPropagation(); setFaltaDe({ cliente: c.cliente, i: 0 }) }}>{c.decision.label} ›</button>
+                      : <span className={'tag dsp-tag ' + (CHIP_DECISION[c.decision.key] || '')}>{c.decision.label}</span>}
                     <span className="muted dsp-motivo">{c.decision.motivo}</span>
                   </td>
                   <td className="dsp-guia" onClick={(e) => e.stopPropagation()}>
@@ -324,6 +328,19 @@ export default function DespachosView({
         <span><b>Pendiente</b> = vendido − facturado.</span>
         <span><b>Faltante real</b> = separado por facturar + abierto real; lo cerrado ("no sale") no cuenta.</span>
       </div>
+
+      {faltaDe && produccion && (() => {
+        const cf = clientes.find((x) => x.cliente === faltaDe.cliente)
+        const lista = cf && cf.faltas ? cf.faltas.faltas : []
+        const x = lista[faltaDe.i]
+        if (!x) return null
+        const lineasRef = cf.lineas.filter((l) => String(l.ref).toUpperCase() === x.ref)
+        return (
+          <ProduccionPanel codigo={x.ref} descripcion={x.descripcion} cliente={cf.cliente} lineas={lineasRef}
+            cerrada={lineasRef.some((l) => l.cerrada)} datos={produccion} onClose={() => setFaltaDe(null)}
+            foco={x} faltas={lista} elegida={faltaDe.i} onElegir={(i) => setFaltaDe({ cliente: cf.cliente, i })} />
+        )
+      })()}
 
       {despachando && (
         <DespacharModal cliente={despachando.cliente} ciudadSyd={despachando.ciudad} usuario={usuario}
@@ -434,7 +451,7 @@ function FleteCel({ c }) {
 
 // "Para completar lo separado": las tallas que faltan en las líneas ya
 // separadas del cliente, dónde está cada una y qué hacer.
-function ParaCompletar({ c, refMap }) {
+function ParaCompletar({ c, refMap, onVer }) {
   const f = c.faltas
   if (!f) return null
   return (
@@ -457,7 +474,7 @@ function ParaCompletar({ c, refMap }) {
                 <td className="num dsp-falt">{num(x.n)}</td>
                 <td className="num" title="Separado de lo vendido en esta referencia y color"><span className="dsp-sep">{num(x.sepLinea)}</span><span className="muted"> de {num(x.vendLinea)}</span></td>
                 <td><span className={'dsp-donde ' + d.clase}>{d.label}{x.detalle ? ` · ${x.detalle}` : ''}</span></td>
-                <td className="muted">{d.hacer}</td>
+                <td className="muted dsp-comp-hacer">{d.hacer}{onVer && <button type="button" className="dsp-comp-ver" onClick={() => onVer(i)}>Ver lotes ›</button>}</td>
               </tr>
             )
           })}
@@ -666,7 +683,7 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, onCerrarRef, 
           <div><span>Decisión</span><b><span className={'tag dsp-tag ' + (CHIP_DECISION[c.decision.key] || '')}>{c.decision.label}</span></b><em>{c.decision.motivo}</em></div>
         </div>
         <FleteComparacion c={c} />
-        <ParaCompletar c={c} refMap={refMap} />
+        <ParaCompletar c={c} refMap={refMap} onVer={(i) => setProdDe({ falta: i })} />
 
         <div className="dsp-tool">
           <SearchInput value={q} onChange={setQ} placeholder="Referencia, categoría, descripción o color…" className="dsp-buscar" />
@@ -800,10 +817,15 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, onCerrarRef, 
         </div>
       </div>
       {prodDe && produccion && (() => {
-        const r = refs.find((x) => x.ref === prodDe)
+        // Desde "Para completar lo separado" llega { falta: i }: se abre esa
+        // referencia enfocada en la talla que falta.
+        const lista = c.faltas ? c.faltas.faltas : []
+        const fx = typeof prodDe === 'object' ? lista[prodDe.falta] : null
+        const r = refs.find((x) => x.ref === (fx ? fx.ref : prodDe))
         return r ? (
           <ProduccionPanel codigo={r.ref} descripcion={r.descripcion} cliente={c.cliente} lineas={r.lineas} cerrada={r.cerrada}
-            datos={produccion} onClose={() => setProdDe(null)} />
+            datos={produccion} onClose={() => setProdDe(null)}
+            foco={fx} faltas={fx ? lista : null} elegida={fx ? prodDe.falta : null} onElegir={(i) => setProdDe({ falta: i })} />
         ) : null
       })()}
     </Modal>

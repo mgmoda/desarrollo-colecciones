@@ -384,11 +384,14 @@ separado de la línea, dónde está y qué hacer. La lista agrupada por talla
 para producción quedó en el mockup `despachos-tallas-que-frenan-v1` (Diego
 la dejó pendiente). El chip "Falta N talla(s)" / "Completar ya" de la
 Decisión es un botón (y cada fila del bloque trae "Ver lotes ›"): abre
-`ProduccionPanel` de esa referencia en modo foco (`foco` = color + talla,
-`faltas` + `onElegir` para pestañas si faltan varias): recuadro con libres
-en bodega, lotes en camino que traen esa talla y color (orden, unidades en
-esa talla, etapa), o qué hacer si no viene ninguno; los lotes que la traen
-quedan con borde ámbar y la casilla resaltada.
+`FaltaPanel` (en DespachosView), pedido por Diego "tipo Excel, desde cero"
+tras rechazar dos diseños: arriba, las filas del cliente de las referencias
+incompletas IGUAL que en su ventana (foto, referencia, color · pedido,
+casillas por talla azul/verde/blanco con `partesDe`), con la casilla que
+falta enmarcada en ámbar (`fp-falta`); tocar una referencia la elige.
+Abajo, `LotesDeRef` (ProduccionPanel.jsx): una línea con libres en bodega
+de esa talla y color y los lotes en camino que la traen, y las órdenes de
+la referencia con esa talla y color resaltados (`pp-lote-foco`, `pp-foco`).
 
 **Flete por unidad de lo separado (25-sep-2026)**: columna en Despachos
 ("Flete por unidad · caja / paq 5 kg / paq 1–2 kg", `FleteCel`) con el flete

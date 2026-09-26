@@ -5,7 +5,8 @@ import SearchInput from './SearchInput.jsx'
 import { useSort, sortRows } from '../lib/sort.js'
 import { dbLoadPedidosTodos, dbLoadDespachos, dbUpsertDespacho } from '../lib/db.js'
 import DespacharModal from './DespacharModal.jsx'
-import ProduccionPanel from './ProduccionPanel.jsx'
+import ProduccionPanel, { LotesDeRef } from './ProduccionPanel.jsx'
+import { createPortal } from 'react-dom'
 import { dbInsertGuia, dbLoadCiudadesDane, dbLoadCiudadSyd, dbLoadGuias, dbLoadLibreta, dbLoadTarifas, dbUpsertLibreta, dbUpsertTarifa } from '../lib/db.js'
 import { coordinadora } from '../lib/coordinadora.js'
 import { FILTROS_FLETE, UMBRAL, claveTarifa, decisionConFlete, empaqueCorto, empaqueMinimo, fleteDe, tarifasPendientes } from '../lib/flete.js'
@@ -331,15 +332,10 @@ export default function DespachosView({
 
       {faltaDe && produccion && (() => {
         const cf = clientes.find((x) => x.cliente === faltaDe.cliente)
-        const lista = cf && cf.faltas ? cf.faltas.faltas : []
-        const x = lista[faltaDe.i]
-        if (!x) return null
-        const lineasRef = cf.lineas.filter((l) => String(l.ref).toUpperCase() === x.ref)
-        return (
-          <ProduccionPanel codigo={x.ref} descripcion={x.descripcion} cliente={cf.cliente} lineas={lineasRef}
-            cerrada={lineasRef.some((l) => l.cerrada)} datos={produccion} onClose={() => setFaltaDe(null)}
-            foco={x} faltas={lista} elegida={faltaDe.i} onElegir={(i) => setFaltaDe({ cliente: cf.cliente, i })} />
-        )
+        return cf && cf.faltas ? (
+          <FaltaPanel c={cf} elegida={faltaDe.i} onElegir={(i) => setFaltaDe({ cliente: cf.cliente, i })}
+            refMap={refMap} onViewImage={onViewImage} produccion={produccion} onClose={() => setFaltaDe(null)} />
+        ) : null
       })()}
 
       {despachando && (
@@ -446,6 +442,115 @@ function FleteCel({ c }) {
         </div>
       ))}
     </div>
+  )
+}
+
+// Ventana "Para completar lo separado" (chip "Falta N talla(s)" de la
+// Decisión, o "Ver lotes" en la ventana del cliente). Arriba, las filas del
+// cliente de las referencias incompletas, IGUAL que en su ventana (foto,
+// referencia, color · pedido y casillas por talla: azul separado, verde
+// facturado, blanco pendiente), con la casilla que falta marcada en ámbar.
+// Abajo, los lotes de la referencia elegida con esa talla y color resaltados.
+function FaltaPanel({ c, elegida, onElegir, refMap, onViewImage, produccion, onClose }) {
+  const lista = c.faltas.faltas
+  const sel = lista[elegida] || lista[0]
+  const refsF = [...new Set(lista.map((x) => x.ref))]
+  const lineasDe = (ref) => c.lineas.filter((l) => String(l.ref).toUpperCase() === ref)
+  const tallas = TALLAS.filter((t) => refsF.some((ref) => lineasDe(ref).some((l) => Number((l.tallas || {})[t]) > 0)))
+  const esFalta = (l, t) => lista.some((x) => x.ref === String(l.ref).toUpperCase() && x.color === String(l.color).toUpperCase() && x.talla === t)
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose() } }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [onClose])
+
+  function celda(l, t) {
+    const x = partesDe(l, t)
+    const falta = esFalta(l, t)
+    const cls = falta ? ' fp-falta' : ''
+    if (!x.v) return <td key={t} className="num"><span className="dsp-cero">·</span></td>
+    const titulo = falta ? `FALTA · ${x.p} por separar de ${x.v}` : `${x.v} vendidas · ${x.f} facturadas · ${x.s} separadas · ${x.p} pendientes`
+    const estados = (x.f ? 1 : 0) + (x.s ? 1 : 0) + (x.p ? 1 : 0)
+    if (estados === 1) return <td key={t} title={titulo} className={'num ' + (x.s ? 'dsp-c-sep' : x.f ? 'dsp-c-fact' : '') + cls}>{x.v}</td>
+    return (
+      <td key={t} className={'num' + cls} title={titulo}>
+        <span className="dsp-mix">
+          {x.f > 0 && <span className="f">{x.f}</span>}
+          {x.s > 0 && <span className="s">{x.s}</span>}
+          {x.p > 0 && <span className="p">{x.p}</span>}
+        </span>
+      </td>
+    )
+  }
+
+  return createPortal(
+    <div className="pp-raiz" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="pp-velo" onMouseDown={onClose} />
+      <aside className="pp-panel fp-panel" role="dialog" aria-label={`Para completar lo separado de ${c.cliente}`}>
+        <button type="button" className="icon-btn pp-x" onClick={onClose} aria-label="Cerrar">✕</button>
+        <h3 className="modal-title pp-titulo">{c.cliente}</h3>
+        <p className="eb-meta">
+          {c.ciudad ? `${c.ciudad} · ` : ''}{num(c.separadoVig)} prendas separadas · para completarlo {c.faltas.nUnid === 1 ? 'falta' : 'faltan'}{' '}
+          <b>{lista.map((x) => `${x.ref} ${x.color} talla ${x.talla}`).join(' · ')}</b>
+        </p>
+
+        <div className="med-wrap fp-wrap">
+          <table className="med-tabla dsp-det dsp-densa fp-tabla">
+            <thead>
+              <tr>
+                <th /><th>Referencia</th><th>Color</th>
+                {tallas.map((t) => <th key={t} className="num">{t}</th>)}
+                <th className="num">Unid</th><th className="num dsp-sep">Sep.</th><th className="num dsp-fact">Fact.</th><th className="num dsp-pend">Pend.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {refsF.map((ref) => {
+                const ls = lineasDe(ref)
+                const ficha = refMap && refMap.get(ref)
+                const img = ficha && ficha.image
+                const cat = categoriaDe(ls[0] && ls[0].descripcion)
+                const activa = ref === sel.ref
+                const primera = lista.findIndex((x) => x.ref === ref)
+                return ls.map((l, i) => (
+                  <tr key={l.id} className={(i === 0 ? 'ped-ref-inicio ' : '') + 'fp-fila' + (activa ? ' fp-sel' : '')}
+                    onClick={() => onElegir(primera)} title={activa ? '' : 'Ver los lotes de esta referencia'}>
+                    <td className="dsp-foto">
+                      {i === 0 && (img
+                        ? <img src={img} alt={ref} className="thumb" title="Ampliar foto" onClick={(e) => { e.stopPropagation(); onViewImage && onViewImage(img) }} />
+                        : <span className="thumb empty" title="Sin foto en la ficha">—</span>)}
+                    </td>
+                    <td className="dsp-refd">
+                      {i === 0 && (
+                        <>
+                          <span className="dsp-punto ambar" />
+                          <b>{ref}</b>
+                          <span className={'dsp-cat c-' + cat.key}>{cat.label}</span>
+                          <span className="dsp-refd-d" title={l.descripcion}>{l.descripcion}</span>
+                        </>
+                      )}
+                    </td>
+                    <td>{l.color}<span className="dsp-ped"> · {l.pedidos.join(', ')}</span></td>
+                    {tallas.map((t) => celda(l, t))}
+                    <td className="num">{num(l.vendido)}</td>
+                    <td className="num"><Cel n={l.sepVig} cls="dsp-sep" /></td>
+                    <td className="num"><Cel n={l.facturado} cls="dsp-fact" /></td>
+                    <td className="num dsp-pend">{num(Math.max(l.vendido - l.facturado, 0))}</td>
+                  </tr>
+                ))
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="fp-ley">
+          <span><i className="s" />separado</span><span><i className="f" />facturado</span><span><i className="p" />pendiente</span><span><i className="x" />la que falta</span>
+          {refsF.length > 1 && <span className="muted">· toca una referencia para ver sus lotes</span>}
+        </div>
+
+        <p className="pp-tit fp-lotes-t">Lotes de {sel.ref} · <span className="fp-busca">{sel.color} talla {sel.talla}</span> resaltada</p>
+        <LotesDeRef codigo={sel.ref} cerrada={c.lineas.some((l) => String(l.ref).toUpperCase() === sel.ref && l.cerrada)} datos={produccion} foco={sel} />
+      </aside>
+    </div>,
+    document.body,
   )
 }
 
@@ -816,16 +921,15 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, onCerrarRef, 
           </span>
         </div>
       </div>
-      {prodDe && produccion && (() => {
-        // Desde "Para completar lo separado" llega { falta: i }: se abre esa
-        // referencia enfocada en la talla que falta.
-        const lista = c.faltas ? c.faltas.faltas : []
-        const fx = typeof prodDe === 'object' ? lista[prodDe.falta] : null
-        const r = refs.find((x) => x.ref === (fx ? fx.ref : prodDe))
+      {prodDe && produccion && typeof prodDe === 'object' && c.faltas && (
+        <FaltaPanel c={c} elegida={prodDe.falta} onElegir={(i) => setProdDe({ falta: i })}
+          refMap={refMap} onViewImage={onViewImage} produccion={produccion} onClose={() => setProdDe(null)} />
+      )}
+      {prodDe && produccion && typeof prodDe === 'string' && (() => {
+        const r = refs.find((x) => x.ref === prodDe)
         return r ? (
           <ProduccionPanel codigo={r.ref} descripcion={r.descripcion} cliente={c.cliente} lineas={r.lineas} cerrada={r.cerrada}
-            datos={produccion} onClose={() => setProdDe(null)}
-            foco={fx} faltas={fx ? lista : null} elegida={fx ? prodDe.falta : null} onElegir={(i) => setProdDe({ falta: i })} />
+            datos={produccion} onClose={() => setProdDe(null)} />
         ) : null
       })()}
     </Modal>

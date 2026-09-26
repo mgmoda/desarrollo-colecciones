@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup v3 · Lo que falta, tipo Excel</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--grid:#d8d4c9;--ink:#1c1c22;--muted:#6b6660;--sep:#2b4a7e;--rojo:#b23121;--ok:#1f6b2e;--amb:#8a4b0a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.35;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:24px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 6px;max-width:1000px}
+.paso{display:flex;align-items:center;gap:10px;margin:30px 0 10px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.paso i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:11px}
+.paso small{font-weight:500;letter-spacing:0;text-transform:none;margin-left:6px}
+.nota{color:var(--muted);font-size:12px;max-width:1000px;margin:10px 0 0}
+.nota b{color:var(--ink)}
+.duo{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+/* panel lateral */
+.panel{width:720px;background:#fff;border:1px solid var(--grid);border-radius:14px 0 0 14px;box-shadow:-12px 0 30px rgba(0,0,0,.12);padding:16px 18px 20px;position:relative}
+.panel .x{position:absolute;right:14px;top:12px;width:26px;height:26px;border-radius:50%;border:1px solid var(--grid);display:grid;place-items:center;color:var(--muted);font-size:12px}
+.panel h3{font-family:Fraunces,serif;font-weight:500;font-size:18px;margin:0;padding-right:36px}
+.panel .m{color:var(--muted);font-size:12px;margin:2px 0 12px}
+.tit{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+/* cuadrícula tipo Excel */
+.xl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;font-variant-numeric:tabular-nums}
+.xl th{background:#f1efe9;border:1px solid var(--grid);padding:5px 6px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#4a4642;text-align:center;line-height:1.15}
+.xl td{border:1px solid var(--grid);padding:4px 6px;text-align:center;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xl td.l{text-align:left}
+.xl tr.sel td{background:#fff8ec}
+.xl tr.sel td:first-child{box-shadow:inset 3px 0 0 #e0a030}
+.xl tr.clic{cursor:pointer}
+.ft{width:44px;height:56px;border-radius:5px;display:block;margin:0 auto;background:linear-gradient(160deg,#b8d4bf,#5f8f6c)}
+.ft.az{background:linear-gradient(160deg,#c3d0e8,#4d6fa6)}
+.ft.ng{background:linear-gradient(160deg,#9a9a9a,#2d2d2d)}
+.ft.fu{background:linear-gradient(160deg,#f2b8d6,#c43f86)}
+.rf b{font-size:13px}
+.rf small{display:block;color:var(--muted);font-size:10.5px;white-space:normal;line-height:1.2}
+.tl{font-size:18px;font-weight:700;color:var(--amb)}
+.red{color:var(--rojo);font-weight:700}
+.sepn{color:var(--sep);font-weight:700}
+.ok{color:var(--ok);font-weight:700}
+.z{color:#c9c4ba}
+.st{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.st.lib{background:#d5ead9;color:#1f6b2e}
+.st.tal{background:#fbe3c6;color:#8a4b0a}
+.st.cor{background:#dbe5f5;color:#2b4a7e}
+.st.prog{background:#f6d3cf;color:#8c2f28}
+.st.cer{background:#e5e2da;color:#4a4642}
+.xl td.hacer{white-space:normal;text-align:left;font-size:11px;line-height:1.2}
+.xl td.cf{background:#fbe3c6;font-weight:700;color:#8a4b0a;box-shadow:inset 0 0 0 2px #e0a030}
+.xl th.cf{background:#f3d3a5;color:#8a4b0a}
+.xl tr.tot td{background:#f7f6f2;font-weight:700}
+.btn{display:inline-block;border:1px solid var(--grid);border-radius:999px;padding:4px 12px;font-size:11.5px;font-weight:600;background:#fff}
+.pie{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11.5px;color:var(--muted)}
+
+/* v3: lo que falta, grande y junto a la foto */
+.falta-cel{padding:4px 6px !important}
+.fb{display:flex;align-items:center;gap:8px;justify-content:flex-start;background:#fff4e0;border:2px solid #e0a030;border-radius:8px;padding:5px 8px}
+.fb .sw{width:20px;height:20px;border-radius:50%;border:1px solid rgba(0,0,0,.18);flex:none}
+.fb .col{font-size:13px;font-weight:700;letter-spacing:.02em}
+.fb .t{margin-left:auto;background:#8a4b0a;color:#fff;border-radius:6px;padding:2px 8px;font-size:15px;font-weight:700;line-height:1.2}
+.fb .t small{font-size:10px;font-weight:600;opacity:.85;margin-right:3px}
+.busca{display:flex;align-items:center;gap:10px;margin:14px 0 6px;padding:8px 12px;background:#fff4e0;border:2px solid #e0a030;border-radius:10px}
+.busca .sw{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.18)}
+.busca b{font-size:15px}
+.busca .t{background:#8a4b0a;color:#fff;border-radius:6px;padding:2px 9px;font-size:15px;font-weight:700}
+.busca span.m2{color:var(--muted);font-size:12px;margin-left:auto}
+.xl th.cf{background:#8a4b0a;color:#fff}
+.xl th.cf small{display:block;font-size:8.5px;letter-spacing:.06em}
+.xl td.cf{background:#fbe3c6;font-weight:700;color:#8a4b0a;box-shadow:inset 2px 0 0 #e0a030,inset -2px 0 0 #e0a030}
+.xl tr:last-child td.cf{box-shadow:inset 2px 0 0 #e0a030,inset -2px 0 0 #e0a030,inset 0 -2px 0 #e0a030}
+.xl td.cf.si{background:#e0a030;color:#fff}
+</style>
+</head>
+<body>
+<h1>Lo que falta para completar lo separado · tipo Excel (v3)</h1>
+<p class="sub"><b>Cambio v3:</b> el color y la talla que faltan van juntos en un bloque propio, junto a la foto: muestra del color, nombre en negrita y la talla en una etiqueta oscura. Abajo, una barra "VERDE · TALLA 20 · ¿qué orden la trae?" y la columna de esa talla marcada FALTA de arriba abajo; la celda de la orden que la trae va rellena.<br><br>Es el mismo panel lateral de la primera versión, reordenado en dos cuadrículas. Arriba, <b>una fila por prenda que falta</b>, con su foto en miniatura: se ve de una qué prenda es, qué color, qué talla y dónde está. Abajo, las <b>órdenes de la referencia de la fila marcada</b>, mostrando solo ese color, con la columna de la talla que falta resaltada. Al tocar otra fila de arriba, cambia la cuadrícula de abajo.</p>
+
+<div class="paso"><i>1</i> Un cliente con 1 prenda faltante<small>· María Inés Albarracín</small></div>
+<div class="duo">
+<div class="panel">
+  <span class="x">✕</span>
+  <h3>Para completar lo separado</h3>
+  <div class="m">MARIA INES ALBARRACIN VEGA · La Dorada · 12 prendas separadas · falta <b>1</b></div>
+
+  <table class="xl">
+    <colgroup><col style="width:58px"><col style="width:30%"><col style="width:25%"><col style="width:10%"><col style="width:9%"><col style="width:26%"></colgroup>
+    <thead><tr><th>Foto</th><th style="background:#f3d3a5;color:#8a4b0a">Lo que falta</th><th>Referencia</th><th>Separado</th><th>Libres bodega</th><th>Dónde está</th></tr></thead>
+    <tbody>
+      <tr class="sel clic"><td><span class="ft"></span></td><td class="falta-cel"><div class="fb"><span class="sw" style="background:#5f8f6c"></span><span class="col">VERDE</span><span class="t"><small>TALLA</small>20</span></div></td><td class="l rf"><b>M5318</b><small>Blusa con estampado abstracto</small></td><td><span class="sepn">4</span> de 5</td><td class="z">0</td><td><span class="st tal">En taller · 10 días</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="busca"><span class="sw" style="background:#5f8f6c"></span><b>VERDE</b><span class="t">TALLA 20</span><span>¿qué orden la trae?</span><span class="m2">Órdenes de M5318 · solo color verde</span></div>
+  <table class="xl">
+    <colgroup><col style="width:13%"><col style="width:21%"><col span="7" style="width:6.5%"><col style="width:9%"><col style="width:11%"></colgroup>
+    <thead><tr><th>Orden</th><th>Dónde va</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th class="cf"><small>FALTA</small>20</th><th>Total</th><th>Entregó</th></tr></thead>
+    <tbody>
+      <tr class="sel"><td><b>11258</b></td><td class="l"><span class="st tal">Taller · Cricelia · 10 d</span></td><td>2</td><td>4</td><td>6</td><td>7</td><td>13</td><td>4</td><td class="cf si">5</td><td><b>41</b></td><td class="z">—</td></tr>
+      <tr><td>11086</td><td class="l"><span class="st lib">Bodega · 26 ago</span></td><td>1</td><td>1</td><td>5</td><td>6</td><td>6</td><td>3</td><td class="cf">1</td><td><b>23</b></td><td class="ok">23</td></tr>
+      <tr><td>10957</td><td class="l"><span class="st lib">Bodega · muestra</span></td><td class="z">·</td><td class="z">·</td><td class="z">·</td><td class="z">·</td><td class="z">·</td><td class="z">·</td><td class="cf">0</td><td><b>0</b></td><td class="z">—</td></tr>
+    </tbody>
+  </table>
+  <div class="pie"><span>La orden <b>11258</b> trae <b>5</b> en talla 20 verde. Las de bodega ya tienen dueño.</span><span class="btn">Ver todos los colores ›</span></div>
+</div>
+</div>
+<p class="nota"><b>Cómo se lee:</b> arriba, la prenda que falta con su foto (44 × 56, del tamaño de un dedo: se reconoce sin ocupar espacio), la talla en grande y en ámbar, cuánto tiene separado de esa referencia y color, cuántas libres hay en bodega y dónde está. Abajo, cada orden es una fila y cada talla una columna, solo del color que falta; la columna de la talla que falta va resaltada. Así se ve de inmediato qué orden trae esa talla y en qué va.</p>
+
+<div class="paso"><i>2</i> Un cliente con 4 prendas faltantes<small>· cómo escala</small></div>
+<div class="duo">
+<div class="panel">
+  <span class="x">✕</span>
+  <h3>Para completar lo separado</h3>
+  <div class="m">EJEMPLO · 4 referencias · 18 prendas separadas · faltan <b>4</b></div>
+
+  <table class="xl">
+    <colgroup><col style="width:58px"><col style="width:30%"><col style="width:25%"><col style="width:10%"><col style="width:9%"><col style="width:26%"></colgroup>
+    <thead><tr><th>Foto</th><th style="background:#f3d3a5;color:#8a4b0a">Lo que falta</th><th>Referencia</th><th>Separado</th><th>Libres bodega</th><th>Dónde está</th></tr></thead>
+    <tbody>
+      <tr class="clic"><td><span class="ft az"></span></td><td class="falta-cel"><div class="fb"><span class="sw" style="background:#4d6fa6"></span><span class="col">AZUL</span><span class="t"><small>TALLA</small>18</span></div></td><td class="l rf"><b>C6868</b><small>Conjunto estampado coordinado</small></td><td><span class="sepn">4</span> de 5</td><td class="ok">1</td><td><span class="st lib">Libre · separar hoy</span></td></tr>
+      <tr class="sel clic"><td><span class="ft"></span></td><td class="falta-cel"><div class="fb"><span class="sw" style="background:#5f8f6c"></span><span class="col">VERDE</span><span class="t"><small>TALLA</small>20</span></div></td><td class="l rf"><b>M5318</b><small>Blusa con estampado abstracto</small></td><td><span class="sepn">4</span> de 5</td><td class="z">0</td><td><span class="st tal">En taller · 10 días</span></td></tr>
+      <tr class="clic"><td><span class="ft ng"></span></td><td class="falta-cel"><div class="fb"><span class="sw" style="background:#2d2d2d"></span><span class="col">NEGRO</span><span class="t"><small>TALLA</small>18</span></div></td><td class="l rf"><b>C6935</b><small>Vestido camisero</small></td><td><span class="sepn">5</span> de 6</td><td class="z">0</td><td><span class="st prog">Por programar</span></td></tr>
+      <tr class="clic"><td><span class="ft az"></span></td><td class="falta-cel"><div class="fb"><span class="sw" style="background:#4d6fa6"></span><span class="col">AZUL</span><span class="t"><small>TALLA</small>20</span></div></td><td class="l rf"><b>C6930</b><small>Vestido estampado con cinturón</small></td><td><span class="sepn">4</span> de 5</td><td class="z">0</td><td><span class="st cer">Cerrada · decidir</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="busca"><span class="sw" style="background:#5f8f6c"></span><b>VERDE</b><span class="t">TALLA 20</span><span>¿qué orden la trae?</span><span class="m2">toca otra fila de arriba para cambiar</span></div>
+  <table class="xl">
+    <colgroup><col style="width:13%"><col style="width:21%"><col span="7" style="width:6.5%"><col style="width:9%"><col style="width:11%"></colgroup>
+    <thead><tr><th>Orden</th><th>Dónde va</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th class="cf"><small>FALTA</small>20</th><th>Total</th><th>Entregó</th></tr></thead>
+    <tbody>
+      <tr class="sel"><td><b>11258</b></td><td class="l"><span class="st tal">Taller · Cricelia · 10 d</span></td><td>2</td><td>4</td><td>6</td><td>7</td><td>13</td><td>4</td><td class="cf si">5</td><td><b>41</b></td><td class="z">—</td></tr>
+      <tr><td>11086</td><td class="l"><span class="st lib">Bodega · 26 ago</span></td><td>1</td><td>1</td><td>5</td><td>6</td><td>6</td><td>3</td><td class="cf">1</td><td><b>23</b></td><td class="ok">23</td></tr>
+    </tbody>
+  </table>
+  <div class="pie"><span>Cuatro filas de 56 px caben arriba sin empujar las órdenes fuera de la pantalla.</span><span class="btn">Ver todos los colores ›</span></div>
+</div>
+</div>
+<p class="nota"><b>Cómo escala:</b> una fila por prenda, siempre con la misma altura de foto. Con 4 prendas la tabla de arriba mide unos 260 px; con más de 6 se deja ver 6 y el resto con desplazamiento dentro de la tabla, sin mover lo de abajo. La fila marcada (borde ámbar a la izquierda) es la que se ve en las órdenes. Si la prenda está <b>libre en bodega</b>, <b>por programar</b> o <b>cerrada</b>, la cuadrícula de abajo lo dice en una línea en vez de mostrar órdenes vacías.</p>
+
+<p class="nota" style="margin-top:16px"><b>Qué cambia respecto a la primera versión:</b> desaparece el recuadro de texto y las pestañas; todo va en cuadrícula con bordes, como Excel. La foto va en cada fila. Las órdenes muestran solo el color que falta (el detalle de todos los colores queda en "Ver todos los colores ›"). Se abre igual: clic en el chip "Falta N talla(s)" de la Decisión o en "Ver lotes" dentro de la ventana del cliente.</p>
+</body>
+</html>

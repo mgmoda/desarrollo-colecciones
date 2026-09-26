@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · La prenda que falta</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--muted:#6b6660;--sep:#2b4a7e;--rojo:#b23121;--ok:#1f6b2e;--amb:#8a4b0a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.4;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:24px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 6px;max-width:1000px}
+.paso{display:flex;align-items:center;gap:10px;margin:34px 0 10px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.paso i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:11px}
+.paso small{font-weight:500;letter-spacing:0;text-transform:none;margin-left:6px}
+.reco{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:#e9f5ee;color:#1f6b4a;border:1px solid #bfe0cd;font-size:10.5px;letter-spacing:0;text-transform:none;font-weight:600}
+.nota{color:var(--muted);font-size:12px;max-width:1000px;margin:10px 0 0}
+.nota b{color:var(--ink)}
+.escena{position:relative;background:rgba(28,28,34,.35);border-radius:16px;padding:36px 20px;max-width:1240px}
+.modal{background:#fff;border-radius:18px;max-width:760px;margin:0 auto;box-shadow:0 20px 50px rgba(0,0,0,.25);overflow:hidden}
+.m-head{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--hairline)}
+.m-head .cli{font-size:12px;color:var(--muted)}
+.m-head .cli b{color:var(--ink)}
+.x{width:28px;height:28px;border-radius:50%;border:1px solid var(--hairline-strong);display:grid;place-items:center;color:var(--muted)}
+.tabs{display:flex;gap:8px;padding:12px 20px 0}
+.tab{display:flex;align-items:center;gap:8px;border:1px solid var(--hairline-strong);border-radius:12px;padding:5px 10px 5px 5px;font-size:12px;background:#fff}
+.tab.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.tab .mini{width:30px;height:38px;border-radius:6px;background:linear-gradient(135deg,#9fc3a8,#5f8f6c)}
+.tab .mini.az{background:linear-gradient(135deg,#9db3d6,#4d6fa6)}
+.tab b{display:block;font-size:12px}
+.hero{display:grid;grid-template-columns:220px 1fr;gap:22px;padding:18px 20px 16px}
+.foto{width:220px;height:280px;border-radius:14px;background:linear-gradient(160deg,#b8d4bf 0%,#6d9a78 60%,#4f7a5a 100%);position:relative;overflow:hidden}
+.foto.az{background:linear-gradient(160deg,#c3d0e8 0%,#6f8dc0 60%,#4a6699 100%)}
+.foto span{position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,.85);border-radius:999px;padding:2px 8px;font-size:10.5px;color:var(--muted)}
+.ref{font-family:Fraunces,serif;font-size:26px;font-weight:500;line-height:1.1}
+.desc{color:var(--muted);font-size:13px;margin-top:2px}
+.ficha{display:flex;gap:12px;margin:16px 0 14px;align-items:stretch}
+.dato{border:1px solid var(--hairline);border-radius:12px;padding:8px 14px;min-width:110px}
+.dato small{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.dato b{font-size:22px;font-weight:700}
+.dato .sw{display:inline-block;width:14px;height:14px;border-radius:50%;background:#5f8f6c;vertical-align:-1px;margin-right:6px;border:1px solid rgba(0,0,0,.1)}
+.dato .sw.az{background:#4d6fa6}
+.dato.talla{border-color:#e0a030;background:#fff8ec}
+.dato.talla b{font-size:34px;line-height:1;color:var(--amb)}
+.falta{font-size:13px}
+.falta b{font-weight:700}
+.resp{margin:0 20px 16px;border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}
+.resp .ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:20px;font-weight:700}
+.resp h3{margin:0;font-size:16px}
+.resp p{margin:3px 0 0;font-size:13px}
+.resp.amb{background:#fff8ec;border:1px solid #f3d3a5}.resp.amb .ic{background:#fbe3c6;color:var(--amb)}
+.resp.ok{background:#f0f8f2;border:1px solid #bfe0cd}.resp.ok .ic{background:#d5ead9;color:var(--ok)}
+.resp.no{background:#fbeceb;border:1px solid #f0c4c0}.resp.no .ic{background:#f6d3cf;color:var(--rojo)}
+.resp.gris{background:#f4f2ed;border:1px solid var(--hairline-strong)}.resp.gris .ic{background:#e5e2da;color:var(--muted)}
+.camino{margin:0 20px 16px}
+.camino h4{margin:0 0 8px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lote{border:1px solid var(--hairline);border-radius:12px;padding:10px 14px;margin-bottom:8px}
+.lote .top{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px}
+.lote .top b{font-size:13px}
+.lote .cuantas{font-size:12px;color:var(--amb);font-weight:700}
+.pasos{display:flex;align-items:center;margin-top:10px}
+.p{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;font-size:10.5px;color:var(--muted);text-align:center}
+.p::before{content:'';position:absolute;top:7px;left:-50%;width:100%;height:2px;background:#8fbf9e;z-index:0}
+.p:first-child::before{display:none}
+.p.falta::before{background:#e5e2da}
+.p i{width:16px;height:16px;border-radius:50%;background:#8fbf9e;border:3px solid #fff;box-shadow:0 0 0 1px #8fbf9e;z-index:1}
+.p.aqui i{background:#e0862e;box-shadow:0 0 0 1px #e0862e,0 0 0 5px #fbe3c6}
+.p.aqui{color:var(--amb);font-weight:700}
+.p.falta i{background:#fff;box-shadow:0 0 0 1px #d8d4c9}
+.p small{display:block;margin-top:4px}
+.mas{margin:0 20px 18px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+.btn{display:inline-block;border:1px solid var(--hairline-strong);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--ink);background:#fff}
+.btn.neg{background:var(--ink);color:#fff;border-color:var(--ink)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1240px}
+.pop{background:#fff;border:1px solid var(--hairline-strong);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.16);width:420px;overflow:hidden}
+.pop .hero{grid-template-columns:110px 1fr;gap:14px;padding:14px}
+.pop .foto{width:110px;height:140px;border-radius:10px}
+.pop .ref{font-size:20px}
+.pop .ficha{margin:8px 0 6px;gap:8px}
+.pop .dato{min-width:0;padding:5px 10px}
+.pop .dato b{font-size:15px}.pop .dato.talla b{font-size:22px}
+.pop .resp{margin:0 14px 12px;padding:10px 12px;grid-template-columns:32px 1fr;gap:10px}
+.pop .resp .ic{width:32px;height:32px;font-size:15px}
+.pop .resp h3{font-size:13.5px}.pop .resp p{font-size:12px}
+.fila{background:#fff;border:1px solid var(--hairline);border-radius:12px;padding:8px 12px;display:flex;gap:10px;align-items:center;font-size:12px;max-width:420px}
+.chip{display:inline-block;padding:0 8px;border-radius:999px;font-size:10.5px;font-weight:600;line-height:18px;background:#fff4e0;color:#8a4b0a;border:1px solid #f3d3a5}
+</style>
+</head>
+<body>
+<h1>La prenda que falta</h1>
+<p class="sub">Al dar clic en el chip <span class="chip">Falta 1 talla ›</span> de la columna Decisión, lo primero que se ve es <b>la prenda</b>: foto grande, referencia, color y la talla que falta, en letra grande. Debajo, una sola respuesta en palabras simples: dónde está esa unidad. Después, solo los lotes que la traen, con una línea de pasos. Las órdenes completas de la referencia quedan detrás de un botón.</p>
+
+<div class="paso"><i>A</i> Ventana "La prenda que falta" <span class="reco">recomendada</span><small>· centrada, sobre Despachos</small></div>
+<div class="escena">
+  <div class="modal">
+    <div class="m-head">
+      <div class="cli">Para completar lo separado de <b>MARIA INES ALBARRACIN VEGA</b> · La Dorada · tiene 12 prendas separadas</div>
+      <span class="x">✕</span>
+    </div>
+    <div class="hero">
+      <div class="foto"><span>foto de la ficha</span></div>
+      <div>
+        <div class="ref">M5318</div>
+        <div class="desc">Blusa con estampado abstracto · Mariset</div>
+        <div class="ficha">
+          <div class="dato"><small>Color</small><b><span class="sw"></span>VERDE</b></div>
+          <div class="dato talla"><small>Talla que falta</small><b>20</b></div>
+          <div class="dato"><small>Unidades</small><b>1</b></div>
+        </div>
+        <div class="falta">De esta referencia en verde pidió <b>5</b>: ya tiene <b>4</b> separadas. <b>Solo falta la talla 20.</b></div>
+      </div>
+    </div>
+
+    <div class="resp amb">
+      <div class="ic">⏳</div>
+      <div>
+        <h3>Viene en camino: está en el taller</h3>
+        <p>La orden <b>11258</b> trae <b>5 unidades en talla 20</b> de este color. Está con <b>Cricelia Moreno</b> desde el 16 sep (<b>10 días</b>). En bodega no hay ninguna libre.</p>
+      </div>
+    </div>
+
+    <div class="camino">
+      <h4>Lote que la trae</h4>
+      <div class="lote">
+        <div class="top"><div><b>Orden 11258</b> <span style="color:var(--muted)">· producción · 60 unidades</span></div><span class="cuantas">5 en talla 20 · verde</span></div>
+        <div class="pasos">
+          <div class="p"><i></i>Orden<small>10 sep</small></div>
+          <div class="p"><i></i>Corte<small>12 sep</small></div>
+          <div class="p"><i></i>Alistado<small>15 sep</small></div>
+          <div class="p aqui"><i></i>Taller<small>Cricelia · 10 días</small></div>
+          <div class="p falta"><i></i>Entrega<small>—</small></div>
+          <div class="p falta"><i></i>Bodega<small>—</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mas"><span>Hay 3 órdenes de esta referencia en total.</span><span class="btn">Ver todas las órdenes de M5318 ›</span></div>
+  </div>
+</div>
+<p class="nota"><b>Cómo se lee:</b> arriba, a quién le falta y cuánto tiene separado. En el centro la prenda: foto grande, referencia y descripción, el color con su muestra y la talla en letra grande. Debajo, una frase que responde "¿dónde está?". Luego solo el lote (o los lotes) que traen esa talla, con la línea de pasos marcando dónde va. El detalle completo de todas las órdenes (lo que hoy abre el panel lateral) queda en el botón de abajo.</p>
+
+<div class="paso"><i>A</i> Mismo diseño · los otros casos y varias tallas</div>
+<div class="escena">
+  <div class="modal">
+    <div class="m-head">
+      <div class="cli">Para completar lo separado de <b>YOLANDA CASAS UBAQUE</b> · Santa Marta · tiene 13 prendas separadas · <b>le faltan 2</b></div>
+      <span class="x">✕</span>
+    </div>
+    <div class="tabs">
+      <div class="tab on"><span class="mini az"></span><div><b>C6868 · talla 18</b>AZUL</div></div>
+      <div class="tab"><span class="mini az"></span><div><b>C6930 · talla 20</b>AZUL</div></div>
+    </div>
+    <div class="hero">
+      <div class="foto az"><span>foto de la ficha</span></div>
+      <div>
+        <div class="ref">C6868</div>
+        <div class="desc">Conjunto estampado coordinado · Casania</div>
+        <div class="ficha">
+          <div class="dato"><small>Color</small><b><span class="sw az"></span>AZUL</b></div>
+          <div class="dato talla"><small>Talla que falta</small><b>18</b></div>
+          <div class="dato"><small>Unidades</small><b>1</b></div>
+        </div>
+        <div class="falta">De esta referencia en azul pidió <b>5</b>: ya tiene <b>4</b> separadas. <b>Solo falta la talla 18.</b></div>
+      </div>
+    </div>
+    <div class="resp ok">
+      <div class="ic">✓</div>
+      <div>
+        <h3>Está en bodega: se puede separar hoy</h3>
+        <p>Hay <b>1 libre</b> en talla 18 azul. Sepárala en SYD y este cliente queda completo en esta referencia.</p>
+      </div>
+    </div>
+    <div class="mas"><span>También vienen 2 lotes con esta talla (por si se necesitan más).</span><span class="btn">Ver todas las órdenes de C6868 ›</span></div>
+  </div>
+</div>
+<div class="grid2" style="margin-top:14px">
+  <div>
+    <div class="resp no" style="margin:0">
+      <div class="ic">!</div>
+      <div><h3>No viene en ningún lote: hay que programarla</h3><p>Ninguna orden trae <b>talla 8 verde</b> de M5296. Faltan <b>11</b> de esa talla y color por programar en el pedido total. <span class="btn" style="margin-left:6px">Ir a Programaciones ›</span></p></div>
+    </div>
+    <p class="nota">Caso "por programar": en rojo, con el acceso a la referencia en Programaciones.</p>
+  </div>
+  <div>
+    <div class="resp gris" style="margin:0">
+      <div class="ic">■</div>
+      <div><h3>Producción cerrada: no salen más lotes</h3><p>C6930 azul talla 20 no se va a producir. Decide si el pedido <b>va incompleto</b> o se <b>quita esa talla</b> en SYD.</p></div>
+    </div>
+    <p class="nota">Caso "cerrada": en gris, con la decisión que hay que tomar.</p>
+  </div>
+</div>
+
+<div class="paso"><i>B</i> Tarjeta pequeña junto al chip<small>· más rápida, menos detalle</small></div>
+<div style="display:flex;gap:18px;align-items:flex-start;max-width:1240px">
+  <div class="fila"><b>MARIA INES ALBARRACIN VEGA</b><span class="chip">Falta 1 talla ›</span></div>
+  <div class="pop">
+    <div class="hero">
+      <div class="foto"></div>
+      <div>
+        <div class="ref">M5318</div>
+        <div class="desc">Blusa con estampado abstracto</div>
+        <div class="ficha">
+          <div class="dato"><small>Color</small><b><span class="sw"></span>VERDE</b></div>
+          <div class="dato talla"><small>Talla</small><b>20</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="resp amb">
+      <div class="ic">⏳</div>
+      <div><h3>En el taller: orden 11258</h3><p>Trae 5 en talla 20 · Cricelia Moreno · 10 días</p></div>
+    </div>
+    <div class="mas" style="margin:0 14px 12px"><span></span><span class="btn">Ver órdenes ›</span></div>
+  </div>
+</div>
+<p class="nota"><b>Cómo se lee:</b> una tarjeta flotante al lado del chip con la foto, la talla y la respuesta en una línea. Es más rápida, pero no muestra la línea de pasos del lote ni cabe bien cuando faltan varias tallas.</p>
+
+<p class="nota" style="margin-top:18px"><b>Datos:</b> la foto sale de la ficha de la referencia (la misma de la columna de fotos); si no tiene, se muestra el recuadro con la referencia. La respuesta se elige en este orden: libre en bodega (verde) → viene en un lote (ámbar, con el lote más adelantado) → producción cerrada (gris) → por programar (rojo).</p>
+</body>
+</html>

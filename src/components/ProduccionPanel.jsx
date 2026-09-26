@@ -117,7 +117,7 @@ export default function ProduccionPanel({ codigo, descripcion, cliente, lineas, 
 
   // Escape cierra este panel y no la ventana del cliente que está detrás.
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose() } }
+    const onKey = (e) => { if (e.key === 'Escape' && !document.querySelector('.lightbox')) { e.stopPropagation(); onClose() } }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
   }, [onClose])

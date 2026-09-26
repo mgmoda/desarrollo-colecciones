@@ -459,7 +459,7 @@ function FaltaPanel({ c, elegida, onElegir, refMap, onViewImage, produccion, onC
   const tallas = TALLAS.filter((t) => refsF.some((ref) => lineasDe(ref).some((l) => Number((l.tallas || {})[t]) > 0)))
   const esFalta = (l, t) => lista.some((x) => x.ref === String(l.ref).toUpperCase() && x.color === String(l.color).toUpperCase() && x.talla === t)
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose() } }
+    const onKey = (e) => { if (e.key === 'Escape' && !document.querySelector('.lightbox')) { e.stopPropagation(); onClose() } }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
   }, [onClose])

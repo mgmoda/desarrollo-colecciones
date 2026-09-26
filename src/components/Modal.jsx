@@ -4,7 +4,7 @@ export default function Modal({ open, onClose, children, size = 'md' }) {
   useEffect(() => {
     if (!open) return
     function onKey(e) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape' && !document.querySelector('.lightbox')) onClose()
     }
     document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'

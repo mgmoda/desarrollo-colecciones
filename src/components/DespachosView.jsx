@@ -115,6 +115,7 @@ export default function DespachosView({
   useEffect(() => { const q = colaRef.current; q.vivo = true; return () => { q.vivo = false } }, [])
   useEffect(() => {
     const q = colaRef.current
+    if (q.parada) return // Coordinadora no está cotizando: se reintenta al recargar la página.
     tarifasPendientes(clientesBase, daneDe, tarifas).forEach((p) => {
       const k = claveTarifa(p.dane, p.empaque.key)
       if (!q.pendientes.has(k) && !q.pedidas.has(k)) q.pendientes.set(k, p)
@@ -160,6 +161,7 @@ export default function DespachosView({
           q.ultimoError = msg
           if (q.seguidos >= 3) {
             q.pendientes.clear()
+            q.parada = true
             if (q.vivo) setErrorCot(`Coordinadora no está cotizando ahora (${msg}). Se dejó de pedir; al recargar la página se vuelve a intentar.`)
           }
         }

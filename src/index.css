@@ -7546,3 +7546,25 @@ tr.row-al.row-sel > td { background: #e9f3da; }
 .dsp-kp-leg b { color: var(--ink); font-weight: 600; }
 .dsp-kp-de { margin-left: auto; }
 @media (max-width: 1100px) { .dsp-kp-u { font-size: 24px; } .dsp-kp-v { font-size: 14px; } }
+
+/* ── Separado incompleto (Despachos) ── */
+.dsp-falta-tag { display: inline-block; margin-left: 5px; padding: 0 6px; border-radius: 999px; font-size: 9.5px; font-weight: 600; line-height: 15px; background: #fff4e0; color: #8a4b0a; border: 1px solid #f3d3a5; white-space: nowrap; vertical-align: middle; }
+.dsp-falta-tag.ok { background: #e9f5ee; color: #1f6b4a; border-color: #bfe0cd; }
+.dsp-comp { border: 1px solid #f3d3a5; border-radius: 10px; overflow: hidden; margin: -6px 0 14px; }
+.dsp-comp-cab { padding: 7px 12px; background: #fff8ec; font-size: 12px; border-bottom: 1px solid #f3d3a5; }
+.dsp-comp-cab .dsp-tag { margin-left: 8px; }
+.dsp-comp-t { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.dsp-comp-t th { background: var(--surface); padding: 5px 10px; font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 600; text-align: left; border-bottom: 1px solid var(--hairline); white-space: nowrap; }
+.dsp-comp-t td { padding: 6px 10px; font-size: 12px; border-bottom: 1px solid #f4f2ed; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.dsp-comp-t tr:last-child td { border-bottom: 0; }
+.dsp-comp-t .num { text-align: right; }
+.dsp-comp-t th:nth-child(1) { width: 26%; } .dsp-comp-t th:nth-child(2) { width: 10%; } .dsp-comp-t th:nth-child(3), .dsp-comp-t th:nth-child(4) { width: 6%; }
+.dsp-comp-t th:nth-child(5) { width: 16%; } .dsp-comp-t th:nth-child(6) { width: 20%; } .dsp-comp-t th:nth-child(7) { width: 16%; }
+.dsp-comp-d { font-size: 11px; margin-left: 4px; }
+.dsp-comp-l { font-size: 11px; }
+.dsp-donde { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 10.5px; font-weight: 600; line-height: 17px; border: 1px solid; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.dsp-donde.lib { background: #e9f5ee; color: #1f6b4a; border-color: #bfe0cd; }
+.dsp-donde.tal { background: #fff4e0; color: #8a4b0a; border-color: #f3d3a5; }
+.dsp-donde.cor { background: #eef3fb; color: #2b4a7e; border-color: #c9d7ee; }
+.dsp-donde.prog { background: #fbeceb; color: #8c2f28; border-color: #f0c4c0; }
+.dsp-donde.cer { background: #f1f0ee; color: #6b6660; border-color: #d8d4c9; }

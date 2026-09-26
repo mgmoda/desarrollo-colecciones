@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup · Separado incompleto: las tallas que frenan los despachos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f4f2ed;--surface:#fff;--hairline:#e5e2da;--hairline-strong:#d8d4c9;--ink:#1c1c22;--muted:#6b6660;--sep:#2b4a7e;--rojo:#b23121;--ok:#1f6b2e;--amb:#8a4b0a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.4;padding:28px}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:24px;margin:0 0 4px}
+h2{font-family:Fraunces,serif;font-weight:500;font-size:18px;margin:0}
+.sub{color:var(--muted);margin:0 0 6px;max-width:1050px}
+.paso{display:flex;align-items:center;gap:10px;margin:34px 0 10px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.paso i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-style:normal;font-size:11px}
+.paso small{font-weight:500;letter-spacing:0;text-transform:none;margin-left:6px}
+.caja{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px 18px;max-width:1240px}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 8px;text-align:left;background:#faf9f6;border-bottom:1px solid var(--hairline);white-space:normal;line-height:1.15;vertical-align:bottom}
+td{padding:7px 8px;border-bottom:1px solid #f0ede7;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.num{text-align:right}.n{text-align:center}
+.mut{color:var(--muted)}.sep{color:var(--sep);font-weight:700}.rojo{color:var(--rojo);font-weight:700}.ok{color:var(--ok);font-weight:700}
+.dec{display:inline-block;padding:0 8px;border-radius:999px;font-size:10.5px;font-weight:600;line-height:18px;background:#f1f0ee;color:#4a4642;border:1px solid var(--hairline-strong)}
+.dec.amb{background:#fff4e0;color:#8a4b0a;border-color:#f3d3a5}.dec.ok{background:#e9f5ee;color:#1f6b4a;border-color:#bfe0cd}
+.motivo{display:block;font-size:11px;color:var(--muted)}
+.chip{display:inline-block;padding:0 7px;border-radius:999px;font-size:10.5px;font-weight:600;line-height:17px;border:1px solid;white-space:nowrap}
+.chip.lib{background:#e9f5ee;color:#1f6b4a;border-color:#bfe0cd}
+.chip.tal{background:#fff4e0;color:#8a4b0a;border-color:#f3d3a5}
+.chip.cor{background:#eef3fb;color:#2b4a7e;border-color:#c9d7ee}
+.chip.prog{background:#fbeceb;color:#8c2f28;border-color:#f0c4c0}
+.chip.cer{background:#f1f0ee;color:#6b6660;border-color:#d8d4c9}
+.f{display:flex;gap:6px;align-items:center;margin:0 0 12px;flex-wrap:wrap}
+.f span{border:1px solid var(--hairline-strong);border-radius:999px;padding:3px 10px;font-size:12px;background:#fff}
+.f span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.f b{font-weight:700;opacity:.75;margin-left:2px}
+.btn{display:inline-block;background:var(--ink);color:#fff;border-radius:999px;padding:3px 12px;font-size:11.5px;font-weight:600}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--hairline-strong)}
+.tag{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;font-size:10px;font-weight:600;line-height:15px;background:#fff4e0;color:#8a4b0a;border:1px solid #f3d3a5}
+.nota{color:var(--muted);font-size:12px;max-width:1050px;margin:10px 0 0}
+.nota b{color:var(--ink)}
+.hall{background:#fff;border:1px solid var(--hairline);border-radius:14px;padding:16px 18px;max-width:1240px}
+.hall .g{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:12px;overflow:hidden;margin-top:10px}
+.hall .g div{background:#fff;padding:10px 12px}
+.hall .g span{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.hall .g b{font-size:20px;font-weight:600}
+.hall .g em{display:block;font-style:normal;font-size:11px;color:var(--muted)}
+.bloque{border:1px solid #f3d3a5;border-radius:10px;overflow:hidden;margin:0 0 14px}
+.bloque .cab{padding:8px 12px;background:#fff8ec;font-size:12px;border-bottom:1px solid #f3d3a5}
+.bloque table{table-layout:auto}
+.bloque th{background:#fff}
+.kp{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:12px;overflow:hidden;margin:8px 0 12px}
+.kp div{background:#fff;padding:9px 12px}
+.kp span{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kp b{font-size:18px;font-weight:600}
+.kp em{display:block;font-style:normal;font-size:11px;color:var(--muted)}
+.cmp{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;max-width:1240px;margin-top:12px}
+.cmp div{background:#fff;border:1px solid var(--hairline);border-radius:12px;padding:12px 14px;font-size:12px}
+.cmp h4{margin:0 0 6px;font-size:13px}
+.cmp ul{margin:0;padding-left:16px}.cmp li{margin:3px 0}
+</style>
+</head>
+<body>
+<h1>Separado incompleto: las tallas que frenan los despachos</h1>
+<p class="sub">Con los datos de hoy crucé, cliente por cliente, lo vendido por talla contra lo separado en SYD, y cada talla que falta contra lo libre en bodega y contra los lotes en proceso. Esto es lo que salió y las tres piezas de control que propongo.</p>
+
+<div class="hall">
+  <h2>Lo que hay hoy</h2>
+  <div class="g">
+    <div><span>Clientes con separado</span><b>146</b><em>de 238</em></div>
+    <div><span>Con separado incompleto</span><b style="color:var(--amb)">27</b><em>líneas separadas a las que les falta alguna talla</em></div>
+    <div><span>Unidades que faltan</span><b style="color:var(--rojo)">30</b><em>siempre 1 unidad por talla</em></div>
+    <div><span>Tallas distintas</span><b>21</b><em>referencia · color · talla</em></div>
+    <div><span>Se pueden completar ya</span><b style="color:var(--ok)">9</b><em>la talla está libre en bodega</em></div>
+  </div>
+  <p class="nota" style="margin-top:12px"><b>Dónde está lo que falta (30 unidades):</b> 16 <b>por programar</b> (ningún lote trae esa talla de ese color: hay que meterla en el próximo corte), 9 <b>libres en bodega</b> (ya están en la estantería sin nombre: se separan hoy), 2 <b>en taller</b>, 1 <b>en corte</b> y 2 en <b>referencias cerradas</b> (decidir si va incompleto). El caso más claro: <b>M5293 CRUDO talla 10</b> la esperan 5 clientes y hay 4 libres en bodega.</p>
+</div>
+
+<div class="paso"><i>1</i> En Despachos · chip y aviso en la fila<small>· ver de un vistazo a quién le falta una talla</small></div>
+<div class="caja">
+  <div class="f"><span class="on">Todos <b>238</b></span><span>Parcial <b>1</b></span><span>Con separado <b>146</b></span><span style="border-color:#f3d3a5;color:#8a4b0a">Separado incompleto <b>27</b></span><span style="border-color:#bfe0cd;color:#1f6b4a">Se completan ya <b>9</b></span><span>Sin nada separado <b>92</b></span></div>
+  <table>
+    <colgroup><col style="width:19%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7.5%"><col style="width:10%"><col style="width:18%"><col style="width:7.5%"></colgroup>
+    <thead><tr><th>Cliente</th><th>Ciudad</th><th class="num">Vendido</th><th class="num">Separado</th><th class="num">Facturado</th><th class="num">Pendiente</th><th class="num">Faltante real</th><th class="num">Valor faltante</th><th>Decisión</th><th>Guía</th></tr></thead>
+    <tbody>
+      <tr><td><b>GLORIA HERSILIA MANTILLA DE BO</b></td><td class="mut">BUCARAMANGA</td><td class="num">89</td><td class="num sep">10 <span class="tag">falta 1 talla</span></td><td class="num">10</td><td class="num">79</td><td class="num rojo">79</td><td class="num mut">$ 10.900.000</td><td><span class="dec ok">Completar ya</span><span class="motivo">M5293 CRUDO talla 10 · 4 libres en bodega</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>MARIA INES ALBARRACIN VEGA</b></td><td class="mut">LA DORADA-CALDAS</td><td class="num">337</td><td class="num sep">12 <span class="tag">falta 1 talla</span></td><td class="num mut">·</td><td class="num">337</td><td class="num rojo">337</td><td class="num mut">$ 42.305.100</td><td><span class="dec amb">Falta 1 talla</span><span class="motivo">M5318 VERDE talla 20 · en taller desde 18 sep (8 días)</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>BLANCA INES VERGARA FLORES</b></td><td class="mut">COROZAL</td><td class="num">92</td><td class="num sep">11 <span class="tag">falta 1 talla</span></td><td class="num">11</td><td class="num">81</td><td class="num rojo">81</td><td class="num mut">$ 11.180.000</td><td><span class="dec amb">Falta 1 talla</span><span class="motivo">M5296 VERDE talla 8 · por programar</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>YOLANDA CASAS UBAQUE</b></td><td class="mut">SANTA MARTA</td><td class="num">193</td><td class="num sep">13 <span class="tag">faltan 2 tallas</span></td><td class="num mut">·</td><td class="num">193</td><td class="num rojo">192</td><td class="num mut">$ 29.396.792</td><td><span class="dec amb">Faltan 2 tallas</span><span class="motivo">C6868 AZUL 18 · libre en bodega · C6930 AZUL 20 · cerrada</span></td><td><span class="btn">Despachar</span></td></tr>
+      <tr><td><b>MIRIAM ANGULO CELORIO</b></td><td class="mut">BUENAVENTURA</td><td class="num">358</td><td class="num sep">14</td><td class="num mut">·</td><td class="num">358</td><td class="num rojo">358</td><td class="num mut">$ 47.039.100</td><td><span class="dec">Esperar</span><span class="motivo">solo 4 % separado</span></td><td><span class="btn">Despachar</span></td></tr>
+    </tbody>
+  </table>
+  <p class="nota"><b>Cómo funciona:</b> dos chips nuevos: <b>Separado incompleto</b> (líneas separadas a las que les falta alguna talla) y <b>Se completan ya</b> (la talla que falta está libre en bodega). En la fila, una marca junto al separado y la decisión dice qué talla, de qué referencia y color, y dónde está: libre en bodega (verde: "Completar ya"), en taller con los días, en corte, por programar o cerrada. Si al cliente le faltan varias, se listan.</p>
+</div>
+
+<div class="paso"><i>2</i> En la ventana del cliente · "Para completar lo separado"</div>
+<div class="caja">
+  <h2>YOLANDA CASAS UBAQUE</h2>
+  <p class="mut" style="margin:2px 0 10px">SANTA MARTA · pedidos 7622 · 30 referencias · 193 unidades · $ 29.396.792</p>
+  <div class="kp">
+    <div><span>Pendiente</span><b>193</b><em>193 vend. − 0 fact.</em></div>
+    <div><span>Separado vigente</span><b style="color:var(--sep)">13</b><em>en 3 líneas · 2 incompletas</em></div>
+    <div><span>Abierto real</span><b>179</b><em>falta producir o separar</em></div>
+    <div><span>Cerrado s/cubrir</span><b class="mut">1</b><em>no se persigue</em></div>
+    <div><span>Faltante real</span><b class="rojo">192</b><em>$ 29.396.792</em></div>
+    <div><span>Decisión</span><b><span class="dec amb">Faltan 2 tallas</span></b><em>1 se completa ya · 1 cerrada</em></div>
+  </div>
+  <div class="bloque">
+    <div class="cab"><b>Para completar lo separado</b> · 2 tallas · 2 unidades</div>
+    <table>
+      <thead><tr><th>Referencia</th><th>Color</th><th class="n">Talla</th><th class="num">Falta</th><th class="num">Separado</th><th>Dónde está</th><th>Qué hacer</th></tr></thead>
+      <tbody>
+        <tr><td><b>C6868</b> <span class="mut">Conjunto estampado coordi…</span></td><td>AZUL</td><td class="n">18</td><td class="num rojo">1</td><td class="num sep">6 de 7</td><td><span class="chip lib">Libre en bodega · 1</span></td><td><span class="btn sec">Separar en SYD</span></td></tr>
+        <tr><td><b>C6930</b> <span class="mut">Vestido…</span></td><td>AZUL</td><td class="n">20</td><td class="num rojo">1</td><td class="num sep">4 de 5</td><td><span class="chip cer">Producción cerrada</span></td><td class="mut">enviar incompleto o quitar la talla del pedido</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="nota"><b>Cómo funciona:</b> arriba de la tabla de referencias, un bloque solo con lo que falta para completar las líneas ya separadas: referencia, color, talla, cuánto falta, cuánto hay separado, dónde está la unidad (libre en bodega, en taller con nombre y días, en corte, por programar, cerrada) y la acción. El resto de la ventana sigue igual.</p>
+</div>
+
+<div class="paso"><i>3</i> Para producción · "Tallas que frenan despachos"<small>· la lista para agilizar los lotes entrantes</small></div>
+<div class="caja">
+  <div class="f"><span class="on">Todas <b>21</b></span><span style="border-color:#f0c4c0;color:#8c2f28">Por programar <b>11</b></span><span style="border-color:#bfe0cd;color:#1f6b4a">Libres en bodega <b>5</b></span><span style="border-color:#f3d3a5;color:#8a4b0a">En taller <b>2</b></span><span style="border-color:#c9d7ee;color:#2b4a7e">En corte <b>1</b></span><span>Cerradas <b>2</b></span></div>
+  <table>
+    <colgroup><col style="width:9%"><col style="width:22%"><col style="width:9%"><col style="width:6%"><col style="width:7%"><col style="width:7%"><col style="width:18%"><col style="width:22%"></colgroup>
+    <thead><tr><th>Ref.</th><th>Descripción</th><th>Color</th><th class="n">Talla</th><th class="num">Clientes esperan</th><th class="num">Unid</th><th>Dónde está</th><th>Quiénes</th></tr></thead>
+    <tbody>
+      <tr><td><b>M5293</b></td><td class="mut">BLUSA…</td><td>CRUDO</td><td class="n">10</td><td class="num rojo">5</td><td class="num">5</td><td><span class="chip lib">Libres 4 en bodega</span> <span class="mut">· falta 1 por programar</span></td><td class="mut">Gloria Hersilia, Ana Sofía, Wayih, Cecilia, Bertha</td></tr>
+      <tr><td><b>C6935</b></td><td class="mut">VESTIDO…</td><td>AZUL</td><td class="n">20</td><td class="num rojo">2</td><td class="num">2</td><td><span class="chip prog">Por programar</span></td><td class="mut">Luz Dary, Bertha Elena</td></tr>
+      <tr><td><b>C6935</b></td><td class="mut">VESTIDO…</td><td>NEGRO</td><td class="n">18</td><td class="num rojo">2</td><td class="num">2</td><td><span class="chip prog">Por programar</span></td><td class="mut">Virginia Julia, Sara Asserias</td></tr>
+      <tr><td><b>M5240</b></td><td class="mut">…</td><td>NEGRO</td><td class="n">20</td><td class="num rojo">2</td><td class="num">2</td><td><span class="chip prog">Por programar</span></td><td class="mut">Gloria Inés, Aurora del Carmen</td></tr>
+      <tr><td><b>M5296</b></td><td class="mut">…</td><td>VERDE</td><td class="n">16</td><td class="num rojo">2</td><td class="num">2</td><td><span class="chip prog">Por programar</span></td><td class="mut">Delcis Laudith, Luz Mireya</td></tr>
+      <tr><td><b>M5296</b></td><td class="mut">…</td><td>VERDE</td><td class="n">8</td><td class="num rojo">2</td><td class="num">2</td><td><span class="chip prog">Por programar</span></td><td class="mut">Blanca Inés, Judith Luna</td></tr>
+      <tr><td><b>C6894</b></td><td class="mut">…</td><td>FUSCIA</td><td class="n">20</td><td class="num rojo">1</td><td class="num">1</td><td><span class="chip tal">En taller · desde 15 sep · 11 días</span></td><td class="mut">María Lourdes</td></tr>
+      <tr><td><b>M5318</b></td><td class="mut">…</td><td>VERDE</td><td class="n">20</td><td class="num rojo">1</td><td class="num">1</td><td><span class="chip tal">En taller · desde 18 sep · 8 días</span></td><td class="mut">María Inés</td></tr>
+      <tr><td><b>C6868</b></td><td class="mut">…</td><td>VERDE</td><td class="n">10</td><td class="num rojo">1</td><td class="num">1</td><td><span class="chip cor">En corte · orden 11247</span></td><td class="mut">María Elena</td></tr>
+      <tr><td><b>C6930</b></td><td class="mut">…</td><td>AZUL</td><td class="n">8</td><td class="num rojo">1</td><td class="num">1</td><td><span class="chip cer">Producción cerrada</span></td><td class="mut">Ruby Stella</td></tr>
+      <tr><td class="mut" colspan="8">… 11 tallas más, 1 cliente cada una</td></tr>
+    </tbody>
+  </table>
+  <p class="nota"><b>Cómo funciona:</b> una lista, ordenada por cuántos clientes esperan cada talla, para decidir producción: las <b>por programar</b> son las que hay que meter en el próximo corte (y ya salen sumadas en "Falta por programar" de Programaciones); las <b>libres en bodega</b> son separaciones que se hacen hoy; las <b>en taller</b> muestran el taller y los días para presionar la entrega; las <b>cerradas</b> piden decisión. Iría como cuarto bloque en <b>Por referencia</b> (o como pestaña propia dentro de Pedidos), con un botón para copiar la lista y mandarla al taller o a corte.</p>
+</div>
+
+<div class="paso"><i>?</i> Decisiones</div>
+<div class="cmp">
+  <div><h4>Qué cuenta como "incompleto"</h4><ul><li>Hoy: una línea (referencia + color) con algo separado y alguna talla sin separar. Son 27 clientes, siempre 1 unidad por talla.</li><li>Alternativa más amplia: también clientes con TODO separado salvo referencias enteras sin separar. Eso ya lo cubre el "Esperan" de la hoja de libres; se puede sumar aquí si te sirve.</li></ul></div>
+  <div><h4>Dónde va la lista de producción</h4><ul><li>En Por referencia, como bloque arriba (recomendado: ahí ya está lo libre y lo que esperan).</li><li>O como quinta vista de Pedidos.</li></ul></div>
+  <div><h4>Acciones</h4><ul><li>"Separar en SYD" se sigue haciendo en SYD; el botón solo copia el dato.</li><li>"Por programar" puede llevar directo a la referencia en Programaciones con la talla y el color resaltados.</li></ul></div>
+</div>
+</body>
+</html>

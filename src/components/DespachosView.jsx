@@ -9,6 +9,7 @@ import ProduccionPanel from './ProduccionPanel.jsx'
 import { dbInsertGuia, dbLoadCiudadesDane, dbLoadCiudadSyd, dbLoadGuias, dbLoadLibreta, dbLoadTarifas, dbUpsertLibreta, dbUpsertTarifa } from '../lib/db.js'
 import { coordinadora } from '../lib/coordinadora.js'
 import { FILTROS_FLETE, UMBRAL, claveTarifa, decisionConFlete, empaqueCorto, empaqueMinimo, fleteDe, tarifasPendientes } from '../lib/flete.js'
+import { DONDE, FILTROS_FALTAS, decisionConFaltas, faltasSeparado } from '../lib/faltasSeparado.js'
 import { formatPrice } from '../lib/constants.js'
 import { nombreDe } from '../lib/procesos.js'
 import { CATEGORIAS, categoriaDe, esPedidoEspecial } from '../lib/pedidos.js'
@@ -29,7 +30,7 @@ const fechaHora = (ts) => {
   return isNaN(d) || !ts ? '' : d.toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
 }
 const Cel = ({ n, cls }) => (n ? <span className={cls || ''}>{num(n)}</span> : <span className="dsp-cero">·</span>)
-const CHIP_DECISION = { despachar: 'verde', flete: 'verde', parcial: 'ambar', faltaPoco: 'ambar', no: 'rojo', completo: 'azul', esperar: '' }
+const CHIP_DECISION = { despachar: 'verde', flete: 'verde', completar: 'verde', parcial: 'ambar', faltaPoco: 'ambar', faltaTalla: 'ambar', no: 'rojo', completo: 'azul', esperar: '' }
 const CLASE_FLETE = { ok: 'ok', amb: 'amb', no: 'no' }
 const ETIQUETA_LINEA = {
   cerrada: ['', 'Producción cerrada'], facturado: ['azul', 'Facturado'],
@@ -100,10 +101,16 @@ export default function DespachosView({
   // El DANE del cliente: el de su libreta, o el de su ciudad de SYD.
   const daneDe = (c) => (libreta[c.cliente] && libreta[c.cliente].dane) || danePorCiudad[c.ciudad] || ''
   // Con el flete por unidad de lo separado encima, y la decisión ajustada.
+  // Separado incompleto: tallas que faltan en líneas ya separadas y dónde
+  // están (libre, taller, corte, por programar, cerrada). Se arma una vez por
+  // carga; necesita las órdenes y fichas que llegan por `produccion`.
+  const faltas = useMemo(() => faltasSeparado(clientesBase, { filasSyd: filas || [], orders: orders || [], refs: refs || [], programaciones: programaciones || [], procesos: procesos || {}, cerradas }),
+    [clientesBase, filas, orders, refs, programaciones, procesos, cerradas])
   const clientes = useMemo(() => clientesBase.map((c) => {
     const flete = fleteDe(c.lineas, daneDe(c), tarifas)
-    return { ...c, flete, decision: decisionConFlete(c.decision, flete, formatPrice) }
-  }), [clientesBase, libreta, danePorCiudad, tarifas])
+    const f = faltas.get(c.cliente) || null
+    return { ...c, flete, faltas: f, decision: decisionConFaltas(decisionConFlete(c.decision, flete, formatPrice), f) }
+  }), [clientesBase, libreta, danePorCiudad, tarifas, faltas])
 
   // Cotiza en segundo plano las ciudades con separado que no tienen tarifa
   // (o la tienen vieja): una vez por ciudad y empaque, de a dos a la vez, y
@@ -179,7 +186,7 @@ export default function DespachosView({
 
   const lista = useMemo(() => {
     const term = q.trim().toLowerCase()
-    const fn = ([...FILTROS, ...FILTROS_FLETE].find((f) => f.key === filtro) || FILTROS[0]).f
+    const fn = ([...FILTROS, ...FILTROS_FALTAS, ...FILTROS_FLETE].find((f) => f.key === filtro) || FILTROS[0]).f
     let l = clientes.filter(fn)
     if (ciudad) l = l.filter((c) => c.ciudad === ciudad)
     if (term) l = l.filter((c) => [c.cliente, c.ciudad, c.codigo].some((v) => String(v || '').toLowerCase().includes(term)))
@@ -219,6 +226,16 @@ export default function DespachosView({
             return (
               <button key={f.key} type="button" className={'proc-f-btn' + (filtro === f.key ? ' on' : '')}
                 onClick={() => setFiltro(f.key)}>{f.label} <b>{n}</b></button>
+            )
+          })}
+          <span className="dsp-f-sep" />
+          {FILTROS_FALTAS.map((f) => {
+            const n = clientes.filter(f.f).length
+            if (!n && filtro !== f.key) return null
+            return (
+              <button key={f.key} type="button" className={'proc-f-btn dsp-f-' + f.clase + (filtro === f.key ? ' on' : '')}
+                title={f.key === 'incompleto' ? 'Líneas separadas a las que les falta alguna talla' : 'La talla que falta está libre en bodega'}
+                onClick={() => setFiltro(f.key)}><i />{f.label} <b>{n}</b></button>
             )
           })}
           <span className="dsp-f-sep" />
@@ -272,7 +289,7 @@ export default function DespachosView({
                   </td>
                   <td className="muted dsp-ciu">{c.ciudad || '—'}</td>
                   <td className="num">{num(c.vendido)}</td>
-                  <td className="num"><Cel n={c.separadoVig} cls="dsp-sep" /></td>
+                  <td className="num"><Cel n={c.separadoVig} cls="dsp-sep" />{c.faltas && <span className={'dsp-falta-tag' + (c.faltas.todasLibres ? ' ok' : '')} title={c.faltas.faltas.map((x) => `${x.ref} ${x.color} talla ${x.talla} · ${DONDE[x.donde].label}`).join('\n')}>{c.faltas.nTallas === 1 ? 'falta 1 talla' : `faltan ${c.faltas.nTallas} tallas`}</span>}</td>
                   <td className="dsp-fl"><FleteCel c={c} /></td>
                   <td className="num"><Cel n={c.facturado} /></td>
                   <td className="num strong" title="vendido − facturado">{num(c.pendiente)}</td>
@@ -408,6 +425,41 @@ function FleteCel({ c }) {
           <b>{o.sinTarifa ? '…' : formatPrice(o.porUnidad)}</b>
         </div>
       ))}
+    </div>
+  )
+}
+
+// "Para completar lo separado": las tallas que faltan en las líneas ya
+// separadas del cliente, dónde está cada una y qué hacer.
+function ParaCompletar({ c, refMap }) {
+  const f = c.faltas
+  if (!f) return null
+  return (
+    <div className="dsp-comp">
+      <div className="dsp-comp-cab">
+        <b>Para completar lo separado</b> · {f.nTallas} {f.nTallas === 1 ? 'talla' : 'tallas'} · {num(f.nUnid)} {f.nUnid === 1 ? 'unidad' : 'unidades'}
+        {f.todasLibres && <span className="tag dsp-tag verde">todo está libre en bodega</span>}
+      </div>
+      <table className="dsp-comp-t">
+        <thead><tr><th>Referencia</th><th>Color</th><th className="num">Talla</th><th className="num">Falta</th><th className="num">Separado</th><th>Dónde está</th><th>Qué hacer</th></tr></thead>
+        <tbody>
+          {f.faltas.map((x, i) => {
+            const ficha = refMap && refMap.get(x.ref)
+            const d = DONDE[x.donde]
+            return (
+              <tr key={i}>
+                <td><b>{x.ref}</b> <span className="muted dsp-comp-d" title={x.descripcion || (ficha && ficha.descripcion) || ''}>{x.descripcion || (ficha && ficha.descripcion) || ''}</span></td>
+                <td>{x.color}</td>
+                <td className="num">{x.talla}</td>
+                <td className="num dsp-falt">{num(x.n)}</td>
+                <td className="num" title="Separado de lo vendido en esta referencia y color"><span className="dsp-sep">{num(x.sepLinea)}</span><span className="muted"> de {num(x.vendLinea)}</span></td>
+                <td><span className={'dsp-donde ' + d.clase}>{d.label}{x.detalle ? ` · ${x.detalle}` : ''}</span></td>
+                <td className="muted">{d.hacer}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -611,6 +663,7 @@ function ClienteModal({ cliente: c, usuario, registros, onGuardar, onCerrarRef, 
           <div><span>Decisión</span><b><span className={'tag dsp-tag ' + (CHIP_DECISION[c.decision.key] || '')}>{c.decision.label}</span></b><em>{c.decision.motivo}</em></div>
         </div>
         <FleteComparacion c={c} />
+        <ParaCompletar c={c} refMap={refMap} />
 
         <div className="dsp-tool">
           <SearchInput value={q} onChange={setQ} placeholder="Referencia, categoría, descripción o color…" className="dsp-buscar" />

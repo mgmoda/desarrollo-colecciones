@@ -368,6 +368,22 @@ separar sobre lo vendido. Valores en `totales()`: `valorVend` (total SYD),
 (`faltante` = separado + abierto, `cerrado`, `listos`) siguen en `totales()`
 para la tabla y las decisiones, ya no como tarjetas.
 
+**Separado incompleto (26-sep-2026, `lib/faltasSeparado.js`)**: línea
+(referencia + color) con algo separado en SYD y alguna talla sin separar.
+`faltasSeparado(clientes, datos)` encuentra cada talla que falta y dónde está:
+libre en bodega (`calcularLibres`), en taller / en corte (órdenes en camino
+de `produccionDe` que traen ese color y talla), por programar
+(`porProgramar` por talla), cerrada, o sin lote. En Despachos: chips
+"Separado incompleto" y "Se completan ya" (`FILTROS_FALTAS`), marca "falta N
+talla(s)" junto al separado, y la decisión pasa a "Falta(n) N talla(s)"
+(`faltaTalla`, ámbar) o "Completar ya" (`completar`, verde) cuando todo lo
+que falta está libre (`decisionConFaltas`, manda sobre flete salvo
+"No despachar"/"Completo"). En la ventana del cliente, bloque
+`ParaCompletar` ("Para completar lo separado") con talla, cuánto falta,
+separado de la línea, dónde está y qué hacer. La lista agrupada por talla
+para producción quedó en el mockup `despachos-tallas-que-frenan-v1` (Diego
+la dejó pendiente).
+
 **Flete por unidad de lo separado (25-sep-2026)**: columna en Despachos
 ("Flete por unidad · caja / paq 5 kg / paq 1–2 kg", `FleteCel`) con el flete
 de Coordinadora de lo separado ÷ unidades en cada empaque; cuentas en
